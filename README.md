@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NEXUS — Réseau Social d'Intelligence Citoyenne
 
-## Getting Started
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/arcajus/arca&project-name=nexus-app&repository-name=nexus-app)
 
-First, run the development server:
+> Débattez, simulez, progressez. Studio débat audio IA · Simulation ONU · Score d'éloquence.
+
+---
+
+## 🚀 Déployer sur Vercel (1 clic)
+
+Clique le bouton ci-dessus **"Deploy with Vercel"** — l'app est en ligne en 2 minutes.
+
+Ou manuellement :
+1. Va sur **[vercel.com/new](https://vercel.com/new)**
+2. Connecte ton compte GitHub
+3. Importe le repo **arcajus/arca**
+4. Clique **Deploy** — tout est déjà configuré
+
+---
+
+## 📱 Installer sur iPhone
+
+Une fois déployé sur Vercel :
+
+1. Ouvre l'URL sur **Safari** iPhone (ex: `nexus-app.vercel.app`)
+2. Bouton **Partager** ↑ → **"Sur l'écran d'accueil"**
+3. **Ajouter** → l'icône NEXUS apparaît sur ton écran
+
+---
+
+## Fonctionnalités
+
+- **Fil d'actualité** — Géopolitique, diplomatie, histoire, breaking news
+- **Studio Débat Audio** — Journaliste IA, reconnaissance vocale, waveform, timer
+- **Niveaux adversaires** — Novice → Élite (ministre, ambassadeur)
+- **Simulation ONU** — 5 membres permanents avec doctrines historiques
+- **Procès fictif** — Avocat de la défense ou procureur
+- **Entretien RH** — Coaching carrière IA
+- **Élections virtuelles** — Sondage temps réel
+- **Score d'éloquence** — 5 critères, classement mondial
+- **Messages & Communauté** — Groupes thématiques
+- **Premium NEXUS+** — Plans 5,99€ / 14,99€ / 299€
+
+---
+
+## Dev local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*© Arcajus Auguste GBAGUIDI — Marseille, France*
