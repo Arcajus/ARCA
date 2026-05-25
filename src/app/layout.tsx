@@ -2,14 +2,37 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NEXUS — Réseau Social d'Intelligence Citoyenne",
-  description: "Débattez, simulez, progressez. Studio débat audio IA, simulation ONU, Score d'éloquence, réseau social géopolitique.",
+  title: "NEXUS — Intelligence Citoyenne",
+  description: "Débattez, simulez, progressez. Studio débat audio IA, simulation ONU, Score d'éloquence.",
   keywords: "débat, géopolitique, diplomatie, intelligence citoyenne, éloquence, simulation ONU",
   authors: [{ name: "Arcajus Auguste GBAGUIDI" }],
-  openGraph: {
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
     title: "NEXUS",
+    startupImage: [
+      {
+        url: "/icons/apple-touch-icon.png",
+        media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)",
+      },
+    ],
+  },
+  openGraph: {
+    title: "NEXUS — Intelligence Citoyenne",
     description: "Réseau Social d'Intelligence Citoyenne",
     type: "website",
+    images: [{ url: "/icons/icon-512.png" }],
+  },
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/icons/favicon-32.png",
   },
 };
 
@@ -18,6 +41,8 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#07090F",
 };
 
 export default function RootLayout({
@@ -27,7 +52,29 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" style={{ background: "#07090F" }}>
-      <body style={{ minHeight: "100vh", background: "#07090F" }}>
+      <head>
+        {/* iOS PWA */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="NEXUS" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+        {/* Android PWA */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#07090F" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        {/* Service Worker */}
+        <script dangerouslySetInnerHTML={{__html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+              navigator.serviceWorker.register('/sw.js');
+            });
+          }
+        `}} />
+      </head>
+      <body style={{ minHeight: "100vh", background: "#07090F", margin: 0 }}>
         {children}
       </body>
     </html>
