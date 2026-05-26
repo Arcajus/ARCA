@@ -18,6 +18,40 @@ const LIGHT = {
 };
 type Theme = typeof DARK;
 
+// ── ELEVENLABS + SPEECH ──────────────────────────────────────
+let _elAudio: HTMLAudioElement | null = null;
+async function speakEL(text: string, gender: "M"|"F", key: string): Promise<void> {
+  const voiceId = gender === "F" ? "EXAVITQu4vr4xnSDxMaL" : "ErXwobaYiN019PkySvjV";
+  try {
+    if (_elAudio) { _elAudio.pause(); _elAudio = null; }
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: "POST",
+      headers: { "Accept": "audio/mpeg", "Content-Type": "application/json", "xi-api-key": key },
+      body: JSON.stringify({ text: text.slice(0, 4000), model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.3, use_speaker_boost: true } })
+    });
+    if (!res.ok) throw new Error(`EL ${res.status}`);
+    const blob = await res.blob();
+    _elAudio = new Audio(URL.createObjectURL(blob));
+    await _elAudio.play();
+  } catch { speakWeb(text, gender); }
+}
+function speakWeb(text: string, gender: "M"|"F") {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "fr-FR"; u.rate = 1.05; u.pitch = gender === "F" ? 1.15 : 0.88;
+  const go = () => { const v = window.speechSynthesis.getVoices().find(x => x.lang.startsWith("fr")); if (v) u.voice = v; window.speechSynthesis.speak(u); };
+  if (window.speechSynthesis.getVoices().length > 0) go(); else window.speechSynthesis.onvoiceschanged = go;
+}
+function speakAny(text: string, gender: "M"|"F" = "F") {
+  const k = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
+  if (k) speakEL(text, gender, k); else speakWeb(text, gender);
+}
+function stopSpeech() {
+  if (_elAudio) { _elAudio.pause(); _elAudio = null; }
+  if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+
 // ── ICONS ────────────────────────────────────────────────────
 function Ic({n,s=22,c="currentColor",w=1.6}:{n:string;s?:number;c?:string;w?:number}) {
   const st={width:s,height:s,display:"block" as const,flexShrink:0};
@@ -121,12 +155,16 @@ const JOBS = [
   {title:"Conseiller juridique international",co:"Cabinet Gide Loyrette Nouel",tags:["Paris","Droit int."]},
 ];
 const NEWS = [
-  {id:1,type:"article",tag:"GÉOPOLITIQUE",tagC:"#E03535",time:"8 min",title:"Sommet G7 : accord fragile sur les sanctions russo-chinoises",hot:true,img:true,likes:342,comments:87,src:"NEXUS World",verified:false},
-  {id:2,type:"video",tag:"DIPLOMATIE",tagC:"#2B78F5",time:"22 min",title:"Macron à Washington : conférence de presse — décryptage en direct",hot:false,img:false,likes:891,comments:203,dur:"14:32",src:"NEXUS Live",verified:false},
-  {id:3,type:"event",tag:"ÉVÉNEMENT",tagC:"#16A34A",time:"1h",title:"Forum Méditerranée & Diplomatie · 24 mai · Marseille",hot:false,img:false,likes:56,comments:12,src:"NEXUS Agenda",verified:false},
-  {id:4,type:"post",tag:"ANALYSE",tagC:"#D97706",time:"2h",title:"La réforme du droit de veto : une nécessité démocratique ?",hot:false,img:false,likes:445,comments:156,src:"Mehdi Kara · Politologue",verified:true},
-  {id:5,type:"video",tag:"ÉLECTIONS",tagC:"#E03535",time:"3h",title:"Débat présidentiel virtuel NEXUS — simulation complète 4 candidats IA",hot:false,img:false,likes:1240,comments:387,dur:"48:10",src:"NEXUS Débats",verified:false},
-  {id:6,type:"article",tag:"HISTOIRE",tagC:"#7C3AED",time:"4h",title:"Esclavage et mémoire : les rébellions oubliées qui ont changé le monde",hot:false,img:true,likes:328,comments:74,src:"NEXUS Culture",verified:false},
+  {id:0,type:"article",tag:"ACTUALITÉ",tagC:"#E03535",time:"30min",title:"Frais de scolarité différenciés : les universités françaises face à la polémique pour les étudiants hors UE",hot:true,imgUrl:"https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=700&q=80",likes:1542,comments:387,src:"NEXUS Actu",verified:false},
+  {id:1,type:"article",tag:"POLITIQUE",tagC:"#7C3AED",time:"1h",title:"Gabriel Attal officialise sa candidature : la nouvelle génération à l'assaut des législatives",hot:true,imgUrl:"https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=700&q=80",likes:923,comments:345,src:"NEXUS Politique",verified:false},
+  {id:2,type:"article",tag:"GÉOPOLITIQUE",tagC:"#E03535",time:"2h",title:"Sommet G7 : accord fragile sur les nouvelles sanctions russo-chinoises en mer de Chine",hot:false,imgUrl:"https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=700&q=80",likes:342,comments:87,src:"NEXUS World",verified:false},
+  {id:3,type:"video",tag:"DIPLOMATIE",tagC:"#2B78F5",time:"3h",title:"Macron à Washington : conférence de presse bilatérale — décryptage complet",hot:false,imgUrl:"https://images.unsplash.com/photo-1569950044272-e4ef57e0e29b?w=700&q=80",likes:891,comments:203,dur:"14:32",src:"NEXUS Live",verified:false},
+  {id:4,type:"article",tag:"IMMIGRATION",tagC:"#16A34A",time:"4h",title:"Projet de loi immigration 2026 : le Sénat vote, les associations s'insurgent",hot:false,imgUrl:"https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=700&q=80",likes:445,comments:156,src:"NEXUS France",verified:false},
+  {id:5,type:"video",tag:"GUERRE",tagC:"#DC2626",time:"5h",title:"Conflit Moyen-Orient : les civils de Gaza face à la nouvelle offensive — témoignages",hot:false,imgUrl:"https://images.unsplash.com/photo-1582481725274-d63bdf929a90?w=700&q=80",likes:1102,comments:428,dur:"8:45",src:"NEXUS War",verified:false},
+  {id:6,type:"event",tag:"ÉVÉNEMENT",tagC:"#16A34A",time:"6h",title:"Forum Méditerranée & Diplomatie · 24 mai · Marseille — inscriptions ouvertes",hot:false,imgUrl:null,likes:56,comments:12,src:"NEXUS Agenda",verified:false},
+  {id:7,type:"post",tag:"ANALYSE",tagC:"#D97706",time:"8h",title:"La réforme du droit de veto : une nécessité démocratique pour le XXIe siècle ?",hot:false,imgUrl:null,likes:445,comments:156,src:"Mehdi Kara · Politologue",verified:true},
+  {id:8,type:"video",tag:"ÉLECTIONS",tagC:"#E03535",time:"10h",title:"Débat présidentiel virtuel NEXUS — simulation complète 4 candidats IA",hot:false,imgUrl:"https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=700&q=80",likes:1240,comments:387,dur:"48:10",src:"NEXUS Débats",verified:false},
+  {id:9,type:"article",tag:"HISTOIRE",tagC:"#7C3AED",time:"12h",title:"Esclavage et mémoire : les rébellions oubliées qui ont changé le monde",hot:false,imgUrl:"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=700&q=80",likes:328,comments:74,src:"NEXUS Culture",verified:false},
 ];
 const EVENTS_DATA = [
   {id:1,date:"24",month:"MAI",day:"Sam",title:"Forum Méditerranée & Diplomatie",loc:"Palais du Pharo, Marseille",type:"Conférence",dist:"2,3 km",attendees:284},
@@ -226,24 +264,7 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
   const chatRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 
-  const speakJournalist = (text: string, gender: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "fr-FR";
-    u.rate = 1.05;
-    u.pitch = gender === "F" ? 1.15 : 0.88;
-    const setVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      const fr = voices.find(v => v.lang.startsWith("fr") && (gender === "F" ? /fem|woman|female|Amelie|Thomas/i.test(v.name) === false : true))
-        || voices.find(v => v.lang.startsWith("fr"))
-        || voices.find(v => v.lang.startsWith("fr-"));
-      if (fr) u.voice = fr;
-      window.speechSynthesis.speak(u);
-    };
-    if (window.speechSynthesis.getVoices().length > 0) setVoice();
-    else { window.speechSynthesis.onvoiceschanged = setVoice; }
-  };
+  const speakJournalist = (text: string, gender: string) => speakAny(text, (gender||"F") as "M"|"F");
 
   const addLine = (role:string,name:string,text:string) => {
     setTranscript(t=>[...t,{role,name,text,time:new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}]);
@@ -291,7 +312,7 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
       const hist = transcript.map(m=>({role:m.role==="user"?"user":"assistant",content:m.text}));
       const res = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":"","anthropic-version":"2023-06-01"},
+        headers:{"Content-Type":"application/json","x-api-key":typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"","anthropic-version":"2023-06-01"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,system:`Tu es ${j?.name||"Élise Moreau"}, journaliste TV NEXUS. Débat sur : "${topic}". ${level?`Niveau adversaire : ${level.label}.`:""} Style oral, 2-3 phrases max, incisif. "Je vous coupe" si vague. Français soutenu.`,messages:[...hist,{role:"user",content:text}]})
       });
       const data = await res.json();
@@ -619,18 +640,12 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
                 </div>
               </div>
             </div>
-            {n.img&&(
-              <div style={{height:140,background:`linear-gradient(135deg,${T.blueG2},${T.blueG})`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-                <Ic n="globe" s={40} c={T.blueB}/>
-                {n.type==="video"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:44,height:44,borderRadius:"50%",background:`${T.blueB}cc`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="play" s={18} c="#fff"/></div></div>}
-              </div>
-            )}
-            {n.type==="video"&&!n.img&&(
-              <div style={{height:100,background:`linear-gradient(135deg,${T.bg2},${T.card})`,display:"flex",alignItems:"center",justifyContent:"center",borderTop:`1px solid ${T.b1}`,borderBottom:`1px solid ${T.b1}`}}>
-                <div style={{display:"flex",alignItems:"center",gap:14}}>
-                  <div style={{width:44,height:44,borderRadius:"50%",background:`${T.blueB}cc`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="play" s={18} c="#fff"/></div>
-                  <div><p style={{color:T.text,fontSize:13,fontWeight:600}}>Vidéo</p><p style={{color:T.muted,fontSize:11}}>{n.dur||"Voir"}</p></div>
-                </div>
+            {n.imgUrl&&(
+              <div style={{height:180,overflow:"hidden",position:"relative"}}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={n.imgUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).parentElement!.style.display="none"}}/>
+                {n.type==="video"&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.35)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:50,height:50,borderRadius:"50%",background:`${T.blueB}cc`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="play" s={20} c="#fff"/></div></div>}
+                {n.type==="video"&&(n as {dur?:string}).dur&&<div style={{position:"absolute",bottom:8,right:10,background:"rgba(0,0,0,.75)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 7px",borderRadius:4}}>{(n as {dur?:string}).dur}</div>}
               </div>
             )}
             <div style={{padding:"10px 14px"}}>
@@ -826,6 +841,134 @@ function SimulationHub({T}:{T:Theme}) {
   );
 }
 
+// ── API KEY SETTINGS ──────────────────────────────────────────
+function ApiKeySettings({T}:{T:Theme}) {
+  const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"");
+  const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
+  const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
+  return(
+    <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Clé Claude API (IA)</p>
+        <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("claude_key",e.target.value);}} placeholder="sk-ant-api03-…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        <p style={{color:T.muted,fontSize:11,marginTop:5}}>console.anthropic.com → API Keys · Nécessaire pour les simulations IA</p>
+      </div>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Clé ElevenLabs (voix réalistes)</p>
+        <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_xxxxxxxxxxxxxxxx" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        <p style={{color:T.muted,fontSize:11,marginTop:5}}>elevenlabs.io → Profile → API Keys · Gratuit : 10 000 chars/mois</p>
+      </div>
+    </div>
+  );
+}
+
+// ── GENERIC SIMULATION SCREEN ─────────────────────────────────
+function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,onBack}:{title:string;emoji:string;color:string;systemPrompt:string;welcome:string;voiceGender:"M"|"F";T:Theme;onBack:()=>void}) {
+  const [msgs,setMsgs] = useState<{role:"user"|"ai";text:string}[]>([]);
+  const [input,setInput] = useState("");
+  const [loading,setLoading] = useState(false);
+  const [audioOn,setAudioOn] = useState(false);
+  const [listening,setListening] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recRef = useRef<any>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  useEffect(()=>{
+    const w = {role:"ai" as const, text:welcome};
+    setMsgs([w]);
+    setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),200);
+  },[]);// eslint-disable-line
+
+  const send = async(text:string)=>{
+    if(!text.trim()||loading)return;
+    setInput("");
+    const userMsg={role:"user" as const,text};
+    const newMsgs = [...msgs,userMsg];
+    setMsgs(newMsgs);
+    setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
+    setLoading(true);
+    try{
+      const hist = newMsgs.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:m.text}));
+      const key = typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"";
+      const res = await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:350,system:systemPrompt,messages:hist})
+      });
+      const data = await res.json();
+      const reply=(data.content as {text:string}[])?.map(c=>c.text).join("")||"Je n'ai pas pu traiter votre réponse. Continuez.";
+      const aiMsg={role:"ai" as const,text:reply};
+      setMsgs(m=>[...m,aiMsg]);
+      setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
+      if(audioOn) speakAny(reply,voiceGender);
+    }catch{
+      const fb="Veuillez configurer votre clé Claude API dans les Réglages du profil.";
+      setMsgs(m=>[...m,{role:"ai",text:fb}]);
+    }
+    setLoading(false);
+  };
+
+  const toggleMic=()=>{
+    if(listening){recRef.current?.stop();setListening(false);return;}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w=window as any;
+    const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
+    if(!SR){alert("Utilisez Chrome pour la reconnaissance vocale.");return;}
+    const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult=(e:any)=>{send(e.results[0][0].transcript);setListening(false);};
+    rec.onend=()=>setListening(false);
+    rec.start();recRef.current=rec;setListening(true);
+  };
+
+  const toggleAudio=()=>{
+    const next=!audioOn;
+    setAudioOn(next);
+    if(!next) stopSpeech();
+  };
+
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
+      <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,display:"flex",alignItems:"center",gap:10,background:T.surf,flexShrink:0}}>
+        <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.textD}/></button>
+        <span style={{fontSize:22}}>{emoji}</span>
+        <p style={{color:T.text,fontWeight:800,fontSize:15,flex:1}}>{title}</p>
+        <button onClick={toggleAudio} style={{background:audioOn?`${color}15`:"transparent",border:`1px solid ${audioOn?color:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+          <Ic n="mic" s={14} c={audioOn?color:T.textD}/>
+          <span style={{color:audioOn?color:T.textD,fontSize:11,fontWeight:700}}>{audioOn?"AUDIO":"TEXTE"}</span>
+        </button>
+      </div>
+      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
+        {msgs.map((m,i)=>(
+          <div key={i} style={{display:"flex",flexDirection:m.role==="user"?"row-reverse":"row",gap:10,alignItems:"flex-start"}}>
+            <div style={{width:34,height:34,borderRadius:"50%",background:m.role==="user"?T.blueG:`${color}15`,border:`1.5px solid ${m.role==="user"?T.blueB:color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{m.role==="user"?"A":emoji}</div>
+            <div style={{maxWidth:"80%",background:m.role==="user"?T.blueG:T.card,border:`1px solid ${m.role==="user"?`${T.blueB}40`:T.b1}`,borderRadius:14,padding:"10px 13px"}}>
+              <p style={{color:T.text,fontSize:13,lineHeight:1.6}}>{m.text}</p>
+            </div>
+          </div>
+        ))}
+        {loading&&(
+          <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+            <div style={{width:34,height:34,borderRadius:"50%",background:`${color}15`,border:`1.5px solid ${color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{emoji}</div>
+            <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:"12px 16px"}}>
+              <div style={{display:"flex",gap:5,alignItems:"center"}}>{[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:color,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div>
+            </div>
+          </div>
+        )}
+      </div>
+      <div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:8,alignItems:"center"}}>
+        <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+          <Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/>
+        </button>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send(input)} placeholder="Votre réponse…" style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
+        <button onClick={()=>send(input)} disabled={!input.trim()||loading} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!loading?color:T.b1,display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0,transition:"background .2s"}}>
+          <Ic n="send" s={18} c={input.trim()&&!loading?"#fff":T.muted}/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── SIMULATION SCREEN ─────────────────────────────────────────
 function SimulationScreen({T}:{T:Theme}) {
   const [mode,setMode] = useState<"home"|"un"|"trial"|"interview"|"elections"|"soutenance"|"examen"|"pitch"|"secu"|"prise"|"tutorat">("home");
@@ -838,20 +981,35 @@ function SimulationScreen({T}:{T:Theme}) {
   const [voted,setVoted] = useState<string|null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
+  const [unLoading,setUnLoading] = useState(false);
+  const [unAudio,setUnAudio] = useState(false);
+
   const sendUNMessage = async()=>{
-    if(!unInput.trim()||!unRole)return;
+    if(!unInput.trim()||!unRole||unLoading)return;
     const text=unInput;setUnInput("");
     const newMsg={role:"user",flag:unRole.flag,country:unRole.country,text};
-    setUnMessages(m=>[...m,newMsg]);
+    const allMsgs=[...unMessages,newMsg];
+    setUnMessages(allMsgs);
     setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
+    setUnLoading(true);
     try{
       const otherDels=UN_DEL.filter(d=>d.id!==unRole.id);
       const responding=otherDels[Math.floor(Math.random()*otherDels.length)];
-      await new Promise(r=>setTimeout(r,1200));
-      const resp={role:"ai",flag:responding.flag,country:responding.country,text:`${responding.flag} La délégation de ${responding.country} souhaite rappeler sa position : ${responding.doctrine.slice(0,80)}… Nous nous opposons fermement à cette résolution.`};
+      const hist=allMsgs.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:`[${m.country}] ${m.text}`}));
+      const key=typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"";
+      let replyText="";
+      if(key){
+        const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,system:`Tu es le délégué de ${responding.country} au Conseil de Sécurité ONU. Doctrine : ${responding.doctrine}. Sujet débattu : "${unTopic}". Réponds en 2-3 phrases orales, fermes et diplomatiques, en défendant ta position nationale. Commence par "${responding.flag} ${responding.country} :"`,messages:hist})});
+        const d=await res.json();
+        replyText=(d.content as {text:string}[])?.map(c=>c.text).join("")||"";
+      }
+      if(!replyText) replyText=`${responding.flag} ${responding.country} : La délégation de ${responding.country} rappelle sa doctrine — ${responding.doctrine.slice(0,90)}. Nous demandons un vote.`;
+      const resp={role:"ai",flag:responding.flag,country:responding.country,text:replyText};
       setUnMessages(m=>[...m,resp]);
       setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
-    }catch{}
+      if(unAudio) speakAny(replyText.replace(/^[🌍🇫🇷🇺🇸🇷🇺🇨🇳🇬🇧\s]+/,""),"M");
+    }catch{ const fb={role:"ai",flag:"🌐",country:"Présidence",text:"La session est suspendue temporairement. Vérifiez votre connexion."}; setUnMessages(m=>[...m,fb]); }
+    setUnLoading(false);
   };
 
   if(mode==="un"&&unRole&&unTopic){
@@ -859,12 +1017,15 @@ function SimulationScreen({T}:{T:Theme}) {
       <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
         <div style={{padding:"10px 16px",background:T.surf,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <button onClick={()=>{setMode("home");setUnMessages([]);setUnRole(null);setUnTopic("");}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={20} c={T.textD}/></button>
+            <button onClick={()=>{setMode("home");setUnMessages([]);setUnRole(null);setUnTopic("");stopSpeech();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={20} c={T.textD}/></button>
             <span style={{fontSize:24}}>🌐</span>
             <div style={{flex:1}}>
               <p style={{color:T.text,fontSize:13,fontWeight:700}}>Conseil de Sécurité ONU</p>
               <p style={{color:T.textD,fontSize:11}}>{unTopic.slice(0,42)}…</p>
             </div>
+            <button onClick={()=>{const n=!unAudio;setUnAudio(n);if(!n)stopSpeech();}} style={{background:unAudio?T.blueG:"transparent",border:`1px solid ${unAudio?T.blueB:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+              <Ic n="mic" s={14} c={unAudio?T.blueB:T.textD}/><span style={{color:unAudio?T.blueB:T.textD,fontSize:10,fontWeight:700}}>{unAudio?"AUDIO":"TEXTE"}</span>
+            </button>
           </div>
           <div style={{marginTop:8,display:"flex",gap:4,flexWrap:"wrap"}}>
             {UN_DEL.map(d=><span key={d.id} style={{fontSize:16,opacity:d.id===unRole.id?1:0.45}}>{d.flag}</span>)}
@@ -886,13 +1047,63 @@ function SimulationScreen({T}:{T:Theme}) {
               </div>
             </div>
           ))}
+          {unLoading&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{width:34,height:34,borderRadius:"50%",background:T.card,border:`1.5px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>🌐</div><div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 16px"}}><div style={{display:"flex",gap:5}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:T.blueB,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div></div></div>}
         </div>
         <div style={{padding:"12px 16px 24px",borderTop:`1px solid ${T.b1}`,display:"flex",gap:8,flexShrink:0}}>
           <input value={unInput} onChange={e=>setUnInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendUNMessage()} placeholder={`Parole de ${unRole.country}…`} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
-          <button onClick={sendUNMessage} style={{width:44,height:44,borderRadius:10,background:T.blueB,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={16} c="#fff"/></button>
+          <button onClick={sendUNMessage} disabled={unLoading} style={{width:44,height:44,borderRadius:10,background:unLoading?T.b1:T.blueB,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:unLoading?"not-allowed":"pointer",flexShrink:0}}><Ic n="send" s={16} c={unLoading?T.muted:"#fff"}/></button>
         </div>
       </div>
     );
+  }
+
+  // Generic sim screens using GenericSimScreen
+  const SIM_CONFIGS: Record<string, {title:string;emoji:string;color:string;systemPrompt:string;welcome:string;voiceGender:"M"|"F"}> = {
+    trial: {
+      title:trialRole==="defense"?"Avocat de la défense":"Procureur",
+      emoji:"⚖️",color:T.purple,voiceGender:"M",
+      systemPrompt:`Tu es le juge dans un procès fictif portant sur : "${trialTopic}". L'utilisateur joue le rôle de ${trialRole==="defense"?"l'avocat de la défense":"le procureur"}. Pose des questions incisives, valide ou conteste les arguments juridiques, convoque des témoins, rends des objections. Style solennel, précis. 2-4 phrases max par intervention.`,
+      welcome:`⚖️ L'audience est ouverte. Affaire : "${trialTopic}". ${trialRole==="defense"?"Maître, prenez la parole pour votre client.":"Monsieur le Procureur, exposez les chefs d'accusation."}`
+    },
+    interview: {
+      title:"Entretien RH",emoji:"💼",color:T.green,voiceGender:"F",
+      systemPrompt:"Tu es un DRH expérimenté en entretien d'embauche. Pose des questions de recrutement réalistes : motivation, compétences, mise en situation, questions comportementales. Sois professionnel mais exigeant. Évalue les réponses et donne des feedbacks constructifs. 2-3 phrases par réplique.",
+      welcome:"Bonjour, merci de vous présenter. Pouvez-vous commencer par vous présenter et m'expliquer pourquoi ce poste vous intéresse ?"
+    },
+    soutenance: {
+      title:"Soutenance orale",emoji:"🎓",color:"#D97706",voiceGender:"M",
+      systemPrompt:"Tu es un jury universitaire lors d'une soutenance orale de thèse ou projet. Pose des questions techniques et conceptuelles pointues, challenge les hypothèses, demande des clarifications méthodologiques. Sois académique et rigoureux. 2-3 phrases par intervention.",
+      welcome:"La soutenance est ouverte. Veuillez commencer par présenter votre problématique centrale et la méthodologie adoptée."
+    },
+    examen: {
+      title:"Examen oral",emoji:"📝",color:"#E03535",voiceGender:"F",
+      systemPrompt:"Tu es un professeur lors d'un examen oral. Pose des questions sur n'importe quelle matière selon le contexte, évalue les connaissances, demande des exemples et des développements. Sois pédagogue mais exigeant. Note mentalement les réponses. 2-3 phrases.",
+      welcome:"Bonjour, installez-vous. Nous allons commencer. Quel sujet ou matière souhaitez-vous aborder pour cet examen oral ?"
+    },
+    pitch: {
+      title:"Pitch commercial",emoji:"💡",color:"#16A34A",voiceGender:"M",
+      systemPrompt:"Tu es un investisseur ou acheteur lors d'un pitch commercial. Pose des questions sur le marché, la scalabilité, la concurrence, le modèle financier. Sois sceptique mais ouvert. Challenge chaque affirmation. 2-3 phrases par réplique.",
+      welcome:"Bonjour, vous avez 5 minutes. Présentez votre projet : c'est quoi, pour qui, et quel est le problème que vous résolvez ?"
+    },
+    secu: {
+      title:"Ingénierie sociale",emoji:"🛡️",color:"#7C3AED",voiceGender:"M",
+      systemPrompt:"Tu es un formateur en cybersécurité qui simule des scénarios d'ingénierie sociale (phishing, vishing, manipulation psychologique) dans un cadre éducatif. Guide l'utilisateur à identifier les tentatives de manipulation, reconnaître les signaux d'alerte, et apprendre à répondre. But : éducatif et défensif uniquement.",
+      welcome:"Simulation de cybersécurité humaine activée. Votre mission : reconnaître et déjouer les tentatives de manipulation. Êtes-vous prêt ? Je vais simuler un scénario de phishing téléphonique — restez en alerte."
+    },
+    prise: {
+      title:"Prise de parole publique",emoji:"🎤",color:T.blueB,voiceGender:"F",
+      systemPrompt:"Tu es un coach en éloquence et prise de parole publique. L'utilisateur prépare un discours. Donne des conseils sur la structure, l'impact, la clarté, la gestion du stress, l'accroche. Évalue les extraits présentés. Sois encourageant et constructif. 2-3 phrases.",
+      welcome:"Bienvenue dans votre session de coaching. Quel est le contexte de votre prise de parole ? (discours, conférence, TEDx, meeting…) et quel est votre message principal ?"
+    },
+    tutorat: {
+      title:"Cours magistral",emoji:"📚",color:"#D97706",voiceGender:"M",
+      systemPrompt:"Tu es un professeur expert qui donne un cours magistral interactif. L'utilisateur peut choisir n'importe quel sujet. Explique de façon claire et structurée, utilise des analogies, des exemples concrets, pose des questions de compréhension. Style pédagogique et engageant.",
+      welcome:"Bienvenue dans votre cours personnalisé. Sur quel sujet souhaitez-vous que je vous enseigne aujourd'hui ? (histoire, philosophie, sciences, droit, économie, géopolitique…)"
+    },
+  };
+  if(mode in SIM_CONFIGS && mode!=="elections" && !(mode==="trial"&&(!trialRole||!trialTopic)) && !(mode==="un"&&(!unRole||!unTopic))){
+    const cfg=SIM_CONFIGS[mode];
+    return <GenericSimScreen key={mode} title={cfg.title} emoji={cfg.emoji} color={cfg.color} systemPrompt={cfg.systemPrompt} welcome={cfg.welcome} voiceGender={cfg.voiceGender} T={T} onBack={()=>setMode("home")}/>;
   }
 
   if(mode==="elections"){
@@ -1005,7 +1216,7 @@ function SimulationScreen({T}:{T:Theme}) {
               <button key={t} onClick={()=>setTrialTopic(t)} style={{padding:"10px 12px",borderRadius:10,border:`1.5px solid ${trialTopic===t?T.purple:T.b1}`,background:trialTopic===t?`${T.purple}10`:T.bg2,cursor:"pointer",textAlign:"left",color:trialTopic===t?T.purple:T.text,fontSize:13,fontFamily:"inherit",fontWeight:trialTopic===t?700:400}}>{t}</button>
             ))}
           </div>
-          <button style={{padding:14,borderRadius:12,border:"none",background:trialRole&&trialTopic?T.purple:T.b1,color:trialRole&&trialTopic?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Ouvrir l&apos;audience</button>
+          <button onClick={()=>{if(trialRole&&trialTopic)setMode("trial");}} style={{padding:14,borderRadius:12,border:"none",background:trialRole&&trialTopic?T.purple:T.b1,color:trialRole&&trialTopic?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:trialRole&&trialTopic?"pointer":"not-allowed",fontFamily:"inherit"}}>Ouvrir l&apos;audience</button>
         </div>
       )}
       {/* Interview setup */}
@@ -1020,12 +1231,34 @@ function SimulationScreen({T}:{T:Theme}) {
                 <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
                   {j.tags.map(tag=><Tag key={tag} label={tag} color={T.blueB} small/>)}
                 </div>
-                <button style={{width:"100%",marginTop:10,padding:"8px",borderRadius:8,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>S&apos;entraîner pour ce poste</button>
+                <button onClick={()=>setMode("interview")} style={{width:"100%",marginTop:10,padding:"8px",borderRadius:8,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>S&apos;entraîner pour ce poste</button>
               </div>
             ))}
           </div>
         </div>
       )}
+      {/* One-click start for other sims */}
+      {(["soutenance","examen","pitch","secu","prise","tutorat"] as const).map(s=>{
+        if(mode!==s)return null;
+        const info:{[k:string]:{emoji:string;color:string;desc:string}} = {
+          soutenance:{emoji:"🎓",color:"#D97706",desc:"Le jury vous écoute. Présentez votre sujet et défendez vos choix."},
+          examen:{emoji:"📝",color:"#E03535",desc:"L'examinateur est prêt. Choisissez votre matière et commencez."},
+          pitch:{emoji:"💡",color:"#16A34A",desc:"L'investisseur vous écoute. Présentez votre projet en 5 minutes."},
+          secu:{emoji:"🛡️",color:"#7C3AED",desc:"Session de sensibilisation à l'ingénierie sociale. Cadre éducatif uniquement."},
+          prise:{emoji:"🎤",color:T.blueB,desc:"Coaching prise de parole. Présentez votre discours pour l'analyser."},
+          tutorat:{emoji:"📚",color:"#D97706",desc:"Cours magistral personnalisé. Choisissez n'importe quel sujet."},
+        };
+        const cfg=info[s];
+        return(
+          <div key={s} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:28}}>{cfg.emoji}</span>
+              <p style={{color:T.text,fontWeight:700,fontSize:14}}>{cfg.desc}</p>
+            </div>
+            <button onClick={()=>setMode(s)} style={{padding:13,borderRadius:12,border:"none",background:cfg.color,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Démarrer la simulation</button>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1066,7 +1299,8 @@ function ProfileScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
             </div>
           ))}
         </div>
-        <button onClick={onPremium} style={{width:"100%",marginTop:16,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <ApiKeySettings T={T}/>
+        <button onClick={onPremium} style={{width:"100%",marginTop:12,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
           <Ic n="zap" s={16} c={T.amber}/>Passer à NEXUS+ — 5,99€/mois
         </button>
       </div>
@@ -1200,14 +1434,21 @@ export default function NexusApp() {
             <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
               <circle cx="50" cy="50" r="50" fill="#000"/>
               <defs>
-                <linearGradient id="nlogograd" x1="30" y1="24" x2="70" y2="76" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#FFFFFF"/>
-                  <stop offset="25%" stopColor="#F0F4FF"/>
-                  <stop offset="55%" stopColor="#7A8BA8"/>
-                  <stop offset="100%" stopColor="#151A25"/>
+                <linearGradient id="nlg" x1="30" y1="50" x2="70" y2="50" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%"   stopColor="#FFFFFF"/>
+                  <stop offset="28%"  stopColor="#FFFFFF"/>
+                  <stop offset="72%"  stopColor="#080C14"/>
+                  <stop offset="100%" stopColor="#080C14"/>
                 </linearGradient>
               </defs>
-              <path d="M30,24 L30,76 L40,76 L40,46 L60,76 L70,76 L70,24 L60,24 L60,54 L40,24 Z" fill="url(#nlogograd)"/>
+              {/* left bar — white */}
+              <rect x="29" y="23" width="13" height="54" fill="#FFFFFF"/>
+              {/* right bar — dark */}
+              <rect x="58" y="23" width="13" height="54" fill="#080C14"/>
+              {/* diagonal — gradient */}
+              <polygon points="42,23 58,23 58,52 42,48" fill="url(#nlg)"/>
+              {/* lower diagonal */}
+              <polygon points="42,52 58,48 58,77 42,77" fill="url(#nlg)"/>
             </svg>
             <span style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text,letterSpacing:0.5}}>NEXUS</span>
           </div>
