@@ -351,7 +351,16 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
   const publicSide = config.publicSide as typeof PUBLICS[0];
   const isDuel = (config.subMode as string) === "duel-ia";
   const [opponent] = useState(()=>{
-    const opts=[{name:"Alexandre Martin",init:"AM",gender:"M" as const,role:"économiste politique"},{name:"Sophie Leclerc",init:"SL",gender:"F" as const,role:"politologue"},{name:"Pierre Dubois",init:"PD",gender:"M" as const,role:"juriste international"}];
+    const opts=[
+      {name:"Alexandre Martin",init:"AM",gender:"M" as const,role:"économiste, ex-conseiller Élysée",
+       style:`Libéral pragmatique. Ton posé, data-driven comme Macron. Formules types : "En même temps...", "Les chiffres sont clairs...", "On ne peut pas à la fois...". Sources : BCE, OCDE, FMI, BPI. Défend la réforme par l'intérieur, jamais la rupture. Reconnaît les problèmes mais propose des compromis graduels.`},
+      {name:"Sophie Leclerc",init:"SL",gender:"F" as const,role:"essayiste, militante gauche populaire",
+       style:`Gauche populiste façon Mélenchon. Passion, indignation morale, références historiques (Jaurès, Hugo, Résistance). Formules types : "Le peuple sait ce que les élites refusent de voir...", "Ce n'est pas une question technique, c'est une question de dignité". Sources : Piketty, INSEE inégalités, rapports OXFAM. Toujours ramène au vécu des classes populaires.`},
+      {name:"Pierre Dubois",init:"PD",gender:"M" as const,role:"juriste constitutionnel, ex-député",
+       style:`Souverainiste pragmatique. Calme, chirurgical, références juridiques et historiques. Formules types : "La Constitution est pourtant claire...", "Regardons ce qui s'est passé dans les faits...". Sources : rapports Sénat, Cour des comptes, traités UE. Défend la nation, l'identité républicaine, la sécurité des frontières.`},
+      {name:"Fatou Diallo",init:"FD",gender:"F" as const,role:"chercheuse CNRS, militante climatique",
+       style:`Radicale climato-réaliste. Urgence, chiffres GIEC, bifurcation systémique. Formules types : "On a exactement X années avant le point de basculement...", "Ce débat n'a de sens que si on intègre le contexte climatique". Sources : GIEC AR6, IEA, Lancet Countdown. Lie chaque sujet aux enjeux écologiques.`}
+    ];
     return opts[Math.floor(Math.random()*opts.length)];
   });
 
@@ -448,40 +457,88 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
       const rawHist=transcript.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
       const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
       const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):[];
-      const sysPrompt=`Tu es ${j?.name||"Élise Moreau"}, journaliste politique senior à NEXUS. Sujet : "${topic}". Niveau : ${level?.label||"intermédiaire"}.
-RÔLE : Débat télévisé, pas interview. Tu pousses, tu confrontes, tu ne lâches pas.
-STYLE SELON NIVEAU : Débutant→pédagogique ; Intermédiaire→stats réelles ; Expert/Elite→failles logiques, rapports précis.
-RÈGLES : 1) Cite les MOTS EXACTS de l'invité et rebondis. 2) Vraies données (Ipsos/BVA/INSEE). 3) UN seul angle nouveau par réponse. 4) Vague→"Je vous coupe — [question précise]". 5) JAMAIS la même formule. 6) 2-3 phrases max, rythme TV.`;
+      const exchangeN=Math.ceil(transcript.filter(m=>m.role==="user").length/1)+1;
+      const angles=["personnel/expérience directe","économique (emplois, PIB, budgets, dette)","social (inégalités, pauvreté, santé, éducation)","institutionnel (lois, Constitution, pouvoirs)","international (UE, USA, Afrique, pays émergents)","éthique/valeurs (justice, liberté, dignité)","historique (précédents, leçons du passé)"];
+      const angleActuel=angles[(exchangeN-1)%angles.length];
+      const recentCtx=transcript.slice(-4).map(m=>`[${m.name}]: ${m.text.slice(0,120)}`).join("\n");
+      const tier=level?.tier||3;
+
+      const sysPrompt=`Tu es ${j?.name||"Élise Moreau"}, ${j?.role||"grand reporter"} spécialisé en ${j?.spec||"politique"}. Tu présentes le Grand Débat du soir sur NEXUS TV. Sujet : "${topic}".
+
+PROFIL JOURNALISTE RÉEL — tu t'inspires de ces styles :
+• Jean-Pierre Elkabbach : "Permettez, je vous coupe. Vous n'avez pas répondu à ma question." Insistance méthodique, jamais agressif mais implacable.
+• Léa Salamé : Empathie + "Mais concrètement, qu'est-ce que ça change pour Monsieur Tout-le-monde ?" Humanise les données froides.
+• Ruth Elkrief : "Vous avez dit exactement le contraire en [date]. Pourquoi ce changement ?" Fact-check en direct.
+• David Pujadas : Structuration rigoureuse, synthèse des contradictions, "Donc si je comprends bien votre position…"
+
+HISTORIQUE RÉCENT (angles DÉJÀ traités — NE PAS répéter) :
+${recentCtx||"Aucun échange encore."}
+
+ANGLE OBLIGATOIRE pour cette réponse (n°${exchangeN}) : ${angleActuel}
+— Construis ta question/réaction autour de cet angle précis. Si l'invité t'a donné une ouverture dessus, exploite-la.
+
+NIVEAU DE L'INVITÉ : ${level?.label||"Intermédiaire"} (tier ${tier}/5)
+${tier<=2?"→ Questions ouvertes, bienveillantes, définitions, contexte explicatif.":tier===3?"→ Contradictions avec statistiques réelles, comparaisons internationales, reformulations pièges.":"→ Attaque les failles logiques, cite des sources primaires (rapports officiels, études), paradoxes profonds, questions rhétoriques de haut niveau."}
+
+TECHNIQUES OBLIGATOIRES — utilise-en UNE DIFFÉRENTE à chaque réponse :
+① CITATION-PIÈGE : "Vous venez de dire '${text.split(" ").slice(0,6).join(" ")}…' — mais [donnée qui contredit]."
+② TÉMOIN CITOYEN : "Karim, 34 ans, ouvrier à Metz, nous a écrit : [question très concrète et personnelle liée à l'angle]."
+③ CHIFFRE-CHOC : "[Stat précise et surprenante] — est-ce que ça modifie votre position ?"
+④ COMPARAISON INTERNATIONALE : "En Allemagne/Suède/Corée du Sud, ils ont fait l'opposé — résultat : [fait concret]. Pourquoi la France serait différente ?"
+⑤ RETOURNEMENT : "Mais votre argument se retourne contre vous : si [prémisse], alors logiquement [conclusion inverse]. Comment sortez-vous de ça ?"
+⑥ MONTÉE EN GÉNÉRALITÉ : "Au fond, ce que vous dites, c'est que [principe général]. Jusqu'où assumez-vous ce principe ?"
+
+RÈGLES ABSOLUES :
+• Cite les mots exacts de l'invité, jamais une reformulation approximative
+• 1 seul chiffre/fait NOUVEAU par réponse, jamais déjà utilisé dans cette conversation
+• 2-3 phrases COURTES, rythme TV — pas de paragraphe académique
+• Si la réponse est vague ou hors sujet : "Je vous coupe — [reformulation précise et plus directe]"
+• JAMAIS deux fois la même structure de phrase dans tout le débat`;
+
       const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
-      const reply=await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,400);
+      const reply=await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,450);
       addLine("journalist",j?.name||"Journaliste",reply);
       if(reply.toLowerCase().includes("je vous coupe")){setPhase("cut");}
       else{setTimer(90);setTimerOn(true);setPhase("speaking");}
 
       if(isDuel){
-        // Journalist speaks → opponent speaks → mic auto-opens
         speakAny(reply,(j?.gender||"F") as "M"|"F", async()=>{
           try{
             const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
             if(!oppKey){setAutoMic(true);return;}
-            const oppSys=`Tu es ${opponent.name}, ${opponent.role}, contradicteur sur le plateau NEXUS. Sujet : "${topic}". L'invité vient de dire : "${text.slice(0,200)}". RÈGLE : 2 phrases max. Contredis avec UN fait + UN chiffre réel. Commence par ton prénom.`;
-            const oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`[PLATEAU] ${opponent.name}, répondez.`}]}],oppKey,120);
-            if(oppReply){addLine("opponent",opponent.name,oppReply);speakAny(oppReply,opponent.gender,()=>setAutoMic(true));}
-            else setAutoMic(true);
-          }catch{setAutoMic(true);}
+            const oppSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
+TON PROFIL RHÉTORIQUE : ${opponent.style}
+Sujet du débat : "${topic}".
+L'invité principal vient de dire : "${text.slice(0,250)}"
+Le journaliste a répondu : "${reply.slice(0,150)}"
+
+MISSION : Contredire l'invité principal de façon percutante. 2-3 phrases MAX.
+FORMAT OBLIGATOIRE selon ton profil :
+- Si libéral → "En même temps, les données [source précise] montrent que [chiffre]. La vraie question est [angle économique]."
+- Si gauche → "Ce que dit mon contradicteur, c'est exactement ce que [élite/institution] veut nous faire croire. La réalité pour [X millions de personnes], c'est [fait concret]."
+- Si souverainiste → "[Loi/traité/chiffre précis]. Dans ces conditions, [argument souveraineté/sécurité]."
+- Si écologiste → "On parle de [sujet] sans mentionner que [fait climatique GIEC]. Dans [X ans], [conséquence concrète]."
+Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique à l'invité.`;
+            const oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`${opponent.name}, votre réaction ?`}]}],oppKey,160);
+            if(oppReply){
+              addLine("opponent",opponent.name,oppReply);
+              speakAny(oppReply,opponent.gender,()=>setAutoMic(true));
+            } else { setAutoMic(true); }
+          }catch{ setAutoMic(true); }
         });
       } else {
         speakAny(reply,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
       }
     }catch{
-      const words=text.split(" ").slice(0,4).join(" ");
+      const words=text.split(" ").slice(0,5).join(" ");
       const fbs=[
-        `Vous dites "${words}"… mais les derniers sondages montrent l'inverse. Comment expliquez-vous ce décalage ?`,
-        `Je vous coupe — vous n'avez pas répondu. Quel mécanisme précis proposez-vous, et en combien de temps ?`,
-        `Certes, mais l'opposition rétorque le contraire. Qu'est-ce qui vous donne raison plutôt qu'à eux ?`,
-        `Intéressant — nos experts contestent ce point. Quelle est votre source ?`,
-        `Le public demande : concrètement, qu'est-ce qui change pour les Français dans leur vie quotidienne ?`,
+        `Vous dites "${words}"… mais le dernier baromètre Ipsos montre que 68% des Français pensent le contraire. Pourquoi cet écart avec l'opinion publique ?`,
+        `Je vous coupe — vous n'avez pas répondu à ma question. Concrètement : quel mécanisme précis, quel délai, quel budget ?`,
+        `Votre contradicteur dirait exactement l'inverse avec les mêmes chiffres. Qu'est-ce qui vous donne raison plutôt qu'à lui ?`,
+        `Permettez — le rapport de la Cour des comptes de 2023 contredit ce point précisément. Vous avez lu ce rapport ?`,
+        `Koffi, 28 ans, étudiant à Lyon, nous écrit : "Tout ça c'est bien, mais demain matin, qu'est-ce qui change dans ma vie ?" Qu'est-ce que vous lui répondez ?`,
+        `En Allemagne, ils ont fait exactement l'inverse il y a 10 ans. Résultat : [données positives]. Pourquoi la France ne peut pas faire pareil ?`,
       ];
       const reply=fbs[Math.floor(Math.random()*fbs.length)];
       addLine("journalist",j?.name||"Journaliste",reply);

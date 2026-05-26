@@ -1,4 +1,4 @@
-const CACHE = "nexus-v9";
+const CACHE = "nexus-v10";
 const STATIC = [
   "/ARCA/",
   "/ARCA/manifest.json",

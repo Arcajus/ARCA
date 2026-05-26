@@ -67,7 +67,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         {/* Service Worker — force cache clear on version bump */}
         <script dangerouslySetInnerHTML={{__html: `
-          var APP_VER = "9";
+          var APP_VER = "10";
           if ('serviceWorker' in navigator) {
             if (localStorage.getItem('app_ver') !== APP_VER) {
               navigator.serviceWorker.getRegistrations().then(function(regs) {
