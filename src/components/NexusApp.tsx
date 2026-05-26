@@ -19,6 +19,8 @@ const LIGHT = {
 type Theme = typeof DARK;
 
 // ── ELEVENLABS + SPEECH ──────────────────────────────────────
+// _elAudio is pre-created and unlocked during a user gesture so iOS allows
+// later async .play() calls on the same element
 let _elAudio: HTMLAudioElement | null = null;
 
 const EL_VOICES_F = ["XB0fDUnXU5powFXDhCwa","Xb7hH8MSUJpSbSDYk0k2","21m00Tcm4TlvDq8ikWAM","EXAVITQu4vr4xnSDxMaL"];
@@ -28,7 +30,7 @@ async function speakEL(text: string, gender: "M"|"F", key: string): Promise<bool
   const voices = gender === "F" ? EL_VOICES_F : EL_VOICES_M;
   for (const voiceId of voices) {
     try {
-      if (_elAudio) { _elAudio.pause(); _elAudio = null; }
+      if (_elAudio) { _elAudio.pause(); }
       const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: "POST",
         headers: { "Accept": "audio/mpeg", "Content-Type": "application/json", "xi-api-key": key },
@@ -37,8 +39,16 @@ async function speakEL(text: string, gender: "M"|"F", key: string): Promise<bool
       if (!res.ok) continue;
       const blob = await res.blob();
       if (blob.size < 100) continue;
-      _elAudio = new Audio(URL.createObjectURL(blob));
-      await _elAudio.play();
+      const url = URL.createObjectURL(blob);
+      if (_elAudio) {
+        // Reuse the pre-unlocked element — iOS allows .play() on a previously unlocked element
+        _elAudio.src = url;
+        _elAudio.load();
+        await _elAudio.play();
+      } else {
+        _elAudio = new Audio(url);
+        await _elAudio.play();
+      }
       return true;
     } catch { continue; }
   }
@@ -49,8 +59,13 @@ function speakWeb(text: string, gender: "M"|"F") {
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "fr-FR"; u.rate = 1.05; u.pitch = gender === "F" ? 1.15 : 0.88;
-  const go = () => { const v = window.speechSynthesis.getVoices().find(x => x.lang.startsWith("fr")); if (v) u.voice = v; window.speechSynthesis.speak(u); };
-  if (window.speechSynthesis.getVoices().length > 0) go(); else window.speechSynthesis.onvoiceschanged = go;
+  const go = () => {
+    const voices = window.speechSynthesis.getVoices();
+    const fr = voices.find(x => x.lang.startsWith("fr")) || voices.find(x => x.lang.startsWith("fr-")) || null;
+    if (fr) u.voice = fr;
+    window.speechSynthesis.speak(u);
+  };
+  if (window.speechSynthesis.getVoices().length > 0) go(); else { window.speechSynthesis.onvoiceschanged = go; window.speechSynthesis.speak(u); }
 }
 function speakAny(text: string, gender: "M"|"F" = "F") {
   const k = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
@@ -58,16 +73,19 @@ function speakAny(text: string, gender: "M"|"F" = "F") {
   else speakWeb(text, gender);
 }
 function stopSpeech() {
-  if (_elAudio) { _elAudio.pause(); _elAudio = null; }
+  if (_elAudio) { _elAudio.pause(); }
   if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }
-// iOS requires audio to be unlocked by a direct user gesture before programmatic play works
+// iOS: call during a user gesture to pre-create and unlock the Audio element
 let _audioUnlocked = false;
 function unlockAudio() {
   if (_audioUnlocked || typeof window === "undefined") return;
   _audioUnlocked = true;
-  const a = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
-  a.play().then(() => a.pause()).catch(() => {});
+  // Pre-create the element that speakEL will reuse — iOS unlocks it here, in the gesture stack
+  _elAudio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+  _elAudio.play().catch(() => {});
+  // Also unlock AudioContext for Web Speech fallback
+  try { const ac = new AudioContext(); ac.resume().catch(()=>{}); } catch{/* */}
 }
 
 // ── ICONS ────────────────────────────────────────────────────
@@ -915,7 +933,7 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
   const [msgs,setMsgs] = useState<{role:"user"|"ai";text:string}[]>([]);
   const [input,setInput] = useState("");
   const [loading,setLoading] = useState(false);
-  const [audioOn,setAudioOn] = useState(false);
+  const [audioOn,setAudioOn] = useState(true);
   const [listening,setListening] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null);
@@ -929,6 +947,7 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
 
   const send = async(text:string)=>{
     if(!text.trim()||loading)return;
+    unlockAudio();
     setInput("");
     const userMsg={role:"user" as const,text};
     const newMsgs = [...msgs,userMsg];
@@ -1038,10 +1057,11 @@ function SimulationScreen({T}:{T:Theme}) {
   const chatRef = useRef<HTMLDivElement>(null);
 
   const [unLoading,setUnLoading] = useState(false);
-  const [unAudio,setUnAudio] = useState(false);
+  const [unAudio,setUnAudio] = useState(true);
 
   const sendUNMessage = async()=>{
     if(!unInput.trim()||!unRole||unLoading)return;
+    unlockAudio();
     const text=unInput;setUnInput("");
     const newMsg={role:"user",flag:unRole.flag,country:unRole.country,text};
     const allMsgs=[...unMessages,newMsg];
