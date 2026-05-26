@@ -26,7 +26,7 @@ let _elAudio: HTMLAudioElement | null = null;
 const EL_VOICES_F = ["XB0fDUnXU5powFXDhCwa","Xb7hH8MSUJpSbSDYk0k2","21m00Tcm4TlvDq8ikWAM","EXAVITQu4vr4xnSDxMaL"];
 const EL_VOICES_M = ["nPczCjzI2devNBz1zQrb","N2lVS1w4EtoT3dr4eOWO","29vD33N1CtxCmqQRPOHJ","ErXwobaYiN019PkySvjV"];
 
-async function speakEL(text: string, gender: "M"|"F", key: string): Promise<boolean> {
+async function speakEL(text: string, gender: "M"|"F", key: string, onEnd?: ()=>void): Promise<boolean> {
   const voices = gender === "F" ? EL_VOICES_F : EL_VOICES_M;
   for (const voiceId of voices) {
     try {
@@ -41,12 +41,13 @@ async function speakEL(text: string, gender: "M"|"F", key: string): Promise<bool
       if (blob.size < 100) continue;
       const url = URL.createObjectURL(blob);
       if (_elAudio) {
-        // Reuse the pre-unlocked element — iOS allows .play() on a previously unlocked element
+        _elAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
         _elAudio.src = url;
         _elAudio.load();
         await _elAudio.play();
       } else {
         _elAudio = new Audio(url);
+        _elAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
         await _elAudio.play();
       }
       return true;
@@ -54,11 +55,12 @@ async function speakEL(text: string, gender: "M"|"F", key: string): Promise<bool
   }
   return false;
 }
-function speakWeb(text: string, gender: "M"|"F") {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "fr-FR"; u.rate = 1.05; u.pitch = gender === "F" ? 1.15 : 0.88;
+  if (onEnd) u.onend = onEnd;
   const go = () => {
     const voices = window.speechSynthesis.getVoices();
     const fr = voices.find(x => x.lang.startsWith("fr")) || voices.find(x => x.lang.startsWith("fr-")) || null;
@@ -67,10 +69,10 @@ function speakWeb(text: string, gender: "M"|"F") {
   };
   if (window.speechSynthesis.getVoices().length > 0) go(); else { window.speechSynthesis.onvoiceschanged = go; window.speechSynthesis.speak(u); }
 }
-function speakAny(text: string, gender: "M"|"F" = "F") {
+function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   const k = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
-  if (k) speakEL(text, gender, k).then(ok => { if (!ok) speakWeb(text, gender); });
-  else speakWeb(text, gender);
+  if (k) speakEL(text, gender, k, onEnd).then(ok => { if (!ok) speakWeb(text, gender, onEnd); }).catch(() => speakWeb(text, gender, onEnd));
+  else speakWeb(text, gender, onEnd);
 }
 function stopSpeech() {
   if (_elAudio) { _elAudio.pause(); }
@@ -347,6 +349,12 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
   const level = config.level as typeof LEVELS[0];
   const topic = config.topic as string;
   const publicSide = config.publicSide as typeof PUBLICS[0];
+  const isDuel = (config.subMode as string) === "duel-ia";
+  const [opponent] = useState(()=>{
+    const opts=[{name:"Alexandre Martin",init:"AM",gender:"M" as const,role:"économiste politique"},{name:"Sophie Leclerc",init:"SL",gender:"F" as const,role:"politologue"},{name:"Pierre Dubois",init:"PD",gender:"M" as const,role:"juriste international"}];
+    return opts[Math.floor(Math.random()*opts.length)];
+  });
+
   const [phase,setPhase] = useState<"intro"|"speaking"|"listening"|"waiting"|"cut"|"ended">("intro");
   const [timer,setTimer] = useState(90);
   const [timerOn,setTimerOn] = useState(false);
@@ -355,22 +363,51 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
   const [loading,setLoading] = useState(false);
   const [liveText,setLiveText] = useState("");
   const [showScore,setShowScore] = useState(false);
+  const [autoMic,setAutoMic] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
-
-  const speakJournalist = (text: string, gender: string) => speakAny(text, (gender||"F") as "M"|"F");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSpeechRef = useRef<(t:string)=>void>((_t:string)=>{});
 
   const addLine = (role:string,name:string,text:string) => {
     setTranscript(t=>[...t,{role,name,text,time:new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}]);
     setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
   };
 
+  // Auto-start mic after TTS ends — triggered by setAutoMic(true) from onEnd callbacks
   useEffect(()=>{
+    if(!autoMic) return;
+    setAutoMic(false);
+    if(typeof window==="undefined") return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w=window as any;
+    const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
+    if(!SR) return;
+    const rec=new SR();
+    rec.lang="fr-FR"; rec.continuous=false; rec.interimResults=true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult=(e:any)=>{
+      let interim="",final="";
+      for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}
+      setLiveText(interim);
+      if(final){setLiveText("");handleSpeechRef.current(final.trim());}
+    };
+    rec.onend=()=>setPhase(p=>p==="listening"?"speaking":p);
+    try{rec.start();}catch{return;}
+    recRef.current=rec;
+    setPhase("listening");
+    setTimerOn(false);
+  },[autoMic]);// eslint-disable-line
+
+  // Intro — speak and auto-open mic when done
+  useEffect(()=>{
+    const introText=`Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle. `:""}${isDuel?`Ce soir, vous affrontez ${opponent.name}, ${opponent.role}. `:""}À vous la parole.`;
     setTimeout(()=>{
-      addLine("journalist",j?.name||"Journaliste",`Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle.`:""} Vous avez 90 secondes. La parole est à vous.`);
-      setPhase("speaking");setTimerOn(true);
+      addLine("journalist",j?.name||"Journaliste",introText);
+      setPhase("speaking"); setTimerOn(true);
+      speakAny(introText,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
     },600);
   },[]);// eslint-disable-line
 
@@ -380,23 +417,25 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
     return()=>{if(timerRef.current)clearTimeout(timerRef.current);};
   },[timerOn,timer]);// eslint-disable-line
 
+  // Manual mic — continuous=true so user can speak multiple sentences
   const startMic = ()=>{
     unlockAudio();
     if(typeof window==="undefined")return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any;
-    const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
+    const w=window as any;
+    const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
     if(!SR){alert("Utilisez Chrome pour la reconnaissance vocale.");return;}
-    const rec = new SR();
-    rec.lang="fr-FR";rec.continuous=true;rec.interimResults=true;
+    const rec=new SR();
+    rec.lang="fr-FR"; rec.continuous=true; rec.interimResults=true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult=(e:any)=>{
       let interim="",final="";
       for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}
       setLiveText(interim);
-      if(final){setLiveText("");handleUserSpeech(final.trim());}
+      if(final){setLiveText("");handleSpeechRef.current(final.trim());}
     };
-    rec.start();recRef.current=rec;setPhase("listening");setTimerOn(false);
+    rec.onend=()=>setPhase(p=>p==="listening"?"speaking":p);
+    rec.start(); recRef.current=rec; setPhase("listening"); setTimerOn(false);
   };
 
   const stopMic = ()=>{recRef.current?.stop();setPhase("speaking");setLiveText("");};
@@ -404,56 +443,60 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
   const handleUserSpeech = async(text:string)=>{
     if(!text)return;
     addLine("user","Vous",text);
-    setPhase("waiting");setLoading(true);setTimerOn(false);
+    setPhase("waiting"); setLoading(true); setTimerOn(false);
     try{
-      const rawHist = transcript.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
-      const firstUserIdx = rawHist.findIndex(m=>m.role==="user");
-      const hist = firstUserIdx>=0 ? rawHist.slice(firstUserIdx) : [];
-      const debateLevel = level?.label||"intermédiaire";
-      const sysPrompt = `Tu es ${j?.name||"Élise Moreau"}, journaliste politique senior à NEXUS, présentatrice du grand débat du soir. Sujet : "${topic}". Niveau de l'invité : ${debateLevel}.
-
-TON RÔLE : Animer un vrai débat télévisé, pas une interview. Tu as préparé ce sujet — tu connais les chiffres, les contradictions, les polémiques. Tu pousses l'invité dans ses retranchements.
-
-STYLE SELON LE NIVEAU :
-- Débutant : questions pédagogiques, définitions, "qu'entendez-vous par..." ; tu expliques le contexte
-- Intermédiaire : tu cites des stats réelles, tu confrontes à des opinions contradictoires
-- Expert/Elite : tu attaques les failles logiques, tu cites des rapports précis, tu ne lâches rien
-
-RÈGLES ABSOLUES :
-1. Cite TOUJOURS les mots exacts de l'invité et rebondis dessus immédiatement
-2. Utilise de vraies données : sondages Ipsos/BVA, chiffres INSEE, rapports officiels, comparaisons avec l'Allemagne/Royaume-Uni/USA
-3. Chaque réponse apporte UN SEUL angle nouveau : chiffre, paradoxe, contre-exemple, opinion d'un expert nommé
-4. Si vague ou hors sujet → "Je vous coupe — [reformulation précise de la question]"
-5. JAMAIS deux fois la même formule
-6. Maximum 2-3 phrases orales courtes. Rythme TV, percutant.
-7. Alterne : données froides / émotion du public / angle politique / angle économique / comparaison internationale`;
-      const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+      const rawHist=transcript.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
+      const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
+      const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):[];
+      const sysPrompt=`Tu es ${j?.name||"Élise Moreau"}, journaliste politique senior à NEXUS. Sujet : "${topic}". Niveau : ${level?.label||"intermédiaire"}.
+RÔLE : Débat télévisé, pas interview. Tu pousses, tu confrontes, tu ne lâches pas.
+STYLE SELON NIVEAU : Débutant→pédagogique ; Intermédiaire→stats réelles ; Expert/Elite→failles logiques, rapports précis.
+RÈGLES : 1) Cite les MOTS EXACTS de l'invité et rebondis. 2) Vraies données (Ipsos/BVA/INSEE). 3) UN seul angle nouveau par réponse. 4) Vague→"Je vous coupe — [question précise]". 5) JAMAIS la même formule. 6) 2-3 phrases max, rythme TV.`;
+      const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
-      const reply = await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,500);
+      const reply=await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,400);
       addLine("journalist",j?.name||"Journaliste",reply);
-      speakJournalist(reply, j?.gender||"F");
       if(reply.toLowerCase().includes("je vous coupe")){setPhase("cut");}
       else{setTimer(90);setTimerOn(true);setPhase("speaking");}
+
+      if(isDuel){
+        // Journalist speaks → opponent speaks → mic auto-opens
+        speakAny(reply,(j?.gender||"F") as "M"|"F", async()=>{
+          try{
+            const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+            if(!oppKey){setAutoMic(true);return;}
+            const oppSys=`Tu es ${opponent.name}, ${opponent.role}, contradicteur sur le plateau NEXUS. Sujet : "${topic}". L'invité vient de dire : "${text.slice(0,200)}". RÈGLE : 2 phrases max. Contredis avec UN fait + UN chiffre réel. Commence par ton prénom.`;
+            const oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`[PLATEAU] ${opponent.name}, répondez.`}]}],oppKey,120);
+            if(oppReply){addLine("opponent",opponent.name,oppReply);speakAny(oppReply,opponent.gender,()=>setAutoMic(true));}
+            else setAutoMic(true);
+          }catch{setAutoMic(true);}
+        });
+      } else {
+        speakAny(reply,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
+      }
     }catch{
-      const words = text.split(" ").slice(0,4).join(" ");
-      const fallbacks=[
-        `Vous dites "${words}"… mais les derniers sondages montrent l'inverse. Comment expliquez-vous ce décalage avec l'opinion publique ?`,
-        `Je vous coupe — vous n'avez pas répondu à ma question. Concrètement, quel mécanisme précis proposez-vous, et en combien de temps ?`,
-        `Certes, mais l'opposition rétorque exactement le contraire. Qu'est-ce qui vous donne raison plutôt qu'à eux ?`,
-        `Intéressant — pourtant, nos experts sur le plateau contestent ce point. Quelle est votre source ?`,
-        `Le public vous demande : au-delà des mots, qu'est-ce qui change concrètement pour les Français dans leur vie quotidienne ?`,
+      const words=text.split(" ").slice(0,4).join(" ");
+      const fbs=[
+        `Vous dites "${words}"… mais les derniers sondages montrent l'inverse. Comment expliquez-vous ce décalage ?`,
+        `Je vous coupe — vous n'avez pas répondu. Quel mécanisme précis proposez-vous, et en combien de temps ?`,
+        `Certes, mais l'opposition rétorque le contraire. Qu'est-ce qui vous donne raison plutôt qu'à eux ?`,
+        `Intéressant — nos experts contestent ce point. Quelle est votre source ?`,
+        `Le public demande : concrètement, qu'est-ce qui change pour les Français dans leur vie quotidienne ?`,
       ];
-      const reply=fallbacks[Math.floor(Math.random()*fallbacks.length)];
+      const reply=fbs[Math.floor(Math.random()*fbs.length)];
       addLine("journalist",j?.name||"Journaliste",reply);
-      speakJournalist(reply, j?.gender||"F");
+      speakAny(reply,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
       if(reply.includes("coupe")){setPhase("cut");}else{setTimer(90);setTimerOn(true);setPhase("speaking");}
     }
     setLoading(false);
   };
 
+  // Keep ref pointing to latest handleUserSpeech (avoids stale closures in auto-mic callbacks)
+  handleSpeechRef.current = handleUserSpeech;
+
   const timerPct=timer/90;
   const timerCol=timer<=15?T.red:timer<=30?T.amber:T.green;
-  const r=40;const circ=2*Math.PI*r;
+  const r=40; const circ=2*Math.PI*r;
 
   return(
     <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.bg}}>
@@ -464,29 +507,46 @@ RÈGLES ABSOLUES :
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{width:8,height:8,borderRadius:"50%",background:T.red,animation:"pulse 1s infinite"}}/>
             <span style={{color:T.red,fontSize:11,fontWeight:800,letterSpacing:2}}>EN DIRECT</span>
+            {isDuel&&<span style={{background:`${T.purple}20`,color:T.purple,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700}}>DUEL IA</span>}
             {level&&<span style={{background:T.blueG,color:T.blueB,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700}}>{level.label}</span>}
           </div>
           <p style={{color:T.textD,fontSize:12,marginTop:2}}>{topic.slice(0,38)}…</p>
         </div>
-        <button onClick={()=>setShowTx(s=>!s)} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:8,padding:"6px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+        <button onClick={()=>setShowTx(s=>!s)} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:8,padding:"6px 10px",cursor:"pointer"}}>
           <span style={{color:T.textD,fontSize:11,fontWeight:700}}>CC</span>
         </button>
       </div>
-      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,gap:20}}>
-        <div style={{textAlign:"center"}}>
-          <div style={{position:"relative",width:96,height:96,margin:"0 auto 14px"}}>
-            {phase==="speaking"&&(
-              <svg style={{position:"absolute",inset:"-10px",width:116,height:116}} viewBox="0 0 116 116">
-                <circle cx="58" cy="58" r={r+8} fill="none" stroke={T.b1} strokeWidth="4"/>
-                <circle cx="58" cy="58" r={r+8} fill="none" stroke={timerCol} strokeWidth="4" strokeDasharray={circ+50} strokeDashoffset={(circ+50)*(1-timerPct)} strokeLinecap="round" transform="rotate(-90 58 58)" style={{transition:"stroke-dashoffset .9s linear,stroke .3s"}}/>
-              </svg>
-            )}
-            <div style={{width:96,height:96,borderRadius:"50%",background:phase==="waiting"||phase==="cut"?T.blueG:T.card,border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:T.blueB,fontFamily:"'Inter',system-ui,sans-serif",boxShadow:phase==="waiting"?`0 0 30px ${T.blueG}`:"none",transition:"all .3s"}}>{j?.init||"EM"}</div>
+      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,gap:16}}>
+        {/* Avatars */}
+        <div style={{display:"flex",gap:isDuel?32:0,alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{textAlign:"center"}}>
+            <div style={{position:"relative",width:96,height:96,margin:"0 auto 10px"}}>
+              {phase==="speaking"&&(
+                <svg style={{position:"absolute",inset:"-10px",width:116,height:116}} viewBox="0 0 116 116">
+                  <circle cx="58" cy="58" r={r+8} fill="none" stroke={T.b1} strokeWidth="4"/>
+                  <circle cx="58" cy="58" r={r+8} fill="none" stroke={timerCol} strokeWidth="4" strokeDasharray={circ+50} strokeDashoffset={(circ+50)*(1-timerPct)} strokeLinecap="round" transform="rotate(-90 58 58)" style={{transition:"stroke-dashoffset .9s linear,stroke .3s"}}/>
+                </svg>
+              )}
+              <div style={{width:96,height:96,borderRadius:"50%",background:phase==="waiting"?T.blueG:T.card,border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:T.blueB,boxShadow:phase==="waiting"?`0 0 30px ${T.blueG}`:"none",transition:"all .3s"}}>{j?.init||"EM"}</div>
+            </div>
+            <p style={{color:T.text,fontSize:13,fontWeight:700}}>{j?.name||"Journaliste"}</p>
+            <p style={{color:T.textD,fontSize:10,marginTop:1}}>{j?.role||"NEXUS Studio"}</p>
           </div>
-          <p style={{color:T.text,fontSize:16,fontWeight:700}}>{j?.name||"Journaliste"}</p>
-          <p style={{color:T.textD,fontSize:12,marginTop:2}}>{j?.role||"NEXUS Studio"}</p>
+          {isDuel&&(
+            <div style={{textAlign:"center"}}>
+              <div style={{width:72,height:72,borderRadius:"50%",background:T.card,border:`2px solid ${T.purple}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,fontWeight:800,color:T.purple,margin:"0 auto 10px"}}>{opponent.init}</div>
+              <p style={{color:T.text,fontSize:12,fontWeight:700}}>{opponent.name}</p>
+              <p style={{color:T.textD,fontSize:10,marginTop:1}}>{opponent.role}</p>
+            </div>
+          )}
         </div>
         <Waveform active={phase==="waiting"||loading} T={T}/>
+        {phase==="listening"&&(
+          <div style={{background:`${T.blueB}15`,border:`1px solid ${T.blueB}40`,borderRadius:12,padding:"10px 20px",textAlign:"center"}}>
+            <p style={{color:T.blueB,fontWeight:800,fontSize:12,marginBottom:2}}>🎙 Micro activé — parlez</p>
+            {liveText&&<p style={{color:T.textD,fontSize:11,fontStyle:"italic"}}>{liveText}…</p>}
+          </div>
+        )}
         {phase==="speaking"&&(
           <div style={{textAlign:"center"}}>
             <span style={{fontSize:36,fontWeight:900,fontFamily:"monospace",color:timerCol}}>{String(Math.floor(timer/60)).padStart(2,"0")}:{String(timer%60).padStart(2,"0")}</span>
@@ -500,17 +560,24 @@ RÈGLES ABSOLUES :
           </div>
         )}
         {showTx&&transcript.length>0&&(
-          <div ref={chatRef} style={{width:"100%",maxHeight:180,overflowY:"auto",background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:12,display:"flex",flexDirection:"column",gap:8}}>
-            {transcript.map((m,i)=>(
-              <div key={i} style={{display:"flex",gap:8,flexDirection:m.role==="user"?"row-reverse":"row",alignItems:"flex-start"}}>
-                <Avatar init={m.role==="user"?"A":j?.init||"EM"} size={28} T={T}/>
-                <div style={{maxWidth:"80%",background:m.role==="user"?T.blueG:T.bg2,border:`1px solid ${m.role==="user"?T.blueB+"40":T.b1}`,borderRadius:10,padding:"6px 10px"}}>
-                  <p style={{fontSize:11,fontWeight:700,color:m.role==="user"?T.blueB:T.textD,marginBottom:2}}>{m.name}</p>
-                  <p style={{fontSize:12,color:T.text,lineHeight:1.5}}>{m.text}</p>
+          <div ref={chatRef} style={{width:"100%",maxHeight:200,overflowY:"auto",background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:12,display:"flex",flexDirection:"column",gap:8}}>
+            {transcript.map((m,i)=>{
+              const isUser=m.role==="user";
+              const isOpp=m.role==="opponent";
+              const bgC=isUser?T.blueG:isOpp?`${T.purple}15`:T.bg2;
+              const brC=isUser?T.blueB+"40":isOpp?T.purple+"40":T.b1;
+              const nameC=isUser?T.blueB:isOpp?T.purple:T.textD;
+              const avatInit=isUser?"Vous":isOpp?opponent.init:j?.init||"EM";
+              return(
+                <div key={i} style={{display:"flex",gap:8,flexDirection:isUser?"row-reverse":"row",alignItems:"flex-start"}}>
+                  <Avatar init={avatInit} size={28} T={T} color={isOpp?T.purple:undefined}/>
+                  <div style={{maxWidth:"80%",background:bgC,border:`1px solid ${brC}`,borderRadius:10,padding:"6px 10px"}}>
+                    <p style={{fontSize:11,fontWeight:700,color:nameC,marginBottom:2}}>{m.name}</p>
+                    <p style={{fontSize:12,color:T.text,lineHeight:1.5}}>{m.text}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-            {liveText&&<p style={{fontSize:11,color:T.muted,fontStyle:"italic",textAlign:"right"}}>{liveText}…</p>}
+              );
+            })}
           </div>
         )}
       </div>
@@ -520,14 +587,14 @@ RÈGLES ABSOLUES :
           <button onClick={()=>{setPhase("ended");setShowScore(true);}} style={{flex:1,padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.card,color:T.textD,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Terminer</button>
         </div>
         {phase==="cut"?(
-          <button onClick={()=>{setPhase("speaking");setTimer(90);setTimerOn(true);addLine("journalist",j?.name||"Journaliste","Je vous redonne la parole.");}} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Reprendre la parole</button>
+          <button onClick={()=>{setPhase("speaking");setTimer(90);setTimerOn(true);addLine("journalist",j?.name||"Journaliste","Je vous redonne la parole.");speakAny("Je vous redonne la parole.",(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));}} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Reprendre la parole</button>
         ):phase==="listening"?(
-          <button onClick={stopMic} style={{width:"100%",padding:14,borderRadius:12,border:`2px solid ${T.red}`,background:`${T.red}15`,color:T.red,fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+          <button onClick={stopMic} style={{width:"100%",padding:14,borderRadius:12,border:`2px solid ${T.red}`,background:`${T.red}15`,color:T.red,fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,animation:"ripple 1.5s infinite"}}>
             <Ic n="micOff" s={18} c={T.red}/>Couper le micro
           </button>
         ):(
           <button onClick={startMic} disabled={phase==="waiting"||loading} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:phase==="waiting"||loading?T.muted:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:phase==="waiting"||loading?"not-allowed":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?0.7:1}}>
-            <Ic n="mic" s={18} c="#fff"/>{loading?"Journaliste répond…":"Prendre la parole"}
+            <Ic n="mic" s={18} c="#fff"/>{loading?"En attente…":"Prendre la parole"}
           </button>
         )}
       </div>
@@ -609,7 +676,7 @@ function StudioScreen({T}:{T:Theme}) {
   const [inviteCode,setInviteCode] = useState("");
 
   if(step==="stage"&&journalist&&level&&topic){
-    return <AudioStage config={{journalist,level,topic,publicSide}} T={T} onBack={()=>setStep("home")}/>;
+    return <AudioStage config={{journalist,level,topic,publicSide,subMode}} T={T} onBack={()=>setStep("home")}/>;
   }
   if(step==="brief"&&topic){
     return <BriefingScreen topic={topic} T={T} onStart={()=>setStep("stage")} onSkip={()=>setStep("stage")}/>;
