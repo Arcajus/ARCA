@@ -871,16 +871,84 @@ function MessagesScreen({T}:{T:Theme}) {
 }
 
 // ── SIMULATION HUB ────────────────────────────────────────────
+// ── API KEY SETUP MODAL ───────────────────────────────────────
+function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
+  const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"");
+  const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
+  const [testing,setTesting] = useState(false);
+  const [elOk,setElOk] = useState<boolean|null>(null);
+  const save=(k:string,v:string)=>{if(typeof window!=="undefined")localStorage.setItem(k,v);};
+  const testEL=async()=>{
+    if(!ek)return;
+    setTesting(true);
+    const ok=await speakEL("Bonjour, je suis votre assistant NEXUS.",  "F", ek);
+    setElOk(ok);setTesting(false);
+  };
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .2s"}}>
+      <div style={{background:T.surf,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:430,padding:"20px 20px 36px",display:"flex",flexDirection:"column",gap:16,animation:"slideUp .3s ease",maxHeight:"90vh",overflowY:"auto"}}>
+        <div style={{width:40,height:4,borderRadius:2,background:T.b2,margin:"0 auto 4px"}}/>
+        <div>
+          <h2 style={{color:T.text,fontWeight:800,fontSize:20}}>Configurer les clés API</h2>
+          <p style={{color:T.textD,fontSize:13,marginTop:4}}>Nécessaire pour activer l&apos;IA et les voix réalistes</p>
+        </div>
+        {/* Claude */}
+        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <div style={{width:28,height:28,borderRadius:7,background:"#E8854020",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}>🤖</span></div>
+            <div>
+              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé Claude AI</p>
+              <p style={{color:T.muted,fontSize:10}}>console.anthropic.com → API Keys</p>
+            </div>
+            {ck&&<div style={{marginLeft:"auto",width:8,height:8,borderRadius:"50%",background:T.green}}/>}
+          </div>
+          <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("claude_key",e.target.value);}} placeholder="sk-ant-api03-…" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border .2s"}}/>
+        </div>
+        {/* ElevenLabs */}
+        <div style={{background:T.card,border:`1px solid ${elOk===true?T.green:elOk===false?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <div style={{width:28,height:28,borderRadius:7,background:"#7C3AED20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}>🎙️</span></div>
+            <div style={{flex:1}}>
+              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé ElevenLabs <span style={{color:T.muted,fontSize:10,fontWeight:500}}>(optionnel — voix réalistes)</span></p>
+              <p style={{color:T.muted,fontSize:10}}>elevenlabs.io → Profile → API Keys</p>
+            </div>
+            {elOk===true&&<span style={{color:T.green,fontSize:11,fontWeight:800}}>✓ OK</span>}
+            {elOk===false&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
+          </div>
+          <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);setElOk(null);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          {ek&&<button onClick={testEL} disabled={testing} style={{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{testing?"Test en cours…":"🎙️ Tester la voix"}</button>}
+        </div>
+        <button onClick={()=>{if(ck)onDone();}} disabled={!ck} style={{padding:15,borderRadius:14,border:"none",background:ck?T.blueB:T.b1,color:ck?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:ck?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
+          {ck?"Démarrer la simulation →":"Entrez votre clé Claude pour continuer"}
+        </button>
+        <p style={{color:T.muted,fontSize:11,textAlign:"center",lineHeight:1.5}}>Vos clés restent sur votre téléphone uniquement — elles ne sont jamais envoyées à NEXUS.</p>
+      </div>
+    </div>
+  );
+}
+
 function SimulationHub({T}:{T:Theme}) {
   const [view,setView] = useState<"hub"|"studio"|"sims">("hub");
+  const [showKeySetup,setShowKeySetup] = useState(false);
+  const [pendingView,setPendingView] = useState<"studio"|"sims"|null>(null);
+
+  const launch=(id:"studio"|"sims")=>{
+    haptic();
+    const key = typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"";
+    if(!key){setPendingView(id);setShowKeySetup(true);return;}
+    setView(id);
+  };
+
   if(view==="studio") return <StudioScreen T={T}/>;
   if(view==="sims") return <SimulationScreen T={T}/>;
+
   const cards = [
     {id:"studio",icon:"mic",label:"Studio Débat",desc:"Débat audio face à un journaliste IA",color:"#2B78F5"},
     {id:"sims",icon:"globe",label:"Simulations",desc:"ONU, Procès, Soutenance, Commercial…",color:"#7C3AED"},
   ];
   return(
     <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:20}}>
+      {showKeySetup&&<ApiKeySetupModal T={T} onDone={()=>{setShowKeySetup(false);if(pendingView)setView(pendingView);setPendingView(null);}}/>}
       <div>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>NEXUS</p>
         <h1 style={{fontSize:26,fontWeight:800,color:T.text}}>Simulation</h1>
@@ -888,7 +956,7 @@ function SimulationHub({T}:{T:Theme}) {
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
         {cards.map(c=>(
-          <button key={c.id} onClick={()=>setView(c.id as "studio"|"sims")} style={{padding:20,borderRadius:16,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+          <button key={c.id} onClick={()=>launch(c.id as "studio"|"sims")} style={{padding:20,borderRadius:16,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
             onMouseEnter={e=>(e.currentTarget.style.background=`${c.color}15`)}
             onMouseLeave={e=>(e.currentTarget.style.background=`${c.color}08`)}>
             <div style={{width:52,height:52,borderRadius:14,background:`${c.color}20`,border:`1px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
