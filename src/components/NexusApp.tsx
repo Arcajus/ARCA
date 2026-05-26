@@ -93,7 +93,24 @@ const UN_DEL = [
   {id:"uk",flag:"🇬🇧",country:"Royaume-Uni",init:"UK",doctrine:"Atlantisme, Commonwealth, droits humains"},
 ];
 const UN_TOPICS = ["Cessez-le-feu immédiat en Ukraine","Réforme du droit de veto","Intervention humanitaire en zone de conflit","Régulation internationale de l'IA militaire","Reconnaissance d'un nouvel État indépendant"];
-const DEBATE_TOPICS = ["La réforme de l'ONU est-elle inévitable ?","OTAN : pertinence à l'ère multipolaire","IA et souveraineté numérique des États","Diplomatie climatique : succès ou échec ?","Europe : fédération ou désintégration ?","Immigration : politique ou humanitaire ?","Esclavage et réparations : où en est le débat ?","Décolonisation : bilan et mémoire","Institutions françaises : réforme de la Ve République ?","Histoire des peuples : les rébellions oubliées"];
+const DEBATE_TOPICS = [
+  // Géopolitique & Relations internationales
+  "La réforme de l'ONU est-elle inévitable ?","OTAN : pertinence à l'ère multipolaire","La Chine va-t-elle dépasser les États-Unis ?","Guerre en Ukraine : négociation ou victoire ?","Nucléaire iranien : accord à tout prix ?","Israël-Palestine : solution à deux États encore possible ?","Afrique : néocolonialisme ou partenariats équitables ?","Les BRICS vont-ils créer une alternative au dollar ?","Taïwan : l'Occident doit-il s'engager militairement ?","Sahel : la France a-t-elle perdu la guerre ?","Le Conseil de Sécurité de l'ONU est-il obsolète ?","Monde unipolaire, bipolaire ou multipolaire ?","La mondialisation est-elle en crise ?","Les sanctions économiques sont-elles efficaces ?","La Russie peut-elle redevenir un partenaire de l'Occident ?","Indo-Pacifique : nouvelle zone de tension mondiale ?","Faut-il réformer le FMI et la Banque mondiale ?","La diplomatie du carnet de chèques — danger ou pragmatisme ?","Proche-Orient : les accords d'Abraham, victoire ou compromis ?","Kosovo, Palestine, Catalogne : qui a droit à l'autodétermination ?",
+  // Diplomatie & Négociations
+  "Diplomatie climatique : succès ou échec ?","L'accord de Paris suffit-il à sauver la planète ?","Faut-il un tribunal international pour les crimes climatiques ?","La CPI est-elle efficace ?","L'aide humanitaire peut-elle être politisée ?","Faut-il conditionner l'aide au développement ?","Les ONG remplacent-elles les États dans les crises ?","La neutralité diplomatique est-elle encore possible ?","Médiation internationale : l'ONU ou les puissances régionales ?","Faut-il un siège permanent africain au Conseil de Sécurité ?",
+  // Histoire & Mémoire
+  "Esclavage et réparations : où en est le débat ?","Décolonisation : bilan et mémoire","Histoire des peuples : les rébellions oubliées","La France peut-elle regarder son passé colonial en face ?","Colonisation : crime contre l'humanité ou mission civilisatrice ?","Génocide arménien : pourquoi ça bloque encore ?","Mai 68 : révolution ou illusion ?","Napoléon : génie ou tyran ?","La traite négrière arabe : tabou ou mémoire occultée ?","Guerre d'Algérie : peut-on réconcilier les mémoires ?","Apartheid : les héritages économiques persistent-ils ?","Hiroshima-Nagasaki : la bombe était-elle nécessaire ?","La Révolution française : universelle ou nationale ?","Les empires : pourquoi s'effondrent-ils toujours ?","Haïti : première révolution noire, premier échec du monde ?","La guerre froide : quelles leçons pour aujourd'hui ?","La Shoah : comment transmettre la mémoire ?","Le colonialisme belge au Congo : génocide oublié ?","Les révolutions du XXe siècle : bilan 100 ans après","L'esclavage en Mauritanie : pourquoi persiste-t-il ?",
+  // Société & Politique française
+  "Immigration : politique ou humanitaire ?","Institutions françaises : réforme de la Ve République ?","La laïcité est-elle menacée en France ?","Le voile islamique : liberté ou atteinte à la laïcité ?","Faut-il légaliser le cannabis en France ?","Faut-il abaisser le droit de vote à 16 ans ?","Proportionnelle ou scrutin majoritaire ?","La démocratie participative peut-elle remplacer la représentative ?","Le féminisme a-t-il atteint ses objectifs ?","Racisme systémique : réalité française ou importation ?","La cancel culture menace-t-elle la liberté d'expression ?","Réseaux sociaux : faut-il réguler ou libérer ?","La désinformation : comment répondre sans censurer ?","Justice pénale : punir ou réhabiliter ?","Faut-il un service militaire obligatoire ?","Populisme : symptôme ou maladie de la démocratie ?","Les extrêmes : gauche et droite se valent-elles ?","La police : faut-il la réformer en profondeur ?","Faut-il rétablir la peine de mort ?","Le communautarisme menace-t-il la République ?",
+  // Europe
+  "Europe : fédération ou désintégration ?","Faut-il sortir de l'euro ?","L'Europe peut-elle s'affranchir de l'OTAN ?","Brexit : le Royaume-Uni a-t-il eu raison ?","Faut-il une armée européenne ?","L'Union européenne est-elle trop bureaucratique ?","Schengen : faut-il rétablir les frontières ?","L'élargissement de l'UE à l'Ukraine est-il prématuré ?","La Turquie a-t-elle encore sa place dans l'OTAN ?","L'Europe peut-elle rivaliser avec les États-Unis et la Chine ?",
+  // Économie & Finance
+  "IA et souveraineté numérique des États","Le capitalisme peut-il être réformé de l'intérieur ?","Cryptomonnaies : avenir ou bulle spéculative ?","Faut-il taxer les milliardaires ?","La retraite à 64 ans : réforme juste ou injuste ?","Les GAFA : faut-il les démanteler ?","La dette publique : faut-il vraiment s'en inquiéter ?","Commerce libre ou protectionnisme ?","Le revenu universel : utopie ou nécessité ?","Les inégalités mondiales se creusent — qui est responsable ?","Made in France : nationalisme économique ou pragmatisme ?","L'austérité est-elle efficace ?","Le chômage : faut-il un emploi garanti par l'État ?","Les syndicats ont-ils encore un rôle à jouer ?","La Banque Centrale Européenne : indépendance ou contrôle démocratique ?",
+  // Environnement & Climat
+  "Urgence climatique : les politiques sont-elles à la hauteur ?","Nucléaire : solution au changement climatique ou danger ?","Faut-il manger moins de viande pour sauver la planète ?","Voiture électrique : vraie solution ou fausse promesse ?","Décroissance économique : nécessité ou utopie ?","Les pays riches doivent-ils payer pour le climat des pays pauvres ?","Agriculture intensive : faut-il l'interdire ?","L'eau sera-t-elle au cœur des guerres futures ?","Forêts tropicales : souveraineté ou patrimoine mondial ?","Faut-il un crime d'écocide dans le droit international ?","Les activistes climatiques sont-ils trop radicaux ?","Énergies renouvelables : peut-on tout miser dessus ?","Le plastique : les réglementations actuelles suffisent-elles ?","Migration climatique : les sociétés sont-elles prêtes ?","Faut-il taxer les billets d'avion ?",
+  // Technologie & IA
+  "L'intelligence artificielle va-t-elle détruire l'emploi ?","Faut-il réguler l'IA générative ?","Transhumanisme : améliorer l'humain, jusqu'où ?","Surveillance numérique : sécurité ou Big Brother ?","Espace : la privatisation est-elle une bonne idée ?","Algorithmes et biais : peut-on faire confiance aux machines ?","Deepfakes : menace pour la démocratie ?","Robots dans les soins aux personnes âgées : acceptable ?","Vie privée en 2030 : sera-t-elle encore possible ?","L'humain augmenté : vers une société à deux vitesses ?","Faut-il une IA des droits humains à l'ONU ?","Réseaux 5G et 6G : dangers sanitaires ou progrès ?","L'école face au numérique : tablettes ou craie ?","Les GAFA savent tout de nous — doit-on s'en alarmer ?","Faut-il interdire la reconnaissance faciale dans l'espace public ?",
+];
 const TRIAL_TOPICS = ["Corruption d'un élu local","Crime financier — blanchiment international","Atteinte à la liberté de la presse","Violation du droit international humanitaire","Discrimination systémique en entreprise","Abus de pouvoir d'un ministre"];
 const JOBS = [
   {title:"Chargé de mission diplomatique",co:"Ministère des Affaires étrangères",tags:["Paris","CDI","Bac+5"]},
@@ -207,6 +224,25 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
   const chatRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 
+  const speakJournalist = (text: string, gender: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "fr-FR";
+    u.rate = 1.05;
+    u.pitch = gender === "F" ? 1.15 : 0.88;
+    const setVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const fr = voices.find(v => v.lang.startsWith("fr") && (gender === "F" ? /fem|woman|female|Amelie|Thomas/i.test(v.name) === false : true))
+        || voices.find(v => v.lang.startsWith("fr"))
+        || voices.find(v => v.lang.startsWith("fr-"));
+      if (fr) u.voice = fr;
+      window.speechSynthesis.speak(u);
+    };
+    if (window.speechSynthesis.getVoices().length > 0) setVoice();
+    else { window.speechSynthesis.onvoiceschanged = setVoice; }
+  };
+
   const addLine = (role:string,name:string,text:string) => {
     setTranscript(t=>[...t,{role,name,text,time:new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}]);
     setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
@@ -259,12 +295,14 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
       const data = await res.json();
       const reply = (data.content as {text:string}[])?.map(c=>c.text).join("")||"Je vous coupe — votre argument manque de précision. Soyez plus direct.";
       addLine("journalist",j?.name||"Journaliste",reply);
+      speakJournalist(reply, j?.gender||"F");
       if(reply.toLowerCase().includes("je vous coupe")){setPhase("cut");}
       else{setTimer(90);setTimerOn(true);setPhase("speaking");}
     }catch{
       const fallbacks=["Argument intéressant, mais pas assez précis. Développez.","Je vous coupe — concrètement, quel mécanisme proposez-vous ?","Question du public : est-ce vraiment réaliste dans le contexte actuel ?"];
       const reply=fallbacks[Math.floor(Math.random()*fallbacks.length)];
       addLine("journalist",j?.name||"Journaliste",reply);
+      speakJournalist(reply, j?.gender||"F");
       if(reply.includes("coupe")){setPhase("cut");}else{setTimer(90);setTimerOn(true);setPhase("speaking");}
     }
     setLoading(false);
@@ -1049,9 +1087,17 @@ export default function NexusApp() {
       {!showPremium&&(
         <div style={{padding:"13px 20px 11px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.b1}`,background:T.surf,zIndex:100,backdropFilter:"blur(20px)",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:33,height:33,borderRadius:9,background:T.blueB,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <span style={{color:"#fff",fontSize:17,fontWeight:900,fontFamily:"'Cormorant Garamond',serif",lineHeight:1}}>N</span>
-            </div>
+            <svg width="33" height="33" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="50" r="50" fill="#000"/>
+              <defs>
+                <linearGradient id="ng" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#FFFFFF"/>
+                  <stop offset="45%" stopColor="#B8C4D4"/>
+                  <stop offset="100%" stopColor="#2A3040"/>
+                </linearGradient>
+              </defs>
+              <text x="50" y="74" textAnchor="middle" fontFamily="Georgia,serif" fontSize="62" fontWeight="900" fill="url(#ng)">N</text>
+            </svg>
             <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:800,color:T.text,letterSpacing:1}}>NEXUS</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
