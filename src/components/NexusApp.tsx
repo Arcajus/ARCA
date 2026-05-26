@@ -846,6 +846,44 @@ function StudioScreen({T}:{T:Theme}) {
   );
 }
 
+// ── LIVE NEWS ─────────────────────────────────────────────────
+const RSS_SOURCES = [
+  {name:"Le Monde",url:"https://www.lemonde.fr/rss/une.xml",tag:"LE MONDE",tagC:"#E03535"},
+  {name:"France 24",url:"https://www.france24.com/fr/rss",tag:"FRANCE 24",tagC:"#2B78F5"},
+  {name:"RFI",url:"https://www.rfi.fr/fr/rss",tag:"RFI",tagC:"#16A34A"},
+  {name:"Reuters FR",url:"https://feeds.reuters.com/reuters/topNews",tag:"REUTERS",tagC:"#7C3AED"},
+];
+type LiveArticle = {id:string;title:string;src:string;tag:string;tagC:string;time:string;imgUrl:string|null;link:string;verif?:{label:string;color:string}};
+
+async function fetchLiveNews(): Promise<LiveArticle[]> {
+  const results: LiveArticle[] = [];
+  await Promise.allSettled(RSS_SOURCES.map(async(src)=>{
+    try{
+      const proxy=`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=3`;
+      const res=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
+      if(!res.ok) return;
+      const data=await res.json();
+      if(data.status!=="ok"||!data.items) return;
+      for(const item of data.items.slice(0,3)){
+        const pub=new Date(item.pubDate||item.published||"");
+        const diff=Date.now()-pub.getTime();
+        const hrs=Math.floor(diff/3600000);
+        const mins=Math.floor(diff/60000);
+        const timeStr=isNaN(diff)?"":diff<3600000?`${mins}min`:diff<86400000?`${hrs}h`:`${Math.floor(diff/86400000)}j`;
+        results.push({
+          id:`${src.name}-${item.guid||item.link}`,
+          title:(item.title||"").replace(/<[^>]+>/g,"").slice(0,120),
+          src:src.name,tag:src.tag,tagC:src.tagC,
+          time:timeStr,
+          imgUrl:item.thumbnail||item.enclosure?.link||null,
+          link:item.link||"",
+        });
+      }
+    }catch{/*source unavailable*/}
+  }));
+  return results.sort(()=>Math.random()-0.5);
+}
+
 // ── FEED SCREEN ───────────────────────────────────────────────
 function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
   const [filter,setFilter] = useState("Tout");
@@ -853,6 +891,10 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
   const [flagged,setFlagged] = useState<Set<number>>(new Set());
   const [showCompose,setShowCompose] = useState(false);
   const [composed,setComposed] = useState("");
+  const [liveNews,setLiveNews] = useState<LiveArticle[]>([]);
+  const [liveLoading,setLiveLoading] = useState(false);
+  const [lastRefresh,setLastRefresh] = useState<Date|null>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
   const [composeSrc,setComposeSrc] = useState("");
   const [verifying,setVerifying] = useState(false);
   type UserPost = {id:number;text:string;time:string;src:string;verif:{label:string;color:string;comment:string}|null};
@@ -860,6 +902,37 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
     if(typeof window==="undefined") return [];
     try{return JSON.parse(localStorage.getItem("nexus_posts")||"[]");}catch{return [];}
   });
+
+  const refresh = async(withGemini=false)=>{
+    setLiveLoading(true);
+    const articles = await fetchLiveNews();
+    if(withGemini){
+      const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+      if(key){
+        await Promise.allSettled(articles.slice(0,6).map(async(a)=>{
+          try{
+            const raw=await callGemini(
+              `Tu es fact-checker. Évalue la crédibilité de ce titre d'actualité en JSON une ligne : {"label":"<FIABLE|PROBABLE|DOUTEUX>","color":"<#16A34A|#2B78F5|#D97706>"}`,
+              [{role:"user" as const,parts:[{text:`Source: ${a.src}. Titre: ${a.title}`}]}],
+              key,50
+            );
+            const m=raw.match(/\{[^}]+\}/);
+            if(m){const p=JSON.parse(m[0]);a.verif={label:p.label||"PROBABLE",color:p.color||"#2B78F5"};}
+          }catch{/*skip*/}
+        }));
+      }
+    }
+    setLiveNews(articles);
+    setLastRefresh(new Date());
+    setLiveLoading(false);
+  };
+
+  useEffect(()=>{
+    refresh();
+    // Auto-refresh every 30 minutes
+    refreshTimerRef.current=setInterval(()=>refresh(),30*60*1000);
+    return()=>{if(refreshTimerRef.current)clearInterval(refreshTimerRef.current);};
+  },[]);// eslint-disable-line
 
   const publishPost = async()=>{
     if(!composed.trim()) return;
@@ -916,12 +989,43 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
           </div>
         </div>
       )}
-      {/* Breaking news */}
-      <div style={{background:`${T.red}12`,borderBottom:`1px solid ${T.red}25`,padding:"8px 20px",display:"flex",alignItems:"center",gap:8}}>
-        <div style={{width:6,height:6,borderRadius:"50%",background:T.red,animation:"pulse 1s infinite",flexShrink:0}}/>
-        <span style={{color:T.red,fontSize:10,fontWeight:800,letterSpacing:1.5,flexShrink:0}}>BREAKING</span>
-        <p style={{color:T.text,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Réunion d&apos;urgence du Conseil de Sécurité ONU — vote sur le cessez-le-feu dans 2h</p>
+      {/* Live news header */}
+      <div style={{padding:"10px 20px",borderBottom:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:7,height:7,borderRadius:"50%",background:T.red,animation:"pulse 1s infinite",flexShrink:0}}/>
+          <span style={{color:T.red,fontSize:10,fontWeight:800,letterSpacing:1.5}}>ACTUALITÉS EN DIRECT</span>
+          {lastRefresh&&<span style={{color:T.muted,fontSize:10}}>· {lastRefresh.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</span>}
+        </div>
+        <button onClick={()=>refresh(true)} disabled={liveLoading} style={{display:"flex",alignItems:"center",gap:5,background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"4px 10px",cursor:"pointer",opacity:liveLoading?.6:1}}>
+          <Ic n="trending" s={13} c={T.blueB}/>
+          <span style={{color:T.blueB,fontSize:11,fontWeight:700}}>{liveLoading?"Chargement…":"Actualiser + IA"}</span>
+        </button>
       </div>
+      {/* Live articles */}
+      {liveNews.length>0&&(
+        <div style={{padding:"10px 20px",display:"flex",flexDirection:"column",gap:10,borderBottom:`1px solid ${T.b1}`}}>
+          {liveNews.map(a=>(
+            <a key={a.id} href={a.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none",display:"flex",gap:12,alignItems:"flex-start",background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 12px",animation:"fadeUp .4s ease"}}>
+              {a.imgUrl&&<div style={{width:64,height:64,borderRadius:8,overflow:"hidden",flexShrink:0}}><img src={a.imgUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).parentElement!.style.display="none"}}/></div>}
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
+                  <Tag label={a.tag} color={a.tagC} small/>
+                  {a.verif&&<span style={{background:`${a.verif.color}20`,color:a.verif.color,fontSize:9,padding:"1px 6px",borderRadius:4,fontWeight:800}}>✦ {a.verif.label}</span>}
+                  {a.time&&<span style={{color:T.muted,fontSize:10}}>· {a.time}</span>}
+                </div>
+                <p style={{color:T.text,fontSize:12,fontWeight:600,lineHeight:1.4}}>{a.title}</p>
+                <p style={{color:T.muted,fontSize:10,marginTop:3}}>{a.src}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+      {liveLoading&&liveNews.length===0&&(
+        <div style={{padding:"20px",textAlign:"center"}}>
+          <div style={{display:"inline-flex",gap:5,alignItems:"center"}}>{[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:T.blueB,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div>
+          <p style={{color:T.muted,fontSize:12,marginTop:8}}>Chargement des actualités…</p>
+        </div>
+      )}
       {/* Compose */}
       <div style={{padding:"12px 20px",borderBottom:`1px solid ${T.b1}`,display:"flex",gap:10,alignItems:"center"}}>
         <Avatar init="A" size={36} T={T}/>
