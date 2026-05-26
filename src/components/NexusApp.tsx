@@ -848,10 +848,27 @@ function StudioScreen({T}:{T:Theme}) {
 
 // ── LIVE NEWS ─────────────────────────────────────────────────
 const RSS_SOURCES = [
-  {name:"Le Monde",url:"https://www.lemonde.fr/rss/une.xml",tag:"LE MONDE",tagC:"#E03535"},
-  {name:"France 24",url:"https://www.france24.com/fr/rss",tag:"FRANCE 24",tagC:"#2B78F5"},
-  {name:"BBC Afrique",url:"https://feeds.bbci.co.uk/afrique/rss.xml",tag:"BBC",tagC:"#7C3AED"},
-  {name:"Google Actualités",url:"https://news.google.com/rss?hl=fr&gl=FR&ceid=FR:fr",tag:"GOOGLE NEWS",tagC:"#16A34A"},
+  // Presse française
+  {name:"Le Monde",       url:"https://www.lemonde.fr/rss/une.xml",                                           tag:"LE MONDE",        tagC:"#E03535"},
+  {name:"Le Figaro",      url:"https://www.lefigaro.fr/rss/figaro_actualites.xml",                            tag:"LE FIGARO",       tagC:"#C0392B"},
+  {name:"L'Express",      url:"https://www.lexpress.fr/rss/alaune.xml",                                       tag:"L'EXPRESS",       tagC:"#E67E22"},
+  {name:"Libération",     url:"https://www.liberation.fr/arc/outboundfeeds/rss/?outputType=xml",               tag:"LIBÉRATION",      tagC:"#8E44AD"},
+  {name:"20 Minutes",     url:"https://www.20minutes.fr/feeds/rss/actu",                                      tag:"20 MINUTES",      tagC:"#2980B9"},
+  {name:"Courrier Int.",  url:"https://www.courrierinternational.com/feed/all/rss.xml",                        tag:"COURRIER INT.",   tagC:"#16A085"},
+  // Médias internationaux francophones
+  {name:"France 24",      url:"https://www.france24.com/fr/rss",                                              tag:"FRANCE 24",       tagC:"#2B78F5"},
+  {name:"RFI",            url:"https://www.rfi.fr/fr/podcasts/rss",                                           tag:"RFI",             tagC:"#27AE60"},
+  {name:"BBC Afrique",    url:"https://feeds.bbci.co.uk/afrique/rss.xml",                                     tag:"BBC",             tagC:"#7C3AED"},
+  {name:"TV5 Monde",      url:"https://information.tv5monde.com/rss",                                         tag:"TV5MONDE",        tagC:"#1ABC9C"},
+  {name:"Jeune Afrique",  url:"https://www.jeuneafrique.com/feed/",                                           tag:"JEUNE AFRIQUE",   tagC:"#F39C12"},
+  {name:"Africanews",     url:"https://www.africanews.com/feed/",                                             tag:"AFRICANEWS",      tagC:"#E74C3C"},
+  {name:"DW Français",    url:"https://rss.dw.com/rdf/rss-fr-tout",                                           tag:"DW",              tagC:"#2C3E50"},
+  // Flux Google News par thème
+  {name:"Actualités FR",  url:"https://news.google.com/rss?hl=fr&gl=FR&ceid=FR:fr",                           tag:"GOOGLE NEWS",     tagC:"#3498DB"},
+  {name:"Géopolitique",   url:"https://news.google.com/rss/search?q=géopolitique&hl=fr&gl=FR&ceid=FR:fr",     tag:"GÉOPOLITIQUE",    tagC:"#D35400"},
+  {name:"Afrique",        url:"https://news.google.com/rss/search?q=afrique+actualité&hl=fr&gl=FR&ceid=FR:fr",tag:"AFRIQUE",         tagC:"#F1C40F"},
+  {name:"Technologie",    url:"https://news.google.com/rss/search?q=technologie+innovation&hl=fr&gl=FR&ceid=FR:fr",tag:"TECH",        tagC:"#1ABC9C"},
+  {name:"Diplomatie",     url:"https://news.google.com/rss/search?q=diplomatie+relations+internationales&hl=fr&gl=FR&ceid=FR:fr",tag:"DIPLOMATIE",tagC:"#9B59B6"},
 ];
 type LiveArticle = {id:string;title:string;src:string;tag:string;tagC:string;time:string;imgUrl:string|null;link:string;verif?:{label:string;color:string}};
 
@@ -859,11 +876,12 @@ function parseRawRSS(xml:string):{title:string;link:string;pubDate:string;guid:s
   try{
     if(typeof DOMParser==="undefined") return [];
     const doc=new DOMParser().parseFromString(xml,"text/xml");
-    return Array.from(doc.querySelectorAll("item,entry")).slice(0,3).map(el=>{
+    return Array.from(doc.querySelectorAll("item,entry")).slice(0,8).map(el=>{
       const txt=(sel:string)=>el.querySelector(sel)?.textContent?.replace(/<!\[CDATA\[|\]\]>/g,"").trim()||"";
       const linkEl=el.querySelector("link");
       const link=linkEl?.getAttribute("href")||linkEl?.textContent?.trim()||"";
       const thumb=el.getElementsByTagNameNS("http://search.yahoo.com/mrss/","thumbnail")[0]?.getAttribute("url")
+        ||el.getElementsByTagNameNS("http://search.yahoo.com/mrss/","content")[0]?.getAttribute("url")
         ||el.querySelector("enclosure[type^='image']")?.getAttribute("url")||undefined;
       return{title:txt("title"),link,pubDate:txt("pubDate")||txt("published"),guid:txt("guid")||link,thumbnail:thumb};
     });
@@ -884,26 +902,27 @@ async function fetchLiveNews(): Promise<LiveArticle[]> {
   const rssKey = typeof window!=="undefined"?localStorage.getItem("rss2json_key")||"":"";
   await Promise.allSettled(RSS_SOURCES.map(async(src)=>{
     try{
-      // Primary: rss2json (good JSON + images)
       let items:Array<{title:string;link:string;pubDate?:string;published?:string;guid?:string;thumbnail?:string|null;enclosure?:{link?:string}}> | null = null;
+      // Primary: rss2json (good JSON + images)
       try{
         const apiParam=rssKey?`&api_key=${rssKey}`:"";
-        const r=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=3${apiParam}`,{signal:AbortSignal.timeout(7000)});
+        const r=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=8${apiParam}`,{signal:AbortSignal.timeout(7000)});
         if(r.ok){const d=await r.json();if(d.status==="ok"&&d.items?.length) items=d.items;}
       }catch{/*try fallback*/}
       // Fallback: corsproxy.io + DOMParser
       if(!items){
         try{
           const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(src.url)}`,{signal:AbortSignal.timeout(7000)});
-          if(r.ok){const txt=await r.text();const parsed=parseRawRSS(txt);if(parsed.length) items=parsed;}
+          if(r.ok){const t=await r.text();const parsed=parseRawRSS(t);if(parsed.length) items=parsed;}
         }catch{/*source unavailable*/}
       }
       if(!items) return;
-      for(const item of items.slice(0,3)){
+      for(const item of items.slice(0,8)){
+        const title=(item.title||"").replace(/<[^>]+>/g,"").replace(/<!\[CDATA\[|\]\]>/g,"").trim().slice(0,160);
+        if(!title) continue;
         results.push({
           id:`${src.name}-${item.guid||item.link}`,
-          title:(item.title||"").replace(/<[^>]+>/g,"").replace(/<!\[CDATA\[|\]\]>/g,"").slice(0,120),
-          src:src.name,tag:src.tag,tagC:src.tagC,
+          title,src:src.name,tag:src.tag,tagC:src.tagC,
           time:makeTimeStr(item.pubDate||item.published||""),
           imgUrl:item.thumbnail||item.enclosure?.link||null,
           link:item.link||"",
@@ -967,7 +986,7 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
       const existing: NexusOfficialPost[] = JSON.parse(localStorage.getItem("nexus_official_posts")||"[]");
       const existingIds=new Set(existing.map(p=>p.id));
       const brandNew=articles.filter(a=>!existingIds.has(a.id)).map(a=>({...a,publishedAt:Date.now()}));
-      const all=[...brandNew,...existing].slice(0,60);
+      const all=[...brandNew,...existing].slice(0,300);
       setNexusPosts(all);
       localStorage.setItem("nexus_official_posts",JSON.stringify(all));
       // Badge: only count articles never seen before
@@ -984,7 +1003,7 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
   useEffect(()=>{
     refresh();
     // Auto-refresh every 30 minutes
-    refreshTimerRef.current=setInterval(()=>refresh(),30*60*1000);
+    refreshTimerRef.current=setInterval(()=>refresh(),15*60*1000);
     return()=>{if(refreshTimerRef.current)clearInterval(refreshTimerRef.current);};
   },[]);// eslint-disable-line
 
