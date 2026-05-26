@@ -885,7 +885,7 @@ async function fetchLiveNews(): Promise<LiveArticle[]> {
 }
 
 // ── FEED SCREEN ───────────────────────────────────────────────
-function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
+function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPosts:(n:number)=>void}) {
   const [filter,setFilter] = useState("Tout");
   const [liked,setLiked] = useState<Set<number>>(new Set());
   const [flagged,setFlagged] = useState<Set<number>>(new Set());
@@ -902,6 +902,11 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
   const [userPosts,setUserPosts] = useState<UserPost[]>(()=>{
     if(typeof window==="undefined") return [];
     try{return JSON.parse(localStorage.getItem("nexus_posts")||"[]");}catch{return [];}
+  });
+  type NexusOfficialPost = LiveArticle & {publishedAt:number};
+  const [nexusPosts,setNexusPosts] = useState<NexusOfficialPost[]>(()=>{
+    if(typeof window==="undefined") return [];
+    try{return JSON.parse(localStorage.getItem("nexus_official_posts")||"[]");}catch{return [];}
   });
 
   const refresh = async(withGemini=false)=>{
@@ -926,6 +931,20 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
     setLiveNews(articles);
     setLastRefresh(new Date());
     setLiveLoading(false);
+
+    // Auto-publish genuinely new articles as official NEXUS certified posts
+    const seenIds: string[] = JSON.parse(localStorage.getItem("nexus_seen_ids")||"[]");
+    const newArticles = articles.filter(a=>!seenIds.includes(a.id));
+    if(newArticles.length>0){
+      const newPosts: NexusOfficialPost[] = newArticles.map(a=>({...a,publishedAt:Date.now()}));
+      const existing: NexusOfficialPost[] = JSON.parse(localStorage.getItem("nexus_official_posts")||"[]");
+      const all = [...newPosts,...existing].slice(0,60);
+      setNexusPosts(all);
+      localStorage.setItem("nexus_official_posts",JSON.stringify(all));
+      const newSeen = [...seenIds,...newArticles.map(a=>a.id)].slice(-300);
+      localStorage.setItem("nexus_seen_ids",JSON.stringify(newSeen));
+      onNewPosts(newArticles.length);
+    }
   };
 
   useEffect(()=>{
@@ -1102,8 +1121,50 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
           ))}
         </div>
       )}
+      {/* NEXUS Official auto-published posts */}
+      <div style={{padding:"12px 20px 0",display:"flex",flexDirection:"column",gap:12}}>
+      {nexusPosts.filter(p=>{
+        const searchMatch = !search || p.title.toLowerCase().includes(search.toLowerCase())||p.src.toLowerCase().includes(search.toLowerCase());
+        const FILTER_MAP: Record<string,string[]> = {"Géopolitique":["GÉOPOLITIQUE","GUERRE","DIPLOMATIE","INTERNATIONAL"],"Diplomatie":["DIPLOMATIE"],"Histoire":["HISTOIRE"],"Droit":["DROIT","IMMIGRATION"],"Élections":["ÉLECTIONS","POLITIQUE"],"Europe":["EUROPE","DIPLOMATIE"],"Afrique":["AFRIQUE"]};
+        const kws = filter!=="Tout"?FILTER_MAP[filter]||[]:null;
+        const tagMatch = !kws || kws.some(k=>p.tag.toUpperCase().includes(k)||p.title.toUpperCase().includes(k));
+        return searchMatch && tagMatch;
+      }).slice(0,20).map(p=>(
+        <div key={p.id} style={{background:T.card,border:`1.5px solid ${T.blueB}25`,borderRadius:14,overflow:"hidden",animation:"fadeUp .4s ease"}}>
+          <div style={{padding:"12px 14px 8px",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:36,height:36,borderRadius:"50%",background:"#000",border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:"#fff",flexShrink:0}}>N</div>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                <span style={{color:T.text,fontWeight:700,fontSize:13}}>NEXUS Intelligence</span>
+                <span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:9,padding:"2px 6px",borderRadius:3,fontWeight:800,letterSpacing:.5}}>✓ OFFICIEL</span>
+                {p.verif&&<span style={{background:`${p.verif.color}15`,color:p.verif.color,fontSize:9,padding:"2px 6px",borderRadius:3,fontWeight:800}}>✦ {p.verif.label}</span>}
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
+                <Tag label={p.tag} color={p.tagC} small/>
+                {p.time&&<span style={{color:T.muted,fontSize:11}}>· {p.time}</span>}
+                <span style={{color:T.muted,fontSize:11}}>· {p.src}</span>
+              </div>
+            </div>
+          </div>
+          {p.imgUrl&&<div style={{height:170,overflow:"hidden"}}><img src={p.imgUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).parentElement!.style.display="none"}}/></div>}
+          <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 14px 8px",textDecoration:"none"}}>
+            <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.5}}>{p.title}</p>
+            <p style={{color:T.blueB,fontSize:11,marginTop:4,fontWeight:600}}>Lire l&apos;article complet →</p>
+          </a>
+          <div style={{padding:"8px 14px 12px",display:"flex",alignItems:"center",gap:0,borderTop:`1px solid ${T.b1}`}}>
+            <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 10px 0 0"}}>
+              <Ic n="heart" s={15} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>0</span>
+            </button>
+            <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 10px"}}>
+              <Ic n="share" s={15} c={T.textD}/>
+            </button>
+            <button onClick={onDebate} style={{marginLeft:"auto",background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"5px 12px",color:T.blueB,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
+          </div>
+        </div>
+      ))}
+      </div>
       {/* News feed */}
-      <div style={{padding:"12px 20px",display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{padding:"0 20px 12px",display:"flex",flexDirection:"column",gap:12}}>
         {NEWS.filter(n=>{
           const FILTER_MAP: Record<string,string[]> = {
             "Géopolitique":["GÉOPOLITIQUE","GUERRE","DIPLOMATIE","INTERNATIONAL"],
@@ -2319,6 +2380,10 @@ export default function NexusApp() {
   const [showPremium,setShowPremium] = useState(false);
   const [showInstall,setShowInstall] = useState(false);
   const [tabAnim,setTabAnim] = useState("fadeIn");
+  const [feedUnread,setFeedUnread] = useState(()=>{
+    if(typeof window==="undefined") return 0;
+    return parseInt(localStorage.getItem("nexus_unread")||"0");
+  });
 
   useEffect(()=>{
     if(typeof window==="undefined") return;
@@ -2331,7 +2396,14 @@ export default function NexusApp() {
     haptic();
     setTabAnim("slideInRight");
     setTab(id);
+    if(id==="feed"){setFeedUnread(0);if(typeof window!=="undefined")localStorage.setItem("nexus_unread","0");}
     setTimeout(()=>setTabAnim("fadeIn"),300);
+  };
+
+  const handleNewPosts = (n:number)=>{
+    if(tab!=="feed"){
+      setFeedUnread(p=>{const next=p+n;if(typeof window!=="undefined")localStorage.setItem("nexus_unread",String(next));return next;});
+    }
   };
 
   const NAV = [
@@ -2400,7 +2472,7 @@ export default function NexusApp() {
           <PremiumScreen T={T} onBack={()=>setShowPremium(false)}/>
         ) : (
           <div key={tab} style={{animation:`${tabAnim} .25s ease`,height:"100%"}}>
-            {tab==="feed"&&<FeedScreen T={T} onDebate={()=>switchTab("simulation")}/>}
+            {tab==="feed"&&<FeedScreen T={T} onDebate={()=>switchTab("simulation")} onNewPosts={handleNewPosts}/>}
             {tab==="simulation"&&<SimulationHub T={T}/>}
             {tab==="messages"&&<MessagesScreen T={T}/>}
             {tab==="events"&&<EventsScreen T={T}/>}
@@ -2417,6 +2489,11 @@ export default function NexusApp() {
               <div style={{width:40,height:34,borderRadius:12,background:tab===n.id?T.blueG:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",position:"relative"}}>
                 {tab===n.id&&<div style={{position:"absolute",top:-1,left:"50%",transform:"translateX(-50%)",width:20,height:3,borderRadius:2,background:T.blueB}}/>}
                 <Ic n={n.icon} s={20} c={tab===n.id?T.blueB:T.muted} w={tab===n.id?2.2:1.6}/>
+                {n.id==="feed"&&feedUnread>0&&tab!=="feed"&&(
+                  <div style={{position:"absolute",top:2,right:4,minWidth:16,height:16,borderRadius:8,background:T.red,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:900,color:"#fff",padding:"0 3px"}}>
+                    {feedUnread>9?"9+":feedUnread}
+                  </div>
+                )}
               </div>
               <span style={{fontSize:9,fontWeight:tab===n.id?800:600,letterSpacing:.5,color:tab===n.id?T.blueB:T.muted,transition:"color .2s"}}>{n.label}</span>
             </button>
