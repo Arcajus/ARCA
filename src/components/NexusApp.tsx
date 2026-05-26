@@ -71,6 +71,11 @@ const JOURNALISTS = [
   {id:"j2",name:"Marc Fontaine",role:"Éditorialiste",spec:"Politique européenne",init:"MF",live:false,gender:"M"},
   {id:"j3",name:"Yasmine Kadi",role:"Correspondante",spec:"Moyen-Orient & conflits",init:"YK",live:true,gender:"F"},
   {id:"j4",name:"Bernard Cléry",role:"Chroniqueur senior",spec:"Histoire & diplomatie",init:"BC",live:false,gender:"M"},
+  {id:"j5",name:"Aïcha Diallo",role:"Militante & Chroniqueuse",spec:"Droits LGBTQ+, féminisme intersectionnel",init:"AD",live:true,gender:"F"},
+  {id:"j6",name:"Théo Marchetti",role:"Correspondant de Guerre",spec:"Conflits armés, armées, zones de crise",init:"TM",live:false,gender:"M"},
+  {id:"j7",name:"Dr. Léa Fontaine",role:"Journaliste Scientifique",spec:"Médecine, bioéthique, transhumanisme",init:"LF",live:true,gender:"F"},
+  {id:"j8",name:"Omar Benali",role:"Analyste Économique",spec:"Finance mondiale, cryptomonnaies, inégalités",init:"OB",live:false,gender:"M"},
+  {id:"j9",name:"Camille Rousseau",role:"Philosophe & Débatteur",spec:"Philosophie politique, éthique, déontologie",init:"CR",live:true,gender:"F"},
 ];
 const LEVELS = [
   {id:"novice",tier:1,label:"Novice",sub:"Citoyen lambda",premium:false},
@@ -93,24 +98,21 @@ const UN_DEL = [
   {id:"uk",flag:"🇬🇧",country:"Royaume-Uni",init:"UK",doctrine:"Atlantisme, Commonwealth, droits humains"},
 ];
 const UN_TOPICS = ["Cessez-le-feu immédiat en Ukraine","Réforme du droit de veto","Intervention humanitaire en zone de conflit","Régulation internationale de l'IA militaire","Reconnaissance d'un nouvel État indépendant"];
-const DEBATE_TOPICS = [
-  // Géopolitique & Relations internationales
-  "La réforme de l'ONU est-elle inévitable ?","OTAN : pertinence à l'ère multipolaire","La Chine va-t-elle dépasser les États-Unis ?","Guerre en Ukraine : négociation ou victoire ?","Nucléaire iranien : accord à tout prix ?","Israël-Palestine : solution à deux États encore possible ?","Afrique : néocolonialisme ou partenariats équitables ?","Les BRICS vont-ils créer une alternative au dollar ?","Taïwan : l'Occident doit-il s'engager militairement ?","Sahel : la France a-t-elle perdu la guerre ?","Le Conseil de Sécurité de l'ONU est-il obsolète ?","Monde unipolaire, bipolaire ou multipolaire ?","La mondialisation est-elle en crise ?","Les sanctions économiques sont-elles efficaces ?","La Russie peut-elle redevenir un partenaire de l'Occident ?","Indo-Pacifique : nouvelle zone de tension mondiale ?","Faut-il réformer le FMI et la Banque mondiale ?","La diplomatie du carnet de chèques — danger ou pragmatisme ?","Proche-Orient : les accords d'Abraham, victoire ou compromis ?","Kosovo, Palestine, Catalogne : qui a droit à l'autodétermination ?",
-  // Diplomatie & Négociations
-  "Diplomatie climatique : succès ou échec ?","L'accord de Paris suffit-il à sauver la planète ?","Faut-il un tribunal international pour les crimes climatiques ?","La CPI est-elle efficace ?","L'aide humanitaire peut-elle être politisée ?","Faut-il conditionner l'aide au développement ?","Les ONG remplacent-elles les États dans les crises ?","La neutralité diplomatique est-elle encore possible ?","Médiation internationale : l'ONU ou les puissances régionales ?","Faut-il un siège permanent africain au Conseil de Sécurité ?",
-  // Histoire & Mémoire
-  "Esclavage et réparations : où en est le débat ?","Décolonisation : bilan et mémoire","Histoire des peuples : les rébellions oubliées","La France peut-elle regarder son passé colonial en face ?","Colonisation : crime contre l'humanité ou mission civilisatrice ?","Génocide arménien : pourquoi ça bloque encore ?","Mai 68 : révolution ou illusion ?","Napoléon : génie ou tyran ?","La traite négrière arabe : tabou ou mémoire occultée ?","Guerre d'Algérie : peut-on réconcilier les mémoires ?","Apartheid : les héritages économiques persistent-ils ?","Hiroshima-Nagasaki : la bombe était-elle nécessaire ?","La Révolution française : universelle ou nationale ?","Les empires : pourquoi s'effondrent-ils toujours ?","Haïti : première révolution noire, premier échec du monde ?","La guerre froide : quelles leçons pour aujourd'hui ?","La Shoah : comment transmettre la mémoire ?","Le colonialisme belge au Congo : génocide oublié ?","Les révolutions du XXe siècle : bilan 100 ans après","L'esclavage en Mauritanie : pourquoi persiste-t-il ?",
-  // Société & Politique française
-  "Immigration : politique ou humanitaire ?","Institutions françaises : réforme de la Ve République ?","La laïcité est-elle menacée en France ?","Le voile islamique : liberté ou atteinte à la laïcité ?","Faut-il légaliser le cannabis en France ?","Faut-il abaisser le droit de vote à 16 ans ?","Proportionnelle ou scrutin majoritaire ?","La démocratie participative peut-elle remplacer la représentative ?","Le féminisme a-t-il atteint ses objectifs ?","Racisme systémique : réalité française ou importation ?","La cancel culture menace-t-elle la liberté d'expression ?","Réseaux sociaux : faut-il réguler ou libérer ?","La désinformation : comment répondre sans censurer ?","Justice pénale : punir ou réhabiliter ?","Faut-il un service militaire obligatoire ?","Populisme : symptôme ou maladie de la démocratie ?","Les extrêmes : gauche et droite se valent-elles ?","La police : faut-il la réformer en profondeur ?","Faut-il rétablir la peine de mort ?","Le communautarisme menace-t-il la République ?",
-  // Europe
-  "Europe : fédération ou désintégration ?","Faut-il sortir de l'euro ?","L'Europe peut-elle s'affranchir de l'OTAN ?","Brexit : le Royaume-Uni a-t-il eu raison ?","Faut-il une armée européenne ?","L'Union européenne est-elle trop bureaucratique ?","Schengen : faut-il rétablir les frontières ?","L'élargissement de l'UE à l'Ukraine est-il prématuré ?","La Turquie a-t-elle encore sa place dans l'OTAN ?","L'Europe peut-elle rivaliser avec les États-Unis et la Chine ?",
-  // Économie & Finance
-  "IA et souveraineté numérique des États","Le capitalisme peut-il être réformé de l'intérieur ?","Cryptomonnaies : avenir ou bulle spéculative ?","Faut-il taxer les milliardaires ?","La retraite à 64 ans : réforme juste ou injuste ?","Les GAFA : faut-il les démanteler ?","La dette publique : faut-il vraiment s'en inquiéter ?","Commerce libre ou protectionnisme ?","Le revenu universel : utopie ou nécessité ?","Les inégalités mondiales se creusent — qui est responsable ?","Made in France : nationalisme économique ou pragmatisme ?","L'austérité est-elle efficace ?","Le chômage : faut-il un emploi garanti par l'État ?","Les syndicats ont-ils encore un rôle à jouer ?","La Banque Centrale Européenne : indépendance ou contrôle démocratique ?",
-  // Environnement & Climat
-  "Urgence climatique : les politiques sont-elles à la hauteur ?","Nucléaire : solution au changement climatique ou danger ?","Faut-il manger moins de viande pour sauver la planète ?","Voiture électrique : vraie solution ou fausse promesse ?","Décroissance économique : nécessité ou utopie ?","Les pays riches doivent-ils payer pour le climat des pays pauvres ?","Agriculture intensive : faut-il l'interdire ?","L'eau sera-t-elle au cœur des guerres futures ?","Forêts tropicales : souveraineté ou patrimoine mondial ?","Faut-il un crime d'écocide dans le droit international ?","Les activistes climatiques sont-ils trop radicaux ?","Énergies renouvelables : peut-on tout miser dessus ?","Le plastique : les réglementations actuelles suffisent-elles ?","Migration climatique : les sociétés sont-elles prêtes ?","Faut-il taxer les billets d'avion ?",
-  // Technologie & IA
-  "L'intelligence artificielle va-t-elle détruire l'emploi ?","Faut-il réguler l'IA générative ?","Transhumanisme : améliorer l'humain, jusqu'où ?","Surveillance numérique : sécurité ou Big Brother ?","Espace : la privatisation est-elle une bonne idée ?","Algorithmes et biais : peut-on faire confiance aux machines ?","Deepfakes : menace pour la démocratie ?","Robots dans les soins aux personnes âgées : acceptable ?","Vie privée en 2030 : sera-t-elle encore possible ?","L'humain augmenté : vers une société à deux vitesses ?","Faut-il une IA des droits humains à l'ONU ?","Réseaux 5G et 6G : dangers sanitaires ou progrès ?","L'école face au numérique : tablettes ou craie ?","Les GAFA savent tout de nous — doit-on s'en alarmer ?","Faut-il interdire la reconnaissance faciale dans l'espace public ?",
+const DEBATE_CATEGORIES = [
+  {id:"geo",label:"🌍 Géopolitique",topics:["La réforme de l'ONU est-elle inévitable ?","OTAN : pertinence à l'ère multipolaire","La Chine va-t-elle dépasser les États-Unis ?","Guerre en Ukraine : négociation ou victoire ?","Nucléaire iranien : accord à tout prix ?","Israël-Palestine : solution à deux États encore possible ?","Afrique : néocolonialisme ou partenariats équitables ?","Les BRICS vont-ils créer une alternative au dollar ?","Taïwan : l'Occident doit-il s'engager militairement ?","Sahel : la France a-t-elle perdu la guerre ?","Le Conseil de Sécurité de l'ONU est-il obsolète ?","Monde unipolaire, bipolaire ou multipolaire ?","La mondialisation est-elle en crise ?","Les sanctions économiques sont-elles efficaces ?","La Russie peut-elle redevenir un partenaire de l'Occident ?","Indo-Pacifique : nouvelle zone de tension mondiale ?","Faut-il réformer le FMI et la Banque mondiale ?","La diplomatie du carnet de chèques — danger ou pragmatisme ?","Proche-Orient : les accords d'Abraham, victoire ou compromis ?","Kosovo, Palestine, Catalogne : qui a droit à l'autodétermination ?","Diplomatie climatique : succès ou échec ?","La CPI est-elle efficace ?","L'aide humanitaire peut-elle être politisée ?","Les ONG remplacent-elles les États dans les crises ?","Médiation internationale : l'ONU ou les puissances régionales ?","Faut-il un siège permanent africain au Conseil de Sécurité ?","La Corée du Nord : isolement ou engagement ?","Le Venezuela : modèle ou désastre ?","Faut-il reconnaître l'État palestinien ?","La Turquie : partenaire fiable ou cheval de Troie ?"]},
+  {id:"histoire",label:"📚 Histoire & Mémoire",topics:["Esclavage et réparations : où en est le débat ?","Décolonisation : bilan et mémoire","Histoire des peuples : les rébellions oubliées","La France peut-elle regarder son passé colonial en face ?","Colonisation : crime contre l'humanité ou mission civilisatrice ?","Génocide arménien : pourquoi ça bloque encore ?","Mai 68 : révolution ou illusion ?","Napoléon : génie ou tyran ?","La traite négrière arabe : tabou ou mémoire occultée ?","Guerre d'Algérie : peut-on réconcilier les mémoires ?","Apartheid : les héritages économiques persistent-ils ?","Hiroshima-Nagasaki : la bombe était-elle nécessaire ?","La Révolution française : universelle ou nationale ?","Les empires : pourquoi s'effondrent-ils toujours ?","Haïti : première révolution noire, premier échec du monde ?","La guerre froide : quelles leçons pour aujourd'hui ?","La Shoah : comment transmettre la mémoire ?","Le colonialisme belge au Congo : génocide oublié ?","Les révolutions du XXe siècle : bilan 100 ans après","L'esclavage en Mauritanie : pourquoi persiste-t-il ?","Les guerres napoléoniennes : conquête ou libération ?","La traite atlantique : qui était complice ?","Les grandes découvertes : exploration ou pillage ?","La chute de Rome : leçons pour l'Occident moderne ?","Les croisades : foi ou conquête ?","La Première Guerre mondiale était-elle évitable ?","La déstalinisation : Khrouchtchev a-t-il tout changé ?","La résistance française : mythe ou réalité ?","Les mouvements indépendantistes africains des années 60","La Révolution cubaine : 60 ans après, quel bilan ?"]},
+  {id:"societe",label:"🏛️ Société & Politique",topics:["Immigration : politique ou humanitaire ?","Institutions françaises : réforme de la Ve République ?","La laïcité est-elle menacée en France ?","Le voile islamique : liberté ou atteinte à la laïcité ?","Faut-il légaliser le cannabis en France ?","Faut-il abaisser le droit de vote à 16 ans ?","Proportionnelle ou scrutin majoritaire ?","La démocratie participative peut-elle remplacer la représentative ?","Le féminisme a-t-il atteint ses objectifs ?","Racisme systémique : réalité française ou importation ?","La cancel culture menace-t-elle la liberté d'expression ?","Réseaux sociaux : faut-il réguler ou libérer ?","La désinformation : comment répondre sans censurer ?","Justice pénale : punir ou réhabiliter ?","Faut-il un service militaire obligatoire ?","Populisme : symptôme ou maladie de la démocratie ?","Les extrêmes : gauche et droite se valent-elles ?","La police : faut-il la réformer en profondeur ?","Faut-il rétablir la peine de mort ?","Le communautarisme menace-t-il la République ?","Parentalité et État : jusqu'où peut-on intervenir ?","Faut-il légaliser la prostitution ?","La PMA pour toutes : où en est la société ?","Faut-il encadrer les sectes ?","L'obésité : problème individuel ou de santé publique ?","Faut-il interdire les réseaux sociaux aux moins de 15 ans ?","La gratuité des transports en commun : réaliste ?","Faut-il un revenu de base pour les artistes ?","Le sans-abrisme : échec de la société ?","Faut-il sanctionner les discriminations à l'embauche ?"]},
+  {id:"eco",label:"💰 Économie & Finance",topics:["IA et souveraineté numérique des États","Le capitalisme peut-il être réformé de l'intérieur ?","Cryptomonnaies : avenir ou bulle spéculative ?","Faut-il taxer les milliardaires ?","La retraite à 64 ans : réforme juste ou injuste ?","Les GAFA : faut-il les démanteler ?","La dette publique : faut-il vraiment s'en inquiéter ?","Commerce libre ou protectionnisme ?","Le revenu universel : utopie ou nécessité ?","Les inégalités mondiales se creusent — qui est responsable ?","Made in France : nationalisme économique ou pragmatisme ?","L'austérité est-elle efficace ?","Le chômage : faut-il un emploi garanti par l'État ?","Les syndicats ont-ils encore un rôle à jouer ?","La BCE : indépendance ou contrôle démocratique ?","Le travail à temps partiel : flexibilité ou précarité ?","Faut-il plafonner les loyers ?","L'économie circulaire peut-elle remplacer le modèle linéaire ?","La semaine de 4 jours : révolution du travail ?","Faut-il nationaliser les grandes banques ?","L'économie informelle : obstacle ou solution ?","Faut-il taxer les robots ?","La croissance économique est-elle compatible avec l'écologie ?","Le tourisme de masse : bénédiction ou fléau ?","Faut-il annuler la dette des pays pauvres ?","L'inflation : qui en est vraiment responsable ?","Faut-il encadrer les prix de l'alimentation ?","L'ubérisation du travail : progrès ou régression sociale ?","Le capitalisme a-t-il une date d'expiration ?","Faut-il supprimer les paradis fiscaux ?"]},
+  {id:"sciences",label:"🧬 Sciences & Médecine",topics:["Euthanasie : le droit de mourir dans la dignité ?","Vaccins obligatoires : liberté ou sécurité collective ?","Avortement : où s'arrête la liberté de la femme ?","GPA : exploitation ou solidarité ?","Transidentité chez les mineurs : quand intervenir ?","Les drogues psychédéliques en thérapie : révolution médicale ?","Faut-il légaliser l'euthanasie active ?","Faut-il breveter les médicaments essentiels ?","La médecine prédictive : espoir ou menace ?","Les OGM : danger ou solution à la faim mondiale ?","Faut-il rendre les essais cliniques totalement transparents ?","L'alimentation ultra-transformée : faut-il l'interdire ?","Clonage humain : jamais, ou sous conditions ?","La thérapie génique peut-elle tout guérir ?","Faut-il financer la recherche sur le vieillissement ?","Le gluten, le lactose : intolérances réelles ou marketing ?","Médecine traditionnelle vs médecine moderne : faux débat ?","Faut-il rembourser les médecines douces ?","Le burn-out est-il une maladie professionnelle reconnue ?","Déserts médicaux : comment y remédier ?","La psychiatrie force-t-elle trop d'hospitalisations ?","Faut-il interdire la publicité pour l'alcool ?","Le sport de haut niveau et la santé : contradiction ?","Faut-il un revenu universel pour les chercheurs ?","La médecine préventive : investissement ou dépense ?","Faut-il encadrer les régimes alimentaires chez les enfants ?","L'obésité infantile : responsabilité des parents ou de l'État ?","Faut-il tester les drogues avant de les interdire ?","Les antibiotiques : crise mondiale à venir ?","Santé mentale des jeunes : la société est-elle responsable ?"]},
+  {id:"philo",label:"🤔 Philosophie & Éthique",topics:["La liberté existe-t-elle vraiment ?","Le bonheur est-il le but ultime de l'existence ?","Peut-on être moral sans religion ?","L'État a-t-il le droit de mentir à ses citoyens ?","La peine de mort est-elle jamais justifiable ?","Le sacrifice d'un innocent pour sauver mille vies : acceptable ?","L'intelligence artificielle peut-elle avoir des droits ?","Faut-il obéir à une loi injuste ?","Exist-il des vérités absolues ?","L'art peut-il être immoral ?","La vie a-t-elle un sens objectif ?","La démocratie est-elle le meilleur système possible ?","Faut-il toujours dire la vérité ?","L'argent peut-il acheter le bonheur ?","La nature humaine est-elle fondamentalement bonne ou mauvaise ?","Le progrès est-il toujours un bien ?","Sommes-nous responsables du bonheur des autres ?","La vengeance est-elle une forme de justice ?","Le travail : droit ou obligation ?","La vie animale a-t-elle la même valeur que la vie humaine ?","Peut-on admirer l'œuvre sans approuver l'auteur ?","L'amour romantique est-il une construction sociale ?","La souffrance est-elle nécessaire au bonheur ?","Faut-il craindre la mort ?","L'individualisme moderne est-il un progrès ou une régression ?","Le relativisme moral est-il dangereux ?","La vérité est-elle accessible à tous ?","Le libre arbitre : illusion ou réalité ?","Peut-on justifier la guerre ?","La philosophie est-elle encore utile dans le monde moderne ?"]},
+  {id:"militaire",label:"⚔️ Armée & Défense",topics:["Faut-il augmenter le budget de la défense française ?","L'OTAN est-il encore crédible ?","Guerre asymétrique : comment combattre sans frontières ?","Les drones de combat : révolution ou déshumanisation de la guerre ?","Faut-il rétablir le service militaire obligatoire ?","La dissuasion nucléaire protège-t-elle vraiment la paix ?","Cybersécurité : la prochaine guerre sera-t-elle numérique ?","Les sociétés militaires privées : nécessaires ou dangereuses ?","La guerre juste existe-t-elle encore ?","Faut-il abolir les armes à sous-munitions ?","L'armée de terre est-elle dépassée ?","Faut-il une armée européenne autonome ?","Les conflits en Afrique : ingérence ou abandon ?","Vendre des armes à des régimes autoritaires : acceptable ?","Le génocide de Srebrenica : l'ONU a-t-elle failli ?","Faut-il juger les soldats pour crimes de guerre ?","L'intelligence artificielle dans l'armée : jusqu'où ?","Les guerres proxy : jeu dangereux des grandes puissances ?","La résistance armée est-elle toujours légitime ?","Les vétérans de guerre : la société les abandonne-t-elle ?","Faut-il interdire les armes autonomes létales ?","La paix perpétuelle de Kant : utopie ou programme ?","Les sanctions économiques sont-elles une alternative à la guerre ?","Faut-il une police internationale ?","Le terrorisme peut-il être vaincu ?"]},
+  {id:"tech",label:"💻 Technologie & IA",topics:["L'intelligence artificielle va-t-elle détruire l'emploi ?","Faut-il réguler l'IA générative ?","Transhumanisme : améliorer l'humain, jusqu'où ?","Surveillance numérique : sécurité ou Big Brother ?","Espace : la privatisation est-elle une bonne idée ?","Algorithmes et biais : peut-on faire confiance aux machines ?","Deepfakes : menace pour la démocratie ?","Robots dans les soins aux personnes âgées : acceptable ?","Vie privée en 2030 : sera-t-elle encore possible ?","L'humain augmenté : vers une société à deux vitesses ?","Faut-il une IA des droits humains à l'ONU ?","Réseaux 5G et 6G : dangers sanitaires ou progrès ?","L'école face au numérique : tablettes ou craie ?","Faut-il interdire la reconnaissance faciale dans l'espace public ?","Faut-il taxer les robots qui remplacent des travailleurs ?","L'open source peut-il sauver le web ?","Les réseaux sociaux rendent-ils vraiment plus bête ?","Faut-il un droit à la déconnexion numérique ?","Le métavers : avenir du web ou échec annoncé ?","Blockchain : au-delà de la crypto, quel futur ?","Faut-il encadrer les algorithmes des plateformes ?","L'automatisation bénéficiera-t-elle à tous ?","Faut-il un permis pour utiliser l'IA ?","La réalité virtuelle peut-elle remplacer le monde réel ?","L'IA peut-elle créer de l'art authentique ?"]},
+  {id:"env",label:"🌱 Environnement & Énergie",topics:["Urgence climatique : les politiques sont-elles à la hauteur ?","Nucléaire : solution au changement climatique ou danger ?","Faut-il manger moins de viande pour sauver la planète ?","Voiture électrique : vraie solution ou fausse promesse ?","Décroissance économique : nécessité ou utopie ?","Les pays riches doivent-ils payer pour le climat des pays pauvres ?","Agriculture intensive : faut-il l'interdire ?","L'eau sera-t-elle au cœur des guerres futures ?","Forêts tropicales : souveraineté ou patrimoine mondial ?","Faut-il un crime d'écocide dans le droit international ?","Les activistes climatiques sont-ils trop radicaux ?","Énergies renouvelables : peut-on tout miser dessus ?","Le plastique : les réglementations actuelles suffisent-elles ?","Migration climatique : les sociétés sont-elles prêtes ?","Faut-il taxer les billets d'avion ?","La déforestation amazonienne : crime planétaire ?","Les OGM peuvent-ils nourrir la planète durablement ?","Faut-il interdire la chasse ?","La pêche industrielle détruit-elle les océans ?","Faut-il taxer les produits polluants à la production ?","La sobriété énergétique : contrainte ou mode de vie ?","Les villes de demain seront-elles vraiment vertes ?","Faut-il rendre les bâtiments publics à énergie positive ?","Le tourisme spatial est-il acceptable écologiquement ?","La géo-ingénierie peut-elle sauver le climat ?"]},
+  {id:"culture",label:"🎭 Culture, Sport & Éducation",topics:["L'école française est-elle à la hauteur des défis du XXIe siècle ?","Faut-il rendre l'université gratuite pour tous ?","Le sport de haut niveau est-il encore un modèle pour la jeunesse ?","Les JO sont-ils devenus une machine commerciale ?","Faut-il réformer le baccalauréat ?","La culture populaire peut-elle être intellectuelle ?","Faut-il des quotas de diversité dans les médias ?","L'art contemporain est-il compris du grand public ?","Faut-il nationaliser les grandes salles de spectacle ?","Cinéma français : exception culturelle ou protectionnisme ?","Faut-il enseigner la philosophie dès le primaire ?","Les jeux vidéo violents influencent-ils les comportements ?","La lecture est-elle en danger ?","Faut-il imposer des quotas de chansons françaises à la radio ?","Le rap est-il de la poésie ?","Les études de lettres ont-elles encore un avenir ?","Faut-il rendre le latin obligatoire ?","Les musées doivent-ils rendre les œuvres coloniales ?","Faut-il supprimer les notes à l'école ?","Le dopage dans le sport : punir ou encadrer ?","L'éducation sexuelle à l'école : qui doit en décider ?","Faut-il interdire les téléphones dans les écoles ?","La mixité sociale à l'école : comment l'atteindre vraiment ?","Le sport féminin est-il encore sous-médiatisé ?","Faut-il enseigner les religions à l'école publique ?"]},
+  {id:"europe",label:"🇪🇺 Europe & Relations Int.",topics:["Europe : fédération ou désintégration ?","Faut-il sortir de l'euro ?","L'Europe peut-elle s'affranchir de l'OTAN ?","Brexit : le Royaume-Uni a-t-il eu raison ?","Faut-il une armée européenne ?","L'Union européenne est-elle trop bureaucratique ?","Schengen : faut-il rétablir les frontières ?","L'élargissement de l'UE à l'Ukraine est-il prématuré ?","La Turquie a-t-elle encore sa place dans l'OTAN ?","L'Europe peut-elle rivaliser avec les États-Unis et la Chine ?","Faut-il un président de l'Europe élu au suffrage universel ?","La zone euro est-elle une réussite ?","L'Europe sociale existe-t-elle vraiment ?","Faut-il une politique d'immigration européenne commune ?","La souveraineté numérique européenne : possible ?","L'accord avec le Mercosur : libre-échange ou trahison écologique ?","Faut-il un impôt européen ?","La politique agricole commune est-elle dépassée ?","Les populismes menacent-ils l'UE de l'intérieur ?","L'Europe doit-elle parler d'une seule voix à l'ONU ?","Faut-il réformer le parlement européen ?","La subsidiarité : principe vivant ou mort ?","L'Afrique est-elle le partenaire naturel de l'Europe ?","La Russie sera-t-elle un jour dans l'UE ?","Faut-il un référendum sur la sortie de l'euro ?"]},
+  {id:"droit",label:"⚖️ Droit, Justice & Libertés",topics:["La peine de mort est-elle jamais justifiable ?","Faut-il légaliser l'euthanasie en France ?","Le droit à l'avortement est-il menacé en Europe ?","Mariage pour tous : où en est l'Europe ?","Faut-il encadrer le port d'armes ?","La présomption d'innocence est-elle respectée ?","Faut-il abolir la détention provisoire ?","Les prisons françaises : état d'urgence ?","Faut-il dépénaliser le cannabis ?","La justice des mineurs est-elle trop laxiste ?","Faut-il élargir le droit d'asile ?","La liberté d'expression a-t-elle des limites ?","Faut-il réguler les discours de haine en ligne ?","Le droit à l'oubli numérique : réalité ou illusion ?","Faut-il une amnistie pour les gilets jaunes ?","La justice climatique est-elle une réalité ?","Faut-il créer un crime d'écocide en droit français ?","Les lanceurs d'alerte sont-ils suffisamment protégés ?","Faut-il réformer la Cour de cassation ?","Le secret professionnel des avocats est-il absolu ?","La justice prédictive par IA : acceptable ?","Faut-il indemniser les victimes d'erreurs judiciaires plus largement ?","Le droit à mourir dans la dignité : où en est la France ?","Faut-il un droit constitutionnel à l'environnement ?","Les droits des animaux : vers une personnalité juridique ?"]},
 ];
+const DEBATE_TOPICS = DEBATE_CATEGORIES.flatMap(c=>c.topics);
 const TRIAL_TOPICS = ["Corruption d'un élu local","Crime financier — blanchiment international","Atteinte à la liberté de la presse","Violation du droit international humanitaire","Discrimination systémique en entreprise","Abus de pouvoir d'un ministre"];
 const JOBS = [
   {title:"Chargé de mission diplomatique",co:"Ministère des Affaires étrangères",tags:["Paris","CDI","Bac+5"]},
@@ -392,9 +394,72 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
   );
 }
 
+// ── TOPIC PICKER ─────────────────────────────────────────────
+function TopicPicker({topic,setTopic,T}:{topic:string;setTopic:(t:string)=>void;T:Theme}) {
+  const [catId,setCatId] = useState<string|null>(null);
+  const cat = DEBATE_CATEGORIES.find(c=>c.id===catId);
+  return (
+    <div>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Sujet du débat</p>
+      {topic&&<p style={{color:T.blueB,fontSize:12,fontWeight:600,marginBottom:8,padding:"6px 10px",background:T.blueG,borderRadius:8}}>✓ {topic.slice(0,50)}{topic.length>50?"…":""}</p>}
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+        {DEBATE_CATEGORIES.map(c=>(
+          <button key={c.id} onClick={()=>setCatId(catId===c.id?null:c.id)} style={{padding:"6px 12px",borderRadius:20,border:`1.5px solid ${catId===c.id?T.blueB:T.b1}`,background:catId===c.id?T.blueG:T.card,color:catId===c.id?T.blueB:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>{c.label}</button>
+        ))}
+      </div>
+      {cat&&(
+        <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:240,overflowY:"auto",border:`1px solid ${T.b1}`,borderRadius:10,padding:8}}>
+          {cat.topics.map(t=>(
+            <button key={t} onClick={()=>{setTopic(t);setCatId(null);}} style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${topic===t?T.blueB:T.b1}`,background:topic===t?T.blueG:"transparent",cursor:"pointer",textAlign:"left",color:topic===t?T.blueB:T.text,fontSize:12,fontWeight:topic===t?700:400,transition:"all .15s",fontFamily:"inherit"}}>{t}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── BRIEFING SCREEN ───────────────────────────────────────────
+function BriefingScreen({topic,T,onStart,onSkip}:{topic:string;T:Theme;onStart:()=>void;onSkip:()=>void}) {
+  const [speaking,setSpeaking] = useState(false);
+  const briefText = `"${topic}" est un sujet complexe qui soulève des enjeux majeurs dans notre société. Pour débattre efficacement, il est utile de connaître les principaux arguments des deux camps, le contexte historique et les acteurs clés du débat. Prenez le temps de structurer votre position avec des faits concrets, des exemples réels et une argumentation logique. Votre journaliste testera la solidité de votre raisonnement.`;
+  const speakBriefing = () => {
+    if(!("speechSynthesis" in window)) return;
+    if(speaking){window.speechSynthesis.cancel();setSpeaking(false);return;}
+    const u = new SpeechSynthesisUtterance(briefText);
+    u.lang="fr-FR";u.rate=0.95;
+    const voices=window.speechSynthesis.getVoices();
+    const fr=voices.find(v=>v.lang.startsWith("fr"));
+    if(fr)u.voice=fr;
+    u.onend=()=>setSpeaking(false);
+    setSpeaking(true);
+    window.speechSynthesis.speak(u);
+  };
+  return(
+    <div style={{padding:"24px 20px",display:"flex",flexDirection:"column",gap:20,height:"100%"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:44,height:44,borderRadius:12,background:T.blueG,border:`1px solid ${T.blueB}30`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="info" s={22} c={T.blueB}/></div>
+        <div>
+          <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase"}}>Avant le débat</p>
+          <h2 style={{color:T.text,fontSize:18,fontWeight:800,marginTop:2}}>Comprendre le sujet</h2>
+        </div>
+      </div>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:20}}>
+        <p style={{color:T.text,fontSize:14,lineHeight:1.7,fontWeight:500}}>{briefText}</p>
+      </div>
+      <button onClick={speakBriefing} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:14,borderRadius:12,border:`1.5px solid ${speaking?T.red:T.blueB}`,background:speaking?`${T.red}15`:T.blueG,color:speaking?T.red:T.blueB,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>
+        <Ic n={speaking?"x":"play"} s={18} c={speaking?T.red:T.blueB}/>{speaking?"Arrêter la lecture":"🔊 Écouter"}
+      </button>
+      <div style={{display:"flex",gap:10,marginTop:"auto"}}>
+        <button onClick={onSkip} style={{flex:1,padding:14,borderRadius:12,border:`1px solid ${T.b1}`,background:"transparent",color:T.textD,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Ignorer</button>
+        <button onClick={onStart} style={{flex:2,padding:14,borderRadius:12,border:"none",background:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Lancer le débat →</button>
+      </div>
+    </div>
+  );
+}
+
 // ── STUDIO SCREEN ─────────────────────────────────────────────
 function StudioScreen({T}:{T:Theme}) {
-  const [step,setStep] = useState<"home"|"journalist"|"level"|"topic"|"public"|"stage">("home");
+  const [step,setStep] = useState<"home"|"journalist"|"level"|"topic"|"public"|"brief"|"stage">("home");
   const [journalist,setJournalist] = useState<typeof JOURNALISTS[0]|null>(null);
   const [level,setLevel] = useState<typeof LEVELS[0]|null>(null);
   const [topic,setTopic] = useState("");
@@ -404,6 +469,9 @@ function StudioScreen({T}:{T:Theme}) {
 
   if(step==="stage"&&journalist&&level&&topic){
     return <AudioStage config={{journalist,level,topic,publicSide}} T={T} onBack={()=>setStep("home")}/>;
+  }
+  if(step==="brief"&&topic){
+    return <BriefingScreen topic={topic} T={T} onStart={()=>setStep("stage")} onSkip={()=>setStep("stage")}/>;
   }
 
   return(
@@ -467,15 +535,8 @@ function StudioScreen({T}:{T:Theme}) {
           ))}
         </div>
       </div>
-      {/* Topic */}
-      <div>
-        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Sujet du débat</p>
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>
-          {DEBATE_TOPICS.map(t=>(
-            <button key={t} onClick={()=>setTopic(t)} style={{padding:"10px 14px",borderRadius:10,border:`1.5px solid ${topic===t?T.blueB:T.b1}`,background:topic===t?T.blueG:T.card,cursor:"pointer",textAlign:"left",color:topic===t?T.blueB:T.text,fontSize:13,fontWeight:topic===t?700:400,transition:"all .2s",fontFamily:"inherit"}}>{t}</button>
-          ))}
-        </div>
-      </div>
+      {/* Topic — catégories */}
+      <TopicPicker topic={topic} setTopic={setTopic} T={T}/>
       {/* Public */}
       <div>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Public en salle</p>
@@ -488,8 +549,8 @@ function StudioScreen({T}:{T:Theme}) {
           ))}
         </div>
       </div>
-      <button onClick={()=>{if(journalist&&level&&topic)setStep("stage");}} disabled={!journalist||!level||!topic} style={{padding:16,borderRadius:14,border:"none",background:journalist&&level&&topic?T.blueB:T.b1,color:journalist&&level&&topic?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:journalist&&level&&topic?"pointer":"not-allowed",fontFamily:"inherit",letterSpacing:.5,marginBottom:8}}>
-        Lancer le débat
+      <button onClick={()=>{if(journalist&&level&&topic)setStep("brief");}} disabled={!journalist||!level||!topic} style={{padding:16,borderRadius:14,border:"none",background:journalist&&level&&topic?T.blueB:T.b1,color:journalist&&level&&topic?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:journalist&&level&&topic?"pointer":"not-allowed",fontFamily:"inherit",letterSpacing:.5,marginBottom:8}}>
+        Continuer
       </button>
     </div>
   );
@@ -685,44 +746,89 @@ function MessagesScreen({T}:{T:Theme}) {
     );
   }
 
+  const [msgTab,setMsgTab] = useState<"principal"|"groupes"|"demandes">("principal");
+  const groupConvos = CONVOS.filter(c=>c.init.length>2);
+  const dmConvos = CONVOS.filter(c=>c.init.length<=2);
+  const requests = [{id:99,name:"Youssef T.",last:"Salut, je voulais débattre avec toi !",time:"Mar",unread:1,init:"YT"},{id:100,name:"Priya N.",last:"Tu veux faire un duel NEXUS ?",time:"Dim",unread:1,init:"PN"}];
+  const listConvos = msgTab==="principal"?dmConvos:msgTab==="groupes"?groupConvos:requests;
+
   return(
-    <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
-      <div>
-        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Communauté</p>
-        <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text}}>Messages</h1>
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px 0",flexShrink:0}}>
+        <h1 style={{fontSize:26,fontWeight:800,color:T.text,marginBottom:12}}>Messages</h1>
+        <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`,marginBottom:4}}>
+          {(["principal","groupes","demandes"] as const).map(t=>(
+            <button key={t} onClick={()=>setMsgTab(t)} style={{flex:1,padding:"10px 0",border:"none",background:"transparent",borderBottom:`2px solid ${msgTab===t?T.blueB:"transparent"}`,color:msgTab===t?T.blueB:T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",textTransform:"capitalize",transition:"all .2s"}}>
+              {t==="principal"?"Principal":t==="groupes"?"Groupes":"Demandes"}{t==="demandes"&&<span style={{marginLeft:5,background:T.red,color:"#fff",borderRadius:10,fontSize:10,padding:"1px 5px"}}>2</span>}
+            </button>
+          ))}
+        </div>
       </div>
-      <div style={{position:"relative"}}>
-        <Ic n="search" s={16} c={T.muted}/>
-        <input placeholder="Rechercher une conversation…" style={{width:"100%",background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 14px 10px 36px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
-        <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}><Ic n="search" s={16} c={T.muted}/></div>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:2}}>
-        {CONVOS.map(c=>(
-          <button key={c.id} onClick={()=>setActive(c)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:"none",background:"transparent",cursor:"pointer",textAlign:"left",transition:"background .2s"}}
-            onMouseEnter={e=>(e.currentTarget.style.background=T.card)}
-            onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
-            <Avatar init={c.init} size={46} T={T}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                <span style={{color:T.text,fontWeight:700,fontSize:14}}>{c.name}</span>
-                <span style={{color:T.muted,fontSize:11}}>{c.time}</span>
+      <div style={{flex:1,overflowY:"auto",padding:"8px 20px"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:2}}>
+          {listConvos.map(c=>(
+            <button key={c.id} onClick={()=>setActive(c as typeof CONVOS[0])} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:"none",background:"transparent",cursor:"pointer",textAlign:"left",transition:"background .2s"}}
+              onMouseEnter={e=>(e.currentTarget.style.background=T.card)}
+              onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+              <Avatar init={c.init} size={46} T={T}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                  <span style={{color:T.text,fontWeight:700,fontSize:14}}>{c.name}</span>
+                  <span style={{color:T.muted,fontSize:11}}>{c.time}</span>
+                </div>
+                <p style={{color:T.textD,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.last}</p>
               </div>
-              <p style={{color:T.textD,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.last}</p>
+              {c.unread>0&&<div style={{width:20,height:20,borderRadius:"50%",background:T.blueB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",flexShrink:0}}>{c.unread}</div>}
+            </button>
+          ))}
+        </div>
+        <button style={{width:"100%",marginTop:8,padding:"14px",borderRadius:12,border:`1.5px dashed ${T.b1}`,background:"transparent",color:T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <Ic n="plus" s={16} c={T.textD}/>{msgTab==="groupes"?"Nouveau groupe":"Nouveau message"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── SIMULATION HUB ────────────────────────────────────────────
+function SimulationHub({T}:{T:Theme}) {
+  const [view,setView] = useState<"hub"|"studio"|"sims">("hub");
+  if(view==="studio") return <StudioScreen T={T}/>;
+  if(view==="sims") return <SimulationScreen T={T}/>;
+  const cards = [
+    {id:"studio",icon:"mic",label:"Studio Débat",desc:"Débat audio face à un journaliste IA",color:"#2B78F5"},
+    {id:"sims",icon:"globe",label:"Simulations",desc:"ONU, Procès, Soutenance, Commercial…",color:"#7C3AED"},
+  ];
+  return(
+    <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:20}}>
+      <div>
+        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>NEXUS</p>
+        <h1 style={{fontSize:26,fontWeight:800,color:T.text}}>Simulation</h1>
+        <p style={{color:T.textD,fontSize:13,marginTop:4}}>Entraîne-toi à l&apos;oral dans des situations réelles</p>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        {cards.map(c=>(
+          <button key={c.id} onClick={()=>setView(c.id as "studio"|"sims")} style={{padding:20,borderRadius:16,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+            onMouseEnter={e=>(e.currentTarget.style.background=`${c.color}15`)}
+            onMouseLeave={e=>(e.currentTarget.style.background=`${c.color}08`)}>
+            <div style={{width:52,height:52,borderRadius:14,background:`${c.color}20`,border:`1px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Ic n={c.icon} s={26} c={c.color}/>
             </div>
-            {c.unread>0&&<div style={{width:20,height:20,borderRadius:"50%",background:T.blueB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",flexShrink:0}}>{c.unread}</div>}
+            <div style={{flex:1}}>
+              <p style={{color:T.text,fontWeight:800,fontSize:16}}>{c.label}</p>
+              <p style={{color:T.textD,fontSize:12,marginTop:3}}>{c.desc}</p>
+            </div>
+            <Ic n="chevR" s={18} c={T.muted}/>
           </button>
         ))}
       </div>
-      <button style={{padding:"14px",borderRadius:12,border:`1.5px dashed ${T.b1}`,background:"transparent",color:T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-        <Ic n="plus" s={16} c={T.textD}/>Nouveau groupe ou message
-      </button>
     </div>
   );
 }
 
 // ── SIMULATION SCREEN ─────────────────────────────────────────
 function SimulationScreen({T}:{T:Theme}) {
-  const [mode,setMode] = useState<"home"|"un"|"trial"|"interview"|"elections">("home");
+  const [mode,setMode] = useState<"home"|"un"|"trial"|"interview"|"elections"|"soutenance"|"examen"|"pitch"|"secu"|"prise"|"tutorat">("home");
   const [unRole,setUnRole] = useState<typeof UN_DEL[0]|null>(null);
   const [unTopic,setUnTopic] = useState("");
   const [unMessages,setUnMessages] = useState<{role:string;flag:string;country:string;text:string}[]>([]);
@@ -836,9 +942,14 @@ function SimulationScreen({T}:{T:Theme}) {
           {id:"un",icon:"globe",label:"Simulation ONU",sub:"Conseil de Sécurité",color:T.blueB},
           {id:"trial",icon:"scale",label:"Procès fictif",sub:"Avocat ou Procureur",color:T.purple},
           {id:"interview",icon:"brief",label:"Entretien RH",sub:"Coaching carrière",color:T.green},
-          {id:"elections",icon:"vote",label:"Élections virtuelles",sub:"Sondage en direct",color:T.red},
+          {id:"soutenance",icon:"award",label:"Soutenance orale",sub:"Thèse / Projet",color:"#D97706"},
+          {id:"examen",icon:"star",label:"Examen oral",sub:"Jury académique",color:"#E03535"},
+          {id:"pitch",icon:"zap",label:"Pitch commercial",sub:"Investisseurs / Clients",color:"#16A34A"},
+          {id:"secu",icon:"shield",label:"Ingénierie sociale",sub:"Cybersécurité humaine",color:"#7C3AED"},
+          {id:"prise",icon:"users",label:"Prise de parole",sub:"Discours public",color:T.blueB},
+          {id:"tutorat",icon:"info",label:"Cours magistral",sub:"Enseigner un sujet",color:"#D97706"},
         ].map(sim=>(
-          <button key={sim.id} onClick={()=>setMode(sim.id as "un"|"trial"|"interview"|"elections")} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,cursor:"pointer",textAlign:"left",transition:"all .2s",display:"flex",flexDirection:"column",gap:10}}
+          <button key={sim.id} onClick={()=>setMode(sim.id as typeof mode)} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,cursor:"pointer",textAlign:"left",transition:"all .2s",display:"flex",flexDirection:"column",gap:10}}
             onMouseEnter={e=>(e.currentTarget.style.border=`1px solid ${sim.color}40`)}
             onMouseLeave={e=>(e.currentTarget.style.border=`1px solid ${T.b1}`)}>
             <div style={{width:40,height:40,borderRadius:10,background:`${sim.color}15`,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -1062,15 +1173,14 @@ function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
 export default function NexusApp() {
   const [dark,setDark] = useState(true);
   const T = dark ? DARK : LIGHT;
-  const [tab,setTab] = useState<"feed"|"studio"|"sim"|"events"|"messages"|"profile">("feed");
+  const [tab,setTab] = useState<"feed"|"simulation"|"messages"|"events"|"profile">("feed");
   const [showPremium,setShowPremium] = useState(false);
 
   const NAV = [
     {id:"feed",icon:"feed",label:"ACTU"},
-    {id:"studio",icon:"mic",label:"STUDIO"},
-    {id:"sim",icon:"globe",label:"SIMUL."},
-    {id:"events",icon:"cal",label:"AGENDA"},
+    {id:"simulation",icon:"zap",label:"SIMUL."},
     {id:"messages",icon:"msg",label:"MSG"},
+    {id:"events",icon:"cal",label:"AGENDA"},
     {id:"profile",icon:"user",label:"PROFIL"},
   ];
 
@@ -1108,7 +1218,7 @@ export default function NexusApp() {
               <Ic n="bell" s={16} c={T.textD}/>
               <div style={{position:"absolute",top:7,right:7,width:7,height:7,borderRadius:"50%",background:T.red,border:`2px solid ${T.surf}`}}/>
             </button>
-            <div onClick={()=>setTab("profile")} style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,cursor:"pointer"}}>A</div>
+            <div onClick={()=>setTab("profile")} style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,cursor:"pointer",flexShrink:0}}>A</div>
           </div>
         </div>
       )}
@@ -1118,11 +1228,10 @@ export default function NexusApp() {
           <PremiumScreen T={T} onBack={()=>setShowPremium(false)}/>
         ) : (
           <>
-            {tab==="feed"&&<FeedScreen T={T} onDebate={()=>setTab("studio")}/>}
-            {tab==="studio"&&<StudioScreen T={T}/>}
-            {tab==="sim"&&<SimulationScreen T={T}/>}
-            {tab==="events"&&<EventsScreen T={T}/>}
+            {tab==="feed"&&<FeedScreen T={T} onDebate={()=>setTab("simulation")}/>}
+            {tab==="simulation"&&<SimulationHub T={T}/>}
             {tab==="messages"&&<MessagesScreen T={T}/>}
+            {tab==="events"&&<EventsScreen T={T}/>}
             {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)}/>}
           </>
         )}
