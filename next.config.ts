@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   ...(isCapacitor || isGhPages
     ? { output: "export", trailingSlash: true }
     : {}),
-  ...(isGhPages ? { basePath: "/arca", assetPrefix: "/arca" } : {}),
+  ...(isGhPages ? { basePath: "/ARCA", assetPrefix: "/ARCA" } : {}),
   images: {
     unoptimized: true,
   },
