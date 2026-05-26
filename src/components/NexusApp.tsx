@@ -850,31 +850,61 @@ function StudioScreen({T}:{T:Theme}) {
 const RSS_SOURCES = [
   {name:"Le Monde",url:"https://www.lemonde.fr/rss/une.xml",tag:"LE MONDE",tagC:"#E03535"},
   {name:"France 24",url:"https://www.france24.com/fr/rss",tag:"FRANCE 24",tagC:"#2B78F5"},
-  {name:"RFI",url:"https://www.rfi.fr/fr/rss",tag:"RFI",tagC:"#16A34A"},
-  {name:"Reuters FR",url:"https://feeds.reuters.com/reuters/topNews",tag:"REUTERS",tagC:"#7C3AED"},
+  {name:"BBC Afrique",url:"https://feeds.bbci.co.uk/afrique/rss.xml",tag:"BBC",tagC:"#7C3AED"},
+  {name:"Google Actualités",url:"https://news.google.com/rss?hl=fr&gl=FR&ceid=FR:fr",tag:"GOOGLE NEWS",tagC:"#16A34A"},
 ];
 type LiveArticle = {id:string;title:string;src:string;tag:string;tagC:string;time:string;imgUrl:string|null;link:string;verif?:{label:string;color:string}};
 
+function parseRawRSS(xml:string):{title:string;link:string;pubDate:string;guid:string;thumbnail:string|undefined}[]{
+  try{
+    if(typeof DOMParser==="undefined") return [];
+    const doc=new DOMParser().parseFromString(xml,"text/xml");
+    return Array.from(doc.querySelectorAll("item,entry")).slice(0,3).map(el=>{
+      const txt=(sel:string)=>el.querySelector(sel)?.textContent?.replace(/<!\[CDATA\[|\]\]>/g,"").trim()||"";
+      const linkEl=el.querySelector("link");
+      const link=linkEl?.getAttribute("href")||linkEl?.textContent?.trim()||"";
+      const thumb=el.getElementsByTagNameNS("http://search.yahoo.com/mrss/","thumbnail")[0]?.getAttribute("url")
+        ||el.querySelector("enclosure[type^='image']")?.getAttribute("url")||undefined;
+      return{title:txt("title"),link,pubDate:txt("pubDate")||txt("published"),guid:txt("guid")||link,thumbnail:thumb};
+    });
+  }catch{return [];}
+}
+
+function makeTimeStr(pubStr:string):string{
+  const pub=new Date(pubStr);
+  const diff=Date.now()-pub.getTime();
+  if(isNaN(diff)) return "";
+  if(diff<3600000) return `${Math.floor(diff/60000)}min`;
+  if(diff<86400000) return `${Math.floor(diff/3600000)}h`;
+  return `${Math.floor(diff/86400000)}j`;
+}
+
 async function fetchLiveNews(): Promise<LiveArticle[]> {
   const results: LiveArticle[] = [];
+  const rssKey = typeof window!=="undefined"?localStorage.getItem("rss2json_key")||"":"";
   await Promise.allSettled(RSS_SOURCES.map(async(src)=>{
     try{
-      const proxy=`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=3`;
-      const res=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
-      if(!res.ok) return;
-      const data=await res.json();
-      if(data.status!=="ok"||!data.items) return;
-      for(const item of data.items.slice(0,3)){
-        const pub=new Date(item.pubDate||item.published||"");
-        const diff=Date.now()-pub.getTime();
-        const hrs=Math.floor(diff/3600000);
-        const mins=Math.floor(diff/60000);
-        const timeStr=isNaN(diff)?"":diff<3600000?`${mins}min`:diff<86400000?`${hrs}h`:`${Math.floor(diff/86400000)}j`;
+      // Primary: rss2json (good JSON + images)
+      let items:Array<{title:string;link:string;pubDate?:string;published?:string;guid?:string;thumbnail?:string|null;enclosure?:{link?:string}}> | null = null;
+      try{
+        const apiParam=rssKey?`&api_key=${rssKey}`:"";
+        const r=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=3${apiParam}`,{signal:AbortSignal.timeout(7000)});
+        if(r.ok){const d=await r.json();if(d.status==="ok"&&d.items?.length) items=d.items;}
+      }catch{/*try fallback*/}
+      // Fallback: corsproxy.io + DOMParser
+      if(!items){
+        try{
+          const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(src.url)}`,{signal:AbortSignal.timeout(7000)});
+          if(r.ok){const txt=await r.text();const parsed=parseRawRSS(txt);if(parsed.length) items=parsed;}
+        }catch{/*source unavailable*/}
+      }
+      if(!items) return;
+      for(const item of items.slice(0,3)){
         results.push({
           id:`${src.name}-${item.guid||item.link}`,
-          title:(item.title||"").replace(/<[^>]+>/g,"").slice(0,120),
+          title:(item.title||"").replace(/<[^>]+>/g,"").replace(/<!\[CDATA\[|\]\]>/g,"").slice(0,120),
           src:src.name,tag:src.tag,tagC:src.tagC,
-          time:timeStr,
+          time:makeTimeStr(item.pubDate||item.published||""),
           imgUrl:item.thumbnail||item.enclosure?.link||null,
           link:item.link||"",
         });
@@ -932,18 +962,22 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
     setLastRefresh(new Date());
     setLiveLoading(false);
 
-    // Auto-publish genuinely new articles as official NEXUS certified posts
-    const seenIds: string[] = JSON.parse(localStorage.getItem("nexus_seen_ids")||"[]");
-    const newArticles = articles.filter(a=>!seenIds.includes(a.id));
-    if(newArticles.length>0){
-      const newPosts: NexusOfficialPost[] = newArticles.map(a=>({...a,publishedAt:Date.now()}));
+    // Always merge fresh articles into nexusPosts (dedup by id)
+    if(articles.length>0){
       const existing: NexusOfficialPost[] = JSON.parse(localStorage.getItem("nexus_official_posts")||"[]");
-      const all = [...newPosts,...existing].slice(0,60);
+      const existingIds=new Set(existing.map(p=>p.id));
+      const brandNew=articles.filter(a=>!existingIds.has(a.id)).map(a=>({...a,publishedAt:Date.now()}));
+      const all=[...brandNew,...existing].slice(0,60);
       setNexusPosts(all);
       localStorage.setItem("nexus_official_posts",JSON.stringify(all));
-      const newSeen = [...seenIds,...newArticles.map(a=>a.id)].slice(-300);
-      localStorage.setItem("nexus_seen_ids",JSON.stringify(newSeen));
-      onNewPosts(newArticles.length);
+      // Badge: only count articles never seen before
+      if(brandNew.length>0){
+        const seenIds: string[] = JSON.parse(localStorage.getItem("nexus_seen_ids")||"[]");
+        const unnotified=brandNew.filter(a=>!seenIds.includes(a.id));
+        const newSeen=[...seenIds,...brandNew.map(a=>a.id)].slice(-300);
+        localStorage.setItem("nexus_seen_ids",JSON.stringify(newSeen));
+        if(unnotified.length>0) onNewPosts(unnotified.length);
+      }
     }
   };
 
