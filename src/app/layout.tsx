@@ -65,12 +65,29 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#07090F" />
         <meta name="mobile-web-app-capable" content="yes" />
-        {/* Service Worker */}
+        {/* Service Worker — force cache clear on version bump */}
         <script dangerouslySetInnerHTML={{__html: `
+          var APP_VER = "6";
           if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-              navigator.serviceWorker.register('/sw.js');
-            });
+            if (localStorage.getItem('app_ver') !== APP_VER) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                var p = regs.map(function(r){ return r.unregister(); });
+                return Promise.all(p);
+              }).then(function() {
+                if ('caches' in window) {
+                  return caches.keys().then(function(keys) {
+                    return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+                  });
+                }
+              }).then(function() {
+                localStorage.setItem('app_ver', APP_VER);
+                window.location.reload();
+              });
+            } else {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/ARCA/sw.js');
+              });
+            }
           }
         `}} />
       </head>
