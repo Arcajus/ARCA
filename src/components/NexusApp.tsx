@@ -61,6 +61,14 @@ function stopSpeech() {
   if (_elAudio) { _elAudio.pause(); _elAudio = null; }
   if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }
+// iOS requires audio to be unlocked by a direct user gesture before programmatic play works
+let _audioUnlocked = false;
+function unlockAudio() {
+  if (_audioUnlocked || typeof window === "undefined") return;
+  _audioUnlocked = true;
+  const a = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+  a.play().then(() => a.pause()).catch(() => {});
+}
 
 // ── ICONS ────────────────────────────────────────────────────
 function Ic({n,s=22,c="currentColor",w=1.6}:{n:string;s?:number;c?:string;w?:number}) {
@@ -295,6 +303,7 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
   },[timerOn,timer]);// eslint-disable-line
 
   const startMic = ()=>{
+    unlockAudio();
     if(typeof window==="undefined")return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
@@ -937,6 +946,7 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
   };
 
   const toggleMic=()=>{
+    unlockAudio();
     if(listening){recRef.current?.stop();setListening(false);return;}
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w=window as any;
