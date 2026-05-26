@@ -328,20 +328,31 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
     addLine("user","Vous",text);
     setPhase("waiting");setLoading(true);setTimerOn(false);
     try{
-      const hist = transcript.map(m=>({role:m.role==="user"?"user":"assistant",content:m.text}));
+      const rawHist = transcript.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:m.text}));
+      const firstUserIdx = rawHist.findIndex(m=>m.role==="user");
+      const hist = firstUserIdx>=0 ? rawHist.slice(firstUserIdx) : [];
+      const sysPrompt = `Tu es ${j?.name||"Élise Moreau"}, journaliste TV NEXUS. Débat EN DIRECT sur : "${topic}". ${level?`Niveau adversaire : ${level.label}.`:""} RÈGLES STRICTES : 1) Réponds DIRECTEMENT à ce que l'invité vient de dire — cite ses mots exacts, rebondis dessus. 2) Conteste avec des faits précis, des chiffres, des contre-exemples concrets. 3) Si réponse vague ou hors sujet → dis "Je vous coupe" et reformule la question plus précise. 4) Varie tes angles : statistics, comparaisons internationales, opinion publique, experts, contradictions. 5) JAMAIS deux fois la même question. 6) 2-3 phrases orales max. Français soutenu, rythme télé.`;
       const res = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
         headers:{"Content-Type":"application/json","x-api-key":typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"","anthropic-version":"2023-06-01"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,system:`Tu es ${j?.name||"Élise Moreau"}, journaliste TV NEXUS. Débat sur : "${topic}". ${level?`Niveau adversaire : ${level.label}.`:""} Style oral, 2-3 phrases max, incisif. "Je vous coupe" si vague. Français soutenu.`,messages:[...hist,{role:"user",content:text}]})
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,system:sysPrompt,messages:[...hist,{role:"user",content:text}]})
       });
       const data = await res.json();
-      const reply = (data.content as {text:string}[])?.map(c=>c.text).join("")||"Je vous coupe — votre argument manque de précision. Soyez plus direct.";
+      const reply = (data.content as {text:string}[])?.map(c=>c.text).join("")||"";
+      if(!reply){throw new Error("empty");}
       addLine("journalist",j?.name||"Journaliste",reply);
       speakJournalist(reply, j?.gender||"F");
       if(reply.toLowerCase().includes("je vous coupe")){setPhase("cut");}
       else{setTimer(90);setTimerOn(true);setPhase("speaking");}
     }catch{
-      const fallbacks=["Argument intéressant, mais pas assez précis. Développez.","Je vous coupe — concrètement, quel mécanisme proposez-vous ?","Question du public : est-ce vraiment réaliste dans le contexte actuel ?"];
+      const words = text.split(" ").slice(0,4).join(" ");
+      const fallbacks=[
+        `Vous dites "${words}"… mais les derniers sondages montrent l'inverse. Comment expliquez-vous ce décalage avec l'opinion publique ?`,
+        `Je vous coupe — vous n'avez pas répondu à ma question. Concrètement, quel mécanisme précis proposez-vous, et en combien de temps ?`,
+        `Certes, mais l'opposition rétorque exactement le contraire. Qu'est-ce qui vous donne raison plutôt qu'à eux ?`,
+        `Intéressant — pourtant, nos experts sur le plateau contestent ce point. Quelle est votre source ?`,
+        `Le public vous demande : au-delà des mots, qu'est-ce qui change concrètement pour les Français dans leur vie quotidienne ?`,
+      ];
       const reply=fallbacks[Math.floor(Math.random()*fallbacks.length)];
       addLine("journalist",j?.name||"Journaliste",reply);
       speakJournalist(reply, j?.gender||"F");
@@ -925,22 +936,29 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
     setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
     setLoading(true);
     try{
-      const hist = newMsgs.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:m.text}));
+      const rawHist = newMsgs.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:m.text}));
+      const firstUserIdx = rawHist.findIndex(m=>m.role==="user");
+      const hist = firstUserIdx>=0 ? rawHist.slice(firstUserIdx) : rawHist;
       const key = typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"";
+      if(!key) throw new Error("no_key");
       const res = await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
         headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:350,system:systemPrompt,messages:hist})
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,system:systemPrompt,messages:hist})
       });
       const data = await res.json();
-      const reply=(data.content as {text:string}[])?.map(c=>c.text).join("")||"Je n'ai pas pu traiter votre réponse. Continuez.";
+      const reply=(data.content as {text:string}[])?.map(c=>c.text).join("")||"";
+      if(!reply) throw new Error("empty");
       const aiMsg={role:"ai" as const,text:reply};
       setMsgs(m=>[...m,aiMsg]);
       setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
       if(audioOn) speakAny(reply,voiceGender);
-    }catch{
-      const fb="Veuillez configurer votre clé Claude API dans les Réglages du profil.";
-      setMsgs(m=>[...m,{role:"ai",text:fb}]);
+    }catch(err){
+      const isNoKey = err instanceof Error && err.message==="no_key";
+      const fb = isNoKey
+        ? "Clé Claude API manquante — allez dans Profil → Réglages pour la configurer."
+        : "Connexion temporairement indisponible. Vérifiez votre clé API dans les Réglages.";
+      setMsgs(m=>[...m,{role:"ai" as const,text:fb}]);
     }
     setLoading(false);
   };
@@ -1033,15 +1051,18 @@ function SimulationScreen({T}:{T:Theme}) {
     try{
       const otherDels=UN_DEL.filter(d=>d.id!==unRole.id);
       const responding=otherDels[Math.floor(Math.random()*otherDels.length)];
-      const hist=allMsgs.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:`[${m.country}] ${m.text}`}));
+      const rawHist=allMsgs.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:`[${m.country}] ${m.text}`}));
+      const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
+      const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
       const key=typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"";
       let replyText="";
       if(key){
-        const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,system:`Tu es le délégué de ${responding.country} au Conseil de Sécurité ONU. Doctrine : ${responding.doctrine}. Sujet débattu : "${unTopic}". Réponds en 2-3 phrases orales, fermes et diplomatiques, en défendant ta position nationale. Commence par "${responding.flag} ${responding.country} :"`,messages:hist})});
+        const unSys=`Tu es le délégué de ${responding.country} au Conseil de Sécurité ONU. Doctrine nationale : ${responding.doctrine}. Sujet en débat : "${unTopic}". RÈGLES : 1) Réponds DIRECTEMENT au dernier argument soulevé — rebondis précisément dessus. 2) Défends les intérêts de ${responding.country} avec conviction. 3) Cite un fait géopolitique réel lié à ton pays si pertinent. 4) Reste diplomatique mais ferme. 5) 2-3 phrases max. Commence par "${responding.flag} ${responding.country} :"`;
+        const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,system:unSys,messages:hist})});
         const d=await res.json();
         replyText=(d.content as {text:string}[])?.map(c=>c.text).join("")||"";
       }
-      if(!replyText) replyText=`${responding.flag} ${responding.country} : La délégation de ${responding.country} rappelle sa doctrine — ${responding.doctrine.slice(0,90)}. Nous demandons un vote.`;
+      if(!replyText) replyText=`${responding.flag} ${responding.country} : La délégation de ${responding.country} s'oppose fermement à cette position. Notre doctrine — ${responding.doctrine.slice(0,80)} — est non-négociable. Nous demandons un vote.`;
       const resp={role:"ai",flag:responding.flag,country:responding.country,text:replyText};
       setUnMessages(m=>[...m,resp]);
       setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
@@ -1100,43 +1121,43 @@ function SimulationScreen({T}:{T:Theme}) {
     trial: {
       title:trialRole==="defense"?"Avocat de la défense":"Procureur",
       emoji:"⚖️",color:T.purple,voiceGender:"M",
-      systemPrompt:`Tu es le juge dans un procès fictif portant sur : "${trialTopic}". L'utilisateur joue le rôle de ${trialRole==="defense"?"l'avocat de la défense":"le procureur"}. Pose des questions incisives, valide ou conteste les arguments juridiques, convoque des témoins, rends des objections. Style solennel, précis. 2-4 phrases max par intervention.`,
-      welcome:`⚖️ L'audience est ouverte. Affaire : "${trialTopic}". ${trialRole==="defense"?"Maître, prenez la parole pour votre client.":"Monsieur le Procureur, exposez les chefs d'accusation."}`
+      systemPrompt:`Tu es le juge dans un procès fictif portant sur : "${trialTopic}". L'utilisateur joue le rôle de ${trialRole==="defense"?"l'avocat de la défense":"le procureur"}. RÈGLES : 1) Réagis DIRECTEMENT à l'argument juridique que l'utilisateur vient de formuler — cite ses mots. 2) Soit valide avec nuance, soit conteste avec un précédent jurisprudentiel ou une objection de la partie adverse. 3) Convoque des témoins, produis des preuves, pose des questions piège. 4) Reste solennel mais incisif. 5) 2-4 phrases max. Ne répète jamais la même formulation.`,
+      welcome:`⚖️ L'audience est ouverte. Affaire : "${trialTopic}". ${trialRole==="defense"?"Maître, prenez la parole pour votre client — commencez par exposer votre ligne de défense principale.":"Monsieur le Procureur, exposez les chefs d'accusation et votre premier élément de preuve."}`
     },
     interview: {
       title:"Entretien RH",emoji:"💼",color:T.green,voiceGender:"F",
-      systemPrompt:"Tu es un DRH expérimenté en entretien d'embauche. Pose des questions de recrutement réalistes : motivation, compétences, mise en situation, questions comportementales. Sois professionnel mais exigeant. Évalue les réponses et donne des feedbacks constructifs. 2-3 phrases par réplique.",
-      welcome:"Bonjour, merci de vous présenter. Pouvez-vous commencer par vous présenter et m'expliquer pourquoi ce poste vous intéresse ?"
+      systemPrompt:"Tu es une DRH senior en entretien d'embauche. RÈGLES : 1) Rebondis PRÉCISÉMENT sur ce que le candidat vient de dire — cite un mot clé de sa réponse. 2) Creuse avec une question de mise en situation concrète (STAR : Situation, Tâche, Action, Résultat). 3) Soulève une contradiction ou un point flou si présent. 4) Alterne : motivation, compétences techniques, soft skills, gestion de crise. 5) Sois professionnelle mais exigeante. 6) 2-3 phrases. JAMAIS deux fois la même question.",
+      welcome:"Bonjour, asseyez-vous. J'ai votre CV sous les yeux. Pour commencer : présentez-vous en 60 secondes, et dites-moi précisément pourquoi vous avez postulé à CE poste plutôt qu'à un autre."
     },
     soutenance: {
       title:"Soutenance orale",emoji:"🎓",color:"#D97706",voiceGender:"M",
-      systemPrompt:"Tu es un jury universitaire lors d'une soutenance orale de thèse ou projet. Pose des questions techniques et conceptuelles pointues, challenge les hypothèses, demande des clarifications méthodologiques. Sois académique et rigoureux. 2-3 phrases par intervention.",
-      welcome:"La soutenance est ouverte. Veuillez commencer par présenter votre problématique centrale et la méthodologie adoptée."
+      systemPrompt:"Tu es un jury universitaire lors d'une soutenance. RÈGLES : 1) Réagis DIRECTEMENT à ce que l'étudiant vient d'expliquer — pose une question qui déstabilise ou approfondit ce point précis. 2) Challenge les hypothèses, demande des preuves empiriques, signale des biais méthodologiques potentiels. 3) Varie les angles : rigueur scientifique, pertinence sociale, limites du travail, perspectives. 4) Sois académique et rigoureux. 5) 2-3 phrases. Ne valide jamais sans creuser d'abord.",
+      welcome:"La soutenance est ouverte. Avant de commencer votre exposé, dites-moi en une phrase : quelle est la contribution originale de votre travail par rapport à la littérature existante ?"
     },
     examen: {
       title:"Examen oral",emoji:"📝",color:"#E03535",voiceGender:"F",
-      systemPrompt:"Tu es un professeur lors d'un examen oral. Pose des questions sur n'importe quelle matière selon le contexte, évalue les connaissances, demande des exemples et des développements. Sois pédagogue mais exigeant. Note mentalement les réponses. 2-3 phrases.",
-      welcome:"Bonjour, installez-vous. Nous allons commencer. Quel sujet ou matière souhaitez-vous aborder pour cet examen oral ?"
+      systemPrompt:"Tu es un professeur lors d'un examen oral. RÈGLES : 1) Évalue la réponse de l'étudiant immédiatement — dis ce qui est juste, ce qui manque, ce qui est faux. 2) Pose ensuite une question plus difficile qui part de ce qu'il vient de dire. 3) Si la réponse est incomplète, guide sans donner la réponse. 4) Si elle est bonne, complique avec un cas particulier ou une exception. 5) Varie les matières si non précisée. 6) 2-3 phrases. Sois exigeante mais pédagogue.",
+      welcome:"Bonjour, installez-vous. Quel sujet souhaitez-vous aborder ? Ou je peux choisir moi-même — dites-moi votre niveau et votre filière."
     },
     pitch: {
       title:"Pitch commercial",emoji:"💡",color:"#16A34A",voiceGender:"M",
-      systemPrompt:"Tu es un investisseur ou acheteur lors d'un pitch commercial. Pose des questions sur le marché, la scalabilité, la concurrence, le modèle financier. Sois sceptique mais ouvert. Challenge chaque affirmation. 2-3 phrases par réplique.",
-      welcome:"Bonjour, vous avez 5 minutes. Présentez votre projet : c'est quoi, pour qui, et quel est le problème que vous résolvez ?"
+      systemPrompt:"Tu es un investisseur expérimenté face à un pitch. RÈGLES : 1) Réagis DIRECTEMENT à l'argument commercial que le fondateur vient de donner — identifie le point faible principal. 2) Pose une question difficile : taille de marché réelle, coûts d'acquisition client, barrières à l'entrée, concurrents directs, modèle de revenus. 3) Sois sceptique mais juste — si un point est solide, dis-le brièvement avant de passer au suivant. 4) Simule la pression réelle d'un pitch : tu as vu des centaines de projets, tu cherches les failles. 5) 2-3 phrases. JAMAIS la même objection deux fois.",
+      welcome:"Vous avez 5 minutes — commencez. Quel est le problème que vous résolvez, pour qui, et pourquoi vous êtes la bonne équipe pour le faire ?"
     },
     secu: {
       title:"Ingénierie sociale",emoji:"🛡️",color:"#7C3AED",voiceGender:"M",
-      systemPrompt:"Tu es un formateur en cybersécurité qui simule des scénarios d'ingénierie sociale (phishing, vishing, manipulation psychologique) dans un cadre éducatif. Guide l'utilisateur à identifier les tentatives de manipulation, reconnaître les signaux d'alerte, et apprendre à répondre. But : éducatif et défensif uniquement.",
-      welcome:"Simulation de cybersécurité humaine activée. Votre mission : reconnaître et déjouer les tentatives de manipulation. Êtes-vous prêt ? Je vais simuler un scénario de phishing téléphonique — restez en alerte."
+      systemPrompt:"Tu es un formateur expert en cybersécurité humaine. Alterne deux modes : a) ATTAQUE — simule un attaquant (phishing, vishing, pretexting) et tente de manipuler l'utilisateur, puis b) DÉBRIEFING — analyse sa réponse, identifie ce qu'il a bien ou mal fait, explique la technique utilisée. RÈGLES : 1) Rebondis sur ce que l'utilisateur vient de répondre — s'il a résisté, escalade la pression ; s'il a cédé, révèle la manipulation. 2) Varie les scénarios : IT support frauduleux, faux DRH, urgence bancaire. 3) Éducatif et défensif uniquement. 4) 2-4 phrases.",
+      welcome:"🛡️ Simulation de cybersécurité humaine. Je vais alterner entre jouer l'attaquant et vous coacher. Prêt ? Voici le scénario : votre téléphone sonne. Je suis le support informatique de votre entreprise. « Bonjour, j'ai un accès non autorisé détecté sur votre compte — j'ai besoin de votre identifiant pour le bloquer immédiatement. » Que répondez-vous ?"
     },
     prise: {
       title:"Prise de parole publique",emoji:"🎤",color:T.blueB,voiceGender:"F",
-      systemPrompt:"Tu es un coach en éloquence et prise de parole publique. L'utilisateur prépare un discours. Donne des conseils sur la structure, l'impact, la clarté, la gestion du stress, l'accroche. Évalue les extraits présentés. Sois encourageant et constructif. 2-3 phrases.",
-      welcome:"Bienvenue dans votre session de coaching. Quel est le contexte de votre prise de parole ? (discours, conférence, TEDx, meeting…) et quel est votre message principal ?"
+      systemPrompt:"Tu es une coach experte en éloquence et prise de parole publique. RÈGLES : 1) Évalue PRÉCISÉMENT ce que l'utilisateur vient de dire ou de présenter — identifie un point fort et un point à améliorer immédiatement. 2) Donne un conseil technique actionnable : structure, accroche, gestion du silence, contact visuel, rythme, voix. 3) Propose des reformulations ou des exemples si pertinent. 4) Sois encourageante mais exigeante — la complaisance ne prépare pas. 5) 2-3 phrases. Chaque conseil doit être différent.",
+      welcome:"Bienvenue. Quel est votre contexte de prise de parole et quel est votre principal défi ? (trac, structure, conviction, impact…) Ou commencez directement à pratiquer — dites les premières lignes de votre discours."
     },
     tutorat: {
       title:"Cours magistral",emoji:"📚",color:"#D97706",voiceGender:"M",
-      systemPrompt:"Tu es un professeur expert qui donne un cours magistral interactif. L'utilisateur peut choisir n'importe quel sujet. Explique de façon claire et structurée, utilise des analogies, des exemples concrets, pose des questions de compréhension. Style pédagogique et engageant.",
-      welcome:"Bienvenue dans votre cours personnalisé. Sur quel sujet souhaitez-vous que je vous enseigne aujourd'hui ? (histoire, philosophie, sciences, droit, économie, géopolitique…)"
+      systemPrompt:"Tu es un professeur expert polyvalent. RÈGLES : 1) Réponds DIRECTEMENT à la question ou remarque de l'apprenant — ne répète pas ce qu'il a dit, apporte de la valeur immédiatement. 2) Explique avec une analogie concrète, un exemple réel, un chiffre marquant. 3) À la fin de chaque réponse, pose UNE question de compréhension ou d'approfondissement différente à chaque fois. 4) Si l'apprenant fait une erreur, corrige-la directement sans détour. 5) Style dynamique, pas académique froid. 6) 3-4 phrases max.",
+      welcome:"Bienvenue dans votre cours personnalisé. Quel sujet vous passionne ou vous pose problème ? (histoire, philosophie, sciences, droit, économie, géopolitique, maths, littérature…) Dites-moi aussi votre niveau pour que j'adapte."
     },
   };
   if(mode in SIM_CONFIGS && mode!=="elections" && !(mode==="trial"&&(!trialRole||!trialTopic)) && !(mode==="un"&&(!unRole||!unTopic))){
