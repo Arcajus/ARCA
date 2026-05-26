@@ -28,9 +28,11 @@ const EL_VOICES_M = ["nPczCjzI2devNBz1zQrb","N2lVS1w4EtoT3dr4eOWO","29vD33N1CtxC
 
 async function speakEL(text: string, gender: "M"|"F", key: string, onEnd?: ()=>void): Promise<boolean> {
   const voices = gender === "F" ? EL_VOICES_F : EL_VOICES_M;
+  // Clear any pending callback BEFORE the async loop so old onEnd never fires accidentally
+  if (_elAudio) { _elAudio.pause(); _elAudio.onended = null; }
   for (const voiceId of voices) {
     try {
-      if (_elAudio) { _elAudio.pause(); }
+      if (_elAudio) { _elAudio.pause(); _elAudio.onended = null; }
       const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: "POST",
         headers: { "Accept": "audio/mpeg", "Content-Type": "application/json", "xi-api-key": key },
@@ -67,7 +69,14 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
     if (fr) u.voice = fr;
     window.speechSynthesis.speak(u);
   };
-  if (window.speechSynthesis.getVoices().length > 0) go(); else { window.speechSynthesis.onvoiceschanged = go; window.speechSynthesis.speak(u); }
+  // Always call speak() once — if voices aren't loaded yet, the browser uses its default
+  // Setting onvoiceschanged + speak() was causing double-speak (two onend fires, double auto-mic)
+  if (window.speechSynthesis.getVoices().length > 0) {
+    go();
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged = null; go(); };
+    window.speechSynthesis.speak(u);
+  }
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   const k = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
@@ -75,7 +84,7 @@ function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   else speakWeb(text, gender, onEnd);
 }
 function stopSpeech() {
-  if (_elAudio) { _elAudio.pause(); }
+  if (_elAudio) { _elAudio.pause(); _elAudio.onended = null; }
   if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }
 type GHist = {role:"user"|"model";parts:{text:string}[]}[];
@@ -379,11 +388,22 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
   const timerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSpeechRef = useRef<(t:string)=>void>((_t:string)=>{});
+  const mountedRef = useRef(true);
 
   const addLine = (role:string,name:string,text:string) => {
     setTranscript(t=>[...t,{role,name,text,time:new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}]);
     setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
   };
+
+  // Cleanup on unmount — stop mic and audio so callbacks don't fire on dead component
+  useEffect(()=>{
+    mountedRef.current=true;
+    return()=>{
+      mountedRef.current=false;
+      recRef.current?.stop();
+      stopSpeech();
+    };
+  },[]);
 
   // Auto-start mic after TTS ends — triggered by setAutoMic(true) from onEnd callbacks
   useEffect(()=>{
@@ -454,7 +474,8 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
     addLine("user","Vous",text);
     setPhase("waiting"); setLoading(true); setTimerOn(false);
     try{
-      const rawHist=transcript.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
+      // Exclude opponent lines — journalist should only see journalist/user turns
+      const rawHist=transcript.filter(m=>m.role!=="opponent").map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
       const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
       const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):[];
       const exchangeN=Math.ceil(transcript.filter(m=>m.role==="user").length/1)+1;
@@ -498,15 +519,17 @@ RÈGLES ABSOLUES :
       const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
       const reply=await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,450);
+      if(!mountedRef.current){return;}
       addLine("journalist",j?.name||"Journaliste",reply);
       if(reply.toLowerCase().includes("je vous coupe")){setPhase("cut");}
       else{setTimer(90);setTimerOn(true);setPhase("speaking");}
 
       if(isDuel){
         speakAny(reply,(j?.gender||"F") as "M"|"F", async()=>{
+          if(!mountedRef.current) return;
           try{
             const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
-            if(!oppKey){setAutoMic(true);return;}
+            if(!oppKey){if(mountedRef.current)setAutoMic(true);return;}
             const oppSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
 TON PROFIL RHÉTORIQUE : ${opponent.style}
 Sujet du débat : "${topic}".
@@ -521,14 +544,15 @@ FORMAT OBLIGATOIRE selon ton profil :
 - Si écologiste → "On parle de [sujet] sans mentionner que [fait climatique GIEC]. Dans [X ans], [conséquence concrète]."
 Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique à l'invité.`;
             const oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`${opponent.name}, votre réaction ?`}]}],oppKey,160);
+            if(!mountedRef.current) return;
             if(oppReply){
               addLine("opponent",opponent.name,oppReply);
-              speakAny(oppReply,opponent.gender,()=>setAutoMic(true));
+              speakAny(oppReply,opponent.gender,()=>{if(mountedRef.current)setAutoMic(true);});
             } else { setAutoMic(true); }
-          }catch{ setAutoMic(true); }
+          }catch{ if(mountedRef.current)setAutoMic(true); }
         });
       } else {
-        speakAny(reply,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
+        speakAny(reply,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
       }
     }catch{
       const words=text.split(" ").slice(0,5).join(" ");
@@ -541,11 +565,12 @@ Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique �
         `En Allemagne, ils ont fait exactement l'inverse il y a 10 ans. Résultat : [données positives]. Pourquoi la France ne peut pas faire pareil ?`,
       ];
       const reply=fbs[Math.floor(Math.random()*fbs.length)];
+      if(!mountedRef.current){setLoading(false);return;}
       addLine("journalist",j?.name||"Journaliste",reply);
-      speakAny(reply,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
+      speakAny(reply,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
       if(reply.includes("coupe")){setPhase("cut");}else{setTimer(90);setTimerOn(true);setPhase("speaking");}
     }
-    setLoading(false);
+    if(mountedRef.current)setLoading(false);
   };
 
   // Keep ref pointing to latest handleUserSpeech (avoids stale closures in auto-mic callbacks)
@@ -559,7 +584,7 @@ Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique �
     <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.bg}}>
       {showScore&&<ScoreModal topic={topic} T={T} onClose={()=>{setShowScore(false);onBack();}}/>}
       <div style={{padding:"12px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ic n="chevL" s={22} c={T.textD}/></button>
+        <button onClick={()=>{recRef.current?.stop();stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ic n="chevL" s={22} c={T.textD}/></button>
         <div style={{flex:1}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{width:8,height:8,borderRadius:"50%",background:T.red,animation:"pulse 1s infinite"}}/>
