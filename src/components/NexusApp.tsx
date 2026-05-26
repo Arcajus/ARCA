@@ -76,30 +76,64 @@ function stopSpeech() {
   if (_elAudio) { _elAudio.pause(); }
   if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }
-async function callGemini(sys:string, hist:{role:"user"|"model";parts:{text:string}[]}[], key:string, maxTokens=400):Promise<string> {
-  // Sanitize: Gemini requires strict user/model alternation — merge consecutive same-role turns
-  const clean:{role:"user"|"model";parts:{text:string}[]}[] = [];
+type GHist = {role:"user"|"model";parts:{text:string}[]}[];
+function sanitizeHist(hist:GHist):GHist {
+  const clean:GHist=[];
   for(const msg of hist){
     if(clean.length===0){if(msg.role==="user")clean.push({role:msg.role,parts:[...msg.parts]});}
     else if(msg.role!==clean[clean.length-1].role) clean.push({role:msg.role,parts:[...msg.parts]});
     else clean[clean.length-1]={role:msg.role,parts:[{text:clean[clean.length-1].parts[0].text+" "+msg.parts[0].text}]};
   }
-  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
+  return clean;
+}
+const GEMINI_URL=(key:string,stream=false)=>
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:${stream?"streamGenerateContent?alt=sse&":"generateContent?"}key=${key}`;
+const GEMINI_CFG={temperature:1.0,topP:0.95};
+const ANTI_REP="\n\nRÈGLE ABSOLUE : Chaque réponse est unique — angle inédit, formulation nouvelle, jamais répétée dans cette conversation.";
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:clean,generationConfig:{maxOutputTokens:maxTokens,temperature:1.0,topP:0.95}})
-  });
-  if(!res.ok){
-    const errBody = await res.text().catch(()=>"");
-    throw new Error(`HTTP_${res.status}: ${errBody.slice(0,120)}`);
-  }
-  const d = await res.json();
+// Non-streaming — used when full text is needed before acting (audio TTS)
+async function callGemini(sys:string, hist:GHist, key:string, maxTokens=400):Promise<string> {
+  const clean=sanitizeHist(hist);
+  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
+  const res=await fetch(GEMINI_URL(key),{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({system_instruction:{parts:[{text:sys+ANTI_REP}]},contents:clean,generationConfig:{...GEMINI_CFG,maxOutputTokens:maxTokens}})});
+  if(!res.ok){const e=await res.text().catch(()=>"");throw new Error(`HTTP_${res.status}: ${e.slice(0,120)}`);}
+  const d=await res.json();
   if(d.error) throw new Error(d.error.message||"gemini_error");
-  const text = (d.candidates?.[0]?.content?.parts as {text:string}[]|undefined)?.map(p=>p.text).join("")||"";
+  const text=(d.candidates?.[0]?.content?.parts as {text:string}[]|undefined)?.map(p=>p.text).join("")||"";
   if(!text) throw new Error(d.candidates?.[0]?.finishReason||"empty");
   return text;
+}
+
+// Streaming — text appears word by word as Gemini generates it
+async function streamGemini(sys:string, hist:GHist, key:string, maxTokens:number, onChunk:(full:string)=>void):Promise<string> {
+  const clean=sanitizeHist(hist);
+  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
+  const res=await fetch(GEMINI_URL(key,true),{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({system_instruction:{parts:[{text:sys+ANTI_REP}]},contents:clean,generationConfig:{...GEMINI_CFG,maxOutputTokens:maxTokens}})});
+  if(!res.ok){const e=await res.text().catch(()=>"");throw new Error(`HTTP_${res.status}: ${e.slice(0,120)}`);}
+  const reader=res.body!.getReader();
+  const dec=new TextDecoder();
+  let full="",buf="";
+  while(true){
+    const {done,value}=await reader.read();
+    if(done) break;
+    buf+=dec.decode(value,{stream:true});
+    const lines=buf.split("\n");buf=lines.pop()||"";
+    for(const line of lines){
+      if(!line.startsWith("data: ")) continue;
+      const json=line.slice(6).trim();
+      if(!json||json==="[DONE]") continue;
+      try{
+        const chunk=JSON.parse(json);
+        if(chunk.error) throw new Error(chunk.error.message||"stream_error");
+        const delta=(chunk.candidates?.[0]?.content?.parts as {text:string}[]|undefined)?.map(p=>p.text).join("")||"";
+        if(delta){full+=delta;onChunk(full);}
+      }catch(e){const m=(e as Error).message||"";if(m.includes("stream_error")||m.startsWith("HTTP_"))throw e;}
+    }
+  }
+  if(!full) throw new Error("empty");
+  return full;
 }
 
 // iOS: call during a user gesture to pre-create and unlock the Audio element
@@ -1056,27 +1090,32 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
     unlockAudio();
     setInput("");
     const userMsg={role:"user" as const,text};
-    const newMsgs = [...msgs,userMsg];
+    const newMsgs=[...msgs,userMsg];
     setMsgs(newMsgs);
     setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
     setLoading(true);
     try{
-      const rawHist = newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
-      const firstUserIdx = rawHist.findIndex(m=>m.role==="user");
-      const hist = firstUserIdx>=0 ? rawHist.slice(firstUserIdx) : rawHist;
-      const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+      const rawHist=newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
+      const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
+      const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
+      const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
-      const reply = await callGemini(systemPrompt,hist,key,400);
-      const aiMsg={role:"ai" as const,text:reply};
-      setMsgs(m=>[...m,aiMsg]);
-      setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
-      if(audioOn) speakAny(reply,voiceGender);
+      let firstChunk=true;
+      let fullReply="";
+      await streamGemini(systemPrompt,hist,key,400,(full)=>{
+        fullReply=full;
+        if(firstChunk){firstChunk=false;setLoading(false);setMsgs(m=>[...m,{role:"ai" as const,text:full}]);}
+        else setMsgs(m=>{const u=[...m];u[u.length-1]={role:"ai" as const,text:full};return u;});
+        setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),30);
+      });
+      if(audioOn) speakAny(fullReply,voiceGender);
     }catch(err){
-      const isNoKey = err instanceof Error && err.message==="no_key";
+      setLoading(false);
+      const isNoKey=err instanceof Error&&err.message==="no_key";
       if(isNoKey){
         setMsgs(m=>[...m,{role:"ai" as const,text:"Clé Gemini API manquante — allez dans Profil → Réglages pour la configurer."}]);
       } else {
-        const words = text.split(" ").filter(Boolean).slice(0,5).join(" ");
+        const words=text.split(" ").filter(Boolean).slice(0,5).join(" ");
         const fallbacks=[
           `Vous dites "${words}" — développez. Quels faits concrets soutiennent votre position ? Chiffres, exemples, sources.`,
           `Point intéressant. L'argument adverse serait pourtant que vous avez tort sur ce point précis. Comment le réfutez-vous ?`,
@@ -1089,7 +1128,6 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
         if(audioOn) speakAny(reply,voiceGender);
       }
     }
-    setLoading(false);
   };
 
   const toggleMic=()=>{
@@ -1185,17 +1223,20 @@ function SimulationScreen({T}:{T:Theme}) {
       const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
       const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
       const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
-      let replyText="";
-      if(key){
-        const unSys=`Tu es le délégué de ${responding.country} au Conseil de Sécurité ONU. Doctrine nationale : ${responding.doctrine}. Sujet en débat : "${unTopic}". RÈGLES : 1) Réponds DIRECTEMENT au dernier argument soulevé — rebondis précisément dessus. 2) Défends les intérêts de ${responding.country} avec conviction. 3) Cite un fait géopolitique réel lié à ton pays si pertinent. 4) Reste diplomatique mais ferme. 5) 2-3 phrases max. Commence par "${responding.flag} ${responding.country} :"`;
-        replyText = await callGemini(unSys,hist,key,250);
-      }
-      if(!replyText) replyText=`${responding.flag} ${responding.country} : La délégation de ${responding.country} s'oppose fermement à cette position. Notre doctrine — ${responding.doctrine.slice(0,80)} — est non-négociable. Nous demandons un vote.`;
-      const resp={role:"ai",flag:responding.flag,country:responding.country,text:replyText};
-      setUnMessages(m=>[...m,resp]);
-      setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
-      if(unAudio) speakAny(replyText.replace(/^[🌍🇫🇷🇺🇸🇷🇺🇨🇳🇬🇧\s]+/,""),"M");
+      if(!key) throw new Error("no_key");
+      const unSys=`Tu es le délégué de ${responding.country} au Conseil de Sécurité ONU. Doctrine nationale : ${responding.doctrine}. Sujet en débat : "${unTopic}". RÈGLES : 1) Réponds DIRECTEMENT au dernier argument soulevé — rebondis précisément dessus. 2) Défends les intérêts de ${responding.country} avec conviction. 3) Cite un fait géopolitique réel lié à ton pays si pertinent. 4) Reste diplomatique mais ferme. 5) 2-3 phrases max. Commence par "${responding.flag} ${responding.country} :"`;
+      // Add streaming bubble immediately
+      setUnMessages(m=>[...m,{role:"ai",flag:responding.flag,country:responding.country,text:""}]);
+      let fullReply="";
+      await streamGemini(unSys,hist,key,250,(full)=>{
+        fullReply=full;
+        setUnMessages(m=>{const u=[...m];u[u.length-1]={...u[u.length-1],text:full};return u;});
+        setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),30);
+      });
+      setUnLoading(false);
+      if(unAudio) speakAny(fullReply.replace(/^[🌍🇫🇷🇺🇸🇷🇺🇨🇳🇬🇧\s]+/,""),"M");
     }catch{
+      setUnLoading(false);
       const otherDels=UN_DEL.filter(d=>d.id!==unRole?.id);
       const r=otherDels[Math.floor(Math.random()*otherDels.length)];
       const staticFbs=[
@@ -1206,7 +1247,6 @@ function SimulationScreen({T}:{T:Theme}) {
       const fb={role:"ai",flag:r.flag,country:r.country,text:staticFbs[Math.floor(Math.random()*staticFbs.length)]};
       setUnMessages(m=>[...m,fb]);
     }
-    setUnLoading(false);
   };
 
   if(mode==="un"&&unRole&&unTopic){
