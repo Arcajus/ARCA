@@ -20,20 +20,29 @@ type Theme = typeof DARK;
 
 // ── ELEVENLABS + SPEECH ──────────────────────────────────────
 let _elAudio: HTMLAudioElement | null = null;
-async function speakEL(text: string, gender: "M"|"F", key: string): Promise<void> {
-  const voiceId = gender === "F" ? "EXAVITQu4vr4xnSDxMaL" : "ErXwobaYiN019PkySvjV";
-  try {
-    if (_elAudio) { _elAudio.pause(); _elAudio = null; }
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-      method: "POST",
-      headers: { "Accept": "audio/mpeg", "Content-Type": "application/json", "xi-api-key": key },
-      body: JSON.stringify({ text: text.slice(0, 4000), model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.3, use_speaker_boost: true } })
-    });
-    if (!res.ok) throw new Error(`EL ${res.status}`);
-    const blob = await res.blob();
-    _elAudio = new Audio(URL.createObjectURL(blob));
-    await _elAudio.play();
-  } catch { speakWeb(text, gender); }
+
+const EL_VOICES_F = ["XB0fDUnXU5powFXDhCwa","Xb7hH8MSUJpSbSDYk0k2","21m00Tcm4TlvDq8ikWAM","EXAVITQu4vr4xnSDxMaL"];
+const EL_VOICES_M = ["nPczCjzI2devNBz1zQrb","N2lVS1w4EtoT3dr4eOWO","29vD33N1CtxCmqQRPOHJ","ErXwobaYiN019PkySvjV"];
+
+async function speakEL(text: string, gender: "M"|"F", key: string): Promise<boolean> {
+  const voices = gender === "F" ? EL_VOICES_F : EL_VOICES_M;
+  for (const voiceId of voices) {
+    try {
+      if (_elAudio) { _elAudio.pause(); _elAudio = null; }
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: "POST",
+        headers: { "Accept": "audio/mpeg", "Content-Type": "application/json", "xi-api-key": key },
+        body: JSON.stringify({ text: text.slice(0, 3000), model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.45, similarity_boost: 0.8 } })
+      });
+      if (!res.ok) continue;
+      const blob = await res.blob();
+      if (blob.size < 100) continue;
+      _elAudio = new Audio(URL.createObjectURL(blob));
+      await _elAudio.play();
+      return true;
+    } catch { continue; }
+  }
+  return false;
 }
 function speakWeb(text: string, gender: "M"|"F") {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -45,7 +54,8 @@ function speakWeb(text: string, gender: "M"|"F") {
 }
 function speakAny(text: string, gender: "M"|"F" = "F") {
   const k = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
-  if (k) speakEL(text, gender, k); else speakWeb(text, gender);
+  if (k) speakEL(text, gender, k).then(ok => { if (!ok) speakWeb(text, gender); });
+  else speakWeb(text, gender);
 }
 function stopSpeech() {
   if (_elAudio) { _elAudio.pause(); _elAudio = null; }
@@ -845,7 +855,18 @@ function SimulationHub({T}:{T:Theme}) {
 function ApiKeySettings({T}:{T:Theme}) {
   const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"");
   const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
+  const [elStatus,setElStatus] = useState<"idle"|"testing"|"ok"|"fail">("idle");
   const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
+
+  const testEL = async()=>{
+    if(!ek){setElStatus("fail");return;}
+    setElStatus("testing");
+    const ok = await speakEL("Bonjour, je suis votre journaliste NEXUS.", "F", ek);
+    setElStatus(ok?"ok":"fail");
+  };
+
+  const elColor = elStatus==="ok"?T.green:elStatus==="fail"?T.red:T.blueB;
+
   return(
     <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
@@ -853,10 +874,17 @@ function ApiKeySettings({T}:{T:Theme}) {
         <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("claude_key",e.target.value);}} placeholder="sk-ant-api03-…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         <p style={{color:T.muted,fontSize:11,marginTop:5}}>console.anthropic.com → API Keys · Nécessaire pour les simulations IA</p>
       </div>
-      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
-        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Clé ElevenLabs (voix réalistes)</p>
-        <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_xxxxxxxxxxxxxxxx" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        <p style={{color:T.muted,fontSize:11,marginTop:5}}>elevenlabs.io → Profile → API Keys · Gratuit : 10 000 chars/mois</p>
+      <div style={{background:T.card,border:`1px solid ${elStatus==="ok"?T.green:elStatus==="fail"?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>Clé ElevenLabs (voix réalistes)</p>
+          {elStatus==="ok"&&<span style={{color:T.green,fontSize:11,fontWeight:800}}>✓ Connecté</span>}
+          {elStatus==="fail"&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
+        </div>
+        <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);setElStatus("idle");}} placeholder="sk_xxxxxxxxxxxxxxxx" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        <button onClick={testEL} disabled={elStatus==="testing"||!ek} style={{marginTop:10,width:"100%",padding:"9px",borderRadius:8,border:"none",background:ek?elColor:T.b1,color:ek?"#fff":T.muted,fontSize:12,fontWeight:800,cursor:ek&&elStatus!=="testing"?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .3s"}}>
+          {elStatus==="testing"?"Test en cours…":elStatus==="ok"?"✓ Voix ElevenLabs OK — Réessayer":elStatus==="fail"?"✗ Échec — Vérifier la clé":"🎙️ Tester la voix ElevenLabs"}
+        </button>
+        <p style={{color:T.muted,fontSize:11,marginTop:6}}>elevenlabs.io → Profile → API Keys · Gratuit : 10 000 chars/mois</p>
       </div>
     </div>
   );
