@@ -895,6 +895,7 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
   const [liveLoading,setLiveLoading] = useState(false);
   const [lastRefresh,setLastRefresh] = useState<Date|null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const [search,setSearch] = useState("");
   const [composeSrc,setComposeSrc] = useState("");
   const [verifying,setVerifying] = useState(false);
   type UserPost = {id:number;text:string;time:string;src:string;verif:{label:string;color:string;comment:string}|null};
@@ -1051,11 +1052,18 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
           </div>
         ))}
       </div>
-      {/* Filters */}
-      <div style={{padding:"10px 20px",borderBottom:`1px solid ${T.b1}`,display:"flex",gap:8,overflowX:"auto"}}>
-        {FILTERS.map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 14px",borderRadius:20,border:`1px solid ${filter===f?T.blueB:T.b1}`,background:filter===f?T.blueB:"transparent",color:filter===f?"#fff":T.textD,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{f}</button>
-        ))}
+      {/* Search + Filters */}
+      <div style={{padding:"10px 20px 0",borderBottom:`1px solid ${T.b1}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"7px 12px"}}>
+          <Ic n="search" s={15} c={T.muted}/>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher une actualité…" style={{flex:1,background:"transparent",border:"none",outline:"none",color:T.text,fontSize:13,fontFamily:"inherit"}}/>
+          {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="x" s={14} c={T.muted}/></button>}
+        </div>
+        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:10}}>
+          {FILTERS.map(f=>(
+            <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 14px",borderRadius:20,border:`1px solid ${filter===f?T.blueB:T.b1}`,background:filter===f?T.blueB:"transparent",color:filter===f?"#fff":T.textD,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{f}</button>
+          ))}
+        </div>
       </div>
       {/* User posts */}
       {userPosts.length>0&&(
@@ -1096,7 +1104,21 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
       )}
       {/* News feed */}
       <div style={{padding:"12px 20px",display:"flex",flexDirection:"column",gap:12}}>
-        {NEWS.map(n=>(
+        {NEWS.filter(n=>{
+          const FILTER_MAP: Record<string,string[]> = {
+            "Géopolitique":["GÉOPOLITIQUE","GUERRE","DIPLOMATIE","INTERNATIONAL"],
+            "Diplomatie":["DIPLOMATIE"],
+            "Histoire":["HISTOIRE"],
+            "Droit":["DROIT","IMMIGRATION"],
+            "Élections":["ÉLECTIONS","POLITIQUE"],
+            "Europe":["EUROPE","DIPLOMATIE"],
+            "Afrique":["AFRIQUE"],
+          };
+          const kws = filter!=="Tout"?FILTER_MAP[filter]||[]:null;
+          const tagMatch = !kws || kws.some(k=>n.tag.toUpperCase().includes(k)||n.title.toUpperCase().includes(k));
+          const searchMatch = !search || n.title.toLowerCase().includes(search.toLowerCase())||n.src.toLowerCase().includes(search.toLowerCase());
+          return tagMatch && searchMatch;
+        }).map(n=>(
           <div key={n.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,overflow:"hidden",animation:"fadeUp .4s ease"}}>
             <div style={{padding:"12px 14px 8px",display:"flex",alignItems:"center",gap:10}}>
               <Avatar init={n.src.slice(0,2)} size={36} T={T}/>
@@ -1543,6 +1565,12 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(()=>{
+    mountedRef.current=true;
+    return()=>{mountedRef.current=false;recRef.current?.stop();stopSpeech();};
+  },[]);
 
   useEffect(()=>{
     const w = {role:"ai" as const, text:welcome};
@@ -1568,13 +1596,15 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
       let firstChunk=true;
       let fullReply="";
       await streamGemini(systemPrompt,hist,key,400,(full)=>{
+        if(!mountedRef.current) return;
         fullReply=full;
         if(firstChunk){firstChunk=false;setLoading(false);setMsgs(m=>[...m,{role:"ai" as const,text:full}]);}
         else setMsgs(m=>{const u=[...m];u[u.length-1]={role:"ai" as const,text:full};return u;});
         setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),30);
       });
-      if(audioOn) speakAny(fullReply,voiceGender);
+      if(mountedRef.current&&audioOn) speakAny(fullReply,voiceGender);
     }catch(err){
+      if(!mountedRef.current) return;
       setLoading(false);
       const isNoKey=err instanceof Error&&err.message==="no_key";
       if(isNoKey){
@@ -2108,6 +2138,12 @@ RÈGLES :
 function ProfileScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
   const [activeTab,setActiveTab] = useState<"posts"|"score"|"badges">("posts");
   const scores:{[k:string]:number} = {"Géopolitique":82,"Droit":68,"Diplomatie":75,"Histoire":88,"Institutions":61};
+  type UserPost = {id:number;text:string;time:string;src:string;verif:{label:string;color:string;comment:string}|null};
+  const [userPosts] = useState<UserPost[]>(()=>{
+    if(typeof window==="undefined") return [];
+    try{return JSON.parse(localStorage.getItem("nexus_posts")||"[]");}catch{return [];}
+  });
+  const postCount = userPosts.length;
 
   return(
     <div>
@@ -2133,7 +2169,7 @@ function ProfileScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
           </div>
         </div>
         <div style={{display:"flex",gap:20,marginTop:16}}>
-          {[["284","Abonnés"],["1,2k","Followers"],["47","Débats"],["82","Score"]].map(([v,l])=>(
+          {[["284","Abonnés"],["1,2k","Followers"],[String(47+postCount),"Débats"],["82","Score"]].map(([v,l])=>(
             <div key={l} style={{textAlign:"center"}}>
               <p style={{color:T.text,fontWeight:800,fontSize:16}}>{v}</p>
               <p style={{color:T.muted,fontSize:11}}>{l}</p>
@@ -2153,12 +2189,20 @@ function ProfileScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
       <div style={{padding:"16px 20px"}}>
         {activeTab==="posts"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {["La montée du multipolarisme : opportunité ou chaos ?","G20 Afrique : quels enjeux pour la France ?","Réforme de l'ONU — ma simulation complète"].map((post,i)=>(
-              <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
-                <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5}}>{post}</p>
+            {userPosts.length===0&&(
+              <div style={{textAlign:"center",padding:"32px 0"}}>
+                <p style={{color:T.muted,fontSize:14}}>Aucune publication pour l&apos;instant</p>
+                <p style={{color:T.muted,fontSize:12,marginTop:4}}>Partagez votre première analyse dans le Feed</p>
+              </div>
+            )}
+            {userPosts.map(p=>(
+              <div key={p.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
+                <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5}}>{p.text}</p>
+                {p.verif&&<span style={{display:"inline-block",marginTop:6,background:`${p.verif.color}20`,color:p.verif.color,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:800}}>✦ {p.verif.label}</span>}
                 <div style={{display:"flex",gap:12,marginTop:10}}>
-                  <span style={{color:T.muted,fontSize:12,display:"flex",alignItems:"center",gap:4}}><Ic n="heart" s={14} c={T.muted}/>{[124,89,203][i]}</span>
-                  <span style={{color:T.muted,fontSize:12,display:"flex",alignItems:"center",gap:4}}><Ic n="comment" s={14} c={T.muted}/>{[32,18,67][i]}</span>
+                  <span style={{color:T.muted,fontSize:12,display:"flex",alignItems:"center",gap:4}}><Ic n="heart" s={14} c={T.muted}/>0</span>
+                  <span style={{color:T.muted,fontSize:12,display:"flex",alignItems:"center",gap:4}}><Ic n="comment" s={14} c={T.muted}/>0</span>
+                  <span style={{color:T.muted,fontSize:11,marginLeft:"auto"}}>{p.time}</span>
                 </div>
               </div>
             ))}
