@@ -76,6 +76,17 @@ function stopSpeech() {
   if (_elAudio) { _elAudio.pause(); }
   if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }
+async function callGemini(sys:string, hist:{role:"user"|"model";parts:{text:string}[]}[], key:string, maxTokens=400):Promise<string> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:hist,generationConfig:{maxOutputTokens:maxTokens,temperature:0.9}})
+  });
+  const d = await res.json();
+  if(d.error) throw new Error(d.error.message||"gemini_error");
+  return d.candidates?.[0]?.content?.parts?.[0]?.text||"";
+}
+
 // iOS: call during a user gesture to pre-create and unlock the Audio element
 let _audioUnlocked = false;
 function unlockAudio() {
@@ -346,7 +357,7 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
     addLine("user","Vous",text);
     setPhase("waiting");setLoading(true);setTimerOn(false);
     try{
-      const rawHist = transcript.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:m.text}));
+      const rawHist = transcript.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
       const firstUserIdx = rawHist.findIndex(m=>m.role==="user");
       const hist = firstUserIdx>=0 ? rawHist.slice(firstUserIdx) : [];
       const debateLevel = level?.label||"intermédiaire";
@@ -367,13 +378,9 @@ RÈGLES ABSOLUES :
 5. JAMAIS deux fois la même formule
 6. Maximum 2-3 phrases orales courtes. Rythme TV, percutant.
 7. Alterne : données froides / émotion du public / angle politique / angle économique / comparaison internationale`;
-      const res = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"","anthropic-version":"2023-06-01"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,system:sysPrompt,messages:[...hist,{role:"user",content:text}]})
-      });
-      const data = await res.json();
-      const reply = (data.content as {text:string}[])?.map(c=>c.text).join("")||"";
+      const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+      if(!key) throw new Error("no_key");
+      const reply = await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,500);
       if(!reply){throw new Error("empty");}
       addLine("journalist",j?.name||"Journaliste",reply);
       speakJournalist(reply, j?.gender||"F");
@@ -873,7 +880,7 @@ function MessagesScreen({T}:{T:Theme}) {
 // ── SIMULATION HUB ────────────────────────────────────────────
 // ── API KEY SETUP MODAL ───────────────────────────────────────
 function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
-  const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"");
+  const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
   const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
   const [testing,setTesting] = useState(false);
   const [elOk,setElOk] = useState<boolean|null>(null);
@@ -892,17 +899,17 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
           <h2 style={{color:T.text,fontWeight:800,fontSize:20}}>Configurer les clés API</h2>
           <p style={{color:T.textD,fontSize:13,marginTop:4}}>Nécessaire pour activer l&apos;IA et les voix réalistes</p>
         </div>
-        {/* Claude */}
+        {/* Gemini */}
         <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <div style={{width:28,height:28,borderRadius:7,background:"#E8854020",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}>🤖</span></div>
             <div>
-              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé Claude AI</p>
-              <p style={{color:T.muted,fontSize:10}}>console.anthropic.com → API Keys</p>
+              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé Gemini (Google) — GRATUIT</p>
+              <p style={{color:T.muted,fontSize:10}}>aistudio.google.com → Get API key</p>
             </div>
             {ck&&<div style={{marginLeft:"auto",width:8,height:8,borderRadius:"50%",background:T.green}}/>}
           </div>
-          <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("claude_key",e.target.value);}} placeholder="sk-ant-api03-…" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border .2s"}}/>
+          <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border .2s"}}/>
         </div>
         {/* ElevenLabs */}
         <div style={{background:T.card,border:`1px solid ${elOk===true?T.green:elOk===false?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
@@ -919,7 +926,7 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
           {ek&&<button onClick={testEL} disabled={testing} style={{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{testing?"Test en cours…":"🎙️ Tester la voix"}</button>}
         </div>
         <button onClick={()=>{if(ck)onDone();}} disabled={!ck} style={{padding:15,borderRadius:14,border:"none",background:ck?T.blueB:T.b1,color:ck?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:ck?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
-          {ck?"Démarrer la simulation →":"Entrez votre clé Claude pour continuer"}
+          {ck?"Démarrer la simulation →":"Entrez votre clé Gemini pour continuer"}
         </button>
         <p style={{color:T.muted,fontSize:11,textAlign:"center",lineHeight:1.5}}>Vos clés restent sur votre téléphone uniquement — elles ne sont jamais envoyées à NEXUS.</p>
       </div>
@@ -934,7 +941,7 @@ function SimulationHub({T}:{T:Theme}) {
 
   const launch=(id:"studio"|"sims")=>{
     haptic();
-    const key = typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"";
+    const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
     if(!key){setPendingView(id);setShowKeySetup(true);return;}
     setView(id);
   };
@@ -976,7 +983,7 @@ function SimulationHub({T}:{T:Theme}) {
 
 // ── API KEY SETTINGS ──────────────────────────────────────────
 function ApiKeySettings({T}:{T:Theme}) {
-  const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"");
+  const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
   const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
   const [elStatus,setElStatus] = useState<"idle"|"testing"|"ok"|"fail">("idle");
   const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
@@ -993,9 +1000,9 @@ function ApiKeySettings({T}:{T:Theme}) {
   return(
     <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
-        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Clé Claude API (IA)</p>
-        <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("claude_key",e.target.value);}} placeholder="sk-ant-api03-…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        <p style={{color:T.muted,fontSize:11,marginTop:5}}>console.anthropic.com → API Keys · Nécessaire pour les simulations IA</p>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Clé Gemini AI (GRATUIT)</p>
+        <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        <p style={{color:T.muted,fontSize:11,marginTop:5}}>aistudio.google.com → Get API key · Nécessaire pour les simulations IA</p>
       </div>
       <div style={{background:T.card,border:`1px solid ${elStatus==="ok"?T.green:elStatus==="fail"?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
@@ -1040,18 +1047,12 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
     setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
     setLoading(true);
     try{
-      const rawHist = newMsgs.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:m.text}));
+      const rawHist = newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
       const firstUserIdx = rawHist.findIndex(m=>m.role==="user");
       const hist = firstUserIdx>=0 ? rawHist.slice(firstUserIdx) : rawHist;
-      const key = typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"";
+      const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
-      const res = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,system:systemPrompt,messages:hist})
-      });
-      const data = await res.json();
-      const reply=(data.content as {text:string}[])?.map(c=>c.text).join("")||"";
+      const reply = await callGemini(systemPrompt,hist,key,400);
       if(!reply) throw new Error("empty");
       const aiMsg={role:"ai" as const,text:reply};
       setMsgs(m=>[...m,aiMsg]);
@@ -1060,7 +1061,7 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
     }catch(err){
       const isNoKey = err instanceof Error && err.message==="no_key";
       const fb = isNoKey
-        ? "Clé Claude API manquante — allez dans Profil → Réglages pour la configurer."
+        ? "Clé Gemini API manquante — allez dans Profil → Réglages pour la configurer."
         : "Connexion temporairement indisponible. Vérifiez votre clé API dans les Réglages.";
       setMsgs(m=>[...m,{role:"ai" as const,text:fb}]);
     }
@@ -1156,16 +1157,14 @@ function SimulationScreen({T}:{T:Theme}) {
     try{
       const otherDels=UN_DEL.filter(d=>d.id!==unRole.id);
       const responding=otherDels[Math.floor(Math.random()*otherDels.length)];
-      const rawHist=allMsgs.map(m=>({role:m.role==="user"?"user":"assistant" as const,content:`[${m.country}] ${m.text}`}));
+      const rawHist=allMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.country}] ${m.text}`}]}));
       const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
       const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
-      const key=typeof window!=="undefined"?localStorage.getItem("claude_key")||"":"";
+      const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       let replyText="";
       if(key){
         const unSys=`Tu es le délégué de ${responding.country} au Conseil de Sécurité ONU. Doctrine nationale : ${responding.doctrine}. Sujet en débat : "${unTopic}". RÈGLES : 1) Réponds DIRECTEMENT au dernier argument soulevé — rebondis précisément dessus. 2) Défends les intérêts de ${responding.country} avec conviction. 3) Cite un fait géopolitique réel lié à ton pays si pertinent. 4) Reste diplomatique mais ferme. 5) 2-3 phrases max. Commence par "${responding.flag} ${responding.country} :"`;
-        const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,system:unSys,messages:hist})});
-        const d=await res.json();
-        replyText=(d.content as {text:string}[])?.map(c=>c.text).join("")||"";
+        replyText = await callGemini(unSys,hist,key,250);
       }
       if(!replyText) replyText=`${responding.flag} ${responding.country} : La délégation de ${responding.country} s'oppose fermement à cette position. Notre doctrine — ${responding.doctrine.slice(0,80)} — est non-négociable. Nous demandons un vote.`;
       const resp={role:"ai",flag:responding.flag,country:responding.country,text:replyText};
