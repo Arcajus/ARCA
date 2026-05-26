@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: Build (static export)
-        run: BUILD_TARGET=capacitor npm run build
+        run: BUILD_TARGET=ghpages npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

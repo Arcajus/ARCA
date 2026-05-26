@@ -1,11 +1,13 @@
 import type { NextConfig } from "next";
 
+const isCapacitor = process.env.BUILD_TARGET === "capacitor";
+const isGhPages = process.env.BUILD_TARGET === "ghpages";
+
 const nextConfig: NextConfig = {
-  // Static export uniquement pour le build Capacitor (Android/iOS)
-  // Pour Vercel : commenter output et trailingSlash
-  ...(process.env.BUILD_TARGET === "capacitor"
+  ...(isCapacitor || isGhPages
     ? { output: "export", trailingSlash: true }
     : {}),
+  ...(isGhPages ? { basePath: "/arca", assetPrefix: "/arca" } : {}),
   images: {
     unoptimized: true,
   },
