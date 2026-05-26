@@ -2,12 +2,13 @@
   "name": "NEXUS — Intelligence Citoyenne",
   "short_name": "NEXUS",
   "description": "Réseau social de débat, simulation ONU, score d'éloquence",
-  "start_url": "/",
+  "start_url": "/ARCA/",
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen"],
   "background_color": "#07090F",
   "theme_color": "#07090F",
-  "orientation": "portrait",
-  "scope": "/",
+  "orientation": "portrait-primary",
+  "scope": "/ARCA/",
   "lang": "fr",
   "icons": [
     {

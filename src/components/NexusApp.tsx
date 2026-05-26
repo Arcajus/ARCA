@@ -1638,12 +1638,51 @@ function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
   );
 }
 
+// ── HAPTIC ───────────────────────────────────────────────────
+function haptic(ms=8){if(typeof navigator!=="undefined"&&navigator.vibrate)navigator.vibrate(ms);}
+
+// ── INSTALL BANNER ────────────────────────────────────────────
+function InstallBanner({T,onDismiss}:{T:Theme;onDismiss:()=>void}) {
+  const isIOS = typeof window!=="undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent.toLowerCase());
+  return(
+    <div style={{background:`linear-gradient(135deg,${T.blueB}18,${T.purple}10)`,borderBottom:`1px solid ${T.blueB}30`,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,animation:"fadeUp .4s ease",flexShrink:0}}>
+      <div style={{width:38,height:38,borderRadius:10,background:"#000",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"1px solid #333"}}>
+        <span style={{color:"#fff",fontWeight:900,fontSize:18,fontFamily:"'Inter',system-ui,sans-serif"}}>N</span>
+      </div>
+      <div style={{flex:1}}>
+        <p style={{color:T.text,fontSize:13,fontWeight:800}}>Installer NEXUS</p>
+        {isIOS
+          ? <p style={{color:T.textD,fontSize:11,marginTop:2}}>Appuyez sur <span style={{color:T.blueB,fontWeight:700}}>⬆ Partager</span> → &quot;Sur l&apos;écran d&apos;accueil&quot;</p>
+          : <p style={{color:T.textD,fontSize:11,marginTop:2}}>Menu navigateur → <span style={{color:T.blueB,fontWeight:700}}>Installer l&apos;application</span></p>
+        }
+      </div>
+      <button onClick={onDismiss} style={{background:"none",border:"none",cursor:"pointer",padding:6,flexShrink:0,borderRadius:8}}><Ic n="x" s={16} c={T.textD}/></button>
+    </div>
+  );
+}
+
 // ── ROOT APP ──────────────────────────────────────────────────
 export default function NexusApp() {
   const [dark,setDark] = useState(true);
   const T = dark ? DARK : LIGHT;
   const [tab,setTab] = useState<"feed"|"simulation"|"messages"|"events"|"profile">("feed");
   const [showPremium,setShowPremium] = useState(false);
+  const [showInstall,setShowInstall] = useState(false);
+  const [tabAnim,setTabAnim] = useState("fadeIn");
+
+  useEffect(()=>{
+    if(typeof window==="undefined") return;
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as {standalone?:boolean}).standalone===true;
+    const dismissed = localStorage.getItem("install_dismissed");
+    if(!standalone && !dismissed) setTimeout(()=>setShowInstall(true),2000);
+  },[]);
+
+  const switchTab = (id: typeof tab) => {
+    haptic();
+    setTabAnim("slideInRight");
+    setTab(id);
+    setTimeout(()=>setTabAnim("fadeIn"),300);
+  };
 
   const NAV = [
     {id:"feed",icon:"feed",label:"ACTU"},
@@ -1654,74 +1693,82 @@ export default function NexusApp() {
   ];
 
   return(
-    <div style={{background:T.bg,minHeight:"100vh",maxWidth:430,margin:"0 auto",fontFamily:"'Inter',system-ui,sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column",height:"100vh"}}>
+    <div style={{background:T.bg,maxWidth:430,margin:"0 auto",fontFamily:"'Inter',system-ui,sans-serif",display:"flex",flexDirection:"column",height:"100dvh",overflow:"hidden",position:"relative"}}>
       <style>{`
-        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        input::placeholder,textarea::placeholder{color:${T.muted};}
+        @keyframes slideInRight{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
         @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
-        input::placeholder,textarea::placeholder{color:${T.muted};}
+        @keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+        @keyframes wave{from{height:4px}to{height:24px}}
       `}</style>
 
+      {/* Install banner */}
+      {showInstall&&!showPremium&&(
+        <InstallBanner T={T} onDismiss={()=>{setShowInstall(false);localStorage.setItem("install_dismissed","1");}}/>
+      )}
+
+      {/* Header */}
       {!showPremium&&(
-        <div style={{padding:"13px 20px 11px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.b1}`,background:T.surf,zIndex:100,backdropFilter:"blur(20px)",flexShrink:0}}>
+        <div style={{padding:`${showInstall?10:13}px 20px 11px`,display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.b1}`,background:T.surf,zIndex:100,backdropFilter:"blur(20px)",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
               <circle cx="50" cy="50" r="50" fill="#000"/>
               <defs>
                 <linearGradient id="nlg" x1="30" y1="50" x2="70" y2="50" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%"   stopColor="#FFFFFF"/>
-                  <stop offset="28%"  stopColor="#FFFFFF"/>
-                  <stop offset="72%"  stopColor="#080C14"/>
+                  <stop offset="0%" stopColor="#FFFFFF"/>
+                  <stop offset="28%" stopColor="#FFFFFF"/>
+                  <stop offset="72%" stopColor="#080C14"/>
                   <stop offset="100%" stopColor="#080C14"/>
                 </linearGradient>
               </defs>
-              {/* left bar — white */}
               <rect x="29" y="23" width="13" height="54" fill="#FFFFFF"/>
-              {/* right bar — dark */}
               <rect x="58" y="23" width="13" height="54" fill="#080C14"/>
-              {/* diagonal — gradient */}
               <polygon points="42,23 58,23 58,52 42,48" fill="url(#nlg)"/>
-              {/* lower diagonal */}
               <polygon points="42,52 58,48 58,77 42,77" fill="url(#nlg)"/>
             </svg>
             <span style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text,letterSpacing:0.5}}>NEXUS</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <button onClick={()=>setDark(d=>!d)} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+            <button onClick={()=>{haptic();setDark(d=>!d);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
               <Ic n={dark?"sun":"moon"} s={16} c={T.textD}/>
             </button>
             <button style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative"}}>
               <Ic n="bell" s={16} c={T.textD}/>
               <div style={{position:"absolute",top:7,right:7,width:7,height:7,borderRadius:"50%",background:T.red,border:`2px solid ${T.surf}`}}/>
             </button>
-            <div onClick={()=>setTab("profile")} style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,cursor:"pointer",flexShrink:0}}>A</div>
+            <div onClick={()=>{haptic();switchTab("profile");}} style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,cursor:"pointer",flexShrink:0}}>A</div>
           </div>
         </div>
       )}
 
+      {/* Content */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}>
         {showPremium ? (
           <PremiumScreen T={T} onBack={()=>setShowPremium(false)}/>
         ) : (
-          <>
-            {tab==="feed"&&<FeedScreen T={T} onDebate={()=>setTab("simulation")}/>}
+          <div key={tab} style={{animation:`${tabAnim} .25s ease`,height:"100%"}}>
+            {tab==="feed"&&<FeedScreen T={T} onDebate={()=>switchTab("simulation")}/>}
             {tab==="simulation"&&<SimulationHub T={T}/>}
             {tab==="messages"&&<MessagesScreen T={T}/>}
             {tab==="events"&&<EventsScreen T={T}/>}
             {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)}/>}
-          </>
+          </div>
         )}
       </div>
 
+      {/* Bottom nav — with safe area */}
       {!showPremium&&(
-        <div style={{background:`${T.surf}F8`,backdropFilter:"blur(24px)",borderTop:`1px solid ${T.b1}`,display:"flex",padding:"8px 0 20px",flexShrink:0,zIndex:100}}>
+        <div style={{background:`${T.surf}F5`,backdropFilter:"blur(24px)",borderTop:`1px solid ${T.b1}`,display:"flex",paddingTop:8,paddingBottom:`max(20px, env(safe-area-inset-bottom))`,flexShrink:0,zIndex:100}}>
           {NAV.map(n=>(
-            <button key={n.id} onClick={()=>setTab(n.id as typeof tab)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:"5px 0"}}>
-              <div style={{width:38,height:38,borderRadius:11,background:tab===n.id?T.blueG:"transparent",border:tab===n.id?`1px solid ${T.blueB}20`:"1px solid transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
-                <Ic n={n.icon} s={20} c={tab===n.id?T.blueB:T.muted} w={tab===n.id?2:1.6}/>
+            <button key={n.id} onClick={()=>switchTab(n.id as typeof tab)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"4px 0",transition:"transform .1s"}}>
+              <div style={{width:40,height:34,borderRadius:12,background:tab===n.id?T.blueG:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",position:"relative"}}>
+                {tab===n.id&&<div style={{position:"absolute",top:-1,left:"50%",transform:"translateX(-50%)",width:20,height:3,borderRadius:2,background:T.blueB}}/>}
+                <Ic n={n.icon} s={20} c={tab===n.id?T.blueB:T.muted} w={tab===n.id?2.2:1.6}/>
               </div>
-              <span style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:tab===n.id?T.blueB:T.muted,transition:"color .2s"}}>{n.label}</span>
+              <span style={{fontSize:9,fontWeight:tab===n.id?800:600,letterSpacing:.5,color:tab===n.id?T.blueB:T.muted,transition:"color .2s"}}>{n.label}</span>
             </button>
           ))}
         </div>

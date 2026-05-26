@@ -1,37 +1,84 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@500&display=swap');
 @import "tailwindcss";
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  /* Native app feel — no tap flash, no text selection, no callout */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection only in inputs */
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 ::-webkit-scrollbar {
   display: none;
 }
 
-html, body {
+html {
   height: 100%;
+  /* Use dynamic viewport height — accounts for browser chrome on mobile */
+  height: 100dvh;
+  overflow: hidden;
   background: #07090F;
 }
 
 body {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: #07090F;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Prevent pull-to-refresh and bounce scroll */
+  overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+}
+
+#__next {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 button, input, textarea {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* Smooth momentum scrolling for all scroll containers */
+.scroll-container {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
@@ -41,10 +88,6 @@ button, input, textarea {
   0% { box-shadow: 0 0 0 0 rgba(43, 120, 245, 0.4); }
   100% { box-shadow: 0 0 0 24px rgba(43, 120, 245, 0); }
 }
-@keyframes slideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
 @keyframes wave {
   from { height: 4px; }
   to { height: 24px; }
@@ -53,3 +96,14 @@ button, input, textarea {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Native button press effect */
+button:active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
