@@ -1,15 +1,13 @@
-const CACHE = "nexus-v1";
+const CACHE = "nexus-v5";
 const STATIC = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
+  "/ARCA/",
+  "/ARCA/manifest.json",
+  "/ARCA/icons/icon-192.png",
 ];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(STATIC)).then(() => self.skipWaiting())
+    caches.open(CACHE).then((c) => c.addAll(STATIC).catch(()=>{})).then(() => self.skipWaiting())
   );
 });
 
@@ -21,18 +19,16 @@ self.addEventListener("activate", (e) => {
   );
 });
 
+// Network first — always fetch fresh content, fall back to cache
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const network = fetch(e.request).then((res) => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, clone));
-        }
-        return res;
-      });
-      return cached || network;
-    })
+    fetch(e.request).then((res) => {
+      if (res.ok) {
+        const clone = res.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, clone));
+      }
+      return res;
+    }).catch(() => caches.match(e.request))
   );
 });
