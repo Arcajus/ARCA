@@ -1163,70 +1163,17 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
         </div>
       ))}
       </div>
-      {/* News feed */}
-      <div style={{padding:"0 20px 12px",display:"flex",flexDirection:"column",gap:12}}>
-        {NEWS.filter(n=>{
-          const FILTER_MAP: Record<string,string[]> = {
-            "Géopolitique":["GÉOPOLITIQUE","GUERRE","DIPLOMATIE","INTERNATIONAL"],
-            "Diplomatie":["DIPLOMATIE"],
-            "Histoire":["HISTOIRE"],
-            "Droit":["DROIT","IMMIGRATION"],
-            "Élections":["ÉLECTIONS","POLITIQUE"],
-            "Europe":["EUROPE","DIPLOMATIE"],
-            "Afrique":["AFRIQUE"],
-          };
-          const kws = filter!=="Tout"?FILTER_MAP[filter]||[]:null;
-          const tagMatch = !kws || kws.some(k=>n.tag.toUpperCase().includes(k)||n.title.toUpperCase().includes(k));
-          const searchMatch = !search || n.title.toLowerCase().includes(search.toLowerCase())||n.src.toLowerCase().includes(search.toLowerCase());
-          return tagMatch && searchMatch;
-        }).map(n=>(
-          <div key={n.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,overflow:"hidden",animation:"fadeUp .4s ease"}}>
-            <div style={{padding:"12px 14px 8px",display:"flex",alignItems:"center",gap:10}}>
-              <Avatar init={n.src.slice(0,2)} size={36} T={T}/>
-              <div style={{flex:1}}>
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{color:T.text,fontWeight:700,fontSize:13}}>{n.src}</span>
-                  {n.verified&&<span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:9,padding:"1px 5px",borderRadius:3,fontWeight:800}}>✓ VÉRIFIÉ</span>}
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
-                  <Tag label={n.tag} color={n.tagC} small/>
-                  <span style={{color:T.muted,fontSize:11}}>· {n.time}</span>
-                  {n.hot&&<span style={{background:`${T.red}15`,color:T.red,fontSize:9,padding:"1px 5px",borderRadius:3,fontWeight:800}}>🔥 TENDANCE</span>}
-                </div>
-              </div>
-              <button onClick={()=>setFlagged(s=>{const ns=new Set(s);ns.has(n.id)?ns.delete(n.id):ns.add(n.id);return ns;})} style={{background:"none",border:"none",cursor:"pointer",padding:4}} title="Signaler">
-                <Ic n="flag" s={14} c={flagged.has(n.id)?T.red:T.muted}/>
-              </button>
-            </div>
-            {n.imgUrl&&(
-              <div style={{height:180,overflow:"hidden",position:"relative"}}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={n.imgUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).parentElement!.style.display="none"}}/>
-                {n.type==="video"&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.35)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:50,height:50,borderRadius:"50%",background:`${T.blueB}cc`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="play" s={20} c="#fff"/></div></div>}
-                {n.type==="video"&&(n as {dur?:string}).dur&&<div style={{position:"absolute",bottom:8,right:10,background:"rgba(0,0,0,.75)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 7px",borderRadius:4}}>{(n as {dur?:string}).dur}</div>}
-              </div>
-            )}
-            <div style={{padding:"10px 14px"}}>
-              <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.5}}>{n.title}</p>
-            </div>
-            <div style={{padding:"8px 14px 12px",display:"flex",alignItems:"center",borderTop:`1px solid ${T.b1}`}}>
-              <button onClick={()=>setLiked(s=>{const ns=new Set(s);ns.has(n.id)?ns.delete(n.id):ns.add(n.id);return ns;})} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:liked.has(n.id)?T.red:T.textD,padding:"0 8px 0 0"}}>
-                <Ic n="heart" s={16} c={liked.has(n.id)?T.red:T.textD} w={liked.has(n.id)?2.5:1.6}/>
-                <span style={{fontSize:12,fontWeight:600}}>{n.likes+(liked.has(n.id)?1:0)}</span>
-              </button>
-              <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 8px"}}>
-                <Ic n="comment" s={16} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>{n.comments}</span>
-              </button>
-              <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 8px"}}>
-                <Ic n="share" s={16} c={T.textD}/>
-              </button>
-              <div style={{marginLeft:"auto"}}>
-                <button onClick={onDebate} style={{background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"5px 12px",color:T.blueB,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
-              </div>
-            </div>
+      {/* Empty state — only shown when no live news yet and not loading */}
+      {nexusPosts.length===0&&!liveLoading&&(
+        <div style={{padding:"32px 20px",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+          <div style={{width:56,height:56,borderRadius:"50%",background:T.blueG,border:`1px solid ${T.blueB}30`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <Ic n="trending" s={26} c={T.blueB}/>
           </div>
-        ))}
-      </div>
+          <p style={{color:T.text,fontSize:14,fontWeight:700}}>Aucune actualité chargée</p>
+          <p style={{color:T.muted,fontSize:12,lineHeight:1.5}}>Vérifiez votre connexion internet et appuyez sur Actualiser pour charger les dernières infos.</p>
+          <button onClick={()=>refresh(false)} style={{padding:"10px 24px",borderRadius:10,border:"none",background:T.blueB,color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Actualiser maintenant</button>
+        </div>
+      )}
     </div>
   );
 }
