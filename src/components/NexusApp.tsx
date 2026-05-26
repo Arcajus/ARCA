@@ -1197,16 +1197,17 @@ export default function NexusApp() {
       {!showPremium&&(
         <div style={{padding:"13px 20px 11px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.b1}`,background:T.surf,zIndex:100,backdropFilter:"blur(20px)",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <svg width="33" height="33" viewBox="0 0 100 100" fill="none">
+            <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
               <circle cx="50" cy="50" r="50" fill="#000"/>
               <defs>
-                <linearGradient id="ng" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                <linearGradient id="nlogograd" x1="30" y1="24" x2="70" y2="76" gradientUnits="userSpaceOnUse">
                   <stop offset="0%" stopColor="#FFFFFF"/>
-                  <stop offset="45%" stopColor="#B8C4D4"/>
-                  <stop offset="100%" stopColor="#2A3040"/>
+                  <stop offset="25%" stopColor="#F0F4FF"/>
+                  <stop offset="55%" stopColor="#7A8BA8"/>
+                  <stop offset="100%" stopColor="#151A25"/>
                 </linearGradient>
               </defs>
-              <text x="50" y="74" textAnchor="middle" fontFamily="Georgia,serif" fontSize="62" fontWeight="900" fill="url(#ng)">N</text>
+              <path d="M30,24 L30,76 L40,76 L40,46 L60,76 L70,76 L70,24 L60,24 L60,54 L40,24 Z" fill="url(#nlogograd)"/>
             </svg>
             <span style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text,letterSpacing:0.5}}>NEXUS</span>
           </div>
