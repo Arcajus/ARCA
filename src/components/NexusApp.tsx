@@ -173,7 +173,7 @@ function ScoreModal({topic,T,onClose}:{topic:string;T:Theme;onClose:()=>void}) {
     <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(5px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .3s"}}>
       <div style={{background:T.surf,borderRadius:"24px 24px 0 0",padding:"28px 24px 48px",width:"100%",maxWidth:430,border:`1px solid ${T.b1}`,animation:"slideUp .4s ease"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
-          <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Analyse post-débat</p><h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24,fontWeight:700,color:T.text}}>Score d&apos;éloquence</h2></div>
+          <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Analyse post-débat</p><h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:700,color:T.text}}>Score d&apos;éloquence</h2></div>
           <button onClick={onClose} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><Ic n="x" s={16} c={T.textD}/></button>
         </div>
         <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,padding:24,textAlign:"center",marginBottom:20}}>
@@ -338,7 +338,7 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
                 <circle cx="58" cy="58" r={r+8} fill="none" stroke={timerCol} strokeWidth="4" strokeDasharray={circ+50} strokeDashoffset={(circ+50)*(1-timerPct)} strokeLinecap="round" transform="rotate(-90 58 58)" style={{transition:"stroke-dashoffset .9s linear,stroke .3s"}}/>
               </svg>
             )}
-            <div style={{width:96,height:96,borderRadius:"50%",background:phase==="waiting"||phase==="cut"?T.blueG:T.card,border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:T.blueB,fontFamily:"'Cormorant Garamond',serif",boxShadow:phase==="waiting"?`0 0 30px ${T.blueG}`:"none",transition:"all .3s"}}>{j?.init||"EM"}</div>
+            <div style={{width:96,height:96,borderRadius:"50%",background:phase==="waiting"||phase==="cut"?T.blueG:T.card,border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:T.blueB,fontFamily:"'Inter',system-ui,sans-serif",boxShadow:phase==="waiting"?`0 0 30px ${T.blueG}`:"none",transition:"all .3s"}}>{j?.init||"EM"}</div>
           </div>
           <p style={{color:T.text,fontSize:16,fontWeight:700}}>{j?.name||"Journaliste"}</p>
           <p style={{color:T.textD,fontSize:12,marginTop:2}}>{j?.role||"NEXUS Studio"}</p>
@@ -410,7 +410,7 @@ function StudioScreen({T}:{T:Theme}) {
     <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
       <div style={{paddingBottom:4}}>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Studio Audio</p>
-        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:800,color:T.text,lineHeight:1.1}}>Débat en direct</h1>
+        <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text,lineHeight:1.1}}>Débat en direct</h1>
       </div>
       {/* Mode selector */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
@@ -604,7 +604,7 @@ function EventsScreen({T}:{T:Theme}) {
     <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
       <div>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Agenda</p>
-        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:800,color:T.text}}>Événements</h1>
+        <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text}}>Événements</h1>
       </div>
       <div style={{display:"flex",gap:8}}>
         {["Tout","Conférence","Débat","Forum","Simulation"].map(f=>(
@@ -689,7 +689,7 @@ function MessagesScreen({T}:{T:Theme}) {
     <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
       <div>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Communauté</p>
-        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:800,color:T.text}}>Messages</h1>
+        <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text}}>Messages</h1>
       </div>
       <div style={{position:"relative"}}>
         <Ic n="search" s={16} c={T.muted}/>
@@ -795,7 +795,7 @@ function SimulationScreen({T}:{T:Theme}) {
       <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <button onClick={()=>{setMode("home");setVoted(null);}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.textD}/></button>
-          <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Simulation</p><h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:800,color:T.text}}>Élections virtuelles</h2></div>
+          <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Simulation</p><h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:22,fontWeight:800,color:T.text}}>Élections virtuelles</h2></div>
         </div>
         <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,textAlign:"center"}}>
           <p style={{color:T.text,fontWeight:700,fontSize:14,marginBottom:4}}>Présidentielle virtuelle NEXUS 2025</p>
@@ -829,7 +829,7 @@ function SimulationScreen({T}:{T:Theme}) {
     <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
       <div>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Simulations IA</p>
-        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:800,color:T.text}}>Simulateur</h1>
+        <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text}}>Simulateur</h1>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         {[
@@ -1025,7 +1025,7 @@ function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
     <div style={{padding:"16px 20px 32px"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
         <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.textD}/></button>
-        <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Abonnement</p><h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24,fontWeight:800,color:T.text}}>Choisir votre plan</h2></div>
+        <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Abonnement</p><h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>Choisir votre plan</h2></div>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
         {plans.map(p=>(
@@ -1075,7 +1075,7 @@ export default function NexusApp() {
   ];
 
   return(
-    <div style={{background:T.bg,minHeight:"100vh",maxWidth:430,margin:"0 auto",fontFamily:"'DM Sans',sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column",height:"100vh"}}>
+    <div style={{background:T.bg,minHeight:"100vh",maxWidth:430,margin:"0 auto",fontFamily:"'Inter',system-ui,sans-serif",position:"relative",overflowX:"hidden",display:"flex",flexDirection:"column",height:"100vh"}}>
       <style>{`
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -1098,7 +1098,7 @@ export default function NexusApp() {
               </defs>
               <text x="50" y="74" textAnchor="middle" fontFamily="Georgia,serif" fontSize="62" fontWeight="900" fill="url(#ng)">N</text>
             </svg>
-            <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:800,color:T.text,letterSpacing:1}}>NEXUS</span>
+            <span style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text,letterSpacing:0.5}}>NEXUS</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <button onClick={()=>setDark(d=>!d)} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
