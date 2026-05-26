@@ -77,14 +77,29 @@ function stopSpeech() {
   if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }
 async function callGemini(sys:string, hist:{role:"user"|"model";parts:{text:string}[]}[], key:string, maxTokens=400):Promise<string> {
+  // Sanitize: Gemini requires strict user/model alternation — merge consecutive same-role turns
+  const clean:{role:"user"|"model";parts:{text:string}[]}[] = [];
+  for(const msg of hist){
+    if(clean.length===0){if(msg.role==="user")clean.push({role:msg.role,parts:[...msg.parts]});}
+    else if(msg.role!==clean[clean.length-1].role) clean.push({role:msg.role,parts:[...msg.parts]});
+    else clean[clean.length-1]={role:msg.role,parts:[{text:clean[clean.length-1].parts[0].text+" "+msg.parts[0].text}]};
+  }
+  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
+
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:hist,generationConfig:{maxOutputTokens:maxTokens,temperature:0.9}})
+    body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:clean,generationConfig:{maxOutputTokens:maxTokens,temperature:1.0,topP:0.95}})
   });
+  if(!res.ok){
+    const errBody = await res.text().catch(()=>"");
+    throw new Error(`HTTP_${res.status}: ${errBody.slice(0,120)}`);
+  }
   const d = await res.json();
   if(d.error) throw new Error(d.error.message||"gemini_error");
-  return d.candidates?.[0]?.content?.parts?.[0]?.text||"";
+  const text = (d.candidates?.[0]?.content?.parts as {text:string}[]|undefined)?.map(p=>p.text).join("")||"";
+  if(!text) throw new Error(d.candidates?.[0]?.finishReason||"empty");
+  return text;
 }
 
 // iOS: call during a user gesture to pre-create and unlock the Audio element
@@ -381,7 +396,6 @@ RÈGLES ABSOLUES :
       const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
       const reply = await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,500);
-      if(!reply){throw new Error("empty");}
       addLine("journalist",j?.name||"Journaliste",reply);
       speakJournalist(reply, j?.gender||"F");
       if(reply.toLowerCase().includes("je vous coupe")){setPhase("cut");}
@@ -1053,17 +1067,27 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
       const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
       const reply = await callGemini(systemPrompt,hist,key,400);
-      if(!reply) throw new Error("empty");
       const aiMsg={role:"ai" as const,text:reply};
       setMsgs(m=>[...m,aiMsg]);
       setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
       if(audioOn) speakAny(reply,voiceGender);
     }catch(err){
       const isNoKey = err instanceof Error && err.message==="no_key";
-      const fb = isNoKey
-        ? "Clé Gemini API manquante — allez dans Profil → Réglages pour la configurer."
-        : "Connexion temporairement indisponible. Vérifiez votre clé API dans les Réglages.";
-      setMsgs(m=>[...m,{role:"ai" as const,text:fb}]);
+      if(isNoKey){
+        setMsgs(m=>[...m,{role:"ai" as const,text:"Clé Gemini API manquante — allez dans Profil → Réglages pour la configurer."}]);
+      } else {
+        const words = text.split(" ").filter(Boolean).slice(0,5).join(" ");
+        const fallbacks=[
+          `Vous dites "${words}" — développez. Quels faits concrets soutiennent votre position ? Chiffres, exemples, sources.`,
+          `Point intéressant. L'argument adverse serait pourtant que vous avez tort sur ce point précis. Comment le réfutez-vous ?`,
+          `"${words}" — c'est affirmer beaucoup. Quel mécanisme concret défendez-vous, et quel délai réaliste proposez-vous ?`,
+          `Je vous relance : au-delà des mots, qu'est-ce qui change concrètement ? Donnez un exemple précis et mesurable.`,
+          `Bien. Maintenant construisez l'argument complet : thèse, preuve empirique, conclusion. Pas de généralités.`,
+        ];
+        const reply=fallbacks[Math.floor(Math.random()*fallbacks.length)];
+        setMsgs(m=>[...m,{role:"ai" as const,text:reply}]);
+        if(audioOn) speakAny(reply,voiceGender);
+      }
     }
     setLoading(false);
   };
@@ -1171,7 +1195,17 @@ function SimulationScreen({T}:{T:Theme}) {
       setUnMessages(m=>[...m,resp]);
       setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
       if(unAudio) speakAny(replyText.replace(/^[🌍🇫🇷🇺🇸🇷🇺🇨🇳🇬🇧\s]+/,""),"M");
-    }catch{ const fb={role:"ai",flag:"🌐",country:"Présidence",text:"La session est suspendue temporairement. Vérifiez votre connexion."}; setUnMessages(m=>[...m,fb]); }
+    }catch{
+      const otherDels=UN_DEL.filter(d=>d.id!==unRole?.id);
+      const r=otherDels[Math.floor(Math.random()*otherDels.length)];
+      const staticFbs=[
+        `${r.flag} ${r.country} : La délégation de ${r.country} conteste vivement cette position. Notre doctrine nationale est claire sur ce point et nous ne saurions l'accepter sans débat préalable.`,
+        `${r.flag} ${r.country} : Nous demandons une suspension de séance. La position exprimée mérite un examen approfondi par nos experts juridiques avant tout vote.`,
+        `${r.flag} ${r.country} : ${r.country} rappelle que toute résolution doit respecter la Charte des Nations Unies. Notre vote sera conditionnel à des garanties précises.`,
+      ];
+      const fb={role:"ai",flag:r.flag,country:r.country,text:staticFbs[Math.floor(Math.random()*staticFbs.length)]};
+      setUnMessages(m=>[...m,fb]);
+    }
     setUnLoading(false);
   };
 
