@@ -1074,25 +1074,6 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
           <span style={{color:T.blueB,fontSize:11,fontWeight:700}}>{liveLoading?"Chargement…":"Actualiser + IA"}</span>
         </button>
       </div>
-      {/* Live articles */}
-      {liveNews.length>0&&(
-        <div style={{padding:"10px 20px",display:"flex",flexDirection:"column",gap:10,borderBottom:`1px solid ${T.b1}`}}>
-          {liveNews.map(a=>(
-            <a key={a.id} href={a.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none",display:"flex",gap:12,alignItems:"flex-start",background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 12px",animation:"fadeUp .4s ease"}}>
-              {a.imgUrl&&<div style={{width:64,height:64,borderRadius:8,overflow:"hidden",flexShrink:0}}><img src={a.imgUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).parentElement!.style.display="none"}}/></div>}
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-                  <Tag label={a.tag} color={a.tagC} small/>
-                  {a.verif&&<span style={{background:`${a.verif.color}20`,color:a.verif.color,fontSize:9,padding:"1px 6px",borderRadius:4,fontWeight:800}}>✦ {a.verif.label}</span>}
-                  {a.time&&<span style={{color:T.muted,fontSize:10}}>· {a.time}</span>}
-                </div>
-                <p style={{color:T.text,fontSize:12,fontWeight:600,lineHeight:1.4}}>{a.title}</p>
-                <p style={{color:T.muted,fontSize:10,marginTop:3}}>{a.src}</p>
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
       {liveLoading&&liveNews.length===0&&(
         <div style={{padding:"20px",textAlign:"center"}}>
           <div style={{display:"inline-flex",gap:5,alignItems:"center"}}>{[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:T.blueB,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div>
@@ -1175,43 +1156,43 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
         </div>
       )}
       {/* NEXUS Official auto-published posts */}
-      <div style={{padding:"12px 20px 0",display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"flex",flexDirection:"column"}}>
       {nexusPosts.filter(p=>{
         const searchMatch = !search || p.title.toLowerCase().includes(search.toLowerCase())||p.src.toLowerCase().includes(search.toLowerCase());
         const FILTER_MAP: Record<string,string[]> = {"Géopolitique":["GÉOPOLITIQUE","GUERRE","DIPLOMATIE","INTERNATIONAL"],"Diplomatie":["DIPLOMATIE"],"Histoire":["HISTOIRE"],"Droit":["DROIT","IMMIGRATION"],"Élections":["ÉLECTIONS","POLITIQUE"],"Europe":["EUROPE","DIPLOMATIE"],"Afrique":["AFRIQUE"]};
         const kws = filter!=="Tout"?FILTER_MAP[filter]||[]:null;
         const tagMatch = !kws || kws.some(k=>p.tag.toUpperCase().includes(k)||p.title.toUpperCase().includes(k));
         return searchMatch && tagMatch;
-      }).slice(0,20).map(p=>(
-        <div key={p.id} style={{background:T.card,border:`1.5px solid ${T.blueB}25`,borderRadius:14,overflow:"hidden",animation:"fadeUp .4s ease"}}>
-          <div style={{padding:"12px 14px 8px",display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:36,height:36,borderRadius:"50%",background:"#000",border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:"#fff",flexShrink:0}}>N</div>
+      }).slice(0,100).map(p=>(
+        <div key={p.id} style={{background:T.card,borderBottom:`1px solid ${T.b1}`,animation:"fadeUp .4s ease"}}>
+          <div style={{padding:"14px 16px 10px",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:40,height:40,borderRadius:"50%",background:"#000",border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:"#fff",flexShrink:0}}>N</div>
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                <span style={{color:T.text,fontWeight:700,fontSize:13}}>NEXUS Intelligence</span>
-                <span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:9,padding:"2px 6px",borderRadius:3,fontWeight:800,letterSpacing:.5}}>✓ OFFICIEL</span>
-                {p.verif&&<span style={{background:`${p.verif.color}15`,color:p.verif.color,fontSize:9,padding:"2px 6px",borderRadius:3,fontWeight:800}}>✦ {p.verif.label}</span>}
+                <span style={{color:T.text,fontWeight:800,fontSize:14}}>NEXUS Intelligence</span>
+                <span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:10,padding:"2px 7px",borderRadius:4,fontWeight:800,letterSpacing:.5}}>✓ OFFICIEL</span>
+                {p.verif&&<span style={{background:`${p.verif.color}15`,color:p.verif.color,fontSize:10,padding:"2px 7px",borderRadius:4,fontWeight:800}}>✦ {p.verif.label}</span>}
               </div>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3,flexWrap:"wrap"}}>
                 <Tag label={p.tag} color={p.tagC} small/>
                 {p.time&&<span style={{color:T.muted,fontSize:11}}>· {p.time}</span>}
                 <span style={{color:T.muted,fontSize:11}}>· {p.src}</span>
               </div>
             </div>
           </div>
-          {p.imgUrl&&<div style={{height:170,overflow:"hidden"}}><img src={p.imgUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).parentElement!.style.display="none"}}/></div>}
-          <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"10px 14px 8px",textDecoration:"none"}}>
-            <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.5}}>{p.title}</p>
-            <p style={{color:T.blueB,fontSize:11,marginTop:4,fontWeight:600}}>Lire l&apos;article complet →</p>
+          {p.imgUrl&&<div style={{width:"100%",height:220,overflow:"hidden"}}><img src={p.imgUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).parentElement!.style.display="none"}}/></div>}
+          <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"12px 16px 8px",textDecoration:"none"}}>
+            <p style={{color:T.text,fontSize:16,fontWeight:700,lineHeight:1.5,margin:0}}>{p.title}</p>
+            <p style={{color:T.blueB,fontSize:12,marginTop:6,fontWeight:600}}>Lire l&apos;article complet →</p>
           </a>
-          <div style={{padding:"8px 14px 12px",display:"flex",alignItems:"center",gap:0,borderTop:`1px solid ${T.b1}`}}>
-            <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 10px 0 0"}}>
-              <Ic n="heart" s={15} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>0</span>
+          <div style={{padding:"10px 16px 14px",display:"flex",alignItems:"center"}}>
+            <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 14px 0 0"}}>
+              <Ic n="heart" s={17} c={T.textD}/><span style={{fontSize:13,fontWeight:600}}>0</span>
             </button>
-            <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 10px"}}>
-              <Ic n="share" s={15} c={T.textD}/>
+            <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 14px"}}>
+              <Ic n="share" s={17} c={T.textD}/>
             </button>
-            <button onClick={onDebate} style={{marginLeft:"auto",background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"5px 12px",color:T.blueB,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
+            <button onClick={onDebate} style={{marginLeft:"auto",background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"6px 14px",color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
           </div>
         </div>
       ))}
