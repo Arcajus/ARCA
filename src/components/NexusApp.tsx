@@ -274,10 +274,10 @@ const NEWS = [
   {id:9,type:"article",tag:"HISTOIRE",tagC:"#7C3AED",time:"12h",title:"Esclavage et mémoire : les rébellions oubliées qui ont changé le monde",hot:false,imgUrl:"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=700&q=80",likes:328,comments:74,src:"NEXUS Culture",verified:false},
 ];
 const EVENTS_DATA = [
-  {id:1,date:"24",month:"MAI",day:"Sam",title:"Forum Méditerranée & Diplomatie",loc:"Palais du Pharo, Marseille",type:"Conférence",dist:"2,3 km",attendees:284},
-  {id:2,date:"1",month:"JUN",day:"Dim",title:"Débat public : Europe fédérale, utopie ou nécessité ?",loc:"MuCEM, Marseille",type:"Débat",dist:"3,1 km",attendees:156},
-  {id:3,date:"7",month:"JUN",day:"Sam",title:"Rencontres Géopolitiques d'Aix-en-Provence",loc:"Aix-en-Provence",type:"Forum",dist:"29 km",attendees:412},
-  {id:4,date:"15",month:"JUN",day:"Dim",title:"Simulation ONU — Session étudiante Sciences Po",loc:"Sciences Po Paris",type:"Simulation",dist:"770 km",attendees:89},
+  {id:1,date:"24",month:"MAI",day:"Sam",title:"Forum Méditerranée & Diplomatie",loc:"Palais du Pharo, Marseille",type:"Conférence",lat:43.2947,lng:5.3614,attendees:284},
+  {id:2,date:"1",month:"JUN",day:"Dim",title:"Débat public : Europe fédérale, utopie ou nécessité ?",loc:"MuCEM, Marseille",type:"Débat",lat:43.2977,lng:5.3617,attendees:156},
+  {id:3,date:"7",month:"JUN",day:"Sam",title:"Rencontres Géopolitiques d'Aix-en-Provence",loc:"Aix-en-Provence",type:"Forum",lat:43.5297,lng:5.4474,attendees:412},
+  {id:4,date:"15",month:"JUN",day:"Dim",title:"Simulation ONU — Session étudiante Sciences Po",loc:"Sciences Po Paris",type:"Simulation",lat:48.8517,lng:2.3294,attendees:89},
 ];
 const CONVOS = [
   {id:1,name:"Communauté Géopolitique",last:"Quelqu'un a suivi le G7 ce matin ?",time:"14:23",unread:5,init:"GÉO"},
@@ -850,10 +850,72 @@ function StudioScreen({T}:{T:Theme}) {
 function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
   const [filter,setFilter] = useState("Tout");
   const [liked,setLiked] = useState<Set<number>>(new Set());
+  const [flagged,setFlagged] = useState<Set<number>>(new Set());
+  const [showCompose,setShowCompose] = useState(false);
   const [composed,setComposed] = useState("");
+  const [composeSrc,setComposeSrc] = useState("");
+  const [verifying,setVerifying] = useState(false);
+  type UserPost = {id:number;text:string;time:string;src:string;verif:{label:string;color:string;comment:string}|null};
+  const [userPosts,setUserPosts] = useState<UserPost[]>(()=>{
+    if(typeof window==="undefined") return [];
+    try{return JSON.parse(localStorage.getItem("nexus_posts")||"[]");}catch{return [];}
+  });
+
+  const publishPost = async()=>{
+    if(!composed.trim()) return;
+    const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+    let verif: {label:string;color:string;comment:string}|null = null;
+    if(key){
+      setVerifying(true);
+      try{
+        const raw = await callGemini(
+          `Tu es un fact-checker pour un réseau social civique. Analyse ce texte et réponds UNIQUEMENT en JSON valide sur une ligne.
+Format strict: {"score": <0-100>, "label": "<VÉRIFIÉ|PROBABLE|DOUTEUX|NON VÉRIFIÉ>", "comment": "<1 phrase max 80 chars>"}
+VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent mais non prouvé. DOUTEUX (30-59): contradictions ou manque de preuves. NON VÉRIFIÉ (0-29): sans source ou invérifiable.`,
+          [{role:"user" as const,parts:[{text:composed}]}],
+          key,
+          80
+        );
+        const match=raw.match(/\{[^}]+\}/);
+        if(match){
+          const parsed=JSON.parse(match[0]);
+          const col=parsed.score>=80?"#16A34A":parsed.score>=60?"#2B78F5":parsed.score>=30?"#D97706":"#E03535";
+          verif={label:parsed.label||"NON VÉRIFIÉ",color:col,comment:parsed.comment||""};
+        }
+      }catch{/*publish without verif*/}
+      setVerifying(false);
+    }
+    const post:UserPost={id:Date.now(),text:composed,src:composeSrc||"Moi",time:"À l'instant",verif};
+    const next=[post,...userPosts];
+    setUserPosts(next);
+    localStorage.setItem("nexus_posts",JSON.stringify(next));
+    setComposed("");setComposeSrc("");setShowCompose(false);
+  };
 
   return(
     <div>
+      {/* Compose modal */}
+      {showCompose&&(
+        <div onClick={e=>e.target===e.currentTarget&&setShowCompose(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:T.surf,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:430,padding:"20px 20px 40px",display:"flex",flexDirection:"column",gap:12,animation:"slideUp .3s ease"}}>
+            <div style={{width:40,height:4,borderRadius:2,background:T.b2,margin:"0 auto 8px"}}/>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <p style={{color:T.text,fontWeight:800,fontSize:16}}>Publier une analyse</p>
+              <button onClick={()=>setShowCompose(false)} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="x" s={20} c={T.textD}/></button>
+            </div>
+            <textarea value={composed} onChange={e=>setComposed(e.target.value)} placeholder="Partagez votre analyse, opinion ou information…" rows={4} style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",color:T.text,fontSize:14,fontFamily:"inherit",outline:"none",resize:"none",lineHeight:1.6}}/>
+            <input value={composeSrc} onChange={e=>setComposeSrc(e.target.value)} placeholder="Source (ex: Le Monde, Reuters…) — optionnel" style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"9px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+            {typeof window!=="undefined"&&!localStorage.getItem("gemini_key")&&(
+              <div style={{background:`${T.amber}15`,border:`1px solid ${T.amber}30`,borderRadius:8,padding:"8px 12px"}}>
+                <p style={{color:T.amber,fontSize:11,fontWeight:600}}>💡 Configurez votre clé Gemini dans Profil → Réglages pour activer la vérification IA automatique</p>
+              </div>
+            )}
+            <button onClick={publishPost} disabled={!composed.trim()||verifying} style={{padding:15,borderRadius:12,border:"none",background:composed.trim()&&!verifying?T.blueB:T.b1,color:composed.trim()&&!verifying?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:composed.trim()&&!verifying?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
+              {verifying?"🔍 Vérification IA en cours…":"Publier"}
+            </button>
+          </div>
+        </div>
+      )}
       {/* Breaking news */}
       <div style={{background:`${T.red}12`,borderBottom:`1px solid ${T.red}25`,padding:"8px 20px",display:"flex",alignItems:"center",gap:8}}>
         <div style={{width:6,height:6,borderRadius:"50%",background:T.red,animation:"pulse 1s infinite",flexShrink:0}}/>
@@ -863,7 +925,7 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
       {/* Compose */}
       <div style={{padding:"12px 20px",borderBottom:`1px solid ${T.b1}`,display:"flex",gap:10,alignItems:"center"}}>
         <Avatar init="A" size={36} T={T}/>
-        <div style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:20,padding:"9px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"text"}} onClick={()=>{}}>
+        <div style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:20,padding:"9px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"text"}} onClick={()=>setShowCompose(true)}>
           <span style={{color:T.muted,fontSize:13}}>Partagez votre analyse…</span>
           <div style={{display:"flex",gap:10}}>
             <Ic n="image" s={16} c={T.muted}/><Ic n="video" s={16} c={T.muted}/>
@@ -891,7 +953,44 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
           <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 14px",borderRadius:20,border:`1px solid ${filter===f?T.blueB:T.b1}`,background:filter===f?T.blueB:"transparent",color:filter===f?"#fff":T.textD,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{f}</button>
         ))}
       </div>
-      {/* Posts */}
+      {/* User posts */}
+      {userPosts.length>0&&(
+        <div style={{padding:"12px 20px 0",display:"flex",flexDirection:"column",gap:12}}>
+          {userPosts.map(p=>(
+            <div key={p.id} style={{background:T.card,border:`1px solid ${T.blueB}30`,borderRadius:14,overflow:"hidden",animation:"fadeUp .4s ease"}}>
+              <div style={{padding:"12px 14px 8px",display:"flex",alignItems:"center",gap:10}}>
+                <Avatar init="A" size={36} T={T}/>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                    <span style={{color:T.text,fontWeight:700,fontSize:13}}>{p.src}</span>
+                    {p.verif&&<span style={{background:`${p.verif.color}20`,color:p.verif.color,fontSize:9,padding:"2px 7px",borderRadius:4,fontWeight:800}}>✦ {p.verif.label}</span>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
+                    <Tag label="MON ANALYSE" color={T.blueB} small/>
+                    <span style={{color:T.muted,fontSize:11}}>· {p.time}</span>
+                  </div>
+                </div>
+              </div>
+              <div style={{padding:"4px 14px 10px"}}>
+                <p style={{color:T.text,fontSize:14,lineHeight:1.6}}>{p.text}</p>
+                {p.verif&&<p style={{color:p.verif.color,fontSize:11,marginTop:6,fontWeight:600}}>🤖 Analyse IA : {p.verif.comment}</p>}
+              </div>
+              <div style={{padding:"8px 14px 12px",display:"flex",alignItems:"center",borderTop:`1px solid ${T.b1}`}}>
+                <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 8px 0 0"}}>
+                  <Ic n="heart" s={16} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>0</span>
+                </button>
+                <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 8px"}}>
+                  <Ic n="comment" s={16} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>0</span>
+                </button>
+                <div style={{marginLeft:"auto"}}>
+                  <button onClick={()=>{const next=userPosts.filter(x=>x.id!==p.id);setUserPosts(next);localStorage.setItem("nexus_posts",JSON.stringify(next));}} style={{background:`${T.red}15`,border:`1px solid ${T.red}30`,borderRadius:8,padding:"5px 10px",color:T.red,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Supprimer</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* News feed */}
       <div style={{padding:"12px 20px",display:"flex",flexDirection:"column",gap:12}}>
         {NEWS.map(n=>(
           <div key={n.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,overflow:"hidden",animation:"fadeUp .4s ease"}}>
@@ -908,6 +1007,9 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
                   {n.hot&&<span style={{background:`${T.red}15`,color:T.red,fontSize:9,padding:"1px 5px",borderRadius:3,fontWeight:800}}>🔥 TENDANCE</span>}
                 </div>
               </div>
+              <button onClick={()=>setFlagged(s=>{const ns=new Set(s);ns.has(n.id)?ns.delete(n.id):ns.add(n.id);return ns;})} style={{background:"none",border:"none",cursor:"pointer",padding:4}} title="Signaler">
+                <Ic n="flag" s={14} c={flagged.has(n.id)?T.red:T.muted}/>
+              </button>
             </div>
             {n.imgUrl&&(
               <div style={{height:180,overflow:"hidden",position:"relative"}}>
@@ -944,45 +1046,155 @@ function FeedScreen({T,onDebate}:{T:Theme;onDebate:()=>void}) {
 
 // ── EVENTS SCREEN ─────────────────────────────────────────────
 function EventsScreen({T}:{T:Theme}) {
+  type EventItem = {id:number;date:string;month:string;day:string;title:string;loc:string;type:string;lat:number;lng:number;attendees:number;isUser?:boolean;desc?:string};
   const [reg,setReg] = useState<Set<number>>(new Set());
+  const [filter,setFilter] = useState("Tout");
+  const [userLoc,setUserLoc] = useState<{lat:number;lng:number}|null>(null);
+  const [locLoading,setLocLoading] = useState(false);
+  const [showAdd,setShowAdd] = useState(false);
+  const [userEvents,setUserEvents] = useState<EventItem[]>(()=>{
+    if(typeof window==="undefined") return [];
+    try{return JSON.parse(localStorage.getItem("nexus_events")||"[]");}catch{return [];}
+  });
+  const [newTitle,setNewTitle] = useState("");
+  const [newType,setNewType] = useState("Conférence");
+  const [newLoc,setNewLoc] = useState("");
+  const [newDate,setNewDate] = useState("");
+  const [newDesc,setNewDesc] = useState("");
+
+  const requestLoc=()=>{
+    if(typeof navigator==="undefined"||!navigator.geolocation) return;
+    setLocLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      pos=>{setUserLoc({lat:pos.coords.latitude,lng:pos.coords.longitude});setLocLoading(false);},
+      ()=>setLocLoading(false),
+      {timeout:8000}
+    );
+  };
+
+  useEffect(()=>{requestLoc();},[]);// eslint-disable-line
+
+  const haversine=(lat1:number,lng1:number,lat2:number,lng2:number):number=>{
+    const R=6371;
+    const dLat=(lat2-lat1)*Math.PI/180;
+    const dLng=(lng2-lng1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  };
+
+  const fmtDist=(km:number):string=>km<1?`${Math.round(km*1000)} m`:km<10?`${km.toFixed(1)} km`:`${Math.round(km)} km`;
+
+  const addEvent=()=>{
+    if(!newTitle||!newLoc||!newDate) return;
+    const d=new Date(newDate);
+    const months=["JAN","FÉV","MAR","AVR","MAI","JUN","JUL","AOÛ","SEP","OCT","NOV","DÉC"];
+    const days=["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
+    const ev:EventItem={
+      id:Date.now(),date:String(d.getDate()),month:months[d.getMonth()],day:days[d.getDay()],
+      title:newTitle,loc:newLoc,type:newType,lat:userLoc?.lat||48.8566,lng:userLoc?.lng||2.3522,
+      attendees:1,isUser:true,desc:newDesc||undefined,
+    };
+    const next=[...userEvents,ev];
+    setUserEvents(next);
+    localStorage.setItem("nexus_events",JSON.stringify(next));
+    setShowAdd(false);setNewTitle("");setNewLoc("");setNewDate("");setNewDesc("");
+  };
+
+  const deleteEvent=(id:number)=>{
+    const next=userEvents.filter(e=>e.id!==id);
+    setUserEvents(next);localStorage.setItem("nexus_events",JSON.stringify(next));
+  };
+
+  const allEvents:EventItem[]=[...EVENTS_DATA,...userEvents];
+  const filtered=filter==="Tout"?allEvents:allEvents.filter(e=>e.type===filter);
+  const sorted=userLoc?[...filtered].sort((a,b)=>haversine(userLoc.lat,userLoc.lng,a.lat,a.lng)-haversine(userLoc.lat,userLoc.lng,b.lat,b.lng)):filtered;
+
   return(
     <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
-      <div>
-        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Agenda</p>
-        <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text}}>Événements</h1>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+        <div>
+          <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Agenda</p>
+          <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text}}>Événements</h1>
+        </div>
+        <button onClick={()=>setShowAdd(s=>!s)} style={{width:42,height:42,borderRadius:12,border:`1.5px solid ${showAdd?T.blueB:T.b1}`,background:showAdd?T.blueG:T.card,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all .2s"}}>
+          <Ic n="plus" s={20} c={showAdd?T.blueB:T.textD}/>
+        </button>
       </div>
-      <div style={{display:"flex",gap:8}}>
-        {["Tout","Conférence","Débat","Forum","Simulation"].map(f=>(
-          <button key={f} style={{padding:"5px 14px",borderRadius:20,border:`1px solid ${T.b1}`,background:f==="Tout"?T.blueB:"transparent",color:f==="Tout"?"#fff":T.textD,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit"}}>{f}</button>
+      {!userLoc&&(
+        <button onClick={requestLoc} disabled={locLoading} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,border:`1px solid ${T.blueB}40`,background:T.blueG,cursor:"pointer",width:"100%",textAlign:"left"}}>
+          <Ic n="map" s={16} c={T.blueB}/>
+          <span style={{color:T.blueB,fontSize:12,fontWeight:700}}>{locLoading?"Localisation en cours…":"Activer la géolocalisation pour trier par distance"}</span>
+        </button>
+      )}
+      {userLoc&&(
+        <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,background:`${T.green}15`,border:`1px solid ${T.green}30`}}>
+          <Ic n="map" s={14} c={T.green}/>
+          <span style={{color:T.green,fontSize:12,fontWeight:700}}>Géolocalisation active — triés par distance</span>
+        </div>
+      )}
+      {showAdd&&(
+        <div style={{background:T.card,border:`1px solid ${T.blueB}40`,borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:10,animation:"fadeUp .3s ease"}}>
+          <p style={{color:T.blueB,fontSize:13,fontWeight:800}}>Ajouter un événement</p>
+          <input value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="Titre *" style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"9px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <select value={newType} onChange={e=>setNewType(e.target.value)} style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"9px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}>
+              {["Conférence","Débat","Forum","Simulation","Atelier","Autre"].map(t=><option key={t}>{t}</option>)}
+            </select>
+            <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"9px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+          </div>
+          <input value={newLoc} onChange={e=>setNewLoc(e.target.value)} placeholder="Lieu (ville, salle…) *" style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"9px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+          <textarea value={newDesc} onChange={e=>setNewDesc(e.target.value)} placeholder="Description (optionnel)" rows={2} style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"9px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",resize:"none"}}/>
+          {!userLoc&&<p style={{color:T.muted,fontSize:11}}>💡 Activez la géolocalisation pour que l&apos;événement soit localisé correctement</p>}
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:10,borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.textD,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
+            <button onClick={addEvent} disabled={!newTitle||!newLoc||!newDate} style={{flex:2,padding:10,borderRadius:8,border:"none",background:newTitle&&newLoc&&newDate?T.blueB:T.b1,color:newTitle&&newLoc&&newDate?"#fff":T.muted,fontSize:12,fontWeight:800,cursor:newTitle&&newLoc&&newDate?"pointer":"not-allowed",fontFamily:"inherit"}}>Publier l&apos;événement</button>
+          </div>
+        </div>
+      )}
+      <div style={{display:"flex",gap:8,overflowX:"auto"}}>
+        {["Tout","Conférence","Débat","Forum","Simulation","Atelier"].map(f=>(
+          <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 14px",borderRadius:20,border:`1px solid ${filter===f?T.blueB:T.b1}`,background:filter===f?T.blueB:"transparent",color:filter===f?"#fff":T.textD,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{f}</button>
         ))}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        {EVENTS_DATA.map(ev=>(
-          <div key={ev.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",gap:14,animation:"fadeUp .4s ease"}}>
-            <div style={{width:52,flexShrink:0,textAlign:"center",background:T.blueG,border:`1px solid ${T.blueB}30`,borderRadius:10,padding:"8px 4px"}}>
-              <p style={{color:T.blueB,fontSize:20,fontWeight:900,lineHeight:1}}>{ev.date}</p>
-              <p style={{color:T.blueB,fontSize:10,fontWeight:800,letterSpacing:1}}>{ev.month}</p>
-              <p style={{color:T.muted,fontSize:9,marginTop:2}}>{ev.day}</p>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:6}}>
-                <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.4}}>{ev.title}</p>
-                <Tag label={ev.type} color={T.blueB} small/>
+        {sorted.length===0&&<div style={{textAlign:"center",padding:40}}><p style={{color:T.muted,fontSize:14}}>Aucun événement dans cette catégorie</p></div>}
+        {sorted.map(ev=>{
+          const dist=userLoc?haversine(userLoc.lat,userLoc.lng,ev.lat,ev.lng):null;
+          const isUser=ev.isUser;
+          return(
+            <div key={ev.id} style={{background:T.card,border:`1px solid ${isUser?T.blueB+"40":T.b1}`,borderRadius:14,padding:16,display:"flex",gap:14,animation:"fadeUp .4s ease"}}>
+              <div style={{width:52,flexShrink:0,textAlign:"center",background:T.blueG,border:`1px solid ${T.blueB}30`,borderRadius:10,padding:"8px 4px"}}>
+                <p style={{color:T.blueB,fontSize:20,fontWeight:900,lineHeight:1}}>{ev.date}</p>
+                <p style={{color:T.blueB,fontSize:10,fontWeight:800,letterSpacing:1}}>{ev.month}</p>
+                <p style={{color:T.muted,fontSize:9,marginTop:2}}>{ev.day}</p>
               </div>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-                <Ic n="map" s={12} c={T.muted}/><span style={{color:T.textD,fontSize:12}}>{ev.loc}</span>
-              </div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{color:T.muted,fontSize:11}}>{ev.dist} · {ev.attendees} inscrits</span>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:4}}>
+                  <div style={{flex:1}}>
+                    <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.4}}>{ev.title}</p>
+                    {isUser&&<span style={{fontSize:9,color:T.blueB,fontWeight:800,background:T.blueG,padding:"1px 6px",borderRadius:4,display:"inline-block",marginTop:2}}>MON ÉVÉNEMENT</span>}
+                  </div>
+                  <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                    <Tag label={ev.type} color={T.blueB} small/>
+                    {isUser&&<button onClick={()=>deleteEvent(ev.id)} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><Ic n="x" s={14} c={T.muted}/></button>}
+                  </div>
                 </div>
-                <button onClick={()=>setReg(s=>{const ns=new Set(s);ns.has(ev.id)?ns.delete(ev.id):ns.add(ev.id);return ns;})} style={{padding:"6px 14px",borderRadius:8,border:`1px solid ${reg.has(ev.id)?T.green:T.blueB}`,background:reg.has(ev.id)?`${T.green}15`:T.blueG,color:reg.has(ev.id)?T.green:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                  {reg.has(ev.id)?"✓ Inscrit":"S'inscrire"}
-                </button>
+                {ev.desc&&<p style={{color:T.textD,fontSize:11,marginBottom:6,lineHeight:1.4}}>{ev.desc}</p>}
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                  <Ic n="map" s={12} c={T.muted}/><span style={{color:T.textD,fontSize:12}}>{ev.loc}</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <span style={{color:T.muted,fontSize:11}}>
+                    {dist!==null?`📍 ${fmtDist(dist)} · `:""}{ev.attendees} inscrit{ev.attendees>1?"s":""}
+                  </span>
+                  <button onClick={()=>setReg(s=>{const ns=new Set(s);ns.has(ev.id)?ns.delete(ev.id):ns.add(ev.id);return ns;})} style={{padding:"6px 14px",borderRadius:8,border:`1px solid ${reg.has(ev.id)?T.green:T.blueB}`,background:reg.has(ev.id)?`${T.green}15`:T.blueG,color:reg.has(ev.id)?T.green:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    {reg.has(ev.id)?"✓ Inscrit":"S'inscrire"}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
