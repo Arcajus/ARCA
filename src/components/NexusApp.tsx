@@ -430,13 +430,44 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
     setTimerOn(false);
   },[autoMic]);// eslint-disable-line
 
-  // Intro — speak and auto-open mic when done
+  // Intro — in duel mode, opponent speaks first before user's mic opens
   useEffect(()=>{
-    const introText=`Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle. `:""}${isDuel?`Ce soir, vous affrontez ${opponent.name}, ${opponent.role}. `:""}À vous la parole.`;
-    setTimeout(()=>{
+    const introText = isDuel
+      ? `Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle. `:""}Ce soir vous affrontez ${opponent.name}, ${opponent.role}. Je lui donne d'abord la parole.`
+      : `Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle. `:""}À vous la parole.`;
+    setTimeout(async()=>{
       addLine("journalist",j?.name||"Journaliste",introText);
       setPhase("speaking"); setTimerOn(true);
-      speakAny(introText,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
+      if(isDuel){
+        // Journalist speaks → opponent opens → journalist passes to user
+        speakAny(introText,(j?.gender||"F") as "M"|"F", async()=>{
+          if(!mountedRef.current) return;
+          try{
+            const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+            if(!oppKey){if(mountedRef.current)setAutoMic(true);return;}
+            const oppOpenSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
+TON PROFIL RHÉTORIQUE : ${opponent.style}
+Sujet du débat : "${topic}".
+MISSION : Tu prends la parole EN PREMIER pour exposer ta position d'ouverture. 2-3 phrases MAX, percutantes.
+Commence OBLIGATOIREMENT par ton prénom. Expose ton angle avec UN fait ou chiffre concret. Termine par une provocation rhétorique qui défie ton adversaire.`;
+            const oppOpen=await callGemini(oppOpenSys,[{role:"user" as const,parts:[{text:`${opponent.name}, ouvrez le débat.`}]}],oppKey,180);
+            if(!mountedRef.current) return;
+            if(oppOpen){
+              addLine("opponent",opponent.name,oppOpen);
+              speakAny(oppOpen,opponent.gender,()=>{
+                if(!mountedRef.current) return;
+                const handover=`Merci ${opponent.name}. À vous de répondre.`;
+                addLine("journalist",j?.name||"Journaliste",handover);
+                speakAny(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
+              });
+            } else {
+              if(mountedRef.current)setAutoMic(true);
+            }
+          }catch{if(mountedRef.current)setAutoMic(true);}
+        });
+      } else {
+        speakAny(introText,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
+      }
     },600);
   },[]);// eslint-disable-line
 
