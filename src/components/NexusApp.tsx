@@ -437,6 +437,33 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
     setTimerOn(false);
   },[autoMic]);// eslint-disable-line
 
+  // Hardcoded fallback lines per opponent profile (used when Gemini is unavailable)
+  const oppFallbackOpen = opponent.style.includes("ibéral")
+    ? `${opponent.name} : En même temps, les données économiques parlent d'elles-mêmes. Ce débat doit rester factuel et pragmatique. Êtes-vous prêt à entendre des chiffres qui contredisent votre position ?`
+    : opponent.style.includes("auche")||opponent.style.includes("ndignat")
+    ? `${opponent.name} : Ce qu'on oublie de dire, c'est que les inégalités n'ont jamais été aussi criantes depuis des décennies. Le peuple mérite une vraie réponse, pas des compromis. Jusqu'où êtes-vous prêt à aller ?`
+    : opponent.style.includes("ouverain")||opponent.style.includes("uristique")
+    ? `${opponent.name} : La Constitution est pourtant claire, et les faits sont là, noir sur blanc. La souveraineté de la Nation n'est pas négociable. Comment justifiez-vous votre position face à nos textes fondamentaux ?`
+    : `${opponent.name} : Le GIEC est formel — nous avons moins de dix ans avant les points de basculement. Ce débat n'a de sens que si on intègre l'urgence climatique. Pourquoi l'ignorer ?`;
+
+  const oppFallbackReaction = (userText: string) => opponent.style.includes("ibéral")
+    ? `${opponent.name} : En même temps, "${userText.slice(0,40)}…" — mais les chiffres de l'OCDE montrent exactement l'inverse. La vraie question est : peut-on se permettre ce que vous proposez ?`
+    : opponent.style.includes("auche")
+    ? `${opponent.name} : Ce que dit mon contradicteur, c'est exactement ce que les élites veulent nous faire croire. La réalité pour des millions de Français, c'est tout autre chose. Assumez-vous ce choix de classe ?`
+    : opponent.style.includes("ouverain")
+    ? `${opponent.name} : Les traités sont clairs. Dans ces conditions, l'argument que vous avancez est juridiquement fragile. Connaissez-vous seulement les textes en vigueur ?`
+    : `${opponent.name} : On parle de tout ça sans mentionner l'urgence écologique. Dans moins de dix ans, cette décision sera jugée par l'histoire. L'assumez-vous vraiment ?`;
+
+  function speakOpponent(text: string, onDone: ()=>void) {
+    setTimeout(()=>{
+      if(!mountedRef.current) return;
+      speakAny(text, opponent.gender as "M"|"F", ()=>{
+        if(!mountedRef.current) return;
+        onDone();
+      });
+    }, 300);
+  }
+
   // Intro — in duel mode, opponent speaks first before user's mic opens
   useEffect(()=>{
     const introText = isDuel
@@ -446,37 +473,33 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
       addLine("journalist",j?.name||"Journaliste",introText);
       setPhase("speaking"); setTimerOn(true);
       if(isDuel){
-        // Journalist speaks → opponent opens → journalist passes to user
         speakAny(introText,(j?.gender||"F") as "M"|"F", async()=>{
           if(!mountedRef.current) return;
+          let oppOpen = "";
           try{
             const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
-            if(!oppKey){if(mountedRef.current)setAutoMic(true);return;}
-            const oppOpenSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
+            if(oppKey){
+              const oppOpenSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
 TON PROFIL RHÉTORIQUE : ${opponent.style}
 Sujet du débat : "${topic}".
 MISSION : Tu prends la parole EN PREMIER pour exposer ta position d'ouverture. 2-3 phrases MAX, percutantes.
 Commence OBLIGATOIREMENT par ton prénom. Expose ton angle avec UN fait ou chiffre concret. Termine par une provocation rhétorique qui défie ton adversaire.`;
-            const oppOpen=await callGemini(oppOpenSys,[{role:"user" as const,parts:[{text:`${opponent.name}, ouvrez le débat.`}]}],oppKey,180);
-            if(!mountedRef.current) return;
-            if(oppOpen){
-              addLine("opponent",opponent.name,oppOpen);
-              setTimeout(()=>{
-                if(!mountedRef.current) return;
-                speakAny(oppOpen,opponent.gender as "M"|"F",()=>{
-                  if(!mountedRef.current) return;
-                  const handover=`Merci ${opponent.name}. À vous de répondre.`;
-                  addLine("journalist",j?.name||"Journaliste",handover);
-                  setTimeout(()=>{
-                    if(!mountedRef.current) return;
-                    speakAny(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
-                  },200);
-                });
-              },300);
-            } else {
-              if(mountedRef.current)setAutoMic(true);
+              oppOpen=await callGemini(oppOpenSys,[{role:"user" as const,parts:[{text:`${opponent.name}, ouvrez le débat.`}]}],oppKey,180);
             }
-          }catch{if(mountedRef.current)setAutoMic(true);}
+          }catch{/*use fallback*/}
+          if(!mountedRef.current) return;
+          // Always speak — use Gemini reply or fallback
+          const textToSpeak = oppOpen || oppFallbackOpen;
+          addLine("opponent",opponent.name,textToSpeak);
+          speakOpponent(textToSpeak,()=>{
+            if(!mountedRef.current) return;
+            const handover=`Merci ${opponent.name}. À vous de répondre.`;
+            addLine("journalist",j?.name||"Journaliste",handover);
+            setTimeout(()=>{
+              if(!mountedRef.current) return;
+              speakAny(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
+            },200);
+          });
         });
       } else {
         speakAny(introText,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
@@ -571,33 +594,24 @@ RÈGLES ABSOLUES :
       if(isDuel){
         speakAny(reply,(j?.gender||"F") as "M"|"F", async()=>{
           if(!mountedRef.current) return;
+          let oppReply = "";
           try{
             const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
-            if(!oppKey){if(mountedRef.current)setAutoMic(true);return;}
-            const oppSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
+            if(oppKey){
+              const oppSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
 TON PROFIL RHÉTORIQUE : ${opponent.style}
 Sujet du débat : "${topic}".
 L'invité principal vient de dire : "${text.slice(0,250)}"
 Le journaliste a répondu : "${reply.slice(0,150)}"
-
 MISSION : Contredire l'invité principal de façon percutante. 2-3 phrases MAX.
-FORMAT OBLIGATOIRE selon ton profil :
-- Si libéral → "En même temps, les données [source précise] montrent que [chiffre]. La vraie question est [angle économique]."
-- Si gauche → "Ce que dit mon contradicteur, c'est exactement ce que [élite/institution] veut nous faire croire. La réalité pour [X millions de personnes], c'est [fait concret]."
-- Si souverainiste → "[Loi/traité/chiffre précis]. Dans ces conditions, [argument souveraineté/sécurité]."
-- Si écologiste → "On parle de [sujet] sans mentionner que [fait climatique GIEC]. Dans [X ans], [conséquence concrète]."
 Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique à l'invité.`;
-            const oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`${opponent.name}, votre réaction ?`}]}],oppKey,160);
-            if(!mountedRef.current) return;
-            if(oppReply){
-              addLine("opponent",opponent.name,oppReply);
-              // 300ms buffer: let the audio system fully settle after journalist finishes
-              setTimeout(()=>{
-                if(!mountedRef.current) return;
-                speakAny(oppReply,opponent.gender as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
-              },300);
-            } else { setAutoMic(true); }
-          }catch{ if(mountedRef.current)setAutoMic(true); }
+              oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`${opponent.name}, votre réaction ?`}]}],oppKey,160);
+            }
+          }catch{/*use fallback*/}
+          if(!mountedRef.current) return;
+          const textToSpeak = oppReply || oppFallbackReaction(text);
+          addLine("opponent",opponent.name,textToSpeak);
+          speakOpponent(textToSpeak,()=>{if(mountedRef.current)setAutoMic(true);});
         });
       } else {
         speakAny(reply,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
