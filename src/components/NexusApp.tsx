@@ -18,51 +18,33 @@ const LIGHT = {
 };
 type Theme = typeof DARK;
 
-// ── ELEVENLABS + SPEECH ──────────────────────────────────────
-// _elAudio is pre-created and unlocked during a user gesture so iOS allows
-// later async .play() calls on the same element
-let _elAudio: HTMLAudioElement | null = null;
+// ── TTS: HuggingFace (gratuit) + Web Speech (fallback) ────────
+// _hfAudio: pre-created on first user gesture so iOS allows later async play()
+let _hfAudio: HTMLAudioElement | null = null;
 
-const EL_VOICES_F = ["XB0fDUnXU5powFXDhCwa","Xb7hH8MSUJpSbSDYk0k2","21m00Tcm4TlvDq8ikWAM","EXAVITQu4vr4xnSDxMaL"];
-const EL_VOICES_M = ["nPczCjzI2devNBz1zQrb","N2lVS1w4EtoT3dr4eOWO","29vD33N1CtxCmqQRPOHJ","ErXwobaYiN019PkySvjV"];
-
-async function speakEL(text: string, gender: "M"|"F", key: string, onEnd?: ()=>void): Promise<boolean> {
-  const voices = gender === "F" ? EL_VOICES_F : EL_VOICES_M;
-  if (_elAudio) { _elAudio.pause(); _elAudio.onended = null; }
-  for (const voiceId of voices) {
-    try {
-      if (_elAudio) { _elAudio.pause(); _elAudio.onended = null; }
-      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-        method: "POST",
-        headers: { "Accept": "audio/mpeg", "Content-Type": "application/json", "xi-api-key": key },
-        body: JSON.stringify({ text: text.slice(0, 3000), model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.45, similarity_boost: 0.8 } })
-      });
-      if (!res.ok) continue;
-      const blob = await res.blob();
-      if (blob.size < 100) continue;
-      const url = URL.createObjectURL(blob);
-      if (_elAudio) {
-        _elAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
-        _elAudio.src = url;
-        // No load() — let play() trigger loading; load() causes iOS NotAllowedError in async contexts
-        try { await _elAudio.play(); }
-        catch {
-          // iOS blocked the shared element — create a fresh one from the same blob
-          const fresh = new Audio(url);
-          fresh.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
-          _elAudio.onended = null;
-          _elAudio = fresh;
-          await fresh.play();
-        }
-      } else {
-        _elAudio = new Audio(url);
-        _elAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
-        await _elAudio.play();
-      }
-      return true;
-    } catch { continue; }
-  }
-  return false;
+async function speakHF(text: string, gender: "M"|"F", key: string, onEnd?: ()=>void): Promise<boolean> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch("https://api-inference.huggingface.co/models/facebook/mms-tts-fra", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ inputs: text.slice(0, 600) }),
+      signal: ctrl.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    if (blob.size < 200) return false;
+    const url = URL.createObjectURL(blob);
+    if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
+    _hfAudio = new Audio(url);
+    _hfAudio.playbackRate = gender === "F" ? 1.12 : 0.90;
+    _hfAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
+    _hfAudio.onerror = () => { URL.revokeObjectURL(url); onEnd?.(); };
+    await _hfAudio.play();
+    return true;
+  } catch { return false; }
 }
 function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
@@ -86,12 +68,12 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   }
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
-  const k = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
-  if (k) speakEL(text, gender, k, onEnd).then(ok => { if (!ok) speakWeb(text, gender, onEnd); }).catch(() => speakWeb(text, gender, onEnd));
+  const k = typeof window !== "undefined" ? localStorage.getItem("hf_key") : null;
+  if (k) speakHF(text, gender, k, onEnd).then(ok => { if (!ok) speakWeb(text, gender, onEnd); }).catch(() => speakWeb(text, gender, onEnd));
   else speakWeb(text, gender, onEnd);
 }
 function stopSpeech() {
-  if (_elAudio) { _elAudio.pause(); _elAudio.onended = null; }
+  if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
   if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }
 type GHist = {role:"user"|"model";parts:{text:string}[]}[];
@@ -159,10 +141,8 @@ let _audioUnlocked = false;
 function unlockAudio() {
   if (_audioUnlocked || typeof window === "undefined") return;
   _audioUnlocked = true;
-  // Pre-create the element that speakEL will reuse — iOS unlocks it here, in the gesture stack
-  _elAudio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
-  _elAudio.play().catch(() => {});
-  // Also unlock AudioContext for Web Speech fallback
+  _hfAudio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+  _hfAudio.play().catch(() => {});
   try { const ac = new AudioContext(); ac.resume().catch(()=>{}); } catch{/* */}
 }
 
@@ -1537,15 +1517,15 @@ function MessagesScreen({T}:{T:Theme}) {
 // ── API KEY SETUP MODAL ───────────────────────────────────────
 function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
   const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
-  const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
+  const [hk,setHk] = useState(typeof window!=="undefined"?localStorage.getItem("hf_key")||"":"");
   const [testing,setTesting] = useState(false);
-  const [elOk,setElOk] = useState<boolean|null>(null);
+  const [hfOk,setHfOk] = useState<boolean|null>(null);
   const save=(k:string,v:string)=>{if(typeof window!=="undefined")localStorage.setItem(k,v);};
-  const testEL=async()=>{
-    if(!ek)return;
+  const testHF=async()=>{
+    if(!hk)return;
     setTesting(true);
-    const ok=await speakEL("Bonjour, je suis votre assistant NEXUS.",  "F", ek);
-    setElOk(ok);setTesting(false);
+    const ok=await speakHF("Bonjour, je suis votre assistant NEXUS.", "F", hk);
+    setHfOk(ok);setTesting(false);
   };
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .2s"}}>
@@ -1567,19 +1547,19 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
           </div>
           <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border .2s"}}/>
         </div>
-        {/* ElevenLabs */}
-        <div style={{background:T.card,border:`1px solid ${elOk===true?T.green:elOk===false?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
+        {/* HuggingFace TTS */}
+        <div style={{background:T.card,border:`1px solid ${hfOk===true?T.green:hfOk===false?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <div style={{width:28,height:28,borderRadius:7,background:"#7C3AED20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}>🎙️</span></div>
+            <div style={{width:28,height:28,borderRadius:7,background:"#F97316"+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}>🔊</span></div>
             <div style={{flex:1}}>
-              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé ElevenLabs <span style={{color:T.muted,fontSize:10,fontWeight:500}}>(optionnel — voix réalistes)</span></p>
-              <p style={{color:T.muted,fontSize:10}}>elevenlabs.io → Profile → API Keys</p>
+              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Token HuggingFace <span style={{color:T.green,fontSize:10,fontWeight:700}}>100% GRATUIT</span></p>
+              <p style={{color:T.muted,fontSize:10}}>huggingface.co → Settings → Access Tokens → New token (read)</p>
             </div>
-            {elOk===true&&<span style={{color:T.green,fontSize:11,fontWeight:800}}>✓ OK</span>}
-            {elOk===false&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
+            {hfOk===true&&<span style={{color:T.green,fontSize:11,fontWeight:800}}>✓ OK</span>}
+            {hfOk===false&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
           </div>
-          <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);setElOk(null);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-          {ek&&<button onClick={testEL} disabled={testing} style={{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{testing?"Test en cours…":"🎙️ Tester la voix"}</button>}
+          <input type="password" value={hk} onChange={e=>{setHk(e.target.value);save("hf_key",e.target.value);setHfOk(null);}} placeholder="hf_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          {hk&&<button onClick={testHF} disabled={testing} style={{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{testing?"Test en cours… (15s max)":"🔊 Tester la voix"}</button>}
         </div>
         <button onClick={()=>{if(ck)onDone();}} disabled={!ck} style={{padding:15,borderRadius:14,border:"none",background:ck?T.blueB:T.b1,color:ck?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:ck?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
           {ck?"Démarrer la simulation →":"Entrez votre clé Gemini pour continuer"}
@@ -1640,18 +1620,18 @@ function SimulationHub({T}:{T:Theme}) {
 // ── API KEY SETTINGS ──────────────────────────────────────────
 function ApiKeySettings({T}:{T:Theme}) {
   const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
-  const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
-  const [elStatus,setElStatus] = useState<"idle"|"testing"|"ok"|"fail">("idle");
+  const [hk,setHk] = useState(typeof window!=="undefined"?localStorage.getItem("hf_key")||"":"");
+  const [hfStatus,setHfStatus] = useState<"idle"|"testing"|"ok"|"fail">("idle");
   const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
 
-  const testEL = async()=>{
-    if(!ek){setElStatus("fail");return;}
-    setElStatus("testing");
-    const ok = await speakEL("Bonjour, je suis votre journaliste NEXUS.", "F", ek);
-    setElStatus(ok?"ok":"fail");
+  const testHF = async()=>{
+    if(!hk){setHfStatus("fail");return;}
+    setHfStatus("testing");
+    const ok = await speakHF("Bonjour, je suis votre journaliste NEXUS.", "F", hk);
+    setHfStatus(ok?"ok":"fail");
   };
 
-  const elColor = elStatus==="ok"?T.green:elStatus==="fail"?T.red:T.blueB;
+  const hfColor = hfStatus==="ok"?T.green:hfStatus==="fail"?T.red:T.blueB;
 
   return(
     <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
@@ -1660,17 +1640,17 @@ function ApiKeySettings({T}:{T:Theme}) {
         <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         <p style={{color:T.muted,fontSize:11,marginTop:5}}>aistudio.google.com → Get API key · Nécessaire pour les simulations IA</p>
       </div>
-      <div style={{background:T.card,border:`1px solid ${elStatus==="ok"?T.green:elStatus==="fail"?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
+      <div style={{background:T.card,border:`1px solid ${hfStatus==="ok"?T.green:hfStatus==="fail"?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>Clé ElevenLabs (voix réalistes)</p>
-          {elStatus==="ok"&&<span style={{color:T.green,fontSize:11,fontWeight:800}}>✓ Connecté</span>}
-          {elStatus==="fail"&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
+          <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>Token HuggingFace TTS — <span style={{color:T.green}}>GRATUIT</span></p>
+          {hfStatus==="ok"&&<span style={{color:T.green,fontSize:11,fontWeight:800}}>✓ Connecté</span>}
+          {hfStatus==="fail"&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
         </div>
-        <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);setElStatus("idle");}} placeholder="sk_xxxxxxxxxxxxxxxx" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        <button onClick={testEL} disabled={elStatus==="testing"||!ek} style={{marginTop:10,width:"100%",padding:"9px",borderRadius:8,border:"none",background:ek?elColor:T.b1,color:ek?"#fff":T.muted,fontSize:12,fontWeight:800,cursor:ek&&elStatus!=="testing"?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .3s"}}>
-          {elStatus==="testing"?"Test en cours…":elStatus==="ok"?"✓ Voix ElevenLabs OK — Réessayer":elStatus==="fail"?"✗ Échec — Vérifier la clé":"🎙️ Tester la voix ElevenLabs"}
+        <input type="password" value={hk} onChange={e=>{setHk(e.target.value);save("hf_key",e.target.value);setHfStatus("idle");}} placeholder="hf_xxxxxxxxxxxxxxxx" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        <button onClick={testHF} disabled={hfStatus==="testing"||!hk} style={{marginTop:10,width:"100%",padding:"9px",borderRadius:8,border:"none",background:hk?hfColor:T.b1,color:hk?"#fff":T.muted,fontSize:12,fontWeight:800,cursor:hk&&hfStatus!=="testing"?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .3s"}}>
+          {hfStatus==="testing"?"Test en cours… (15s max)":hfStatus==="ok"?"✓ Voix HF OK — Réessayer":hfStatus==="fail"?"✗ Échec — Vérifier le token":"🔊 Tester la voix HuggingFace"}
         </button>
-        <p style={{color:T.muted,fontSize:11,marginTop:6}}>elevenlabs.io → Profile → API Keys · Gratuit : 10 000 chars/mois</p>
+        <p style={{color:T.muted,fontSize:11,marginTop:6}}>huggingface.co → Settings → Access Tokens → New token (read) · 100% gratuit</p>
       </div>
     </div>
   );
