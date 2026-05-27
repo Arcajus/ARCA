@@ -1614,6 +1614,7 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
   const [audioOn,setAudioOn] = useState(true);
   const [listening,setListening] = useState(false);
   const [autoMic,setAutoMic] = useState(false);
+  const [exchangeN,setExchangeN] = useState(0);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -1679,9 +1680,20 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
       const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
       const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
+      const n=exchangeN+1; setExchangeN(n);
+      const dynSys=`${systemPrompt}
+
+═══ TOUR N°${n} — INSTRUCTION IMPÉRATIVE ═══
+L'interlocuteur vient de dire exactement : "${text}"
+
+RÈGLES ABSOLUES pour cette réponse :
+1. Cite MOT POUR MOT une partie de ce qu'il a dit (entre guillemets)
+2. Réponds DIRECTEMENT à cet argument — aucune réponse générique
+3. Apporte un ANGLE NOUVEAU pas encore utilisé dans cette conversation
+4. Développe avec 5 à 7 phrases, des faits réels, des chiffres si pertinents`;
       let firstChunk=true;
       let fullReply="";
-      await streamGemini(systemPrompt,hist,key,700,(full)=>{
+      await streamGemini(dynSys,hist,key,700,(full)=>{
         if(!mountedRef.current) return;
         fullReply=full;
         if(firstChunk){firstChunk=false;setLoading(false);setMsgs(m=>[...m,{role:"ai" as const,text:full}]);}
@@ -1888,7 +1900,12 @@ RÈGLES ABSOLUES :
       const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
       const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
       if(!key) throw new Error("no_key");
-      const reply = await callGemini(trialSys, hist, key, 900);
+      const dynTrialSys = `${trialSys}
+
+═══ PLAIDOIRIE DE CE TOUR ═══
+L'avocat/procureur vient de dire : "${text}"
+CHAQUE personnage doit citer ces mots EXACTS entre guillemets et y répondre directement.`;
+      const reply = await callGemini(dynTrialSys, hist, key, 900);
       if(!mountedRef.current){setLoading(false);return;}
       const presMatch = reply.match(/\[PRÉSIDENT\]\s*([\s\S]*?)(?=\[PROCUREUR\]|$)/);
       const procMatch = reply.match(/\[PROCUREUR\]\s*([\s\S]*?)(?=\[PRÉSIDENT\]|$)/);
@@ -2098,7 +2115,8 @@ function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:
 
 DOCTRINE NATIONALE INTÉGRALE DE ${del.country.toUpperCase()} : ${del.doctrine}
 
-CONTEXTE DE LA SÉANCE : Sujet en débat : "${unTopic}". La délégation de ${unRole.country} vient de prendre la parole (échange n°${n}).
+DÉCLARATION QUE VIENT DE FAIRE ${unRole.country.toUpperCase()} (échange n°${n}) :
+"${text}"
 
 ANGLE OBLIGATOIRE POUR CET ÉCHANGE : ${angle}
 → Concentre toute ton intervention sur cet angle précis. Ne répète PAS des arguments déjà utilisés dans les échanges précédents.
@@ -2108,11 +2126,11 @@ PROCÉDURE ONUSIENNE AUTHENTIQUE :
 - Réfère-toi à des résolutions réelles et articles de la Charte avec leurs numéros exacts
 - Utilise le vocabulaire diplomatique onusien : "ma délégation", "le Conseil est saisi de", "nous prenons note de", "nous appelons à", "nous opposons notre veto à", "nous nous abstenons sur"
 - Cite UN précédent historique réel pertinent pour ${del.country} sur ce type de sujet
-- Réagis DIRECTEMENT à ce que vient de dire ${unRole.country} — cite ses mots et rebondis dessus
+- Cite OBLIGATOIREMENT les mots exacts de ${unRole.country} entre guillemets et rebondis dessus
 
 STRUCTURE OBLIGATOIRE :
 1. Formule d'ouverture protocolaire
-2. Réaction précise à la déclaration de ${unRole.country} (cite ses mots)
+2. Citation DIRECTE des mots de ${unRole.country} puis contre-argument ou appui sur l'angle du jour
 3. Position de ${del.country} avec référence juridique (article Charte ou résolution réelle)
 4. Précédent historique ou donnée chiffrée concrète liée à ${del.country} sur ce sujet
 5. Proposition ou position de vote de ${del.country} sur ce point
