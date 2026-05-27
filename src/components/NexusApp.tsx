@@ -26,9 +26,10 @@ async function speakHF(text: string, gender: "M"|"F", key: string, onEnd?: ()=>v
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
+    const headers: Record<string,string> = { "Content-Type": "application/json" };
+    if (key) headers["Authorization"] = `Bearer ${key}`;
     const res = await fetch("https://api-inference.huggingface.co/models/facebook/mms-tts-fra", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+      method: "POST", headers,
       body: JSON.stringify({ inputs: text.slice(0, 600) }),
       signal: ctrl.signal
     });
@@ -50,27 +51,41 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = "fr-FR"; u.rate = 1.05; u.pitch = gender === "F" ? 1.15 : 0.88;
+  u.lang = "fr-FR";
   if (onEnd) u.onend = onEnd;
   const go = () => {
-    const voices = window.speechSynthesis.getVoices();
-    const fr = voices.find(x => x.lang.startsWith("fr")) || voices.find(x => x.lang.startsWith("fr-")) || null;
+    const vs = window.speechSynthesis.getVoices();
+    // Best French voices by priority: Google (Android/Chrome), Microsoft (Windows), Apple (iOS), any FR
+    const pick = (cond: (v: SpeechSynthesisVoice)=>boolean) => vs.find(cond) || null;
+    const fr =
+      pick(v => v.lang==="fr-FR" && /google/i.test(v.name) && gender==="F" && /fem|female/i.test(v.name)) ||
+      pick(v => v.lang==="fr-FR" && /google/i.test(v.name) && gender==="M" && !/fem/i.test(v.name)) ||
+      pick(v => v.lang==="fr-FR" && /google/i.test(v.name)) ||
+      pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name) && gender==="F" && /hortense|denise|elsa/i.test(v.name)) ||
+      pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name) && gender==="M" && /henri|paul/i.test(v.name)) ||
+      pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name)) ||
+      pick(v => v.lang==="fr-FR" && gender==="F" && /amélie|amelie|audrey/i.test(v.name)) ||
+      pick(v => v.lang==="fr-FR" && gender==="M" && /thomas|nicolas/i.test(v.name)) ||
+      pick(v => v.lang==="fr-FR") ||
+      pick(v => v.lang.startsWith("fr")) || null;
     if (fr) u.voice = fr;
+    u.rate = 1.0;
+    u.pitch = gender === "F" ? 1.08 : 0.85;
     window.speechSynthesis.speak(u);
   };
   if (window.speechSynthesis.getVoices().length > 0) {
     go();
   } else {
-    // Speak exactly once: either when voices load OR after 400ms timeout — never both
-    // The old code called speak(u) here AND in go() → double onend → second callback cancelled opponent
     const fallback = setTimeout(() => { window.speechSynthesis.onvoiceschanged = null; go(); }, 400);
     window.speechSynthesis.onvoiceschanged = () => { clearTimeout(fallback); window.speechSynthesis.onvoiceschanged = null; go(); };
   }
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
-  const k = typeof window !== "undefined" ? localStorage.getItem("hf_key") : null;
-  if (k) speakHF(text, gender, k, onEnd).then(ok => { if (!ok) speakWeb(text, gender, onEnd); }).catch(() => speakWeb(text, gender, onEnd));
-  else speakWeb(text, gender, onEnd);
+  // Always try HF first (no token = free unauthenticated tier, token = higher rate limit)
+  const k = typeof window !== "undefined" ? localStorage.getItem("hf_key") || "" : "";
+  speakHF(text, gender, k, onEnd)
+    .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+    .catch(() => speakWeb(text, gender, onEnd));
 }
 function stopSpeech() {
   if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
@@ -1552,8 +1567,8 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <div style={{width:28,height:28,borderRadius:7,background:"#F97316"+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}>🔊</span></div>
             <div style={{flex:1}}>
-              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Token HuggingFace <span style={{color:T.green,fontSize:10,fontWeight:700}}>100% GRATUIT</span></p>
-              <p style={{color:T.muted,fontSize:10}}>huggingface.co → Settings → Access Tokens → New token (read)</p>
+              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Token HuggingFace <span style={{color:T.green,fontSize:10,fontWeight:700}}>GRATUIT</span> <span style={{color:T.muted,fontSize:10,fontWeight:400}}>(optionnel)</span></p>
+              <p style={{color:T.muted,fontSize:10}}>Sans token : fonctionne déjà (quota limité) · Avec token : quota plus élevé</p>
             </div>
             {hfOk===true&&<span style={{color:T.green,fontSize:11,fontWeight:800}}>✓ OK</span>}
             {hfOk===false&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
@@ -1650,7 +1665,7 @@ function ApiKeySettings({T}:{T:Theme}) {
         <button onClick={testHF} disabled={hfStatus==="testing"||!hk} style={{marginTop:10,width:"100%",padding:"9px",borderRadius:8,border:"none",background:hk?hfColor:T.b1,color:hk?"#fff":T.muted,fontSize:12,fontWeight:800,cursor:hk&&hfStatus!=="testing"?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .3s"}}>
           {hfStatus==="testing"?"Test en cours… (15s max)":hfStatus==="ok"?"✓ Voix HF OK — Réessayer":hfStatus==="fail"?"✗ Échec — Vérifier le token":"🔊 Tester la voix HuggingFace"}
         </button>
-        <p style={{color:T.muted,fontSize:11,marginTop:6}}>huggingface.co → Settings → Access Tokens → New token (read) · 100% gratuit</p>
+        <p style={{color:T.muted,fontSize:11,marginTop:6}}>Sans token : fonctionne déjà · Token (gratuit) = quota plus élevé · huggingface.co → Settings → Access Tokens</p>
       </div>
     </div>
   );
