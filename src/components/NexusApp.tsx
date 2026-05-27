@@ -483,11 +483,18 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
             const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
             if(oppKey){
               const oppOpenSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
-TON PROFIL RHÉTORIQUE : ${opponent.style}
+TON PROFIL RHÉTORIQUE COMPLET : ${opponent.style}
 Sujet du débat : "${topic}".
-MISSION : Tu prends la parole EN PREMIER pour exposer ta position d'ouverture. 2-3 phrases MAX, percutantes.
-Commence OBLIGATOIREMENT par ton prénom. Expose ton angle avec UN fait ou chiffre concret. Termine par une provocation rhétorique qui défie ton adversaire.`;
-              oppOpen=await callGemini(oppOpenSys,[{role:"user" as const,parts:[{text:`${opponent.name}, ouvrez le débat.`}]}],oppKey,180);
+
+MISSION : Tu prends la parole EN PREMIER pour exposer ta position d'ouverture. Développe vraiment — 5 à 7 phrases minimum.
+1. Commence OBLIGATOIREMENT par ton prénom
+2. Expose ton angle idéologique complet avec conviction — pourquoi cette position est la seule défendable
+3. Cite 2-3 données réelles précises (statistiques, rapports officiels, faits historiques, chiffres sourcés)
+4. Développe le raisonnement jusqu'à sa conclusion logique — montre où mène l'argument adverse
+5. Termine par une provocation rhétorique percutante qui défie directement ton adversaire
+
+Style : ${opponent.style.split(".")[0]}`;
+              oppOpen=await callGemini(oppOpenSys,[{role:"user" as const,parts:[{text:`${opponent.name}, ouvrez le débat et défendez votre position sur : "${topic}".`}]}],oppKey,400);
             }
           }catch{/*use fallback*/}
           if(!mountedRef.current) return;
@@ -578,14 +585,16 @@ TECHNIQUES OBLIGATOIRES — utilise-en UNE DIFFÉRENTE à chaque réponse :
 
 RÈGLES ABSOLUES :
 • Cite les mots exacts de l'invité, jamais une reformulation approximative
-• 1 seul chiffre/fait NOUVEAU par réponse, jamais déjà utilisé dans cette conversation
-• 2-3 phrases COURTES, rythme TV — pas de paragraphe académique
-• Si la réponse est vague ou hors sujet : "Je vous coupe — [reformulation précise et plus directe]"
-• JAMAIS deux fois la même structure de phrase dans tout le débat`;
+• 1-2 chiffres/faits NOUVEAUX par réponse, jamais déjà utilisés dans cette conversation
+• 5 à 7 phrases minimum — développe vraiment l'argument, creuse en profondeur, analyse les conséquences, donne plusieurs angles
+• Rythme TV maîtrisé : phrases courtes alternées avec des phrases d'analyse plus longues
+• Si la réponse est vague ou hors sujet : "Je vous coupe — [reformulation précise et directe, puis creuser la question]"
+• JAMAIS deux fois la même structure de phrase dans tout le débat
+• Chaque intervention doit faire avancer réellement le débat : une contradiction, une ouverture, une mise en perspective historique ou internationale`;
 
       const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
-      const reply=await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,450);
+      const reply=await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,700);
       if(!mountedRef.current){return;}
       addLine("journalist",j?.name||"Journaliste",reply);
       if(reply.toLowerCase().includes("je vous coupe")){setPhase("cut");}
@@ -599,13 +608,21 @@ RÈGLES ABSOLUES :
             const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
             if(oppKey){
               const oppSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
-TON PROFIL RHÉTORIQUE : ${opponent.style}
+TON PROFIL RHÉTORIQUE COMPLET : ${opponent.style}
 Sujet du débat : "${topic}".
-L'invité principal vient de dire : "${text.slice(0,250)}"
-Le journaliste a répondu : "${reply.slice(0,150)}"
-MISSION : Contredire l'invité principal de façon percutante. 2-3 phrases MAX.
-Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique à l'invité.`;
-              oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`${opponent.name}, votre réaction ?`}]}],oppKey,160);
+L'invité principal vient de dire : "${text.slice(0,300)}"
+Le journaliste a répondu : "${reply.slice(0,200)}"
+
+MISSION : Répondre avec force et conviction — 5 à 7 phrases minimum.
+1. Commence OBLIGATOIREMENT par ton prénom
+2. Cite PRÉCISÉMENT ce que l'invité principal vient de dire — identifie la faille principale de son argumentation
+3. Contre-argumente avec 2 données réelles sourcées (INSEE, OCDE, GIEC, Sénat, rapports officiels selon ton profil)
+4. Développe le contre-argument jusqu'à sa conclusion logique — où mène vraiment la position adverse ?
+5. Élargis la perspective : conséquences concrètes pour les citoyens, précédents historiques, comparaisons internationales
+6. Termine par une question rhétorique percutante qui met l'adversaire en difficulté
+
+Style authentique : ${opponent.style.split(".")[0]}`;
+              oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`${opponent.name}, répondez à l'invité principal qui vient de dire : "${text.slice(0,200)}"`}]}],oppKey,400);
             }
           }catch{/*use fallback*/}
           if(!mountedRef.current) return;
@@ -1666,20 +1683,55 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
   const [loading,setLoading] = useState(false);
   const [audioOn,setAudioOn] = useState(true);
   const [listening,setListening] = useState(false);
+  const [autoMic,setAutoMic] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSpeechRef = useRef<(t:string)=>void>((_t:string)=>{});
 
   useEffect(()=>{
     mountedRef.current=true;
     return()=>{mountedRef.current=false;recRef.current?.stop();stopSpeech();};
   },[]);
 
+  // speakTimed: plays speech + safety timer so auto-mic always fires (fixes Android Chrome onend bug)
+  function speakTimed(text:string, gender:"M"|"F", onDone:()=>void, delayMs=0) {
+    const estMs = Math.max(2500, text.split(/\s+/).length * 400 + 800);
+    setTimeout(()=>{
+      if(!mountedRef.current) return;
+      let fired = false;
+      const done = ()=>{ if(fired||!mountedRef.current) return; fired=true; onDone(); };
+      speakAny(text, gender, done);
+      setTimeout(done, estMs);
+    }, delayMs);
+  }
+
+  // Auto-open mic after AI finishes speaking
+  useEffect(()=>{
+    if(!autoMic) return;
+    setAutoMic(false);
+    if(typeof window==="undefined") return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w=window as any;
+    const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
+    if(!SR) return;
+    const rec=new SR();
+    rec.lang="fr-FR"; rec.continuous=false; rec.interimResults=false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
+    rec.onend=()=>setListening(false);
+    try{rec.start();}catch{return;}
+    recRef.current=rec;
+    setListening(true);
+  },[autoMic]);// eslint-disable-line
+
   useEffect(()=>{
     const w = {role:"ai" as const, text:welcome};
     setMsgs([w]);
     setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),200);
+    if(audioOn) speakTimed(welcome,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);},400);
   },[]);// eslint-disable-line
 
   const send = async(text:string)=>{
@@ -1699,14 +1751,14 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
       if(!key) throw new Error("no_key");
       let firstChunk=true;
       let fullReply="";
-      await streamGemini(systemPrompt,hist,key,400,(full)=>{
+      await streamGemini(systemPrompt,hist,key,700,(full)=>{
         if(!mountedRef.current) return;
         fullReply=full;
         if(firstChunk){firstChunk=false;setLoading(false);setMsgs(m=>[...m,{role:"ai" as const,text:full}]);}
         else setMsgs(m=>{const u=[...m];u[u.length-1]={role:"ai" as const,text:full};return u;});
         setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),30);
       });
-      if(mountedRef.current&&audioOn) speakAny(fullReply,voiceGender);
+      if(mountedRef.current&&audioOn) speakTimed(fullReply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
     }catch(err){
       if(!mountedRef.current) return;
       setLoading(false);
@@ -1716,18 +1768,19 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
       } else {
         const words=text.split(" ").filter(Boolean).slice(0,5).join(" ");
         const fallbacks=[
-          `Vous dites "${words}" — développez. Quels faits concrets soutiennent votre position ? Chiffres, exemples, sources.`,
-          `Point intéressant. L'argument adverse serait pourtant que vous avez tort sur ce point précis. Comment le réfutez-vous ?`,
-          `"${words}" — c'est affirmer beaucoup. Quel mécanisme concret défendez-vous, et quel délai réaliste proposez-vous ?`,
-          `Je vous relance : au-delà des mots, qu'est-ce qui change concrètement ? Donnez un exemple précis et mesurable.`,
-          `Bien. Maintenant construisez l'argument complet : thèse, preuve empirique, conclusion. Pas de généralités.`,
+          `Vous dites "${words}" — développez en profondeur. Quels faits concrets soutiennent votre position ? Citez des chiffres précis, des exemples réels, des sources vérifiables. Un argument sans preuve reste une affirmation.`,
+          `Point intéressant, mais insuffisant. L'argument adverse serait que vous avez tort sur ce point précis — et ils auraient des données pour le prouver. Comment les réfutez-vous point par point ? Soyez méthodique.`,
+          `"${words}" — c'est affirmer beaucoup sans démontrer. Quel mécanisme concret défendez-vous ? Quel délai réaliste proposez-vous ? Quels acteurs sont impliqués, et quels obstacles anticipez-vous ?`,
+          `Je vous relance : au-delà des mots, qu'est-ce qui change concrètement dans la vie des gens ? Donnez un exemple précis, mesurable, avec un chiffre et une date. C'est ça, argumenter.`,
+          `Bien. Maintenant construisez l'argument complet : thèse principale, preuve empirique numéro 1, preuve numéro 2, réfutation de la critique principale, et conclusion logique. Pas de généralités — du concret.`,
         ];
         const reply=fallbacks[Math.floor(Math.random()*fallbacks.length)];
         setMsgs(m=>[...m,{role:"ai" as const,text:reply}]);
-        if(audioOn) speakAny(reply,voiceGender);
+        if(audioOn) speakTimed(reply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
       }
     }
   };
+  handleSpeechRef.current = send;
 
   const toggleMic=()=>{
     unlockAudio();
@@ -1791,6 +1844,222 @@ function GenericSimScreen({title,emoji,color,systemPrompt,welcome,voiceGender,T,
   );
 }
 
+// ── TRIAL SIMULATION SCREEN ───────────────────────────────────
+// Multi-character court sim: Président + Procureur speak in sequence after each user turn
+function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"prosecutor";trialTopic:string;T:Theme;onBack:()=>void}) {
+  type TMsg = {role:"user"|"ai";charName:string;charInit:string;charColor:string;gender:"M"|"F";text:string};
+  const [msgs,setMsgs] = useState<TMsg[]>([]);
+  const [input,setInput] = useState("");
+  const [loading,setLoading] = useState(false);
+  const [audioOn,setAudioOn] = useState(true);
+  const [listening,setListening] = useState(false);
+  const [autoMic,setAutoMic] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recRef = useRef<any>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSpeechRef = useRef<(t:string)=>void>((_t:string)=>{});
+
+  const PRES = {name:"Président du Tribunal", init:"PT", gender:"M" as const, color:"#7C3AED"};
+  const PROC = {name:"Procureur de la République", init:"PR", gender:"F" as const, color:"#E03535"};
+  const AVOC = {name:"Avocat Adverse", init:"AA", gender:"M" as const, color:"#D97706"};
+
+  useEffect(()=>{ mountedRef.current=true; return()=>{mountedRef.current=false;recRef.current?.stop();stopSpeech();}; },[]);
+
+  function speakTimed(text:string, gender:"M"|"F", onDone:()=>void, delayMs=0) {
+    const estMs = Math.max(2500, text.split(/\s+/).length * 400 + 800);
+    setTimeout(()=>{
+      if(!mountedRef.current) return;
+      let fired = false;
+      const done = ()=>{ if(fired||!mountedRef.current) return; fired=true; onDone(); };
+      speakAny(text, gender, done);
+      setTimeout(done, estMs);
+    }, delayMs);
+  }
+
+  function speakSequence(chars:{text:string;gender:"M"|"F"}[], idx:number, onAllDone:()=>void) {
+    if(!mountedRef.current||idx>=chars.length){onAllDone();return;}
+    speakTimed(chars[idx].text, chars[idx].gender, ()=>speakSequence(chars,idx+1,onAllDone), idx===0?0:500);
+  }
+
+  useEffect(()=>{
+    if(!autoMic) return;
+    setAutoMic(false);
+    if(typeof window==="undefined") return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w=window as any;
+    const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
+    if(!SR) return;
+    const rec=new SR();
+    rec.lang="fr-FR"; rec.continuous=false; rec.interimResults=false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
+    rec.onend=()=>setListening(false);
+    try{rec.start();}catch{return;}
+    recRef.current=rec; setListening(true);
+  },[autoMic]);// eslint-disable-line
+
+  useEffect(()=>{
+    const presText = trialRole==="defense"
+      ? `Audience ouverte. Tribunal correctionnel de Paris. Affaire : "${trialTopic}". La Cour est constituée. Maître de la Défense, vous avez la parole pour exposer votre ligne de défense, vos moyens principaux, et la qualification des faits que vous contestez. Soyez précis sur le droit applicable et les éléments de preuve que vous entendez soumettre.`
+      : `Audience ouverte. Tribunal correctionnel de Paris. Affaire : "${trialTopic}". Monsieur le Procureur, énoncer les chefs d'inculpation retenus, les éléments constitutifs de l'infraction telle que qualifiée par le parquet, et votre premier élément de preuve matérielle.`;
+    const procText = trialRole==="defense"
+      ? `Votre Honneur, le ministère public a réuni des preuves matérielles solides dans cette affaire. Les faits sont établis, les témoignages convergent, et les expertises techniques confirment notre thèse. La défense devra nous expliquer comment elle entend contester des éléments aussi clairement documentés au dossier.`
+      : `Votre Honneur, au nom de la défense, je m'inscris en faux contre les affirmations du parquet. La présomption d'innocence est un droit fondamental garanti par l'article 9 de la Déclaration des droits de l'homme et par l'article 6 de la Convention européenne des droits de l'homme. Aucune condamnation ne saurait intervenir sans preuve au-delà du doute raisonnable.`;
+    const introMsgs:TMsg[] = [
+      {role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:presText},
+      {role:"ai",charName:PROC.name,charInit:PROC.init,charColor:PROC.color,gender:PROC.gender,text:procText},
+    ];
+    setMsgs(introMsgs);
+    setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),200);
+    if(audioOn){
+      speakSequence([{text:presText,gender:PRES.gender},{text:procText,gender:PROC.gender}], 0, ()=>{if(mountedRef.current)setAutoMic(true);});
+    }
+  },[]);// eslint-disable-line
+
+  const addMsg = (m:TMsg)=>{ setMsgs(prev=>[...prev,m]); setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100); };
+
+  const send = async(text:string)=>{
+    if(!text.trim()||loading) return;
+    unlockAudio();
+    setInput("");
+    const userMsg:TMsg = {role:"user",charName:trialRole==="defense"?"Maître (Défense)":"Procureur",charInit:trialRole==="defense"?"MD":"MP",charColor:"#2B78F5",gender:"M",text};
+    const newMsgs = [...msgs, userMsg];
+    setMsgs(newMsgs);
+    setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
+    setLoading(true);
+    const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+    const trialSys = `Tu gères l'audience du Tribunal correctionnel de Paris. L'affaire : "${trialTopic}". L'utilisateur est ${trialRole==="defense"?"Maître de la Défense":"Monsieur le Procureur"}.
+
+CADRE JURIDIQUE RÉEL QUE TU MAÎTRISES PARFAITEMENT :
+- Code pénal français (qualifications précises : art. 313-1 escroquerie, 432-11 corruption, 441-1 faux...), Code de procédure pénale
+- Présomption d'innocence (art. 9 DDHC 1789), droits de la défense (art. 6 CEDH), égalité des armes
+- Jurisprudence Cour de cassation Ch. criminelle, Conseil constitutionnel, CEDH
+- Principes : intime conviction (art. 353 CPP), charge de la preuve sur l'accusation, au-delà du doute raisonnable
+- Nullités de procédure, irrecevabilité de preuves, vices de forme, expertises contradictoires
+- Circonstances aggravantes, atténuantes, récidive, complicité, co-auteurs
+- Peine : sursis, travaux d'intérêt général, interdiction professionnelle, confiscation
+
+FORMAT OBLIGATOIRE — génère DEUX personnages distincts :
+
+[PRÉSIDENT] Réaction du Président du Tribunal : cite EXACTEMENT l'argument de l'avocat/procureur, puis soit valide avec une nuance juridique précise (article de loi, arrêt de jurisprudence), soit soulève une objection (irrecevabilité, contradiction avec les pièces du dossier, vice de procédure), soit interpelle un témoin ou expert. 4 à 6 phrases solennelles avec références juridiques réelles.
+
+[PROCUREUR] Réaction du ${trialRole==="defense"?"Procureur (qui s'oppose à la défense)":"Avocat de la défense (qui s'oppose au procureur)"} : contre-argumente avec des éléments factuels précis du dossier, des expertises techniques, des témoignages, ou la qualification pénale exacte. 4 à 5 phrases percutantes. Commence par "Votre Honneur,".
+
+RÈGLES ABSOLUES :
+- Chaque personnage cite EXACTEMENT ce que vient de dire l'avocat/procureur
+- Références juridiques précises et authentiques (articles, arrêts si pertinent)
+- Chaque personnage développe UN argument principal avec preuves à l'appui
+- Vocabulaire juridique français authentique (le ministère public, la juridiction, les pièces versées au dossier, le mis en examen...)
+- Le Président maintient l'équilibre et l'ordre des débats`;
+    try {
+      const rawHist=newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.charName}] ${m.text}`}]}));
+      const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
+      const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
+      if(!key) throw new Error("no_key");
+      const reply = await callGemini(trialSys, hist, key, 900);
+      if(!mountedRef.current){setLoading(false);return;}
+      const presMatch = reply.match(/\[PRÉSIDENT\]\s*([\s\S]*?)(?=\[PROCUREUR\]|$)/);
+      const procMatch = reply.match(/\[PROCUREUR\]\s*([\s\S]*?)(?=\[PRÉSIDENT\]|$)/);
+      const charMsgs:TMsg[] = [];
+      if(presMatch?.[1]?.trim()) charMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:presMatch[1].trim()});
+      if(procMatch?.[1]?.trim()) charMsgs.push({role:"ai",charName:trialRole==="defense"?PROC.name:AVOC.name,charInit:trialRole==="defense"?PROC.init:AVOC.init,charColor:trialRole==="defense"?PROC.color:AVOC.color,gender:trialRole==="defense"?PROC.gender:AVOC.gender,text:procMatch[1].trim()});
+      if(charMsgs.length===0) charMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:reply});
+      charMsgs.forEach(m=>addMsg(m));
+      setLoading(false);
+      if(audioOn) speakSequence(charMsgs.map(m=>({text:m.text,gender:m.gender})), 0, ()=>{if(mountedRef.current)setAutoMic(true);});
+    }catch(err){
+      if(!mountedRef.current){setLoading(false);return;}
+      setLoading(false);
+      const isNoKey=err instanceof Error&&err.message==="no_key";
+      if(isNoKey){addMsg({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:"Clé Gemini API manquante — allez dans Profil → Réglages."});return;}
+      const presFb=["Maître, votre argumentation nécessite d'être précisée. Sur quel fondement juridique exact repose ce moyen de défense ? La Cour a besoin d'une référence textuelle ou jurisprudentielle précise avant de pouvoir statuer sur cette demande.","L'objection est notée au procès-verbal. Cependant, les éléments présentés ne semblent pas constitutifs d'une nullité au sens de l'article 170 du Code de procédure pénale. La Cour demande une reformulation plus précise de votre demande.","La Cour prend note de cet argument. Avant de se prononcer, elle souhaite entendre la partie adverse sur ce point précis. Le débat contradictoire est une exigence fondamentale de notre procédure."];
+      const procFb = trialRole==="defense"
+        ? ["Votre Honneur, la défense tente de détourner l'attention des faits établis par le dossier d'instruction. Les preuves matérielles réunies par le parquet — expertises forensiques, témoignages concordants, relevés bancaires — sont incontestables. Nous maintenons l'ensemble de nos réquisitions.","La réponse de la défense est habile mais insuffisante en droit. L'article 427 du Code de procédure pénale est clair : les juges apprécient les preuves selon leur intime conviction. Nous avons fourni suffisamment d'éléments pour emporter cette conviction."]
+        : ["Votre Honneur, nous contestons formellement cette interprétation des faits. Notre client bénéficie de la présomption d'innocence, et les preuves avancées par le parquet restent insuffisantes pour écarter tout doute raisonnable sur sa culpabilité.","La charge de la preuve incombe au ministère public. Les éléments présentés ce jour sont soit inadmissibles au regard de leur mode d'obtention, soit insuffisamment corroborés. Nous demandons à la Cour d'en tirer les conséquences."];
+      const fallbackMsgs:TMsg[] = [
+        {role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:presFb[Math.floor(Math.random()*presFb.length)]},
+        {role:"ai",charName:trialRole==="defense"?PROC.name:AVOC.name,charInit:trialRole==="defense"?PROC.init:AVOC.init,charColor:trialRole==="defense"?PROC.color:AVOC.color,gender:trialRole==="defense"?PROC.gender:AVOC.gender,text:procFb[Math.floor(Math.random()*procFb.length)]},
+      ];
+      fallbackMsgs.forEach(m=>addMsg(m));
+      if(audioOn) speakSequence(fallbackMsgs.map(m=>({text:m.text,gender:m.gender})), 0, ()=>{if(mountedRef.current)setAutoMic(true);});
+    }
+  };
+  handleSpeechRef.current = send;
+
+  const toggleMic=()=>{
+    unlockAudio();
+    if(listening){recRef.current?.stop();setListening(false);return;}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w=window as any;
+    const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
+    if(!SR){alert("Utilisez Chrome pour la reconnaissance vocale.");return;}
+    const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult=(e:any)=>{send(e.results[0][0].transcript);setListening(false);};
+    rec.onend=()=>setListening(false);
+    rec.start();recRef.current=rec;setListening(true);
+  };
+
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
+      <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,display:"flex",alignItems:"center",gap:10,background:T.surf,flexShrink:0}}>
+        <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.textD}/></button>
+        <span style={{fontSize:20}}>⚖️</span>
+        <div style={{flex:1}}>
+          <p style={{color:T.text,fontWeight:800,fontSize:14}}>{trialRole==="defense"?"Avocat de la Défense":"Procureur de la République"}</p>
+          <p style={{color:T.textD,fontSize:11,marginTop:1}}>{trialTopic.slice(0,42)}{trialTopic.length>42?"…":""}</p>
+        </div>
+        <div style={{display:"flex",gap:5,alignItems:"center"}}>
+          {[PRES,PROC].map(c=>(
+            <div key={c.init} style={{width:26,height:26,borderRadius:"50%",background:`${c.color}15`,border:`1.5px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:c.color}}>{c.init}</div>
+          ))}
+        </div>
+        <button onClick={()=>{const n=!audioOn;setAudioOn(n);if(!n)stopSpeech();}} style={{background:audioOn?`${T.purple}15`:"transparent",border:`1px solid ${audioOn?T.purple:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+          <Ic n="mic" s={14} c={audioOn?T.purple:T.textD}/><span style={{color:audioOn?T.purple:T.textD,fontSize:11,fontWeight:700}}>{audioOn?"AUDIO":"TEXTE"}</span>
+        </button>
+      </div>
+      <div style={{padding:"8px 14px",background:`${T.purple}08`,borderBottom:`1px solid ${T.b1}`,display:"flex",gap:12,flexShrink:0}}>
+        {[{...PRES,label:"Président"},{...PROC,label:trialRole==="defense"?"Procureur":"Avocat adv."}].map(c=>(
+          <div key={c.init} style={{display:"flex",alignItems:"center",gap:5}}>
+            <div style={{width:16,height:16,borderRadius:"50%",background:c.color,opacity:.8}}/>
+            <span style={{color:T.textD,fontSize:10,fontWeight:600}}>{c.init} – {c.label}</span>
+          </div>
+        ))}
+      </div>
+      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
+        {msgs.map((m,i)=>(
+          <div key={i} style={{display:"flex",flexDirection:m.role==="user"?"row-reverse":"row",gap:10,alignItems:"flex-start"}}>
+            <div style={{width:34,height:34,borderRadius:"50%",background:`${m.charColor}15`,border:`1.5px solid ${m.charColor}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:m.charColor,flexShrink:0}}>{m.charInit}</div>
+            <div style={{maxWidth:"82%",background:m.role==="user"?T.blueG:T.card,border:`1px solid ${m.role==="user"?`${T.blueB}40`:`${m.charColor}30`}`,borderRadius:14,padding:"10px 13px"}}>
+              {m.role!=="user"&&<p style={{color:m.charColor,fontSize:10,fontWeight:800,marginBottom:4,letterSpacing:.5,textTransform:"uppercase"}}>{m.charName}</p>}
+              <p style={{color:T.text,fontSize:13,lineHeight:1.65}}>{m.text}</p>
+            </div>
+          </div>
+        ))}
+        {loading&&(
+          <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+            <div style={{width:34,height:34,borderRadius:"50%",background:`${PRES.color}15`,border:`1.5px solid ${PRES.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:PRES.color}}>PT</div>
+            <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:"12px 16px"}}>
+              <div style={{display:"flex",gap:5}}>{[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:PRES.color,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div>
+            </div>
+          </div>
+        )}
+      </div>
+      <div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:8,alignItems:"center"}}>
+        <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+          <Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/>
+        </button>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send(input)} placeholder={trialRole==="defense"?"Votre plaidoirie, Maître…":"Votre réquisitoire, Monsieur le Procureur…"} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
+        <button onClick={()=>send(input)} disabled={!input.trim()||loading} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!loading?T.purple:T.b1,display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0,transition:"background .2s"}}>
+          <Ic n="send" s={18} c={input.trim()&&!loading?"#fff":T.muted}/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── SIMULATION SCREEN ─────────────────────────────────────────
 function SimulationScreen({T}:{T:Theme}) {
   const [mode,setMode] = useState<"home"|"un"|"trial"|"interview"|"elections"|"soutenance"|"examen"|"pitch"|"secu"|"prise"|"tutorat">("home");
@@ -1823,11 +2092,24 @@ function SimulationScreen({T}:{T:Theme}) {
       const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
       const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(!key) throw new Error("no_key");
-      const unSys=`Tu es le délégué de ${responding.country} au Conseil de Sécurité ONU. Doctrine nationale : ${responding.doctrine}. Sujet en débat : "${unTopic}". RÈGLES : 1) Réponds DIRECTEMENT au dernier argument soulevé — rebondis précisément dessus. 2) Défends les intérêts de ${responding.country} avec conviction. 3) Cite un fait géopolitique réel lié à ton pays si pertinent. 4) Reste diplomatique mais ferme. 5) 2-3 phrases max. Commence par "${responding.flag} ${responding.country} :"`;
+      const unSys=`Tu es le délégué de ${responding.country} au Conseil de Sécurité ONU. Doctrine nationale complète : ${responding.doctrine}. Sujet en débat : "${unTopic}".
+
+TON RÔLE : Tu es un diplomate de haut rang, formé à la négociation internationale, maîtrisant parfaitement le droit international, la Charte des Nations Unies, et les précédents du Conseil de Sécurité.
+
+RÈGLES ABSOLUES :
+1) Réponds DIRECTEMENT et précisément au dernier argument soulevé — cite-le, rebondis dessus, conteste ou valide avec nuance
+2) Défends les intérêts stratégiques ET diplomatiques de ${responding.country} avec conviction et profondeur
+3) Cite AU MOINS 2 faits géopolitiques réels liés à ta doctrine nationale : traités signés, votes historiques, positions officielles, précédents diplomatiques
+4) Reste diplomatique dans la forme mais ferme et percutant sur le fond — vocabulaire onusien authentique
+5) Développe un argument complet : position → justification juridique → exemple historique ou précédent → conséquences si rejeté → proposition concrète
+6) Utilise des références réelles : résolutions ONU, articles de la Charte, traités bilatéraux, données chiffrées
+7) Si pertinent, propose un amendement ou une alternative à la résolution en discussion
+
+Commence OBLIGATOIREMENT par "${responding.flag} ${responding.country} :" puis développe 5 à 7 phrases substantielles.`;
       // Add streaming bubble immediately
       setUnMessages(m=>[...m,{role:"ai",flag:responding.flag,country:responding.country,text:""}]);
       let fullReply="";
-      await streamGemini(unSys,hist,key,250,(full)=>{
+      await streamGemini(unSys,hist,key,600,(full)=>{
         fullReply=full;
         setUnMessages(m=>{const u=[...m];u[u.length-1]={...u[u.length-1],text:full};return u;});
         setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),30);
@@ -1895,188 +2177,197 @@ function SimulationScreen({T}:{T:Theme}) {
 
   // Generic sim screens using GenericSimScreen
   const SIM_CONFIGS: Record<string, {title:string;emoji:string;color:string;systemPrompt:string;welcome:string;voiceGender:"M"|"F"}> = {
-    trial: {
-      title:trialRole==="defense"?"Avocat de la défense":"Procureur",
-      emoji:"⚖️",color:T.purple,voiceGender:"M",
-      systemPrompt:`Tu es le Président du Tribunal correctionnel de Paris. L'affaire : "${trialTopic}". L'utilisateur est ${trialRole==="defense"?"Maître de la défense":"Monsieur le Procureur"}.
-
-CADRE JURIDIQUE RÉEL que tu maîtrises :
-- Code pénal français, Code de procédure pénale
-- Présomption d'innocence (art. 9 DDHC), droits de la défense (art. 6 CEDH)
-- Jurisprudence de la Cour de cassation et de la CEDH
-- Principes : intime conviction du jury, au-delà du doute raisonnable, charge de la preuve sur l'accusation
-
-TON RÔLE :
-1. Cite EXACTEMENT ce que l'avocat/procureur vient de dire, puis réagis
-2. Soit valide avec une nuance juridique, soit soulève une objection précise (irrecevabilité, charge de la preuve, qualification des faits)
-3. Convoque des témoins si nécessaire : "Je fais entrer le témoin X"
-4. Signale les vices de procédure, les contradictions avec les pièces du dossier
-5. 2-3 phrases solennelles. "Maître, je vous arrête..." si l'argument est infondé
-6. Alterne : questions aux témoins / objections / demandes de clarification / délibéré partiel`,
-      welcome:`⚖️ Audience ouverte. Tribunal correctionnel de Paris. Affaire : "${trialTopic}". ${trialRole==="defense"?"Maître, la Cour vous écoute — exposez votre ligne de défense et vos moyens principaux. Soyez précis sur les faits et le droit applicable.":"Monsieur le Procureur, la Cour vous écoute — énoncer les chefs d'inculpation retenus et votre premier élément de preuve."}`
-    },
     interview: {
       title:"Entretien RH",emoji:"💼",color:T.green,voiceGender:"F",
-      systemPrompt:`Tu es Marie Dupont, DRH senior chez un grand groupe français (CAC 40). Tu conduis un entretien de recrutement professionnel.
+      systemPrompt:`Tu es Marie Dupont, DRH senior chez un grand groupe français du CAC 40 (Société Générale, L'Oréal, Total). Tu as 20 ans d'expérience, tu as passé des milliers d'entretiens, et tu sais exactement détecter ce qui est vrai ou fabriqué dans une réponse.
 
-MÉTHODE STAR que tu appliques systématiquement :
-- Situation : quel était le contexte ?
-- Tâche : quelle était ta mission exacte ?
-- Action : qu'as-tu fait concrètement, toi personnellement ?
-- Résultat : quel a été l'impact mesurable ?
+MÉTHODE STAR que tu appliques systématiquement et que tu expliques quand le candidat ne l'utilise pas :
+- Situation : quel était le contexte précis ? Quelle entreprise, quelle équipe, quelle période ?
+- Tâche : quelle était ta mission exacte, pas celle de l'équipe — LA TIENNE ?
+- Action : qu'as-tu fait personnellement, pas "on a fait" — TOI, concrètement, étape par étape ?
+- Résultat : quel impact mesurable ? Pourcentage, délai, économie, volume, satisfaction client ?
 
-COMPÉTENCES QUE TU ÉVALUES (une par échange) :
-1. Leadership et initiative → "Donnez-moi un exemple où vous avez pris une décision difficile seul"
-2. Gestion du stress → "Décrivez une situation de crise — comment avez-vous réagi ?"
-3. Travail en équipe → "Un conflit avec un collègue — que s'est-il passé ?"
-4. Orientation résultats → "Quel KPI avez-vous amélioré et de combien ?"
-5. Adaptabilité → "Un changement brutal de dernière minute — comment avez-vous géré ?"
+COMPÉTENCES QUE TU ÉVALUES (une par échange, en rotation progressive) :
+1. Leadership : "Donnez-moi un exemple précis où vous avez pris une décision difficile seul, avec des données insuffisantes"
+2. Gestion de crise : "Décrivez une situation où tout s'est effondré — comment avez-vous réagi dans les 48 premières heures ?"
+3. Gestion des conflits : "Un conflit dur avec un collègue ou un supérieur — quel a été votre rôle exact ?"
+4. Orientation résultats : "Quel KPI avez-vous personnellement amélioré ? De combien, sur quelle période, comment ?"
+5. Adaptabilité : "Un changement radical de dernière minute — comment avez-vous pivoté, et qu'avez-vous appris ?"
+6. Créativité : "Une solution que vous avez trouvée et que personne d'autre n'avait envisagée — racontez"
+7. Intégrité : "Un moment où vous avez dû dire non à votre hiérarchie — pourquoi, et quelles conséquences ?"
 
-RÈGLES :
-- Cite un mot clé de la réponse du candidat avant de poser ta prochaine question
-- Relève les imprécisions ("vous dites 'on a fait' — qu'avez-vous fait vous, personnellement ?")
-- Si réponse vague → "Soyez plus concret — donnez-moi des chiffres ou une date"
-- Si réponse excellente → valide en une phrase puis monte la difficulté
-- 2-3 phrases max. Ton professionnel mais humain.`,
-      welcome:"Bonjour, entrez. Je suis Marie Dupont, DRH. J'ai votre CV sous les yeux — votre profil est intéressant. Commencez par vous présenter en 90 secondes : votre parcours, ce qui vous a amené ici, et ce que vous cherchez réellement dans ce nouveau poste."
+RÈGLES ABSOLUES :
+- Cite toujours UN mot-clé exact de la réponse du candidat avant ta prochaine question
+- Débusque les imprécisions : "Vous dites 'on a réussi' — QUE vous avez fait VOUS, personnellement ?"
+- Si réponse vague : "Soyez ultra-précis — donnez-moi une date, un chiffre, un nom de projet"
+- Si réponse excellente : valide en une phrase puis monte la pression ou change d'angle
+- Si hors sujet : "Je reformule ma question — [reformulation plus ciblée et directe]"
+- Développe VRAIMENT tes réactions : analyse la réponse, identifie ce qui manque, donne un contexte sectoriel réel (marché, enjeux du poste, culture d'entreprise)
+- 5 à 7 phrases minimum. Ton professionnel, humain, mais sans complaisance.`,
+      welcome:"Bonjour, entrez. Je suis Marie Dupont, DRH. J'ai votre dossier sous les yeux — votre profil a retenu notre attention, mais je dois valider quelques points essentiels avant de pouvoir vous faire une proposition. Nous avons 45 minutes. Avant tout : présentez-vous en 90 secondes, pas le CV — ce que vous êtes vraiment, ce qui vous motive, et ce que vous cherchez dans ce poste précisément. Je vous écoute."
     },
     soutenance: {
       title:"Soutenance orale",emoji:"🎓",color:"#D97706",voiceGender:"M",
-      systemPrompt:`Tu es le Professeur Bernard Leroy, directeur de thèse et membre du jury de soutenance. Tu évalues un travail académique (thèse, mémoire ou rapport de stage).
+      systemPrompt:`Tu es le Professeur Bernard Leroy, Professeur des Universités en sciences sociales, directeur de thèse depuis 25 ans, président de jury de soutenance. Tu as évalué plus de 200 thèses et mémoires. Tu es exigeant, précis, et tu ne laisses rien passer — mais tu es juste.
 
-GRILLE D'ÉVALUATION que tu appliques :
-1. Originalité : la contribution est-elle vraiment nouvelle par rapport à la littérature ?
-2. Rigueur méthodologique : l'échantillon est-il représentatif ? les biais sont-ils contrôlés ?
-3. Cohérence interne : la conclusion découle-t-elle logiquement des résultats ?
-4. Maîtrise du sujet : l'étudiant connaît-il ses limites et ses angles morts ?
-5. Pertinence sociale ou scientifique : à quoi ça sert concrètement ?
+GRILLE D'ÉVALUATION COMPLÈTE que tu appliques rigoureusement :
+1. ORIGINALITÉ : La contribution est-elle vraiment nouvelle ? Que dit la littérature académique sur ce point précis (auteurs, années, conclusions) ? Y a-t-il un gap que ce travail comble vraiment ?
+2. RIGUEUR MÉTHODOLOGIQUE : L'échantillon est-il représentatif ? Les biais de sélection sont-ils contrôlés ? La méthode (quantitative/qualitative/mixte) est-elle cohérente avec les hypothèses ?
+3. COHÉRENCE INTERNE : La problématique, les hypothèses, la méthodologie et les conclusions forment-elles un tout logique ? Y a-t-il des contradictions internes ?
+4. MAÎTRISE DES LIMITES : L'étudiant connaît-il ses angles morts ? A-t-il répondu à toutes ses hypothèses initiales ?
+5. PERTINENCE : À quoi ça sert ? Qui peut utiliser ces résultats ? Quelles implications pratiques ou théoriques ?
+6. MAÎTRISE DU DOMAINE : Connait-il les auteurs fondateurs, les débats en cours, les courants contradictoires ?
 
-RÈGLES :
-1. Cite ce que l'étudiant vient d'expliquer et déstabilise CE point précis
-2. Pose des questions que les autres membres du jury pourraient poser
-3. Signale les failles : "Votre hypothèse H1 repose sur X — mais avez-vous contrôlé Y ?"
-4. Demande des preuves concrètes : "Quelle est la taille de votre échantillon ?" "Quel logiciel ?"
-5. Ne valide jamais sans creuser : "Bien — mais quelle en est la limite principale ?"
-6. 2-3 phrases académiques. Ton neutre mais exigeant.`,
-      welcome:"La soutenance est ouverte. Professeur Leroy, membre du jury. Avant votre exposé, je vous pose la question centrale : en une seule phrase, quelle est LA contribution originale de ce travail — ce que personne n'avait montré avant vous ?"
+TECHNIQUES D'INTERROGATOIRE :
+- Commence par valider un point précis, puis déstabilise IMMÉDIATEMENT ce même point
+- Pose des questions que les autres membres du jury PEW pourraient poser : "Le Professeur Durand du jury me demanderait sûrement..."
+- Creuse les failles : "Votre hypothèse H1 repose sur X — mais avez-vous contrôlé pour Y ?"
+- Exige des preuves concrètes : "Taille de l'échantillon ? Logiciel d'analyse ? Taux de réponse ?"
+- Ne valide JAMAIS sans creuser : "Intéressant — mais quelle est la limite principale de cette conclusion ?"
+
+RÈGLES ABSOLUES :
+- Cite exactement ce que l'étudiant vient d'expliquer avant de questionner
+- Développe ton analyse avec des références académiques réelles si pertinent (Bourdieu, Piketty, March, etc.)
+- Identifie et nomme précisément la faille méthodologique ou conceptuelle
+- 5 à 7 phrases minimum, academiques et rigoureuses. Ton neutre mais exigeant.`,
+      welcome:"La soutenance est ouverte. Je suis le Professeur Bernard Leroy, président de jury. Avant votre exposé, commençons par l'essentiel : en une seule phrase précise et sans jargon inutile, quelle est la contribution originale de votre travail — concrètement, ce que personne n'avait démontré avant vous ? Ensuite, précisez votre méthode principale en deux phrases. Le reste de la soutenance découlera de votre réponse."
     },
     examen: {
       title:"Examen oral",emoji:"📝",color:"#E03535",voiceGender:"F",
-      systemPrompt:`Tu es Madame Lambert, professeure d'université, qui fait passer un examen oral. L'étudiant choisit son sujet ou tu en proposes un.
+      systemPrompt:`Tu es Madame Lambert, professeure agrégée d'université, spécialiste reconnue dans plusieurs disciplines. Tu fais passer un examen oral sérieux. Tu connais tes matières sur le bout des doigts : dates exactes, articles de loi précis, auteurs philosophiques avec leurs thèses, chiffres économiques réels.
 
-MÉTHODE D'ÉVALUATION :
-1. D'abord, évalue la réponse : "Correct sur X — mais il manque Y" ou "Erreur sur Z — reprenons"
-2. Ensuite, approfondis : question plus difficile qui part de CE que l'étudiant vient de dire
-3. Montée progressive : définition → application → cas limite → exception → critique
+MÉTHODE D'ÉVALUATION PROGRESSIVE :
+1. Évalue PRÉCISÉMENT la réponse : "Correct sur X, mais il manque Y et Z — voici pourquoi c'est important"
+2. Approfondis : pose une question qui part EXACTEMENT de ce que l'étudiant vient de dire
+3. Montée en difficulté : définition → application → cas limite → exception historique → critique théorique
 
-DISCIPLINES que tu maîtrises parfaitement (adapte selon le contexte) :
-- Droit : Constitution, droit civil, pénal, administratif, européen
-- Histoire : chronologie précise, causes, conséquences, acteurs clés
-- Économie : micro/macro, PIB, inflation, chômage, théories (Keynes, Hayek, Marx...)
-- Philosophie : Platon, Descartes, Kant, Rousseau, Nietzsche, Sartre
-- Sciences politiques : systèmes électoraux, partis, institutions
-- Géopolitique : cartes mentales, alliances, conflits actuels
+DISCIPLINES MAÎTRISÉES (avec faits réels) :
+- Droit : Constitution de 1958, DDHC 1789, articles du Code civil/pénal/administratif, jurisprudences importantes (Conseil d'État, Cour de cassation, CEDH)
+- Histoire : chronologie précise, causes profondes et immédiates, acteurs clés, conséquences à court et long terme
+- Économie : théories de Keynes, Hayek, Marx, Friedman ; chiffres INSEE/BCE/FMI ; mécanismes micro et macro
+- Philosophie : thèses précises de Platon (allégorie de la caverne), Descartes (cogito ergo sum), Kant (impératif catégorique), Rousseau (contrat social), Nietzsche (volonté de puissance), Sartre (existence précède l'essence)
+- Sciences politiques : systèmes électoraux comparés, partis politiques européens, institutions françaises et européennes
+- Géopolitique : alliances actuelles, conflits en cours, traités internationaux avec dates et signataires
 
-RÈGLES :
-- Cite la réponse de l'étudiant mot pour mot avant d'évaluer
-- Si incomplet : guide sans donner → "Vous y êtes presque — pensez à..."
-- Si juste : "Exact — maintenant un cas plus complexe : [X]"
-- Si faux : "Non — reprenons. La définition exacte est..."
-- 2-3 phrases. Ton pédagogue mais sans complaisance.`,
-      welcome:"Bonjour. Je suis Madame Lambert. Installez-vous — il n'y a pas de bonne ou mauvaise matière. Sur quel sujet souhaitez-vous être interrogé ? Ou dites-moi votre filière et votre niveau et je choisis pour vous."
+RÈGLES ABSOLUES :
+- Cite la réponse de l'étudiant mot pour mot avant d'évaluer — jamais de reformulation approximative
+- Si incomplet : guide sans donner la réponse → "Vous y êtes presque — quelle est l'exception à cette règle ?"
+- Si juste : "Exactement. Maintenant, cas plus complexe : [question avancée qui découle logiquement]"
+- Si faux : "Non, attention — reprenons. La définition exacte est [X]. Pouvez-vous me donner un exemple maintenant ?"
+- Développe tes corrections avec des références précises (article de loi, auteur, date, chiffre)
+- 5 à 7 phrases minimum. Ton pédagogue, exigeant mais encourageant.`,
+      welcome:"Bonjour. Je suis Madame Lambert. Installez-vous — chaque matière est valable si vous la maîtrisez vraiment. Dites-moi d'abord : quelle est votre filière, quel est votre niveau actuel, et sur quel sujet souhaitez-vous être interrogé en priorité ? Si vous n'avez pas de préférence, je choisirai moi-même en fonction de ce que vous venez de me dire. Je veux aussi que vous sachiez : je serai exigeante, mais juste. Si vous faites une erreur, je vous expliquerai pourquoi et comment rectifier. C'est ça, un vrai examen oral."
     },
     pitch: {
       title:"Pitch commercial",emoji:"💡",color:"#16A34A",voiceGender:"M",
-      systemPrompt:`Tu es Alexandre Martin, investisseur VC senior (10 ans, +50 deals, fonds de 200M€). Tu évalues des startups — tu en as vu des centaines, tu connais toutes les arnaques et tous les angles morts.
+      systemPrompt:`Tu es Alexandre Martin, Partner chez un fonds de VC européen (200M€, 50+ investissements réussis dont 3 licornes). Tu as vu plus de 5 000 pitches en 12 ans. Tu sais exactement où sont les mensonges, les rêves, et les vrais business. Tu es occupé, tu n'as pas le temps pour le flou, mais tu es juste et tu reconnais quand quelque chose est vraiment solide.
 
-FRAMEWORK D'ÉVALUATION (un angle par échange) :
-1. PROBLÈME : "Est-ce un vrai problème ou un problème inventé ? Combien de gens le vivent ?"
-2. MARCHÉ TAM/SAM/SOM : "Marché total, adressable, obtainable — donnez-moi des chiffres sourcés"
-3. CONCURRENCE : "Pourquoi pas Google/Amazon/[concurrent évident] ?"
-4. MODÈLE ÉCONOMIQUE : "LTV / CAC — vous connaissez ces chiffres ?"
-5. ÉQUIPE : "Pourquoi VOUS ? Quelle expertise unique avez-vous ici ?"
-6. TRACTION : "Chiffre d'affaires actuel ? Croissance MoM ? Clients payants ?"
-7. MOAT : "Dans 3 ans, un concurrent lève 10M€ et copie — vous faites quoi ?"
+FRAMEWORK D'ÉVALUATION PROGRESSIF (approfondi à chaque réplique) :
+1. PROBLÈME RÉEL : Est-ce un vrai problème ou un problème imaginé ? Combien de personnes le vivent réellement, et comment le sais-tu ? As-tu fait des interviews clients ?
+2. MARCHÉ (TAM/SAM/SOM) : Donne-moi des chiffres sourcés, pas inventés. Quelle est la taille du marché réellement adressable ? Quel est ton marché initial précis ?
+3. SOLUTION ET DIFFÉRENCIATION : Pourquoi ta solution est-elle 10x meilleure que l'existant ? Qu'est-ce que Google, Amazon ou un concurrent avec 50M€ ne peut pas copier dans 18 mois ?
+4. MODÈLE ÉCONOMIQUE : LTV, CAC, payback period, marge brute — ces chiffres existent ? Quel est ton ticket moyen ? Récurrent ou one-shot ?
+5. TRACTION RÉELLE : MRR, ARR, croissance MoM, churn rate, NPS — des chiffres réels, pas des projections optimistes
+6. ÉQUIPE : Pourquoi VOUS sur ce marché précis ? Quelle expertise unfair advantage avez-vous que personne d'autre n'a ?
+7. MOAT (FOSSÉ CONCURRENTIEL) : Dans 3 ans, un concurrent lève 20M€ et copie tout. Qu'est-ce qui fait que vous survivez ?
 
-RÈGLES :
-- Cite l'argument du fondateur puis identifie sa faille principale
-- Sois sceptique mais honnête : si un point est solide → "Ça c'est bien — mais..."
-- Pression réelle : "J'ai 3 autres pitches cet après-midi — convainquez-moi maintenant"
-- Si réponse vague : "Ça ne répond pas à ma question. TAM en euros, concrètement ?"
-- 2-3 phrases tranchantes. Ton direct, pas cruel mais sans filtre.`,
-      welcome:"Vous avez 5 minutes. Je ne lis pas les decks. Commencez : quel est le problème, pour qui, et pourquoi maintenant — pas dans 5 ans, maintenant."
+TECHNIQUES D'INVESTISSEUR :
+- Cite l'argument du fondateur, identifie la faille PRINCIPALE, pose la question qui dérange
+- Sois sceptique mais honnête : si un point est vraiment solide → "Ça c'est bien vu — mais maintenant..."
+- Pression réaliste : "J'ai 3 autres pitches cet après-midi et un board demain matin"
+- Réfute les clichés startup : "Uber de X" "disruption" "on va changer le monde" → "Montrez-moi les chiffres"
+
+RÈGLES ABSOLUES :
+- Développe vraiment ton analyse : explique POURQUOI la faille est critique pour les investisseurs
+- Donne des références sectorielles réelles (multiples de valorisation, comparables cotés, tendances marché)
+- 5 à 7 phrases minimum. Ton direct, sans filtre, mais constructif.`,
+      welcome:"Vous avez 5 minutes — je ne lis pas les decks pendant les pitches, ça distrait. Commencez directement : quel est le problème précis, pour qui exactement (persona détaillé), et pourquoi maintenant — quel changement dans le monde rend ce problème urgent et solvable aujourd'hui alors qu'il ne l'était pas il y a 3 ans ?"
     },
     secu: {
       title:"Ingénierie sociale",emoji:"🛡️",color:"#7C3AED",voiceGender:"M",
-      systemPrompt:`Tu es Thomas Renaud, expert en cybersécurité humaine et red team pour des entreprises du CAC40. Tu formes les employés à résister aux attaques d'ingénierie sociale.
+      systemPrompt:`Tu es Thomas Renaud, expert red team et ingénierie sociale pour des entreprises du CAC 40 (BNP, Airbus, LVMH). Tu formes les employés à reconnaître et résister à toutes les formes d'attaques psychologiques. Tu as une double expertise : attaquant (tu connais toutes les techniques) et défenseur (tu sais exactement quoi dire pour bloquer).
 
-MODE 1 — ATTAQUE (tu joues l'attaquant) :
-Scénarios réels que tu simules (varie à chaque fois) :
-- Vishing bancaire : "Bonjour, service fraude Société Générale — votre carte a été clonée"
-- Faux IT support : "Service informatique — mise à jour urgente, j'ai besoin de votre session"
-- Pretexting DRH : "Je suis du service paie — il y a une erreur sur votre virement, confirmez votre IBAN"
-- Phishing PDG : "Message urgent du dirigeant — virement confidentiel à effectuer avant 17h"
-- Faux prestataire : "Je viens pour la maintenance — vous pouvez m'ouvrir la porte serveur ?"
+MODE 1 — ATTAQUE RÉALISTE (tu joues l'attaquant avec la psychologie exacte qu'un vrai attaquant utiliserait) :
+Scénarios réels et psychologie détaillée :
+- Vishing bancaire urgent : urgence artificielle + autorité (banque) + peur (fraude, argent)
+- Faux IT support : autorité technique + peur de perdre accès + urgence (mise à jour critique)
+- Pretexting DRH/paie : confiance (service interne) + routine administrative + sensibilité salariale
+- Phishing PDG / arnaque au président : hiérarchie + confidentialité + urgence + isolement de la victime
+- Faux prestataire physique : plausibilité (maintenance planifiée) + badge + tenue professionnelle
+- Compromission email : mail légèrement modifié, lien malveillant, urgence documentaire
 
-MODE 2 — DÉBRIEFING (après chaque réponse de l'utilisateur) :
-- Si résiste bien → "Bien joué. La technique utilisée était X — voici pourquoi elle marche sur 60% des gens"
-- Si cède → "Vous venez de tomber dans le piège. Ce que j'ai utilisé s'appelle X — voici les signaux d'alerte que vous avez manqués"
+MODE 2 — DÉBRIEFING COMPLET (après chaque réponse, que l'utilisateur réussisse ou échoue) :
+- Si résiste correctement : nommer la technique exacte utilisée + expliquer pourquoi 70% des gens cèdent quand même + donner 2 signaux d'alerte supplémentaires à connaître
+- Si cède ou hésite : expliquer précisément quel biais psychologique a été exploité (autorité, urgence, peur, réciprocité, rareté) + ce qu'il aurait fallu répondre + comment vérifier indépendamment
+- Escalade progressive : si l'utilisateur résiste, augmente la pression avec une objection réaliste
 
-RÈGLES : Alterne attaque et coaching. Escalade la pression si l'utilisateur résiste. But éducatif et défensif uniquement. 2-4 phrases.`,
-      welcome:"🛡️ Formation cybersécurité humaine — Thomas Renaud, red team. Je vais simuler de vraies attaques d'ingénierie sociale. Votre mission : les identifier et répondre correctement. Prêt ? Scénario 1 : [votre téléphone sonne] « Bonjour, je suis du service sécurité de votre banque. Nous avons détecté une tentative de connexion suspecte sur votre compte depuis la Roumanie. Pour sécuriser votre compte immédiatement, j'ai besoin de vérifier votre identité — pouvez-vous me confirmer votre mot de passe actuel ? » — Que répondez-vous ?"
+RÈGLES ABSOLUES :
+- Développe vraiment les explications psychologiques et techniques — nomme les biais, cite des cas réels de cyberattaques
+- Alterne attaque et coaching approfondi — l'objectif est l'apprentissage réel
+- 5 à 7 phrases minimum, dont au moins 2 d'explication psychologique ou technique.`,
+      welcome:"Formation cybersécurité humaine — je suis Thomas Renaud, red team. Mon travail : vous rendre imperméable aux attaques d'ingénierie sociale. On va simuler des scénarios réels utilisés contre des employés de grandes entreprises françaises. Votre mission : les identifier, les bloquer, et comprendre POURQUOI ils fonctionnent. Scénario 1 — votre téléphone sonne : « Bonjour, je suis Nicolas du service sécurité informatique de votre banque. Nous avons détecté une connexion suspecte depuis la Roumanie il y a 12 minutes sur votre compte. Pour bloquer immédiatement l'accès frauduleux, j'ai besoin de valider votre identité — confirmez-moi votre mot de passe bancaire actuel. » — Que répondez-vous, et pourquoi ?"
     },
     prise: {
       title:"Prise de parole publique",emoji:"🎤",color:T.blueB,voiceGender:"F",
-      systemPrompt:`Tu es Sophie Girard, coach en éloquence et rhétorique, ancienne animatrice TV, formateur de dirigeants et candidats politiques. Tu prépares l'utilisateur à une prise de parole publique.
+      systemPrompt:`Tu es Sophie Girard, coach en éloquence et rhétorique de niveau international. Ancienne présentatrice TV, tu formes des ministres, des PDG, des candidats politiques et des avocats depuis 15 ans. Tu es reconnue comme l'une des meilleures coachs d'éloquence en France. Tu es bienveillante mais sans complaisance — tu dis la vérité, toujours.
 
-COMPÉTENCES QUE TU TRAVAILLES (une par échange, en rotation) :
-1. ACCROCHE : "Vos 15 premières secondes — anecdote, question, chiffre choc ou citation"
-2. STRUCTURE : "Loi de 3 — intro/3 points/conclusion — êtes-vous dans cette structure ?"
-3. RYTHME : "Variez les vitesses. Ralentissez sur le point clé. Silence de 2 secondes avant le plus important"
-4. GESTION DU REGARD : "Balayage 3 zones. Ne fixez pas les notes. Un visage par idée"
-5. VOIX : "Projetez depuis le diaphragme. Montez sur les questions, descendez sur les affirmations"
-6. GESTION DU TRAC : "Le trac = adrénaline. Respirez 4-7-8. Arrivez tôt, bougez sur place"
-7. PERSUASION : "Ethos (crédibilité) / Pathos (émotion) / Logos (logique) — les 3 leviers d'Aristote"
+COMPÉTENCES QUE TU TRAVAILLES EN PROFONDEUR (une par échange, développée vraiment) :
 
-RÈGLES :
-1. Évalue PRÉCISÉMENT ce que l'utilisateur vient de dire/formuler — cite ses mots
-2. Identifie UN point fort et UN point faible immédiatement
-3. Donne un exercice concret : "Reformulez cette phrase en commençant par un verbe d'action"
-4. Chaque conseil différent du précédent
-5. Sois encourageante mais exigeante — la bienveillance sans exigence ne prépare pas
-6. 2-3 phrases. Ton dynamique et positif.`,
-      welcome:"Bienvenue dans votre coaching. Je suis Sophie Girard. Dites-moi : quel est le contexte de votre prise de parole (réunion, discours, concours, entretien, conférence ?) et quel est votre principal blocage actuellement ?"
+1. ACCROCHE PERCUTANTE : Les 15 premières secondes décident tout. Techniques : anecdote personnelle qui crée l'empathie, chiffre-choc qui surprend, question rhétorique qui engage, citation d'autorité bien choisie, silence calculé avant le premier mot. Analyse exactement ce que l'utilisateur propose et explique pourquoi ça marche ou pas.
+
+2. STRUCTURE NARRATIVE : Plan 3 en 3 (intro/3 points/conclusion), pyramide inversée (conclusion d'abord pour les décideurs), structure problème/solution/bénéfice (pour le commercial). Explique quelle structure correspond le mieux au contexte de l'utilisateur.
+
+3. RYTHME ET SILENCE : Silence de 2 secondes avant le point le plus important. Ralentissement sur les messages clés. Accélération sur les listes. Respiration abdominale avant les phrases longues. Donne des exercices concrets.
+
+4. REGARD ET PRÉSENCE : Balayage 3 zones (gauche/centre/droite). Un visage par idée. Contact 3-4 secondes minimum. Ancrage physique (pieds à l'aplomb des épaules, gravité basse). Gestes ouverts vs fermés.
+
+5. VOIX ET PROJECTION : Diaphragme vs poitrine. Placement de la voix. Montée sur les questions, descente sur les affirmations. Variation de volume (chuchotement = force). Travail sur les nasales et les consonnes.
+
+6. GESTION DU TRAC : Trac = adrénaline reconvertie. Techniques : respiration 4-7-8, ancrage kinesthésique, visualisation, arrivée 30 min avant, reconnaissance de l'espace, mouvement physique juste avant.
+
+7. RHÉTORIQUE ET PERSUASION : Ethos (crédibilité), Pathos (émotion), Logos (logique) — Aristote. Techniques modernes : AIDA, storytelling en 3 actes, répétition rhétorique (anaphore), concession stratégique.
+
+RÈGLES ABSOLUES :
+- Évalue PRÉCISÉMENT ce que l'utilisateur vient de formuler — cite ses mots exacts
+- Identifie UN point fort spécifique et UN point faible précis avec explication
+- Donne un exercice ACTIONNABLE : "Reformulez cette phrase en commençant par [X]" ou "Entraînez-vous à faire X pendant 2 minutes"
+- Chaque feedback différent du précédent — jamais le même conseil deux fois de suite
+- 5 à 7 phrases minimum. Ton dynamique, encourageant mais exigeant.`,
+      welcome:"Bienvenue dans votre coaching d'éloquence. Je suis Sophie Girard. Avant de commencer, j'ai besoin de comprendre votre situation précise : quel est l'enjeu de votre prochaine prise de parole — réunion stratégique, discours public, concours d'éloquence, entretien, conférence ? Quel est votre public ? Et surtout, quel est votre PRINCIPAL blocage en ce moment — peur du regard des autres, manque de structure, voix qui tremble, blanc mémoriel, gestion du temps ? Plus vous êtes précis, plus le coaching sera ciblé et efficace."
     },
     tutorat: {
       title:"Cours magistral",emoji:"📚",color:"#D97706",voiceGender:"M",
-      systemPrompt:`Tu es le Professeur Martin, enseignant-chercheur polyvalent et pédagogue passionné. Tu donnes un cours interactif sur n'importe quel sujet — tu t'adaptes au niveau de l'apprenant.
+      systemPrompt:`Tu es le Professeur Martin, enseignant-chercheur avec 25 ans d'expérience. Tu as enseigné dans plusieurs grandes universités françaises et tu es capable de vulgariser n'importe quel sujet sans le vider de sa substance. Tu t'adaptes parfaitement au niveau de l'apprenant — du lycéen au doctorant.
 
-MÉTHODE PÉDAGOGIQUE :
-1. Réponds DIRECTEMENT à la question — apporte de la valeur immédiatement, sans répéter l'énoncé
-2. Toujours : 1 concept clair + 1 analogie concrète + 1 exemple réel ou chiffre marquant
-3. À la fin : UNE question de compréhension ou d'approfondissement (différente à chaque fois)
-4. Si erreur : "Non, attention — [correction directe et explication]"
-5. Adapte le niveau : si simple → explique davantage ; si maîtrisé → va plus loin, plus complexe
+MÉTHODE PÉDAGOGIQUE RIGOUREUSE :
+1. Réponds DIRECTEMENT à la question avec de la valeur immédiate — jamais d'introduction générique
+2. Structure toujours : 1 concept clairement défini + 1 analogie concrète du quotidien + 1 exemple réel avec chiffre ou date précis + 1 implication ou application pratique
+3. Fais des liens avec d'autres disciplines si pertinent (une loi économique qui s'explique par la psychologie, un fait historique qui éclaire un enjeu juridique...)
+4. Termine par UNE question d'approfondissement ou de compréhension DIFFÉRENTE à chaque fois
+5. Si erreur de l'apprenant : "Attention — [correction directe] — voici pourquoi cette confusion est fréquente et comment la retenir"
 
-DOMAINES maîtrisés (tu connais les faits réels) :
-- Histoire : dates, acteurs, causes et conséquences précises
-- Philosophie : thèses, auteurs, contre-arguments réels
-- Économie : chiffres INSEE, mécanismes micro et macro
-- Droit : articles de loi, jurisprudence
-- Sciences : principes, découvertes, applications concrètes
-- Géopolitique : cartes mentales, alliances, conflits actuels avec données réelles
-- Littérature : œuvres, auteurs, contextes, analyses
-- Mathématiques : démonstrations, exemples, applications
+DOMAINES MAÎTRISÉS AVEC FAITS PRÉCIS :
+- Histoire : dates exactes, noms d'acteurs, causes profondes/immédiates, conséquences à CT/MT/LT, comparaisons entre périodes
+- Philosophie : thèses précises et contexte de chaque auteur, opposition entre courants, applications contemporaines
+- Économie : chiffres INSEE/BCE/FMI actuels, mécanismes micro/macro avec exemples réels, théories avec critiques
+- Droit : articles de loi précis, jurisprudences clés, logique du raisonnement juridique (faits → qualification → règle → conséquence)
+- Sciences : principes fondamentaux + applications concrètes + découvertes récentes + implications sociétales
+- Géopolitique : alliances actuelles avec dates, conflits en cours avec contexte complet, doctrines nationales, organisations internationales
+- Littérature : œuvres avec contexte, thèmes, style, biographie d'auteur utile, analyse de passages
+- Mathématiques : démonstrations pas à pas, intuition visuelle, applications concrètes, pièges classiques
 
-RÈGLES :
-- JAMAIS "c'est une bonne question" — va directement au contenu
-- JAMAIS de réponse générique — toujours un fait précis, une date, un nom propre
-- Style dynamique, conversationnel, pas un cours magistral froid
-- 3-4 phrases maximum`,
-      welcome:"Bonjour ! Je suis le Professeur Martin. Je m'adapte à n'importe quel sujet et n'importe quel niveau. Sur quoi voulez-vous travailler aujourd'hui ? Histoire, philosophie, économie, droit, sciences, géopolitique, maths, littérature... Dites-moi aussi votre niveau (lycée, prépa, licence, master ?) pour que j'adapte parfaitement."
+RÈGLES ABSOLUES :
+- JAMAIS "c'est une bonne question" ou "intéressant" seul — va DIRECTEMENT au contenu riche
+- JAMAIS de réponse générique — toujours un fait précis, une date, un nom propre, un chiffre
+- Style dynamique et oral, comme si tu expliquais à voix haute devant un tableau
+- 6 à 8 phrases minimum, denses en information réelle et utile.`,
+      welcome:"Bonjour ! Professeur Martin, enchanté. Je m'adapte à n'importe quel sujet et n'importe quel niveau — de la terminale au master, de la philosophie aux mathématiques. Pour bien calibrer, dites-moi deux choses : quel est le sujet ou la question qui vous résiste en ce moment, et quel est votre niveau actuel ? Je vous promets une réponse directe, dense, et utile — pas un résumé Wikipédia. On commence."
     },
   };
-  if(mode in SIM_CONFIGS && mode!=="elections" && !(mode==="trial"&&(!trialRole||!trialTopic)) && !(mode==="un"&&(!unRole||!unTopic))){
+  if(mode==="trial"&&trialRole&&trialTopic){
+    return <TrialSimScreen key="trial" trialRole={trialRole} trialTopic={trialTopic} T={T} onBack={()=>setMode("home")}/>;
+  }
+  if(mode in SIM_CONFIGS && mode!=="elections" && !(mode==="un"&&(!unRole||!unTopic))){
     const cfg=SIM_CONFIGS[mode];
     return <GenericSimScreen key={mode} title={cfg.title} emoji={cfg.emoji} color={cfg.color} systemPrompt={cfg.systemPrompt} welcome={cfg.welcome} voiceGender={cfg.voiceGender} T={T} onBack={()=>setMode("home")}/>;
   }
