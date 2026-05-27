@@ -23,29 +23,37 @@ type Theme = typeof DARK;
 let _hfAudio: HTMLAudioElement | null = null;
 
 async function speakHF(text: string, gender: "M"|"F", key: string, onEnd?: ()=>void): Promise<boolean> {
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 15000);
-    const headers: Record<string,string> = { "Content-Type": "application/json" };
-    if (key) headers["Authorization"] = `Bearer ${key}`;
-    const res = await fetch("https://api-inference.huggingface.co/models/facebook/mms-tts-fra", {
-      method: "POST", headers,
-      body: JSON.stringify({ inputs: text.slice(0, 600) }),
-      signal: ctrl.signal
-    });
-    clearTimeout(timer);
-    if (!res.ok) return false;
-    const blob = await res.blob();
-    if (blob.size < 200) return false;
-    const url = URL.createObjectURL(blob);
-    if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
-    _hfAudio = new Audio(url);
-    _hfAudio.playbackRate = gender === "F" ? 1.12 : 0.90;
-    _hfAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
-    _hfAudio.onerror = () => { URL.revokeObjectURL(url); onEnd?.(); };
-    await _hfAudio.play();
-    return true;
-  } catch { return false; }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 20000);
+      const headers: Record<string,string> = { "Content-Type": "application/json" };
+      if (key) headers["Authorization"] = `Bearer ${key}`;
+      const res = await fetch("https://api-inference.huggingface.co/models/facebook/mms-tts-fra", {
+        method: "POST", headers,
+        body: JSON.stringify({ inputs: text.slice(0, 600) }),
+        signal: ctrl.signal
+      });
+      clearTimeout(timer);
+      if (res.status === 503) {
+        // Model cold start — wait then retry
+        await new Promise(r => setTimeout(r, 8000));
+        continue;
+      }
+      if (!res.ok) return false;
+      const blob = await res.blob();
+      if (blob.size < 200) return false;
+      const url = URL.createObjectURL(blob);
+      if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
+      _hfAudio = new Audio(url);
+      _hfAudio.playbackRate = gender === "F" ? 1.12 : 0.90;
+      _hfAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
+      _hfAudio.onerror = () => { URL.revokeObjectURL(url); onEnd?.(); };
+      await _hfAudio.play();
+      return true;
+    } catch { return false; }
+  }
+  return false;
 }
 function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
@@ -81,11 +89,16 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   }
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
-  // Always try HF first (no token = free unauthenticated tier, token = higher rate limit)
   const k = typeof window !== "undefined" ? localStorage.getItem("hf_key") || "" : "";
-  speakHF(text, gender, k, onEnd)
-    .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
-    .catch(() => speakWeb(text, gender, onEnd));
+  if (k) {
+    // HF with token — good quality, falls back to Web Speech if it fails
+    speakHF(text, gender, k, onEnd)
+      .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+      .catch(() => speakWeb(text, gender, onEnd));
+  } else {
+    // No token — use Web Speech directly (no delay waiting for HF)
+    speakWeb(text, gender, onEnd);
+  }
 }
 function stopSpeech() {
   if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
@@ -1574,7 +1587,8 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
             {hfOk===false&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
           </div>
           <input type="password" value={hk} onChange={e=>{setHk(e.target.value);save("hf_key",e.target.value);setHfOk(null);}} placeholder="hf_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-          {hk&&<button onClick={testHF} disabled={testing} style={{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{testing?"Test en cours… (15s max)":"🔊 Tester la voix"}</button>}
+          {hk&&<button onClick={testHF} disabled={testing} style={{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{testing?"Chargement modèle… (30s max)":"🔊 Tester la voix"}</button>}
+          <p style={{color:T.muted,fontSize:10,marginTop:6}}>⚠ Token type : choisir <b style={{color:T.text}}>Read</b> (pas Fine-grained). Fine-grained → cocher &quot;Make calls to Inference Providers&quot;</p>
         </div>
         <button onClick={()=>{if(ck)onDone();}} disabled={!ck} style={{padding:15,borderRadius:14,border:"none",background:ck?T.blueB:T.b1,color:ck?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:ck?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
           {ck?"Démarrer la simulation →":"Entrez votre clé Gemini pour continuer"}
