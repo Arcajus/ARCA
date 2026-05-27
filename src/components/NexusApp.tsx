@@ -18,9 +18,37 @@ const LIGHT = {
 };
 type Theme = typeof DARK;
 
-// ── TTS: Google Translate TTS (qualité naturelle) + Web Speech (fallback) ──
+// ── TTS ──────────────────────────────────────────────────────
 let _hfAudio: HTMLAudioElement | null = null;
 let _ttsActive = false;
+
+// ElevenLabs (haute qualité — fallback auto sur Web Speech si quota épuisé)
+const EL_VOICES_F = ["XB0fDUnXU5powFXDhCwa","Xb7hH8MSUJpSbSDYk0k2","21m00Tcm4TlvDq8ikWAM","EXAVITQu4vr4xnSDxMaL"];
+const EL_VOICES_M = ["nPczCjzI2devNBz1zQrb","N2lVS1w4EtoT3dr4eOWO","29vD33N1CtxCmqQRPOHJ","ErXwobaYiN019PkySvjV"];
+async function speakEL(text: string, gender: "M"|"F", key: string, onEnd?: ()=>void): Promise<boolean> {
+  const voices = gender === "F" ? EL_VOICES_F : EL_VOICES_M;
+  if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
+  for (const voiceId of voices) {
+    try {
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: "POST",
+        headers: { "Accept": "audio/mpeg", "Content-Type": "application/json", "xi-api-key": key },
+        body: JSON.stringify({ text: text.slice(0, 3000), model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.45, similarity_boost: 0.8 } })
+      });
+      if (!res.ok) continue;
+      const blob = await res.blob();
+      if (blob.size < 100) continue;
+      const url = URL.createObjectURL(blob);
+      if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
+      _hfAudio = new Audio(url);
+      _hfAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
+      _hfAudio.onerror = () => { URL.revokeObjectURL(url); onEnd?.(); };
+      await _hfAudio.play();
+      return true;
+    } catch { continue; }
+  }
+  return false;
+}
 
 function cleanForSpeech(raw: string): string {
   return raw
@@ -112,7 +140,14 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   _ttsActive = true;
-  speakWeb(text, gender, onEnd);
+  const elKey = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
+  if (elKey) {
+    speakEL(cleanForSpeech(text), gender, elKey, onEnd)
+      .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+      .catch(() => speakWeb(text, gender, onEnd));
+  } else {
+    speakWeb(text, gender, onEnd);
+  }
 }
 function stopSpeech() {
   _ttsActive = false;
@@ -1560,6 +1595,7 @@ function MessagesScreen({T}:{T:Theme}) {
 // ── API KEY SETUP MODAL ───────────────────────────────────────
 function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
   const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
+  const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
   const save=(k:string,v:string)=>{if(typeof window!=="undefined")localStorage.setItem(k,v);};
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .2s"}}>
@@ -1582,13 +1618,16 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
           <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border .2s"}}/>
         </div>
         <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:18}}>🔊</span>
-            <div>
-              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Voix — GRATUIT, aucun compte requis</p>
-              <p style={{color:T.muted,fontSize:11,marginTop:2}}>Voix française intégrée au navigateur (Google, Microsoft, Apple selon ton appareil)</p>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <div style={{width:28,height:28,borderRadius:7,background:"#7C3AED20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}>🎙️</span></div>
+            <div style={{flex:1}}>
+              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé ElevenLabs <span style={{color:T.muted,fontSize:10,fontWeight:400}}>(optionnel — voix premium)</span></p>
+              <p style={{color:T.muted,fontSize:10}}>elevenlabs.io → Profile → API Keys · 10 000 chars/mois gratuit</p>
             </div>
+            {ek&&<div style={{width:8,height:8,borderRadius:"50%",background:T.green,flexShrink:0}}/>}
           </div>
+          <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          <p style={{color:T.muted,fontSize:10,marginTop:6}}>Sans clé : voix navigateur (Google/Microsoft/Apple). Avec clé : voix naturelles ElevenLabs.</p>
         </div>
         <button onClick={()=>{if(ck)onDone();}} disabled={!ck} style={{padding:15,borderRadius:14,border:"none",background:ck?T.blueB:T.b1,color:ck?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:ck?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
           {ck?"Démarrer la simulation →":"Entrez votre clé Gemini pour continuer"}
@@ -1649,6 +1688,7 @@ function SimulationHub({T}:{T:Theme}) {
 // ── API KEY SETTINGS ──────────────────────────────────────────
 function ApiKeySettings({T}:{T:Theme}) {
   const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
+  const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
   const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
   return(
     <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
@@ -1657,9 +1697,10 @@ function ApiKeySettings({T}:{T:Theme}) {
         <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         <p style={{color:T.muted,fontSize:11,marginTop:5}}>aistudio.google.com → Get API key · Nécessaire pour les simulations IA</p>
       </div>
-      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
-        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>🔊 Voix — GRATUIT, aucun compte</p>
-        <p style={{color:T.muted,fontSize:11}}>Voix française intégrée au navigateur (Google sur Android, Siri sur iOS, Microsoft sur Windows). Aucune configuration nécessaire.</p>
+      <div style={{background:T.card,border:`1px solid ${ek?T.purple:T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🎙️ Clé ElevenLabs <span style={{color:T.muted,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optionnel — voix naturelles)</span></p>
+        <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        <p style={{color:T.muted,fontSize:11,marginTop:5}}>elevenlabs.io → Profile → API Keys · 10 000 chars/mois gratuit · Sans clé : voix navigateur</p>
       </div>
     </div>
   );
