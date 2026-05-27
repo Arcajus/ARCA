@@ -28,7 +28,6 @@ const EL_VOICES_M = ["nPczCjzI2devNBz1zQrb","N2lVS1w4EtoT3dr4eOWO","29vD33N1CtxC
 
 async function speakEL(text: string, gender: "M"|"F", key: string, onEnd?: ()=>void): Promise<boolean> {
   const voices = gender === "F" ? EL_VOICES_F : EL_VOICES_M;
-  // Clear any pending callback BEFORE the async loop so old onEnd never fires accidentally
   if (_elAudio) { _elAudio.pause(); _elAudio.onended = null; }
   for (const voiceId of voices) {
     try {
@@ -45,8 +44,16 @@ async function speakEL(text: string, gender: "M"|"F", key: string, onEnd?: ()=>v
       if (_elAudio) {
         _elAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
         _elAudio.src = url;
-        _elAudio.load();
-        await _elAudio.play();
+        // No load() — let play() trigger loading; load() causes iOS NotAllowedError in async contexts
+        try { await _elAudio.play(); }
+        catch {
+          // iOS blocked the shared element — create a fresh one from the same blob
+          const fresh = new Audio(url);
+          fresh.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
+          _elAudio.onended = null;
+          _elAudio = fresh;
+          await fresh.play();
+        }
       } else {
         _elAudio = new Audio(url);
         _elAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
@@ -69,13 +76,13 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
     if (fr) u.voice = fr;
     window.speechSynthesis.speak(u);
   };
-  // Always call speak() once — if voices aren't loaded yet, the browser uses its default
-  // Setting onvoiceschanged + speak() was causing double-speak (two onend fires, double auto-mic)
   if (window.speechSynthesis.getVoices().length > 0) {
     go();
   } else {
-    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged = null; go(); };
-    window.speechSynthesis.speak(u);
+    // Speak exactly once: either when voices load OR after 400ms timeout — never both
+    // The old code called speak(u) here AND in go() → double onend → second callback cancelled opponent
+    const fallback = setTimeout(() => { window.speechSynthesis.onvoiceschanged = null; go(); }, 400);
+    window.speechSynthesis.onvoiceschanged = () => { clearTimeout(fallback); window.speechSynthesis.onvoiceschanged = null; go(); };
   }
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
@@ -454,12 +461,18 @@ Commence OBLIGATOIREMENT par ton prénom. Expose ton angle avec UN fait ou chiff
             if(!mountedRef.current) return;
             if(oppOpen){
               addLine("opponent",opponent.name,oppOpen);
-              speakAny(oppOpen,opponent.gender,()=>{
+              setTimeout(()=>{
                 if(!mountedRef.current) return;
-                const handover=`Merci ${opponent.name}. À vous de répondre.`;
-                addLine("journalist",j?.name||"Journaliste",handover);
-                speakAny(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
-              });
+                speakAny(oppOpen,opponent.gender as "M"|"F",()=>{
+                  if(!mountedRef.current) return;
+                  const handover=`Merci ${opponent.name}. À vous de répondre.`;
+                  addLine("journalist",j?.name||"Journaliste",handover);
+                  setTimeout(()=>{
+                    if(!mountedRef.current) return;
+                    speakAny(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
+                  },200);
+                });
+              },300);
             } else {
               if(mountedRef.current)setAutoMic(true);
             }
@@ -578,7 +591,11 @@ Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique �
             if(!mountedRef.current) return;
             if(oppReply){
               addLine("opponent",opponent.name,oppReply);
-              speakAny(oppReply,opponent.gender,()=>{if(mountedRef.current)setAutoMic(true);});
+              // 300ms buffer: let the audio system fully settle after journalist finishes
+              setTimeout(()=>{
+                if(!mountedRef.current) return;
+                speakAny(oppReply,opponent.gender as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
+              },300);
             } else { setAutoMic(true); }
           }catch{ if(mountedRef.current)setAutoMic(true); }
         });
