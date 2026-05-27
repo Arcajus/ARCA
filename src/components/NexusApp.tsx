@@ -2060,122 +2060,234 @@ RÈGLES ABSOLUES :
   );
 }
 
+// ── UN SECURITY COUNCIL SCREEN ────────────────────────────────
+// Realistic UNSC simulation: session opening + 2 countries respond in sequence with audio
+function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:string;T:Theme;onBack:()=>void}) {
+  type UNMsg = {role:"user"|"ai";flag:string;country:string;gender:"M"|"F";text:string};
+  // Voice gender per delegation
+  const G: Record<string,("M"|"F")> = {fr:"F",us:"M",ru:"M",cn:"M",uk:"F"};
+  const [msgs,setMsgs] = useState<UNMsg[]>([]);
+  const [input,setInput] = useState("");
+  const [loading,setLoading] = useState(false);
+  const [audioOn,setAudioOn] = useState(true);
+  const [listening,setListening] = useState(false);
+  const [autoMic,setAutoMic] = useState(false);
+  const [exchangeN,setExchangeN] = useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recRef = useRef<any>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSpeechRef = useRef<(t:string)=>void>((_t:string)=>{});
+
+  useEffect(()=>{ mountedRef.current=true; return()=>{mountedRef.current=false;recRef.current?.stop();stopSpeech();}; },[]);
+
+  function speakTimed(text:string, gender:"M"|"F", onDone:()=>void, delayMs=0) {
+    const estMs = Math.max(2500, text.split(/\s+/).length * 400 + 800);
+    setTimeout(()=>{
+      if(!mountedRef.current) return;
+      let fired=false;
+      const done=()=>{if(fired||!mountedRef.current)return;fired=true;onDone();};
+      speakAny(text,gender,done);
+      setTimeout(done,estMs);
+    },delayMs);
+  }
+  function speakSequence(items:{text:string;gender:"M"|"F"}[], idx:number, onAllDone:()=>void) {
+    if(!mountedRef.current||idx>=items.length){onAllDone();return;}
+    speakTimed(items[idx].text,items[idx].gender,()=>speakSequence(items,idx+1,onAllDone),idx===0?0:700);
+  }
+
+  useEffect(()=>{
+    if(!autoMic) return;
+    setAutoMic(false);
+    if(typeof window==="undefined") return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w=window as any;
+    const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
+    if(!SR) return;
+    const rec=new SR();
+    rec.lang="fr-FR"; rec.continuous=false; rec.interimResults=false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
+    rec.onend=()=>setListening(false);
+    try{rec.start();}catch{return;}
+    recRef.current=rec; setListening(true);
+  },[autoMic]);// eslint-disable-line
+
+  // Session opening: Président du Conseil ouvre la séance
+  useEffect(()=>{
+    const pres = UN_DEL.find(d=>d.id!==unRole.id)||UN_DEL[0];
+    const presGender = G[pres.id]||"M";
+    const opening = `${pres.flag} ${pres.country} (Présidence du Conseil) : Mesdames et Messieurs les délégués, je déclare ouverte cette séance du Conseil de Sécurité, convoquée conformément à l'article 28 de la Charte des Nations Unies. L'ordre du jour porte sur la question suivante : « ${unTopic} ». La délégation de ${unRole.country} a sollicité la tenue de cette réunion d'urgence. Je lui cède la parole en premier. Je rappelle à toutes les délégations que leurs déclarations seront consignées au procès-verbal et que le vote, s'il y a lieu, se tiendra à l'issue du débat. Monsieur / Madame le représentant de ${unRole.country}, vous avez la parole.`;
+    const introMsgs:UNMsg[] = [{role:"ai",flag:pres.flag,country:`${pres.country} — Présidence`,gender:presGender,text:opening}];
+    setMsgs(introMsgs);
+    setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),200);
+    if(audioOn) speakTimed(opening,presGender,()=>{if(mountedRef.current)setAutoMic(true);},500);
+  },[]);// eslint-disable-line
+
+  const addMsg=(m:UNMsg)=>{setMsgs(p=>[...p,m]);setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);};
+
+  const send=async(text:string)=>{
+    if(!text.trim()||loading) return;
+    unlockAudio();
+    setInput("");
+    const n=exchangeN+1; setExchangeN(n);
+    const userMsg:UNMsg={role:"user",flag:unRole.flag,country:unRole.country,gender:G[unRole.id]||"M",text};
+    const newMsgs=[...msgs,userMsg];
+    setMsgs(newMsgs);
+    setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
+    setLoading(true);
+    const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+
+    // Rotate through 4 pairs of responders to ensure variety across turns
+    const others=UN_DEL.filter(d=>d.id!==unRole.id);
+    const pairs:([number,number])[]= [[0,1],[1,2],[2,3],[0,3],[1,3],[0,2]];
+    const [i1,i2]=pairs[(n-1)%pairs.length];
+    const respondents=[others[i1%others.length],others[i2%others.length]].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i);
+
+    // Angle rotation — each turn focuses on a different dimension, never repeated
+    const ANGLES=[
+      "droit international et Charte ONU — cite l'article précis (art. 2§4 non-recours à la force, art. 51 légitime défense, Chapitre VII mesures coercitives) et une résolution précédente (S/RES/1441, S/RES/2118, S/RES/1973...)",
+      "enjeux géopolitiques régionaux — alliances en présence, sphères d'influence, risque d'escalade ou de spillover, position des organisations régionales (UA, UE, OTAN, SCO, ASEAN...)",
+      "impact humanitaire — droit international humanitaire (DIH), Conventions de Genève, protection des civils, accès de l'aide, chiffres OCHA/HCR/CICR réels si disponibles",
+      "implications économiques et sanctions — régime de sanctions existant, impact économique, accès aux matières premières, routes commerciales, dollar vs multipolarité",
+      "précédents historiques de l'ONU — résolutions similaires passées, succès ou échecs (Bosnie 1995, Libye 2011, Syrie 2013...), leçons apprises, risque d'affaiblissement du Conseil",
+      "proposition concrète — libellé exact d'un paragraphe de résolution ou d'un amendement, mécanisme de surveillance, calendrier de mise en œuvre, conditions du vote de ${G[unRole.id]==='F'?'ma':'mon'} délégation",
+    ];
+    const angle=ANGLES[(n-1)%ANGLES.length];
+
+    const rawHist=newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.country}] ${m.text}`}]}));
+    const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
+    const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
+
+    try{
+      if(!key) throw new Error("no_key");
+
+      // Parallel Gemini calls for both responding delegations
+      const makePrompt=(del:typeof UN_DEL[0])=>`Tu es ${del.flag} la délégation de ${del.country} au Conseil de Sécurité des Nations Unies.
+
+DOCTRINE NATIONALE INTÉGRALE DE ${del.country.toUpperCase()} : ${del.doctrine}
+
+CONTEXTE DE LA SÉANCE : Sujet en débat : "${unTopic}". La délégation de ${unRole.country} vient de prendre la parole (échange n°${n}).
+
+ANGLE OBLIGATOIRE POUR CET ÉCHANGE : ${angle}
+→ Concentre toute ton intervention sur cet angle précis. Ne répète PAS des arguments déjà utilisés dans les échanges précédents.
+
+PROCÉDURE ONUSIENNE AUTHENTIQUE :
+- Ouvre OBLIGATOIREMENT par "Monsieur le Président," ou "Madame la Présidente,"
+- Réfère-toi à des résolutions réelles et articles de la Charte avec leurs numéros exacts
+- Utilise le vocabulaire diplomatique onusien : "ma délégation", "le Conseil est saisi de", "nous prenons note de", "nous appelons à", "nous opposons notre veto à", "nous nous abstenons sur"
+- Cite UN précédent historique réel pertinent pour ${del.country} sur ce type de sujet
+- Réagis DIRECTEMENT à ce que vient de dire ${unRole.country} — cite ses mots et rebondis dessus
+
+STRUCTURE OBLIGATOIRE :
+1. Formule d'ouverture protocolaire
+2. Réaction précise à la déclaration de ${unRole.country} (cite ses mots)
+3. Position de ${del.country} avec référence juridique (article Charte ou résolution réelle)
+4. Précédent historique ou donnée chiffrée concrète liée à ${del.country} sur ce sujet
+5. Proposition ou position de vote de ${del.country} sur ce point
+
+5 à 6 phrases minimum. Développe vraiment. Vocabulaire onusien formel.`;
+
+      const [r1,r2]=await Promise.allSettled(respondents.map(del=>callGemini(makePrompt(del),[...hist,{role:"user" as const,parts:[{text:`La délégation de ${del.country}, vous avez la parole.`}]}],key,550)));
+      if(!mountedRef.current){setLoading(false);return;}
+
+      const speakItems:{text:string;gender:"M"|"F"}[]=[];
+      respondents.forEach((del,idx)=>{
+        const result=idx===0?r1:r2;
+        if(result.status==="fulfilled"&&result.value){
+          const m:UNMsg={role:"ai",flag:del.flag,country:del.country,gender:G[del.id]||"M",text:result.value};
+          addMsg(m); speakItems.push({text:result.value,gender:G[del.id]||"M"});
+        }
+      });
+      setLoading(false);
+      if(audioOn&&speakItems.length>0) speakSequence(speakItems,0,()=>{if(mountedRef.current)setAutoMic(true);});
+      else if(!audioOn) setAutoMic(false);
+
+    }catch(err){
+      if(!mountedRef.current){setLoading(false);return;}
+      setLoading(false);
+      if(err instanceof Error&&err.message==="no_key"){
+        addMsg({role:"ai",flag:"🌐",country:"Secrétariat",gender:"F",text:"Clé Gemini API manquante — allez dans Profil → Réglages pour la configurer."});
+        return;
+      }
+      const fb1=respondents[0]||others[0];
+      const fb2=respondents[1]||others[1];
+      const fallbacks:UNMsg[]=[
+        {role:"ai",flag:fb1.flag,country:fb1.country,gender:G[fb1.id]||"M",text:`Monsieur le Président, ma délégation a pris note avec la plus grande attention de la déclaration de ${unRole.country}. Sans préjuger des consultations informelles qui devront nécessairement précéder tout vote, ${fb1.country} tient à rappeler que l'article 2, paragraphe 4 de la Charte interdit le recours à la force dans les relations internationales. Nous avons été confrontés à des situations similaires par le passé — les résolutions adoptées alors constituent un précédent que le Conseil ne saurait ignorer. ${fb1.country} soumet au Conseil un appel à la retenue et propose l'ouverture immédiate de consultations informelles sous l'égide du Secrétaire Général.`},
+        {role:"ai",flag:fb2.flag,country:fb2.country,gender:G[fb2.id]||"M",text:`Madame la Présidente, ${fb2.country} souhaite réagir à la déclaration de ${unRole.country}. Ma délégation considère que les arguments avancés méritent un examen approfondi au regard du droit international applicable. Nous rappelons que le Conseil de Sécurité a adopté des résolutions contraignantes sur des questions similaires — résolutions que toutes les parties sont tenues de respecter en vertu de l'article 25 de la Charte. ${fb2.country} conditionnera son vote à la présentation d'un projet de texte équilibré, respectueux de la souveraineté des États et assorti de mécanismes de vérification crédibles.`},
+      ];
+      fallbacks.forEach(m=>addMsg(m));
+      if(audioOn) speakSequence(fallbacks.map(m=>({text:m.text,gender:m.gender})),0,()=>{if(mountedRef.current)setAutoMic(true);});
+    }
+  };
+  handleSpeechRef.current=send;
+
+  const toggleMic=()=>{
+    unlockAudio();
+    if(listening){recRef.current?.stop();setListening(false);return;}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w=window as any;
+    const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
+    if(!SR){alert("Utilisez Chrome pour la reconnaissance vocale.");return;}
+    const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult=(e:any)=>{send(e.results[0][0].transcript);setListening(false);};
+    rec.onend=()=>setListening(false);
+    rec.start();recRef.current=rec;setListening(true);
+  };
+
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
+      <div style={{padding:"10px 16px",background:T.surf,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={20} c={T.textD}/></button>
+          <span style={{fontSize:22}}>🌐</span>
+          <div style={{flex:1}}>
+            <p style={{color:T.text,fontSize:13,fontWeight:700}}>Conseil de Sécurité — ONU</p>
+            <p style={{color:T.textD,fontSize:11}}>{unTopic.slice(0,44)}{unTopic.length>44?"…":""}</p>
+          </div>
+          <button onClick={()=>{const n=!audioOn;setAudioOn(n);if(!n)stopSpeech();}} style={{background:audioOn?T.blueG:"transparent",border:`1px solid ${audioOn?T.blueB:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+            <Ic n="mic" s={14} c={audioOn?T.blueB:T.textD}/><span style={{color:audioOn?T.blueB:T.textD,fontSize:10,fontWeight:700}}>{audioOn?"AUDIO":"TEXTE"}</span>
+          </button>
+        </div>
+        <div style={{marginTop:8,display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+          {UN_DEL.map(d=><span key={d.id} style={{fontSize:15,opacity:d.id===unRole.id?1:0.4,cursor:"default"}}>{d.flag}</span>)}
+          <span style={{background:T.blueG,color:T.blueB,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700,marginLeft:4}}>Vous : {unRole.flag} {unRole.country}</span>
+          {exchangeN>0&&<span style={{background:`${T.amber}15`,color:T.amber,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700}}>Tour {exchangeN}</span>}
+        </div>
+      </div>
+      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
+        {msgs.map((m,i)=>(
+          <div key={i} style={{display:"flex",flexDirection:m.role==="user"?"row-reverse":"row",gap:10,alignItems:"flex-start"}}>
+            <div style={{width:34,height:34,borderRadius:"50%",background:T.card,border:`1.5px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{m.flag}</div>
+            <div style={{maxWidth:"80%",background:m.role==="user"?T.blueG:T.card,border:`1px solid ${m.role==="user"?T.blueB+"40":T.b1}`,borderRadius:12,padding:"8px 12px"}}>
+              <p style={{color:m.role==="user"?T.blueB:T.textD,fontSize:10,fontWeight:800,marginBottom:4}}>{m.country}</p>
+              <p style={{color:T.text,fontSize:13,lineHeight:1.65}}>{m.text}</p>
+            </div>
+          </div>
+        ))}
+        {loading&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{width:34,height:34,borderRadius:"50%",background:T.card,border:`1.5px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>🌐</div><div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 16px"}}><div style={{display:"flex",gap:5}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:T.blueB,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div></div></div>}
+      </div>
+      <div style={{padding:"10px 14px 24px",borderTop:`1px solid ${T.b1}`,display:"flex",gap:8,flexShrink:0}}>
+        <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+          <Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/>
+        </button>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send(input)} placeholder={`Déclaration de ${unRole.country}…`} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
+        <button onClick={()=>send(input)} disabled={loading||!input.trim()} style={{width:44,height:44,borderRadius:12,background:input.trim()&&!loading?T.blueB:T.b1,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0}}><Ic n="send" s={16} c={input.trim()&&!loading?"#fff":T.muted}/></button>
+      </div>
+    </div>
+  );
+}
+
 // ── SIMULATION SCREEN ─────────────────────────────────────────
 function SimulationScreen({T}:{T:Theme}) {
   const [mode,setMode] = useState<"home"|"un"|"trial"|"interview"|"elections"|"soutenance"|"examen"|"pitch"|"secu"|"prise"|"tutorat">("home");
   const [unRole,setUnRole] = useState<typeof UN_DEL[0]|null>(null);
   const [unTopic,setUnTopic] = useState("");
-  const [unMessages,setUnMessages] = useState<{role:string;flag:string;country:string;text:string}[]>([]);
-  const [unInput,setUnInput] = useState("");
   const [trialRole,setTrialRole] = useState<"defense"|"prosecutor"|null>(null);
   const [trialTopic,setTrialTopic] = useState("");
   const [voted,setVoted] = useState<string|null>(null);
-  const chatRef = useRef<HTMLDivElement>(null);
-
-  const [unLoading,setUnLoading] = useState(false);
-  const [unAudio,setUnAudio] = useState(true);
-
-  const sendUNMessage = async()=>{
-    if(!unInput.trim()||!unRole||unLoading)return;
-    unlockAudio();
-    const text=unInput;setUnInput("");
-    const newMsg={role:"user",flag:unRole.flag,country:unRole.country,text};
-    const allMsgs=[...unMessages,newMsg];
-    setUnMessages(allMsgs);
-    setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
-    setUnLoading(true);
-    try{
-      const otherDels=UN_DEL.filter(d=>d.id!==unRole.id);
-      const responding=otherDels[Math.floor(Math.random()*otherDels.length)];
-      const rawHist=allMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.country}] ${m.text}`}]}));
-      const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
-      const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
-      const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
-      if(!key) throw new Error("no_key");
-      const unSys=`Tu es le délégué de ${responding.country} au Conseil de Sécurité ONU. Doctrine nationale complète : ${responding.doctrine}. Sujet en débat : "${unTopic}".
-
-TON RÔLE : Tu es un diplomate de haut rang, formé à la négociation internationale, maîtrisant parfaitement le droit international, la Charte des Nations Unies, et les précédents du Conseil de Sécurité.
-
-RÈGLES ABSOLUES :
-1) Réponds DIRECTEMENT et précisément au dernier argument soulevé — cite-le, rebondis dessus, conteste ou valide avec nuance
-2) Défends les intérêts stratégiques ET diplomatiques de ${responding.country} avec conviction et profondeur
-3) Cite AU MOINS 2 faits géopolitiques réels liés à ta doctrine nationale : traités signés, votes historiques, positions officielles, précédents diplomatiques
-4) Reste diplomatique dans la forme mais ferme et percutant sur le fond — vocabulaire onusien authentique
-5) Développe un argument complet : position → justification juridique → exemple historique ou précédent → conséquences si rejeté → proposition concrète
-6) Utilise des références réelles : résolutions ONU, articles de la Charte, traités bilatéraux, données chiffrées
-7) Si pertinent, propose un amendement ou une alternative à la résolution en discussion
-
-Commence OBLIGATOIREMENT par "${responding.flag} ${responding.country} :" puis développe 5 à 7 phrases substantielles.`;
-      // Add streaming bubble immediately
-      setUnMessages(m=>[...m,{role:"ai",flag:responding.flag,country:responding.country,text:""}]);
-      let fullReply="";
-      await streamGemini(unSys,hist,key,600,(full)=>{
-        fullReply=full;
-        setUnMessages(m=>{const u=[...m];u[u.length-1]={...u[u.length-1],text:full};return u;});
-        setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),30);
-      });
-      setUnLoading(false);
-      if(unAudio) speakAny(fullReply.replace(/^[🌍🇫🇷🇺🇸🇷🇺🇨🇳🇬🇧\s]+/,""),"M");
-    }catch{
-      setUnLoading(false);
-      const otherDels=UN_DEL.filter(d=>d.id!==unRole?.id);
-      const r=otherDels[Math.floor(Math.random()*otherDels.length)];
-      const staticFbs=[
-        `${r.flag} ${r.country} : La délégation de ${r.country} conteste vivement cette position. Notre doctrine nationale est claire sur ce point et nous ne saurions l'accepter sans débat préalable.`,
-        `${r.flag} ${r.country} : Nous demandons une suspension de séance. La position exprimée mérite un examen approfondi par nos experts juridiques avant tout vote.`,
-        `${r.flag} ${r.country} : ${r.country} rappelle que toute résolution doit respecter la Charte des Nations Unies. Notre vote sera conditionnel à des garanties précises.`,
-      ];
-      const fb={role:"ai",flag:r.flag,country:r.country,text:staticFbs[Math.floor(Math.random()*staticFbs.length)]};
-      setUnMessages(m=>[...m,fb]);
-    }
-  };
-
-  if(mode==="un"&&unRole&&unTopic){
-    return(
-      <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-        <div style={{padding:"10px 16px",background:T.surf,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <button onClick={()=>{setMode("home");setUnMessages([]);setUnRole(null);setUnTopic("");stopSpeech();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={20} c={T.textD}/></button>
-            <span style={{fontSize:24}}>🌐</span>
-            <div style={{flex:1}}>
-              <p style={{color:T.text,fontSize:13,fontWeight:700}}>Conseil de Sécurité ONU</p>
-              <p style={{color:T.textD,fontSize:11}}>{unTopic.slice(0,42)}…</p>
-            </div>
-            <button onClick={()=>{const n=!unAudio;setUnAudio(n);if(!n)stopSpeech();}} style={{background:unAudio?T.blueG:"transparent",border:`1px solid ${unAudio?T.blueB:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-              <Ic n="mic" s={14} c={unAudio?T.blueB:T.textD}/><span style={{color:unAudio?T.blueB:T.textD,fontSize:10,fontWeight:700}}>{unAudio?"AUDIO":"TEXTE"}</span>
-            </button>
-          </div>
-          <div style={{marginTop:8,display:"flex",gap:4,flexWrap:"wrap"}}>
-            {UN_DEL.map(d=><span key={d.id} style={{fontSize:16,opacity:d.id===unRole.id?1:0.45}}>{d.flag}</span>)}
-            <span style={{background:T.blueG,color:T.blueB,fontSize:10,padding:"3px 8px",borderRadius:4,fontWeight:700,marginLeft:4}}>Vous : {unRole.flag} {unRole.country}</span>
-          </div>
-        </div>
-        <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
-          {unMessages.length===0&&(
-            <div style={{textAlign:"center",padding:24}}>
-              <p style={{color:T.muted,fontSize:13}}>La séance est ouverte. Prenez la parole pour {unRole.country}.</p>
-            </div>
-          )}
-          {unMessages.map((m,i)=>(
-            <div key={i} style={{display:"flex",flexDirection:m.role==="user"?"row-reverse":"row",gap:10,alignItems:"flex-start"}}>
-              <div style={{width:34,height:34,borderRadius:"50%",background:T.card,border:`1.5px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{m.flag}</div>
-              <div style={{maxWidth:"78%",background:m.role==="user"?T.blueG:T.card,border:`1px solid ${m.role==="user"?T.blueB+"40":T.b1}`,borderRadius:12,padding:"8px 12px"}}>
-                <p style={{color:m.role==="user"?T.blueB:T.textD,fontSize:10,fontWeight:800,marginBottom:4}}>{m.country}</p>
-                <p style={{color:T.text,fontSize:13,lineHeight:1.5}}>{m.text}</p>
-              </div>
-            </div>
-          ))}
-          {unLoading&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{width:34,height:34,borderRadius:"50%",background:T.card,border:`1.5px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>🌐</div><div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 16px"}}><div style={{display:"flex",gap:5}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:T.blueB,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div></div></div>}
-        </div>
-        <div style={{padding:"12px 16px 24px",borderTop:`1px solid ${T.b1}`,display:"flex",gap:8,flexShrink:0}}>
-          <input value={unInput} onChange={e=>setUnInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendUNMessage()} placeholder={`Parole de ${unRole.country}…`} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
-          <button onClick={sendUNMessage} disabled={unLoading} style={{width:44,height:44,borderRadius:10,background:unLoading?T.b1:T.blueB,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:unLoading?"not-allowed":"pointer",flexShrink:0}}><Ic n="send" s={16} c={unLoading?T.muted:"#fff"}/></button>
-        </div>
-      </div>
-    );
-  }
-
-  // Generic sim screens using GenericSimScreen
   const SIM_CONFIGS: Record<string, {title:string;emoji:string;color:string;systemPrompt:string;welcome:string;voiceGender:"M"|"F"}> = {
     interview: {
       title:"Entretien RH",emoji:"💼",color:T.green,voiceGender:"F",
@@ -2461,7 +2573,7 @@ RÈGLES ABSOLUES :
               <button key={t} onClick={()=>setUnTopic(t)} style={{padding:"10px 12px",borderRadius:10,border:`1.5px solid ${unTopic===t?T.blueB:T.b1}`,background:unTopic===t?T.blueG:T.bg2,cursor:"pointer",textAlign:"left",color:unTopic===t?T.blueB:T.text,fontSize:13,fontFamily:"inherit",fontWeight:unTopic===t?700:400}}>{t}</button>
             ))}
           </div>
-          <button onClick={()=>{if(unRole&&unTopic){setUnMessages([{role:"ai",flag:"🌐",country:"Présidence",text:`La séance est ouverte. Sujet : ${unTopic}. Chaque délégation dispose de 3 minutes. La délégation de ${unRole.country} a la parole.`}]);setMode("un");}}} disabled={!unRole||!unTopic} style={{padding:14,borderRadius:12,border:"none",background:unRole&&unTopic?T.blueB:T.b1,color:unRole&&unTopic?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:unRole&&unTopic?"pointer":"not-allowed",fontFamily:"inherit"}}>Ouvrir la session</button>
+          <button onClick={()=>{if(unRole&&unTopic)setMode("un");}} disabled={!unRole||!unTopic} style={{padding:14,borderRadius:12,border:"none",background:unRole&&unTopic?T.blueB:T.b1,color:unRole&&unTopic?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:unRole&&unTopic?"pointer":"not-allowed",fontFamily:"inherit"}}>Ouvrir la session</button>
         </div>
       )}
       {/* Trial setup */}
