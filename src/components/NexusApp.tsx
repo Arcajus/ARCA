@@ -18,77 +18,103 @@ const LIGHT = {
 };
 type Theme = typeof DARK;
 
-// ── TTS: Web Speech API (gratuit, natif, aucun compte requis) ──
-let _hfAudio: HTMLAudioElement | null = null; // kept for unlockAudio compatibility
-let _ttsActive = false; // cancellation flag for sentence-chain
+// ── TTS: Google Translate TTS (qualité naturelle) + Web Speech (fallback) ──
+let _hfAudio: HTMLAudioElement | null = null;
+let _ttsActive = false;
 
 function cleanForSpeech(raw: string): string {
   return raw
-    .replace(/\*\*([^*]+)\*\*/g, '$1')           // bold → plain
-    .replace(/\*([^*]+)\*/g, '$1')               // italic → plain
-    .replace(/#{1,6}\s+/g, '')                   // headers
-    .replace(/\[PRÉSIDENT\]|\[PROCUREUR\]|\[AVOCAT\s*[^\]]*\]/gi, '') // simulation tags
-    .replace(/═+[^═]*═*/g, '')                   // decorative lines
-    .replace(/\[[^\]]{1,30}\]/g, '')             // any short bracket tags
-    .replace(/[🌐🇦-🇿]{1,4}/gu, '')             // flags/emoji that TTS can't read
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/#{1,6}\s+/g, '')
+    .replace(/\[PRÉSIDENT\]|\[PROCUREUR\]|\[AVOCAT[^\]]*\]/gi, '')
+    .replace(/═+[^═]*/g, '')
+    .replace(/\[[^\]]{1,30}\]/g, '')
+    .replace(/[^\x00-\x7FÀ-ɏḀ-ỿ]/g, '') // strip emoji/flags
     .replace(/\s{2,}/g, ' ')
     .trim();
+}
+
+function chunkText(text: string, max: number): string[] {
+  const sentences = text.replace(/([.!?;:])\s+/g, '$1\n').split('\n').map(s=>s.trim()).filter(s=>s.length>1);
+  const out: string[] = [];
+  for (const s of sentences) {
+    if (s.length <= max) { out.push(s); continue; }
+    let rem = s;
+    while (rem.length > max) {
+      let cut = rem.lastIndexOf(', ', max);
+      if (cut < 20) cut = rem.lastIndexOf(' ', max);
+      if (cut < 20) cut = max;
+      out.push(rem.slice(0, cut).trim());
+      rem = rem.slice(cut).trim();
+    }
+    if (rem) out.push(rem);
+  }
+  return out.filter(c=>c.length>0);
+}
+
+async function speakGoogleTTS(text: string, gender: "M"|"F", onEnd?: ()=>void): Promise<boolean> {
+  const chunks = chunkText(cleanForSpeech(text), 180);
+  if (!chunks.length) { onEnd?.(); return true; }
+  const url = (t: string) =>
+    `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(t)}&tl=fr&client=tw-ob&ttsspeed=1`;
+  let idx = 0;
+  const playNext = () => {
+    if (!_ttsActive || idx >= chunks.length) { if (_ttsActive) onEnd?.(); return; }
+    const a = new Audio(url(chunks[idx++]));
+    a.playbackRate = gender === "M" ? 0.88 : 1.0;
+    a.onended = playNext;
+    a.onerror = playNext;
+    a.play().catch(playNext);
+  };
+  // Test first chunk — if play() rejects (CORS/permission), fallback to Web Speech
+  const first = new Audio(url(chunks[0]));
+  first.playbackRate = gender === "M" ? 0.88 : 1.0;
+  try {
+    await first.play();
+    idx = 1;
+    first.onended = playNext;
+    first.onerror = playNext;
+    return true;
+  } catch { return false; }
 }
 
 function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
   window.speechSynthesis.cancel();
-  _ttsActive = true;
-
-  // Split into short sentences so TTS starts immediately (no long buffering on Android)
-  const cleaned = cleanForSpeech(text);
-  const sentences = cleaned
-    .replace(/([.!?;:])\s+/g, '$1|||')
-    .split('|||')
-    .map(s => s.trim())
-    .filter(s => s.length > 2);
-  if (sentences.length === 0) { onEnd?.(); return; }
-
+  const sentences = chunkText(cleanForSpeech(text), 200);
+  if (!sentences.length) { onEnd?.(); return; }
   const init = () => {
     const vs = window.speechSynthesis.getVoices();
-    const pick = (cond: (v: SpeechSynthesisVoice)=>boolean) => vs.find(cond) || null;
+    const pick = (c:(v:SpeechSynthesisVoice)=>boolean)=>vs.find(c)||null;
     const fr =
-      pick(v => v.lang==="fr-FR" && /google/i.test(v.name)) ||
-      pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name) && gender==="F" && /hortense|denise/i.test(v.name)) ||
-      pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name) && gender==="M" && /henri|paul/i.test(v.name)) ||
-      pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name)) ||
-      pick(v => v.lang==="fr-FR") ||
-      pick(v => v.lang.startsWith("fr")) || null;
-
-    let idx = 0;
-    const speakNext = () => {
-      if (!_ttsActive || idx >= sentences.length) {
-        if (_ttsActive) onEnd?.();
-        return;
-      }
-      const u = new SpeechSynthesisUtterance(sentences[idx++]);
-      u.lang = "fr-FR";
-      u.rate = 0.95;
-      u.pitch = gender === "F" ? 1.05 : 0.88;
-      u.volume = 1.0;
-      if (fr) u.voice = fr;
-      u.onend = speakNext;
-      u.onerror = () => { if (_ttsActive) speakNext(); }; // skip errored sentence, continue
+      pick(v=>v.lang==="fr-FR"&&/google/i.test(v.name)) ||
+      pick(v=>v.lang==="fr-FR"&&/microsoft/i.test(v.name)&&gender==="F"&&/hortense|denise/i.test(v.name)) ||
+      pick(v=>v.lang==="fr-FR"&&/microsoft/i.test(v.name)&&gender==="M"&&/henri|paul/i.test(v.name)) ||
+      pick(v=>v.lang==="fr-FR"&&/microsoft/i.test(v.name)) ||
+      pick(v=>v.lang==="fr-FR")||pick(v=>v.lang.startsWith("fr"))||null;
+    let i=0;
+    const next=()=>{
+      if(!_ttsActive||i>=sentences.length){if(_ttsActive)onEnd?.();return;}
+      const u=new SpeechSynthesisUtterance(sentences[i++]);
+      u.lang="fr-FR"; u.rate=0.95; u.pitch=gender==="F"?1.05:0.88; u.volume=1.0;
+      if(fr)u.voice=fr;
+      u.onend=next; u.onerror=()=>{if(_ttsActive)next();};
       window.speechSynthesis.speak(u);
     };
-    speakNext();
+    next();
   };
-
-  if (window.speechSynthesis.getVoices().length > 0) {
-    init();
-  } else {
-    const fallback = setTimeout(() => { window.speechSynthesis.onvoiceschanged = null; init(); }, 400);
-    window.speechSynthesis.onvoiceschanged = () => { clearTimeout(fallback); window.speechSynthesis.onvoiceschanged = null; init(); };
+  if(window.speechSynthesis.getVoices().length>0)init();
+  else{
+    const fb=setTimeout(()=>{window.speechSynthesis.onvoiceschanged=null;init();},400);
+    window.speechSynthesis.onvoiceschanged=()=>{clearTimeout(fb);window.speechSynthesis.onvoiceschanged=null;init();};
   }
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   _ttsActive = true;
-  speakWeb(text, gender, onEnd);
+  speakGoogleTTS(text, gender, onEnd)
+    .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+    .catch(() => speakWeb(text, gender, onEnd));
 }
 function stopSpeech() {
   _ttsActive = false;
