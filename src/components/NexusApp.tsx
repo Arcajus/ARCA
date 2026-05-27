@@ -18,43 +18,8 @@ const LIGHT = {
 };
 type Theme = typeof DARK;
 
-// ── TTS: HuggingFace (gratuit) + Web Speech (fallback) ────────
-// _hfAudio: pre-created on first user gesture so iOS allows later async play()
-let _hfAudio: HTMLAudioElement | null = null;
-
-async function speakHF(text: string, gender: "M"|"F", key: string, onEnd?: ()=>void): Promise<boolean> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 20000);
-      const headers: Record<string,string> = { "Content-Type": "application/json" };
-      if (key) headers["Authorization"] = `Bearer ${key}`;
-      const res = await fetch("https://api-inference.huggingface.co/models/facebook/mms-tts-fra", {
-        method: "POST", headers,
-        body: JSON.stringify({ inputs: text.slice(0, 600) }),
-        signal: ctrl.signal
-      });
-      clearTimeout(timer);
-      if (res.status === 503) {
-        // Model cold start — wait then retry
-        await new Promise(r => setTimeout(r, 8000));
-        continue;
-      }
-      if (!res.ok) return false;
-      const blob = await res.blob();
-      if (blob.size < 200) return false;
-      const url = URL.createObjectURL(blob);
-      if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
-      _hfAudio = new Audio(url);
-      _hfAudio.playbackRate = gender === "F" ? 1.12 : 0.90;
-      _hfAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
-      _hfAudio.onerror = () => { URL.revokeObjectURL(url); onEnd?.(); };
-      await _hfAudio.play();
-      return true;
-    } catch { return false; }
-  }
-  return false;
-}
+// ── TTS: Web Speech API (gratuit, natif, aucun compte requis) ──
+let _hfAudio: HTMLAudioElement | null = null; // kept for unlockAudio compatibility
 function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
   window.speechSynthesis.cancel();
@@ -89,16 +54,7 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   }
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
-  const k = typeof window !== "undefined" ? localStorage.getItem("hf_key") || "" : "";
-  if (k) {
-    // HF with token — good quality, falls back to Web Speech if it fails
-    speakHF(text, gender, k, onEnd)
-      .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
-      .catch(() => speakWeb(text, gender, onEnd));
-  } else {
-    // No token — use Web Speech directly (no delay waiting for HF)
-    speakWeb(text, gender, onEnd);
-  }
+  speakWeb(text, gender, onEnd);
 }
 function stopSpeech() {
   if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
@@ -1545,23 +1501,14 @@ function MessagesScreen({T}:{T:Theme}) {
 // ── API KEY SETUP MODAL ───────────────────────────────────────
 function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
   const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
-  const [hk,setHk] = useState(typeof window!=="undefined"?localStorage.getItem("hf_key")||"":"");
-  const [testing,setTesting] = useState(false);
-  const [hfOk,setHfOk] = useState<boolean|null>(null);
   const save=(k:string,v:string)=>{if(typeof window!=="undefined")localStorage.setItem(k,v);};
-  const testHF=async()=>{
-    if(!hk)return;
-    setTesting(true);
-    const ok=await speakHF("Bonjour, je suis votre assistant NEXUS.", "F", hk);
-    setHfOk(ok);setTesting(false);
-  };
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .2s"}}>
       <div style={{background:T.surf,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:430,padding:"20px 20px 36px",display:"flex",flexDirection:"column",gap:16,animation:"slideUp .3s ease",maxHeight:"90vh",overflowY:"auto"}}>
         <div style={{width:40,height:4,borderRadius:2,background:T.b2,margin:"0 auto 4px"}}/>
         <div>
-          <h2 style={{color:T.text,fontWeight:800,fontSize:20}}>Configurer les clés API</h2>
-          <p style={{color:T.textD,fontSize:13,marginTop:4}}>Nécessaire pour activer l&apos;IA et les voix réalistes</p>
+          <h2 style={{color:T.text,fontWeight:800,fontSize:20}}>Configurer la clé API</h2>
+          <p style={{color:T.textD,fontSize:13,marginTop:4}}>Une seule clé suffit — voix et IA incluses</p>
         </div>
         {/* Gemini */}
         <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
@@ -1575,20 +1522,14 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
           </div>
           <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border .2s"}}/>
         </div>
-        {/* HuggingFace TTS */}
-        <div style={{background:T.card,border:`1px solid ${hfOk===true?T.green:hfOk===false?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <div style={{width:28,height:28,borderRadius:7,background:"#F97316"+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}>🔊</span></div>
-            <div style={{flex:1}}>
-              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Token HuggingFace <span style={{color:T.green,fontSize:10,fontWeight:700}}>GRATUIT</span> <span style={{color:T.muted,fontSize:10,fontWeight:400}}>(optionnel)</span></p>
-              <p style={{color:T.muted,fontSize:10}}>Sans token : fonctionne déjà (quota limité) · Avec token : quota plus élevé</p>
+        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:18}}>🔊</span>
+            <div>
+              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Voix — GRATUIT, aucun compte requis</p>
+              <p style={{color:T.muted,fontSize:11,marginTop:2}}>Voix française intégrée au navigateur (Google, Microsoft, Apple selon ton appareil)</p>
             </div>
-            {hfOk===true&&<span style={{color:T.green,fontSize:11,fontWeight:800}}>✓ OK</span>}
-            {hfOk===false&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
           </div>
-          <input type="password" value={hk} onChange={e=>{setHk(e.target.value);save("hf_key",e.target.value);setHfOk(null);}} placeholder="hf_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-          {hk&&<button onClick={testHF} disabled={testing} style={{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{testing?"Chargement modèle… (30s max)":"🔊 Tester la voix"}</button>}
-          <p style={{color:T.muted,fontSize:10,marginTop:6}}>⚠ Token type : choisir <b style={{color:T.text}}>Read</b> (pas Fine-grained). Fine-grained → cocher &quot;Make calls to Inference Providers&quot;</p>
         </div>
         <button onClick={()=>{if(ck)onDone();}} disabled={!ck} style={{padding:15,borderRadius:14,border:"none",background:ck?T.blueB:T.b1,color:ck?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:ck?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
           {ck?"Démarrer la simulation →":"Entrez votre clé Gemini pour continuer"}
@@ -1649,19 +1590,7 @@ function SimulationHub({T}:{T:Theme}) {
 // ── API KEY SETTINGS ──────────────────────────────────────────
 function ApiKeySettings({T}:{T:Theme}) {
   const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
-  const [hk,setHk] = useState(typeof window!=="undefined"?localStorage.getItem("hf_key")||"":"");
-  const [hfStatus,setHfStatus] = useState<"idle"|"testing"|"ok"|"fail">("idle");
   const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
-
-  const testHF = async()=>{
-    if(!hk){setHfStatus("fail");return;}
-    setHfStatus("testing");
-    const ok = await speakHF("Bonjour, je suis votre journaliste NEXUS.", "F", hk);
-    setHfStatus(ok?"ok":"fail");
-  };
-
-  const hfColor = hfStatus==="ok"?T.green:hfStatus==="fail"?T.red:T.blueB;
-
   return(
     <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
@@ -1669,17 +1598,9 @@ function ApiKeySettings({T}:{T:Theme}) {
         <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         <p style={{color:T.muted,fontSize:11,marginTop:5}}>aistudio.google.com → Get API key · Nécessaire pour les simulations IA</p>
       </div>
-      <div style={{background:T.card,border:`1px solid ${hfStatus==="ok"?T.green:hfStatus==="fail"?T.red:T.b1}`,borderRadius:12,padding:14,transition:"border .3s"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>Token HuggingFace TTS — <span style={{color:T.green}}>GRATUIT</span></p>
-          {hfStatus==="ok"&&<span style={{color:T.green,fontSize:11,fontWeight:800}}>✓ Connecté</span>}
-          {hfStatus==="fail"&&<span style={{color:T.red,fontSize:11,fontWeight:800}}>✗ Échec</span>}
-        </div>
-        <input type="password" value={hk} onChange={e=>{setHk(e.target.value);save("hf_key",e.target.value);setHfStatus("idle");}} placeholder="hf_xxxxxxxxxxxxxxxx" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        <button onClick={testHF} disabled={hfStatus==="testing"||!hk} style={{marginTop:10,width:"100%",padding:"9px",borderRadius:8,border:"none",background:hk?hfColor:T.b1,color:hk?"#fff":T.muted,fontSize:12,fontWeight:800,cursor:hk&&hfStatus!=="testing"?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .3s"}}>
-          {hfStatus==="testing"?"Test en cours… (15s max)":hfStatus==="ok"?"✓ Voix HF OK — Réessayer":hfStatus==="fail"?"✗ Échec — Vérifier le token":"🔊 Tester la voix HuggingFace"}
-        </button>
-        <p style={{color:T.muted,fontSize:11,marginTop:6}}>Sans token : fonctionne déjà · Token (gratuit) = quota plus élevé · huggingface.co → Settings → Access Tokens</p>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>🔊 Voix — GRATUIT, aucun compte</p>
+        <p style={{color:T.muted,fontSize:11}}>Voix française intégrée au navigateur (Google sur Android, Siri sur iOS, Microsoft sur Windows). Aucune configuration nécessaire.</p>
       </div>
     </div>
   );
