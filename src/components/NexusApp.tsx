@@ -53,6 +53,29 @@ function chunkText(text: string, max: number): string[] {
   return out.filter(c=>c.length>0);
 }
 
+async function speakStreamElements(text: string, gender: "M"|"F", onEnd?: ()=>void): Promise<boolean> {
+  // Amazon Polly Neural voices via StreamElements (free, no auth, CORS enabled)
+  const voice = gender === "F" ? "Lea" : "Mathieu";
+  const chunks = chunkText(cleanForSpeech(text), 200);
+  if (!chunks.length) { onEnd?.(); return true; }
+  const url = (t: string) =>
+    `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(t)}`;
+  let idx = 0;
+  const playNext = () => {
+    if (!_ttsActive || idx >= chunks.length) { if (_ttsActive) onEnd?.(); return; }
+    const a = new Audio(url(chunks[idx++]));
+    a.onended = playNext;
+    a.onerror = playNext;
+    a.play().catch(playNext);
+  };
+  const first = new Audio(url(chunks[0]));
+  try {
+    await first.play();
+    idx = 1; first.onended = playNext; first.onerror = playNext;
+    return true;
+  } catch { return false; }
+}
+
 async function speakGoogleTTS(text: string, gender: "M"|"F", onEnd?: ()=>void): Promise<boolean> {
   const chunks = chunkText(cleanForSpeech(text), 180);
   if (!chunks.length) { onEnd?.(); return true; }
@@ -112,8 +135,10 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   _ttsActive = true;
-  speakGoogleTTS(text, gender, onEnd)
-    .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+  // Cascade: StreamElements (Amazon Polly Neural) → Google TTS → Web Speech
+  speakStreamElements(text, gender, onEnd)
+    .then(ok => ok ? null : speakGoogleTTS(text, gender, onEnd))
+    .then(ok => { if (ok === false) speakWeb(text, gender, onEnd); })
     .catch(() => speakWeb(text, gender, onEnd));
 }
 function stopSpeech() {
