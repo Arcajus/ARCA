@@ -454,14 +454,17 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
     ? `${opponent.name} : Les traités sont clairs. Dans ces conditions, l'argument que vous avancez est juridiquement fragile. Connaissez-vous seulement les textes en vigueur ?`
     : `${opponent.name} : On parle de tout ça sans mentionner l'urgence écologique. Dans moins de dix ans, cette décision sera jugée par l'histoire. L'assumez-vous vraiment ?`;
 
-  function speakOpponent(text: string, onDone: ()=>void) {
+  // speakTimed: plays speech AND always calls onDone after estimated duration
+  // Fixes Android Chrome bug where speechSynthesis onend never fires
+  function speakTimed(text: string, gender: "M"|"F", onDone: ()=>void, delayMs=0) {
+    const estMs = Math.max(2500, text.split(/\s+/).length * 400 + 800);
     setTimeout(()=>{
       if(!mountedRef.current) return;
-      speakAny(text, opponent.gender as "M"|"F", ()=>{
-        if(!mountedRef.current) return;
-        onDone();
-      });
-    }, 300);
+      let fired = false;
+      const done = ()=>{ if(fired||!mountedRef.current) return; fired=true; onDone(); };
+      speakAny(text, gender, done);
+      setTimeout(done, estMs); // safety: proceed even if onEnd never fires
+    }, delayMs);
   }
 
   // Intro — in duel mode, opponent speaks first before user's mic opens
@@ -491,18 +494,15 @@ Commence OBLIGATOIREMENT par ton prénom. Expose ton angle avec UN fait ou chiff
           // Always speak — use Gemini reply or fallback
           const textToSpeak = oppOpen || oppFallbackOpen;
           addLine("opponent",opponent.name,textToSpeak);
-          speakOpponent(textToSpeak,()=>{
+          speakTimed(textToSpeak, opponent.gender as "M"|"F", ()=>{
             if(!mountedRef.current) return;
             const handover=`Merci ${opponent.name}. À vous de répondre.`;
             addLine("journalist",j?.name||"Journaliste",handover);
-            setTimeout(()=>{
-              if(!mountedRef.current) return;
-              speakAny(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
-            },200);
-          });
+            speakTimed(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);}, 200);
+          }, 300);
         });
       } else {
-        speakAny(introText,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
+        speakTimed(introText,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
       }
     },600);
   },[]);// eslint-disable-line
@@ -592,7 +592,7 @@ RÈGLES ABSOLUES :
       else{setTimer(90);setTimerOn(true);setPhase("speaking");}
 
       if(isDuel){
-        speakAny(reply,(j?.gender||"F") as "M"|"F", async()=>{
+        speakTimed(reply,(j?.gender||"F") as "M"|"F", async()=>{
           if(!mountedRef.current) return;
           let oppReply = "";
           try{
@@ -611,10 +611,10 @@ Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique �
           if(!mountedRef.current) return;
           const textToSpeak = oppReply || oppFallbackReaction(text);
           addLine("opponent",opponent.name,textToSpeak);
-          speakOpponent(textToSpeak,()=>{if(mountedRef.current)setAutoMic(true);});
+          speakTimed(textToSpeak, opponent.gender as "M"|"F", ()=>{if(mountedRef.current)setAutoMic(true);}, 300);
         });
       } else {
-        speakAny(reply,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
+        speakTimed(reply,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
       }
     }catch{
       const words=text.split(" ").slice(0,5).join(" ");
@@ -629,7 +629,7 @@ Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique �
       const reply=fbs[Math.floor(Math.random()*fbs.length)];
       if(!mountedRef.current){setLoading(false);return;}
       addLine("journalist",j?.name||"Journaliste",reply);
-      speakAny(reply,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
+      speakTimed(reply,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
       if(reply.includes("coupe")){setPhase("cut");}else{setTimer(90);setTimerOn(true);setPhase("speaking");}
     }
     if(mountedRef.current)setLoading(false);
@@ -731,7 +731,7 @@ Commence OBLIGATOIREMENT par ton prénom. Termine par une question rhétorique �
           <button onClick={()=>{setPhase("ended");setShowScore(true);}} style={{flex:1,padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.card,color:T.textD,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Terminer</button>
         </div>
         {phase==="cut"?(
-          <button onClick={()=>{setPhase("speaking");setTimer(90);setTimerOn(true);addLine("journalist",j?.name||"Journaliste","Je vous redonne la parole.");speakAny("Je vous redonne la parole.",(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));}} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Reprendre la parole</button>
+          <button onClick={()=>{setPhase("speaking");setTimer(90);setTimerOn(true);addLine("journalist",j?.name||"Journaliste","Je vous redonne la parole.");speakTimed("Je vous redonne la parole.",(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));}} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Reprendre la parole</button>
         ):phase==="listening"?(
           <button onClick={stopMic} style={{width:"100%",padding:14,borderRadius:12,border:`2px solid ${T.red}`,background:`${T.red}15`,color:T.red,fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,animation:"ripple 1.5s infinite"}}>
             <Ic n="micOff" s={18} c={T.red}/>Couper le micro
