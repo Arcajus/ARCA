@@ -20,43 +20,78 @@ type Theme = typeof DARK;
 
 // ── TTS: Web Speech API (gratuit, natif, aucun compte requis) ──
 let _hfAudio: HTMLAudioElement | null = null; // kept for unlockAudio compatibility
+let _ttsActive = false; // cancellation flag for sentence-chain
+
+function cleanForSpeech(raw: string): string {
+  return raw
+    .replace(/\*\*([^*]+)\*\*/g, '$1')           // bold → plain
+    .replace(/\*([^*]+)\*/g, '$1')               // italic → plain
+    .replace(/#{1,6}\s+/g, '')                   // headers
+    .replace(/\[PRÉSIDENT\]|\[PROCUREUR\]|\[AVOCAT\s*[^\]]*\]/gi, '') // simulation tags
+    .replace(/═+[^═]*═*/g, '')                   // decorative lines
+    .replace(/\[[^\]]{1,30}\]/g, '')             // any short bracket tags
+    .replace(/[🌐🇦-🇿]{1,4}/gu, '')             // flags/emoji that TTS can't read
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "fr-FR";
-  if (onEnd) u.onend = onEnd;
-  const go = () => {
+  _ttsActive = true;
+
+  // Split into short sentences so TTS starts immediately (no long buffering on Android)
+  const cleaned = cleanForSpeech(text);
+  const sentences = cleaned
+    .replace(/([.!?;:])\s+/g, '$1|||')
+    .split('|||')
+    .map(s => s.trim())
+    .filter(s => s.length > 2);
+  if (sentences.length === 0) { onEnd?.(); return; }
+
+  const init = () => {
     const vs = window.speechSynthesis.getVoices();
-    // Best French voices by priority: Google (Android/Chrome), Microsoft (Windows), Apple (iOS), any FR
     const pick = (cond: (v: SpeechSynthesisVoice)=>boolean) => vs.find(cond) || null;
     const fr =
-      pick(v => v.lang==="fr-FR" && /google/i.test(v.name) && gender==="F" && /fem|female/i.test(v.name)) ||
-      pick(v => v.lang==="fr-FR" && /google/i.test(v.name) && gender==="M" && !/fem/i.test(v.name)) ||
       pick(v => v.lang==="fr-FR" && /google/i.test(v.name)) ||
-      pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name) && gender==="F" && /hortense|denise|elsa/i.test(v.name)) ||
+      pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name) && gender==="F" && /hortense|denise/i.test(v.name)) ||
       pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name) && gender==="M" && /henri|paul/i.test(v.name)) ||
       pick(v => v.lang==="fr-FR" && /microsoft/i.test(v.name)) ||
-      pick(v => v.lang==="fr-FR" && gender==="F" && /amélie|amelie|audrey/i.test(v.name)) ||
-      pick(v => v.lang==="fr-FR" && gender==="M" && /thomas|nicolas/i.test(v.name)) ||
       pick(v => v.lang==="fr-FR") ||
       pick(v => v.lang.startsWith("fr")) || null;
-    if (fr) u.voice = fr;
-    u.rate = 1.0;
-    u.pitch = gender === "F" ? 1.08 : 0.85;
-    window.speechSynthesis.speak(u);
+
+    let idx = 0;
+    const speakNext = () => {
+      if (!_ttsActive || idx >= sentences.length) {
+        if (_ttsActive) onEnd?.();
+        return;
+      }
+      const u = new SpeechSynthesisUtterance(sentences[idx++]);
+      u.lang = "fr-FR";
+      u.rate = 0.95;
+      u.pitch = gender === "F" ? 1.05 : 0.88;
+      u.volume = 1.0;
+      if (fr) u.voice = fr;
+      u.onend = speakNext;
+      u.onerror = () => { if (_ttsActive) speakNext(); }; // skip errored sentence, continue
+      window.speechSynthesis.speak(u);
+    };
+    speakNext();
   };
+
   if (window.speechSynthesis.getVoices().length > 0) {
-    go();
+    init();
   } else {
-    const fallback = setTimeout(() => { window.speechSynthesis.onvoiceschanged = null; go(); }, 400);
-    window.speechSynthesis.onvoiceschanged = () => { clearTimeout(fallback); window.speechSynthesis.onvoiceschanged = null; go(); };
+    const fallback = setTimeout(() => { window.speechSynthesis.onvoiceschanged = null; init(); }, 400);
+    window.speechSynthesis.onvoiceschanged = () => { clearTimeout(fallback); window.speechSynthesis.onvoiceschanged = null; init(); };
   }
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
+  _ttsActive = true;
   speakWeb(text, gender, onEnd);
 }
 function stopSpeech() {
+  _ttsActive = false;
   if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
   if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }
