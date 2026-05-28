@@ -1724,12 +1724,88 @@ const DICT_DATA=[
   {term:"G7 / G20",def:"G7 : 7 pays industrialisés. G20 : 20 économies majeures représentant 85% du PIB mondial. Forums de coordination économique."},
 ];
 const FICHES_DATA=[
-  {id:1,title:"Organisation des Nations Unies",icon:"🌐",color:"#2B78F5",items:["193 États membres, fondée en 1945","Conseil de sécurité : 5 permanents (veto) + 10 rotatifs","Assemblée générale : 1 État = 1 voix","Secrétaire général : António Guterres","CIJ (Cour internationale de Justice) siège à La Haye"]},
-  {id:2,title:"Union Européenne",icon:"🇪🇺",color:"#E03535",items:["27 États membres (Brexit en 2020)","Parlement européen : élu au suffrage universel direct","Commission : pouvoir exécutif, 27 commissaires","BCE (Francfort) : politique monétaire zone euro","Traité de Lisbonne (2009) : cadre institutionnel actuel"]},
-  {id:3,title:"OTAN",icon:"🛡️",color:"#7C3AED",items:["32 membres (Suède intégrée en 2024)","Article 5 : clause de défense collective","Siège à Bruxelles","Secrétaire général : Mark Rutte (depuis oct. 2024)","Objectif : 2% du PIB par membre"]},
-  {id:4,title:"Géopolitique 2025",icon:"🗺️",color:"#D97706",items:["Guerre Ukraine-Russie (depuis fév. 2022)","Tensions Taïwan : Chine vs USA","Conflit Gaza — instabilité Proche-Orient","Sahel : recomposition des influences (Russie/Wagner)","Indo-Pacifique : nouveau centre stratégique mondial"]},
-  {id:5,title:"Institutions françaises",icon:"🏛️",color:"#16A34A",items:["Ve République : Constitution du 4 oct. 1958","Président : élu au suffrage universel, mandat 5 ans","Premier ministre : nommé par le président","Parlement : Assemblée nationale + Sénat","Conseil constitutionnel : contrôle la constitutionnalité"]},
+  {id:1,title:"Organisation des Nations Unies",icon:"🌐",color:"#2B78F5",items:["193 États membres, fondée en 1945 (Charte de San Francisco)","Conseil de sécurité : 5 permanents avec droit de veto (USA, Russie, Chine, France, UK)","Assemblée générale : 1 État = 1 voix, résolutions non contraignantes","Secrétaire général : António Guterres (depuis 2017, réélu 2022)","CIJ siège à La Haye — CPJI créée en 1920","Budget ordinaire 2024 : ~3,5 milliards de dollars","Agences spécialisées : UNESCO, OMS, FAO, PNUD, HCR, UNICEF"]},
+  {id:2,title:"Union Européenne",icon:"🇪🇺",color:"#E03535",items:["27 États membres après le Brexit (janv. 2020)","Parlement européen : 720 sièges, élu tous les 5 ans","Commission européenne : 27 commissaires, initiée par la Présidente Ursula von der Leyen","BCE (Francfort) : taux directeur, zone euro (20 pays)","Traité de Lisbonne (2009) : base juridique actuelle","PIB UE : ~16 000 Mds€ (2e puissance économique mondiale)","Politique agricole commune (PAC) : ~33% du budget UE"]},
+  {id:3,title:"OTAN",icon:"🛡️",color:"#7C3AED",items:["32 membres (Suède intégrée en mars 2024)","Fondée le 4 avril 1949 — Traité de Washington","Article 5 : attaque contre un = attaque contre tous (invoqué une seule fois : 11/09/2001)","Secrétaire général : Mark Rutte (depuis oct. 2024, ex-PM Pays-Bas)","Siège : Bruxelles (SHAPE à Mons, Belgique)","Objectif : 2% du PIB — seulement 11 membres l'atteignent (2023)","Budget total des membres : +1 000 Mds$ par an"]},
+  {id:4,title:"Géopolitique 2025",icon:"🗺️",color:"#D97706",items:["Guerre Ukraine-Russie : depuis fév. 2022, +500 000 victimes estimées","Tensions Taïwan : exercices militaires chinois réguliers depuis 2022","Conflit Gaza : depuis oct. 2023, crise humanitaire majeure","Sahel : coup d'État au Mali (2021), Burkina (2022), Niger (2023) — retrait français","Indo-Pacifique : AUKUS (USA-UK-Australie), QUAD (USA-Inde-Japon-Australie)","BRICS élargis : Égypte, Éthiopie, Iran, Arabie Saoudite, EAU intégrés en 2024","Élections 2024 : 64 pays aux urnes (4 Mds de personnes)"]},
+  {id:5,title:"Institutions françaises",icon:"🏛️",color:"#16A34A",items:["Ve République : Constitution du 4 octobre 1958 (De Gaulle)","Président : élu au suffrage universel direct depuis 1962, mandat 5 ans (2 max)","Premier ministre : nommé par le président, responsable devant l'Assemblée","Parlement bicaméral : Assemblée nationale (577) + Sénat (348)","Conseil constitutionnel : 9 membres, 9 ans non renouvelables","Conseil d'État : juridiction administrative suprême","Cour de cassation : juridiction judiciaire suprême"]},
+  {id:6,title:"BRICS & Puissances émergentes",icon:"🌍",color:"#16A34A",items:["BRICS créés en 2009 : Brésil, Russie, Inde, Chine, Afrique du Sud","BRICS+ (2024) : + Égypte, Éthiopie, Iran, Arabie Saoudite, EAU","PIB combiné BRICS+ : ~35% du PIB mondial (PPA)","Chine : 2e économie mondiale, 1re en PPA, 18% du PIB mondial","Inde : 5e économie mondiale, croissance ~7% — dépassera la Chine d'ici 2075","Nouvelle banque de développement (NBD) : alternative à la Banque mondiale","Dédollarisation : enjeu central, échanges en monnaies locales"]},
+  {id:7,title:"Histoire contemporaine XXe",icon:"📅",color:"#7C3AED",items:["1914-1918 : 1ère Guerre mondiale — 20M de morts, fin des empires","1917 : Révolution russe — naissance de l'URSS (1922)","1929 : Krach de Wall Street — Grande Dépression mondiale","1939-1945 : 2e Guerre mondiale — 70-85M de morts, Shoah (6M de Juifs)","1947-1991 : Guerre froide — USA vs URSS, course aux armements","1968 : Mai 68 en France, mouvements sociaux mondiaux","1989 : Chute du mur de Berlin — réunification allemande (1990)","1991 : Dissolution de l'URSS — 15 républiques indépendantes"]},
+  {id:8,title:"Économie internationale",icon:"💹",color:"#D97706",items:["FMI : 190 membres, prêts conditionnels, créé à Bretton Woods (1944)","OMC : 164 membres, règlement des différends commerciaux","G7 : 7 pays représentant ~45% du PIB mondial","G20 : 85% du PIB mondial, 75% du commerce international","Commerce mondial 2023 : ~24 000 Mds$ d'exportations","Inflation 2022-2023 : choc énergétique post-Covid + guerre Ukraine","Dette mondiale 2024 : 313 000 Mds$ (FMI) — record historique","Récession verte : transition énergétique = 5 000 Mds$/an d'investissements"]},
+  {id:9,title:"Droit constitutionnel",icon:"⚖️",color:"#E03535",items:["Constitution : norme suprême, hiérarchie des normes (Kelsen)","Séparation des pouvoirs : Montesquieu (exécutif, législatif, judiciaire)","État de droit : tout pouvoir soumis au droit, contrôle juridictionnel","Révision constitutionnelle : Art. 89 — Parlement réuni en Congrès ou référendum","QPC (Question prioritaire de constitutionnalité) : depuis 2010","DDHC 1789 : intégrée au bloc de constitutionnalité","Préambule 1946 : droits sociaux et économiques fondamentaux","Charte de l'environnement 2004 : droit à l'environnement constitutionnalisé"]},
+  {id:10,title:"Libertés fondamentales & CEDH",icon:"🕊️",color:"#2B78F5",items:["CEDH signée à Rome le 4 nov. 1950 — Conseil de l'Europe (46 membres)","Cour européenne des droits de l'homme (CEDH) : siège à Strasbourg","Art. 3 : interdiction de la torture et des traitements inhumains","Art. 6 : droit à un procès équitable","Art. 8 : droit au respect de la vie privée et familiale","Art. 10 : liberté d'expression (avec limites)","France condamnée ~100 fois/an par la CEDH","Déclaration universelle des droits de l'homme (ONU, 10 déc. 1948)"]},
+  {id:11,title:"Climat & Accords internationaux",icon:"🌱",color:"#16A34A",items:["Accord de Paris (2015) : limiter le réchauffement à +1,5°C vs. préindustriel","COP28 (Dubaï 2023) : première mention de 'sortie des énergies fossiles'","COP29 (Bakou 2024) : financement climat pour pays en développement","GIEC : Groupe d'experts intergouvernemental, rapports tous les 6 ans","Émissions mondiales CO2 (2023) : 36,8 Gt — record historique","UE : Pacte vert européen, neutralité carbone en 2050","Mécanisme d'ajustement carbone aux frontières (MACF) : 2026","Principales causes : combustibles fossiles (75%), déforestation (10%)"]},
+  {id:12,title:"Organisations africaines",icon:"🌍",color:"#D97706",items:["Union Africaine (UA) : 55 membres, fondée en 2002 (succède à l'OUA)","CEDEAO : 15 États d'Afrique de l'Ouest, libre circulation des personnes","SADC : 16 États d'Afrique australe, intégration économique","Agenda 2063 : vision continentale de l'UA pour le développement","Zone de libre-échange continentale africaine (ZLECAf) : opérationnelle depuis 2021","PIB Afrique : ~2 900 Mds$ — Nigeria et Afrique du Sud = 50% du PIB subsaharien","Population : 1,4 Md (2023), sera de 2,5 Mds en 2050","Défi : 60% de la population a moins de 25 ans"]},
+  {id:13,title:"Numérique, IA & Gouvernance",icon:"🤖",color:"#7C3AED",items:["IA générative : ChatGPT lancé nov. 2022 — 100M utilisateurs en 2 mois","Règlement européen sur l'IA (AI Act) : entré en vigueur août 2024","RGPD (2018) : protection des données, amendes jusqu'à 4% du CA mondial","GAFAM : Google, Apple, Facebook, Amazon, Microsoft — capitalisation cumulée +10 000 Mds$","Loi française sur les fake news (2018), DSA européen (2022)","Cybersécurité : 26 000 attaques/heure dans le monde (2024)","Fracture numérique : 2,6 Mds de personnes sans internet (2024)","Chine vs USA : guerre des semi-conducteurs, NVIDIA vs Huawei"]},
+  {id:14,title:"Commerce international & OMC",icon:"📦",color:"#E03535",items:["OMC fondée en 1995 (succède au GATT de 1947) — 164 membres","Organe de règlement des différends (ORD) : tribunal du commerce mondial","Ronde de Doha (2001-) : toujours en cours, blocage sur agriculture","Guerre commerciale USA-Chine : droits de douane depuis 2018 (Trump)","Commerce de services : 6 000 Mds$ — en forte croissance","Chaînes de valeur mondiales : 70% du commerce international","Brexit : impact -4% sur le commerce UK/UE selon FMI","Protectionnisme 2024 : retour des politiques industrielles nationales"]},
+  {id:15,title:"Droits de l'homme & ONG",icon:"✊",color:"#2B78F5",items:["Amnesty International : fondée en 1961, 10M membres, rapport annuel","Human Rights Watch : fondée en 1978, siège New York","CICR (Comité international Croix-Rouge) : droit humanitaire en conflits","Médecins Sans Frontières (MSF) : Prix Nobel de la Paix 1999","Conseil des droits de l'homme ONU : 47 membres, siège à Genève","Rapporteurs spéciaux ONU : experts indépendants sur thèmes spécifiques","Haut-Commissariat aux droits de l'homme : bureau ONU depuis 1993","Cour pénale internationale (CPI) : créée en 2002, 124 États membres"]},
 ];
+
+const CONCOURS_EPREUVES:{[k:string]:{annee:number;matiere:string;sujet:string;type:string}[]}={
+  sciencespo:[
+    {annee:2024,matiere:"Histoire",sujet:"L'État et ses transformations dans le monde depuis 1945",type:"Dissertation"},
+    {annee:2024,matiere:"Questions contemporaines",sujet:"La démocratie est-elle en crise ?",type:"Dissertation"},
+    {annee:2024,matiere:"Géopolitique",sujet:"L'Afrique dans les relations internationales du XXIe siècle",type:"Dissertation"},
+    {annee:2023,matiere:"Histoire",sujet:"Les démocraties face aux crises économiques (1929-2008)",type:"Dissertation"},
+    {annee:2023,matiere:"Questions contemporaines",sujet:"Migrations et frontières dans le monde contemporain",type:"Dissertation"},
+    {annee:2023,matiere:"Géopolitique",sujet:"La puissance américaine au XXIe siècle : déclin ou recomposition ?",type:"Dissertation"},
+    {annee:2022,matiere:"Histoire",sujet:"Guerre et paix dans les relations internationales depuis 1945",type:"Dissertation"},
+    {annee:2022,matiere:"Questions contemporaines",sujet:"Le multilatéralisme en question",type:"Dissertation"},
+    {annee:2022,matiere:"Économie",sujet:"La mondialisation est-elle en recul ?",type:"Dissertation"},
+    {annee:2021,matiere:"Histoire",sujet:"Révolutions et contre-révolutions au XXe siècle",type:"Dissertation"},
+    {annee:2021,matiere:"Questions contemporaines",sujet:"L'urgence climatique : enjeux politiques et économiques",type:"Dissertation"},
+    {annee:2020,matiere:"Histoire",sujet:"L'Europe depuis 1945 : construction et crises",type:"Dissertation"},
+    {annee:2020,matiere:"Questions contemporaines",sujet:"La Chine, une puissance mondiale ?",type:"Dissertation"},
+  ],
+  ens:[
+    {annee:2024,matiere:"Philosophie",sujet:"Peut-on agir sans raisons ?",type:"Dissertation"},
+    {annee:2024,matiere:"Histoire",sujet:"Les empires : formation, apogée, déclin (antiquité-XXe s.)",type:"Dissertation"},
+    {annee:2024,matiere:"Sciences sociales",sujet:"Les inégalités sont-elles naturelles ?",type:"Dissertation"},
+    {annee:2024,matiere:"Littérature",sujet:"La littérature peut-elle changer le monde ?",type:"Dissertation"},
+    {annee:2023,matiere:"Philosophie",sujet:"La liberté est-elle une illusion ?",type:"Dissertation"},
+    {annee:2023,matiere:"Histoire",sujet:"Violence et politique au XXe siècle",type:"Dissertation"},
+    {annee:2023,matiere:"Sciences sociales",sujet:"L'État-providence en question",type:"Dissertation"},
+    {annee:2022,matiere:"Philosophie",sujet:"Connaître, est-ce douter ?",type:"Dissertation"},
+    {annee:2022,matiere:"Histoire",sujet:"Les révolutions industrielles et leurs conséquences sociales",type:"Dissertation"},
+    {annee:2022,matiere:"Économie",sujet:"Croissance économique et développement durable sont-ils compatibles ?",type:"Dissertation"},
+    {annee:2021,matiere:"Philosophie",sujet:"L'art est-il inutile ?",type:"Dissertation"},
+    {annee:2021,matiere:"Sciences sociales",sujet:"La démocratie représentative est-elle en crise ?",type:"Dissertation"},
+    {annee:2020,matiere:"Philosophie",sujet:"Le temps est-il notre ennemi ?",type:"Dissertation"},
+    {annee:2020,matiere:"Histoire",sujet:"La mémoire et l'histoire : usages et enjeux politiques",type:"Dissertation"},
+  ],
+  fonction:[
+    {annee:2024,matiere:"Culture générale",sujet:"L'administration face aux défis du numérique",type:"Note de synthèse"},
+    {annee:2024,matiere:"Droit public",sujet:"Le principe de légalité et ses exceptions",type:"Dissertation"},
+    {annee:2024,matiere:"Économie",sujet:"La dette publique : menace ou outil de politique économique ?",type:"Dissertation"},
+    {annee:2024,matiere:"Cas pratique",sujet:"Gestion d'une crise sanitaire dans une collectivité territoriale",type:"Mise en situation"},
+    {annee:2023,matiere:"Culture générale",sujet:"Service public et transformation digitale",type:"Note de synthèse"},
+    {annee:2023,matiere:"Droit public",sujet:"L'État et les collectivités territoriales : décentralisation et déconcentration",type:"Dissertation"},
+    {annee:2023,matiere:"Économie",sujet:"Transition énergétique : enjeux économiques et rôle de l'État",type:"Dissertation"},
+    {annee:2022,matiere:"Culture générale",sujet:"L'égalité dans le service public",type:"Note de synthèse"},
+    {annee:2022,matiere:"Droit public",sujet:"Le contrôle de l'administration par le juge administratif",type:"Dissertation"},
+    {annee:2022,matiere:"Économie",sujet:"Politique monétaire et inflation : les défis de la BCE",type:"Dissertation"},
+    {annee:2021,matiere:"Culture générale",sujet:"La crise sanitaire et l'action publique",type:"Note de synthèse"},
+    {annee:2021,matiere:"Droit public",sujet:"L'état d'urgence et les libertés fondamentales",type:"Dissertation"},
+    {annee:2020,matiere:"Culture générale",sujet:"Enjeux environnementaux et politiques publiques",type:"Note de synthèse"},
+    {annee:2020,matiere:"Droit public",sujet:"La responsabilité de l'État",type:"Dissertation"},
+  ],
+  droit:[
+    {annee:2024,matiere:"Droit civil",sujet:"La responsabilité extracontractuelle : évolutions récentes",type:"Cas pratique"},
+    {annee:2024,matiere:"Droit pénal",sujet:"La présomption d'innocence à l'épreuve des médias",type:"Dissertation"},
+    {annee:2024,matiere:"Droit public",sujet:"Le Conseil constitutionnel : gardien des libertés ?",type:"Dissertation"},
+    {annee:2024,matiere:"Procédure civile",sujet:"L'office du juge dans le procès civil",type:"Dissertation"},
+    {annee:2023,matiere:"Droit civil",sujet:"Le contrat et l'imprévision",type:"Cas pratique"},
+    {annee:2023,matiere:"Droit pénal",sujet:"La complicité en droit pénal français",type:"Dissertation"},
+    {annee:2023,matiere:"Droit des affaires",sujet:"La société par actions simplifiée (SAS) : avantages et limites",type:"Dissertation"},
+    {annee:2022,matiere:"Droit civil",sujet:"La réforme du droit des successions",type:"Dissertation"},
+    {annee:2022,matiere:"Droit pénal",sujet:"La récidive : réponse pénale et réinsertion",type:"Dissertation"},
+    {annee:2022,matiere:"Droit public",sujet:"Le droit à un recours effectif",type:"Dissertation"},
+    {annee:2021,matiere:"Droit civil",sujet:"Les effets du mariage et du PACS",type:"Cas pratique"},
+    {annee:2021,matiere:"Droit pénal",sujet:"Le blanchiment d'argent : évolutions législatives",type:"Dissertation"},
+    {annee:2020,matiere:"Droit civil",sujet:"La force majeure en droit des contrats",type:"Cas pratique"},
+    {annee:2020,matiere:"Droit public",sujet:"Les pouvoirs de crise du président de la République",type:"Dissertation"},
+  ],
+};
 
 // ── APPRENDRE SCREEN ──────────────────────────────────────────
 function ApprendreScreen({T,onBack}:{T:Theme;onBack:()=>void}){
@@ -1911,6 +1987,8 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
   const [lettreExp,setLettreExp]=useState("");
   const [lettreResult,setLettreResult]=useState("");
   const [lettreLoading,setLettreLoading]=useState(false);
+  const [concoursKey,setConcoursKey]=useState<"sciencespo"|"ens"|"fonction"|"droit">("sciencespo");
+  const [concoursAnnee,setConcoursAnnee]=useState<number|null>(null);
   const getKey=()=>typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
 
   const genDiscours=async()=>{
@@ -1982,23 +2060,58 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
     </div>
   );
 
-  if(sub==="concours")return(
-    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
-        <button onClick={()=>setSub("menu")} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
-        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Préparation concours</h2>
+  if(sub==="concours"){
+    const CONC_META=[
+      {key:"sciencespo" as const,label:"Sciences Po",color:"#2B78F5",desc:"Culture générale · Histoire · Géopolitique"},
+      {key:"ens" as const,label:"ENS",color:"#7C3AED",desc:"Philosophie · Histoire · Sciences sociales"},
+      {key:"fonction" as const,label:"Fonction pub.",color:"#16A34A",desc:"Droit public · Culture G · Cas pratique"},
+      {key:"droit" as const,label:"Barreau",color:"#E03535",desc:"Droit civil · Pénal · Procédure"},
+    ];
+    const meta=CONC_META.find(c=>c.key===concoursKey)!;
+    const epreuves=CONCOURS_EPREUVES[concoursKey];
+    const annees=[...new Set(epreuves.map(e=>e.annee))].sort((a,b)=>b-a);
+    const filtered=concoursAnnee?epreuves.filter(e=>e.annee===concoursAnnee):epreuves;
+    const typeColor=(t:string)=>({Dissertation:"#2B78F5","Note de synthèse":"#16A34A","Cas pratique":"#E03535","Mise en situation":"#D97706"}[t]||"#888");
+    return(
+      <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+          <button onClick={()=>setSub("menu")} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+          <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Prépa concours</h2><p style={{color:T.muted,fontSize:11}}>{meta.desc}</p></div>
+        </div>
+        <div style={{display:"flex",gap:8,padding:"10px 14px",overflowX:"auto",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+          {CONC_META.map(c=>(
+            <button key={c.key} onClick={()=>{setConcoursKey(c.key);setConcoursAnnee(null);}} style={{flexShrink:0,padding:"8px 14px",borderRadius:20,border:`1.5px solid ${concoursKey===c.key?c.color:T.b1}`,background:concoursKey===c.key?c.color:"transparent",color:concoursKey===c.key?"#fff":T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:6,padding:"8px 14px",overflowX:"auto",borderBottom:`1px solid ${T.b1}`,flexShrink:0,alignItems:"center"}}>
+          <button onClick={()=>setConcoursAnnee(null)} style={{flexShrink:0,padding:"5px 12px",borderRadius:14,border:`1px solid ${concoursAnnee===null?meta.color:T.b1}`,background:concoursAnnee===null?`${meta.color}20`:"transparent",color:concoursAnnee===null?meta.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Toutes</button>
+          {annees.map(a=>(
+            <button key={a} onClick={()=>setConcoursAnnee(concoursAnnee===a?null:a)} style={{flexShrink:0,padding:"5px 12px",borderRadius:14,border:`1px solid ${concoursAnnee===a?meta.color:T.b1}`,background:concoursAnnee===a?`${meta.color}20`:"transparent",color:concoursAnnee===a?meta.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{a}</button>
+          ))}
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
+          <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>{filtered.length} épreuve{filtered.length>1?"s":""}</p>
+          {filtered.map((e,i)=>{
+            const tc=typeColor(e.type);
+            return(
+              <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,gap:8,flexWrap:"wrap"}}>
+                  <span style={{background:`${meta.color}18`,color:meta.color,fontSize:10,padding:"3px 10px",borderRadius:10,fontWeight:800}}>{e.matiere}</span>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <span style={{background:`${tc}15`,color:tc,fontSize:10,padding:"3px 8px",borderRadius:10,fontWeight:700}}>{e.type}</span>
+                    <span style={{color:T.muted,fontSize:11,fontWeight:700}}>{e.annee}</span>
+                  </div>
+                </div>
+                <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5}}>{e.sujet}</p>
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
-        <p style={{color:T.textD,fontSize:13,marginBottom:4}}>Simulations d&apos;entretien dédiées à chaque concours — bientôt disponibles.</p>
-        {([{name:"Sciences Po",desc:"Entretien de personnalité + culture générale",color:"#2B78F5"},{name:"ENS / Grandes Écoles",desc:"Oral de culture générale, dissertation",color:"#7C3AED"},{name:"Fonction publique",desc:"Entretien devant jury, note de synthèse",color:"#16A34A"},{name:"Barreau / CRFPA",desc:"Plaidoirie, procédure pénale et civile",color:"#E03535"}]).map(c=>(
-          <div key={c.name} style={{padding:16,borderRadius:14,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,display:"flex",alignItems:"center",gap:14}}>
-            <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:15}}>{c.name}</p><p style={{color:T.textD,fontSize:12,marginTop:2}}>{c.desc}</p></div>
-            <span style={{background:`${c.color}20`,color:c.color,fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>Bientôt</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+    );
+  }
 
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
