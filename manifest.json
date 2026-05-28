@@ -2,26 +2,80 @@
   "name": "NEXUS — Intelligence Citoyenne",
   "short_name": "NEXUS",
   "description": "Réseau social de débat, simulation ONU, score d'éloquence",
-  "start_url": "/",
+  "start_url": "/ARCA/",
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen"],
   "background_color": "#07090F",
   "theme_color": "#07090F",
-  "orientation": "portrait",
-  "scope": "/",
+  "orientation": "portrait-primary",
+  "scope": "/ARCA/",
   "lang": "fr",
   "icons": [
-    {"src": "/icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "maskable any"},
-    {"src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "maskable any"},
-    {"src": "/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "maskable any"},
-    {"src": "/icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "maskable any"},
-    {"src": "/icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "maskable any"},
-    {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any"},
-    {"src": "/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "maskable any"},
-    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any"}
+    {
+      "src": "/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
   ],
+  "screenshots": [],
   "categories": ["social", "news", "education", "productivity"],
   "shortcuts": [
-    {"name": "Studio Débat", "short_name": "Débat", "description": "Lancer un débat audio", "url": "/?tab=studio", "icons": [{"src": "/icons/icon-96.png", "sizes": "96x96"}]},
-    {"name": "Simulation ONU", "short_name": "ONU", "description": "Simulation Conseil de Sécurité", "url": "/?tab=sim", "icons": [{"src": "/icons/icon-96.png", "sizes": "96x96"}]}
+    {
+      "name": "Studio Débat",
+      "short_name": "Débat",
+      "description": "Lancer un débat audio",
+      "url": "/?tab=studio",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Simulation ONU",
+      "short_name": "ONU",
+      "description": "Simulation Conseil de Sécurité",
+      "url": "/?tab=sim",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    }
   ]
 }
