@@ -192,13 +192,10 @@ function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   const elKey = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
   if (elKey) {
     speakEL(cleanForSpeech(text), gender, elKey, onEnd)
-      .then(ok => { if(!ok) return speakKokoro(text, gender, onEnd); return true; })
-      .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
+      .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
       .catch(() => speakWeb(text, gender, onEnd));
   } else {
-    speakKokoro(text, gender, onEnd)
-      .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
-      .catch(() => speakWeb(text, gender, onEnd));
+    speakWeb(text, gender, onEnd);
   }
 }
 function stopSpeech() {
