@@ -1657,6 +1657,31 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
   );
 }
 
+function AdminPinModal({T,onClose,onSuccess}:{T:Theme;onClose:()=>void;onSuccess:()=>void}) {
+  const [pin,setPin] = useState("");
+  const [err,setErr] = useState(false);
+  const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN||"";
+  const check=()=>{
+    if(ADMIN_PIN && pin===ADMIN_PIN){onSuccess();}
+    else{setErr(true);setPin("");setTimeout(()=>setErr(false),1200);}
+  };
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:T.surf,border:`1px solid ${T.b1}`,borderRadius:20,padding:24,width:"100%",maxWidth:320}}>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Accès propriétaire</p>
+        <p style={{color:T.muted,fontSize:12,marginBottom:20}}>Code secret pour accéder aux paramètres</p>
+        <input type="password" value={pin} onChange={e=>setPin(e.target.value)} onKeyDown={e=>e.key==="Enter"&&check()} placeholder="••••••" autoFocus
+          style={{width:"100%",background:T.bg2,border:`1px solid ${err?T.red:T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:20,textAlign:"center",letterSpacing:6,outline:"none",boxSizing:"border-box",fontFamily:"monospace",transition:"border .2s"}}/>
+        {err&&<p style={{color:T.red,fontSize:12,textAlign:"center",marginTop:8}}>Code incorrect</p>}
+        <div style={{display:"flex",gap:10,marginTop:14}}>
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:10,border:`1px solid ${T.b1}`,background:"transparent",color:T.textD,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
+          <button onClick={check} style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Entrer</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SimulationHub({T}:{T:Theme}) {
   const [view,setView] = useState<"hub"|"studio"|"sims">("hub");
   const [showKeySetup,setShowKeySetup] = useState(false);
@@ -2709,7 +2734,7 @@ RÈGLES ABSOLUES :
 }
 
 // ── PROFILE SCREEN ────────────────────────────────────────────
-function ProfileScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
+function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin:boolean}) {
   const [activeTab,setActiveTab] = useState<"posts"|"score"|"badges">("posts");
   const scores:{[k:string]:number} = {"Géopolitique":82,"Droit":68,"Diplomatie":75,"Histoire":88,"Institutions":61};
   type UserPost = {id:number;text:string;time:string;src:string;verif:{label:string;color:string;comment:string}|null};
@@ -2750,7 +2775,7 @@ function ProfileScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
             </div>
           ))}
         </div>
-        <ApiKeySettings T={T}/>
+        {isAdmin&&<ApiKeySettings T={T}/>}
         <button onClick={onPremium} style={{width:"100%",marginTop:12,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
           <Ic n="zap" s={16} c={T.amber}/>Passer à NEXUS+ — 5,99€/mois
         </button>
@@ -2897,6 +2922,18 @@ export default function NexusApp() {
     if(typeof window==="undefined") return 0;
     return parseInt(localStorage.getItem("nexus_unread")||"0");
   });
+  const [adminTaps,setAdminTaps] = useState(0);
+  const [showAdminPin,setShowAdminPin] = useState(false);
+  const [isAdmin,setIsAdmin] = useState(()=>typeof window!=="undefined"&&localStorage.getItem("nexus_admin")==="1");
+
+  useEffect(()=>{
+    if(typeof window==="undefined") return;
+    // Injecter les clés d'environnement si elles ne sont pas encore définies
+    const envG = process.env.NEXT_PUBLIC_GEMINI_KEY;
+    const envE = process.env.NEXT_PUBLIC_EL_KEY;
+    if(envG && !localStorage.getItem("gemini_key")) localStorage.setItem("gemini_key",envG);
+    if(envE && !localStorage.getItem("el_key")) localStorage.setItem("el_key",envE);
+  },[]);
 
   useEffect(()=>{
     if(typeof window==="undefined") return;
@@ -2904,6 +2941,12 @@ export default function NexusApp() {
     const dismissed = localStorage.getItem("install_dismissed");
     if(!standalone && !dismissed) setTimeout(()=>setShowInstall(true),2000);
   },[]);
+
+  const handleLogoTap=()=>{
+    const n=adminTaps+1;
+    setAdminTaps(n);
+    if(n>=5){setAdminTaps(0);setShowAdminPin(true);}
+  };
 
   const switchTab = (id: typeof tab) => {
     haptic();
@@ -2940,6 +2983,8 @@ export default function NexusApp() {
         @keyframes wave{from{height:4px}to{height:24px}}
       `}</style>
 
+      {showAdminPin&&<AdminPinModal T={T} onClose={()=>setShowAdminPin(false)} onSuccess={()=>{setIsAdmin(true);setShowAdminPin(false);if(typeof window!=="undefined")localStorage.setItem("nexus_admin","1");}}/>}
+
       {/* Install banner */}
       {showInstall&&!showPremium&&(
         <InstallBanner T={T} onDismiss={()=>{setShowInstall(false);localStorage.setItem("install_dismissed","1");}}/>
@@ -2948,7 +2993,7 @@ export default function NexusApp() {
       {/* Header */}
       {!showPremium&&(
         <div style={{padding:`${showInstall?10:13}px 20px 11px`,display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.b1}`,background:T.surf,zIndex:100,backdropFilter:"blur(20px)",flexShrink:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",userSelect:"none"}} onClick={handleLogoTap}>
             <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
               <circle cx="50" cy="50" r="50" fill="#000"/>
               <defs>
@@ -2989,7 +3034,7 @@ export default function NexusApp() {
             {tab==="simulation"&&<SimulationHub T={T}/>}
             {tab==="messages"&&<MessagesScreen T={T}/>}
             {tab==="events"&&<EventsScreen T={T}/>}
-            {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)}/>}
+            {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)} isAdmin={isAdmin}/>}
           </div>
         )}
       </div>

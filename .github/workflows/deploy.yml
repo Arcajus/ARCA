@@ -32,6 +32,10 @@ jobs:
 
       - name: Build (static export)
         run: BUILD_TARGET=ghpages npm run build
+        env:
+          NEXT_PUBLIC_GEMINI_KEY: ${{ secrets.NEXT_PUBLIC_GEMINI_KEY }}
+          NEXT_PUBLIC_EL_KEY: ${{ secrets.NEXT_PUBLIC_EL_KEY }}
+          NEXT_PUBLIC_ADMIN_PIN: ${{ secrets.NEXT_PUBLIC_ADMIN_PIN }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
