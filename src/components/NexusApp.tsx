@@ -2247,7 +2247,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
     try{
       const r=await callGemini(prompt,[{role:"user",parts:[{text:e.sujet}]}],key,800);
       setCorrTexts(p=>({...p,[key2]:r}));addXP(10);
-    }catch{setCorrTexts(p=>({...p,[key2]:"Erreur. Réessaie."}));}
+    }catch(err){setCorrTexts(p=>({...p,[key2]:"Erreur: "+(err instanceof Error?err.message:"inconnu")+". Vérifie ta clé Gemini dans Profil > Paramètres."}));}
     setCorrLoading(null);
   };
   const getKey=()=>typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
@@ -2256,7 +2256,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
     const key=getKey();if(!key){setGenResult("⚠️ Clé Gemini requise dans les paramètres.");return;}
     setGenLoading(true);setGenResult("");
     try{const r=await callGemini(`Tu es un expert en rhétorique. Génère un discours de 3 minutes (400 mots) sur : "${genSubject}". Structure : accroche percutante, problème, 3 arguments avec exemples concrets, conclusion mémorable. Utilise des figures de style (anaphore, métaphore).`,[{role:"user",parts:[{text:genSubject}]}],key,600);setGenResult(r);addXP(20);}
-    catch{setGenResult("Erreur. Réessaie.");}
+    catch(err){setGenResult("Erreur: "+(err instanceof Error?err.message:"inconnu"));}
     setGenLoading(false);
   };
 
@@ -2264,7 +2264,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
     const key=getKey();if(!key){setBuildResult("⚠️ Clé Gemini requise.");return;}
     setBuildLoading(true);setBuildResult("");
     try{const r=await callGemini(`Expert en argumentation. Pour la position : "${buildPos}", génère : 3 arguments POUR avec exemple et chiffre, 3 arguments CONTRE avec exemple et chiffre, 3 réfutations. Format clair et structuré.`,[{role:"user",parts:[{text:buildPos}]}],key,500);setBuildResult(r);addXP(15);}
-    catch{setBuildResult("Erreur. Réessaie.");}
+    catch(err){setBuildResult("Erreur: "+(err instanceof Error?err.message:"inconnu"));}
     setBuildLoading(false);
   };
 
