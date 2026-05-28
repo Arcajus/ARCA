@@ -184,7 +184,7 @@ function sanitizeHist(hist:GHist):GHist {
   return clean;
 }
 const GEMINI_URL=(key:string,stream=false)=>
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:${stream?"streamGenerateContent?alt=sse&":"generateContent?"}key=${key}`;
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:${stream?"streamGenerateContent?alt=sse&":"generateContent?"}key=${key}`;
 const GEMINI_CFG={temperature:1.0,topP:0.95};
 const ANTI_REP="\n\nRÈGLE ABSOLUE : Chaque réponse est unique — angle inédit, formulation nouvelle, jamais répétée dans cette conversation.";
 
