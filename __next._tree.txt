@@ -1,2 +1,2 @@
 :HL["/ARCA/_next/static/chunks/0d7jl.pdqnqhq.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"okaH3eNCYQ34n8yA0NWCI"}
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"jCAEc3-Pt3ts2QX6vz6qa"}
