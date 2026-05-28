@@ -3286,6 +3286,7 @@ export default function NexusApp() {
   const [isAdmin,setIsAdmin] = useState(()=>typeof window!=="undefined"&&localStorage.getItem("nexus_admin")==="1");
   const [streak,setStreak] = useState(0);
   const [feedKey,setFeedKey] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(()=>{
     if(typeof window==="undefined") return;
@@ -3313,7 +3314,12 @@ export default function NexusApp() {
     haptic();
     setTabAnim("slideInRight");
     setTab(id);
-    if(id==="feed"){setFeedUnread(0);setFeedKey(k=>k+1);if(typeof window!=="undefined")localStorage.setItem("nexus_unread","0");}
+    if(id==="feed"){
+      setFeedUnread(0);
+      setFeedKey(k=>k+1);
+      scrollRef.current?.scrollTo({top:0,behavior:"smooth"});
+      if(typeof window!=="undefined")localStorage.setItem("nexus_unread","0");
+    }
     setTimeout(()=>setTabAnim("fadeIn"),300);
   };
 
@@ -3386,7 +3392,7 @@ export default function NexusApp() {
       )}
 
       {/* Content */}
-      <div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}>
+      <div ref={scrollRef} style={{flex:1,overflowY:"auto",overflowX:"hidden"}}>
         {showPremium ? (
           <PremiumScreen T={T} onBack={()=>setShowPremium(false)}/>
         ) : (
