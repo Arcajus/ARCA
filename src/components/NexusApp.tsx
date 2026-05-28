@@ -1225,9 +1225,8 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
           <span style={{color:T.red,fontSize:10,fontWeight:800,letterSpacing:1.5}}>ACTUALITÉS EN DIRECT</span>
           {lastRefresh&&<span style={{color:T.muted,fontSize:10}}>· {lastRefresh.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</span>}
         </div>
-        <button onClick={()=>refresh(false)} disabled={liveLoading} style={{display:"flex",alignItems:"center",gap:5,background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"4px 10px",cursor:"pointer",opacity:liveLoading?.6:1}}>
-          <Ic n="trending" s={13} c={T.blueB}/>
-          <span style={{color:T.blueB,fontSize:11,fontWeight:700}}>{liveLoading?"Chargement…":"Actualiser"}</span>
+        <button onClick={()=>refresh(false)} disabled={liveLoading} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:T.card,border:`1px solid ${T.b1}`,borderRadius:8,cursor:"pointer",opacity:liveLoading?.5:1,flexShrink:0}}>
+          <Ic n="trending" s={15} c={T.textD}/>
         </button>
       </div>
       {liveLoading&&liveNews.length===0&&(
