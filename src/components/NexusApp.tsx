@@ -1682,8 +1682,352 @@ function AdminPinModal({T,onClose,onSuccess}:{T:Theme;onClose:()=>void;onSuccess
   );
 }
 
+// ── GAMIFICATION HELPERS ─────────────────────────────────────
+function updateStreak(){
+  if(typeof window==="undefined")return 0;
+  const today=new Date().toDateString();
+  const last=localStorage.getItem("nx_last_day");
+  let count=parseInt(localStorage.getItem("nx_streak")||"0");
+  if(!last){count=1;}
+  else if(last===today){return count;}
+  else{const diff=Math.round((new Date(today).getTime()-new Date(last).getTime())/86400000);count=diff===1?count+1:1;}
+  localStorage.setItem("nx_streak",String(count));
+  localStorage.setItem("nx_last_day",today);
+  return count;
+}
+function getStreak(){if(typeof window==="undefined")return 0;return parseInt(localStorage.getItem("nx_streak")||"0");}
+function addXP(n:number){if(typeof window==="undefined")return;localStorage.setItem("nx_xp",String(parseInt(localStorage.getItem("nx_xp")||"0")+n));}
+function getXP(){if(typeof window==="undefined")return 0;return parseInt(localStorage.getItem("nx_xp")||"0");}
+function levelInfo(xp:number){
+  const tiers=[{l:1,t:"Apprenti",max:150},{l:2,t:"Orateur",max:400},{l:3,t:"Débatteur",max:800},{l:4,t:"Diplomate",max:1400},{l:5,t:"Expert",max:2200},{l:6,t:"Maître",max:99999}];
+  return tiers.find((_,i)=>xp<tiers[i].max)||tiers[tiers.length-1];
+}
+
+// ── APPRENDRE — DATA ─────────────────────────────────────────
+const DISCOURS_DATA=[
+  {id:1,title:"Appel du 18 juin",speaker:"Charles de Gaulle",year:"1940",country:"🇫🇷",theme:"Résistance",excerpt:"Quoi qu'il arrive, la flamme de la résistance française ne doit pas s'éteindre et ne s'éteindra pas.",techniques:["Pathos","Urgence","Autorité morale"]},
+  {id:2,title:"I Have a Dream",speaker:"Martin Luther King",year:"1963",country:"🇺🇸",theme:"Droits civiques",excerpt:"J'ai le rêve qu'un jour cette nation se lèvera et vivra selon la vraie signification de ses croyances.",techniques:["Anaphore","Métaphore","Vision"]},
+  {id:3,title:"Discours de libération",speaker:"Nelson Mandela",year:"1990",country:"🇿🇦",theme:"Liberté",excerpt:"Je me tiens devant vous non pas comme prophète, mais comme serviteur humble de vous tous.",techniques:["Humilité","Éthos","Rassemblement"]},
+  {id:4,title:"Yes We Can",speaker:"Barack Obama",year:"2008",country:"🇺🇸",theme:"Politique",excerpt:"C'est la réponse de l'Amérique à ceux qui ont dit que nous ne pouvions pas.",techniques:["Anaphore","Espoir","Logos"]},
+  {id:5,title:"Le Rideau de fer",speaker:"Winston Churchill",year:"1946",country:"🇬🇧",theme:"Géopolitique",excerpt:"Un rideau de fer est descendu à travers le Continent européen.",techniques:["Métaphore marquante","Gravitas","Avertissement"]},
+];
+const RHETORIC_DATA=[
+  {id:1,icon:"🏛️",title:"Éthos, Pathos, Logos",desc:"La triade d'Aristote",content:"ÉTHOS — Crédibilité\nVotre audience doit vous faire confiance avant de vous écouter. Soignez votre posture, vos références, votre légitimité.\n\nPATHOS — Émotion\nTouchez le cœur avant de convaincre l'esprit. Une histoire personnelle vaut mille statistiques.\n\nLOGOS — Logique\nDes faits, des chiffres, des preuves concrètes. Sans logos, le discours est creux."},
+  {id:2,icon:"✍️",title:"Figures de style",desc:"Les outils du discours fort",content:"ANAPHORE — Répétition en début de phrase\n→ «Je refuse. Je refuse. Je refuse.»\n\nMÉTAPHORE — Image percutante\n→ «Le chômage est une cicatrice sociale»\n\nCHIASME — Inversion élégante\n→ «Il ne faut pas vivre pour manger, mais manger pour vivre»\n\nHYPERBOLE — Amplification\n→ «C'est le scandale du siècle»"},
+  {id:3,icon:"📐",title:"Structure en 5 actes",desc:"Le plan du discours parfait",content:"1. ACCROCHE — Captez l'attention dès la première phrase. Question choc, chiffre, anecdote.\n\n2. PROBLÈME — Exposez clairement le problème. L'audience doit ressentir l'urgence.\n\n3. DÉVELOPPEMENT — 3 arguments maximum. Un par un, avec preuve + exemple.\n\n4. RÉFUTATION — Anticipez les objections et répondez avant qu'elles soient posées.\n\n5. APPEL — Terminez par un appel à l'action clair et mémorable."},
+  {id:4,icon:"🎯",title:"Persuasion & Influence",desc:"Convaincre sans manipuler",content:"PREUVE SOCIALE — «80% des experts s'accordent à dire...»\n\nAUTORITÉ — «Selon l'ONU, l'OCDE, le rapport X...»\n\nRÉCIPROCITÉ — Concéder un point pour mieux avancer le vôtre.\n\nCOHÉRENCE — Reliez vos arguments aux valeurs de votre audience.\n\nRARETÉ — «C'est peut-être notre dernière chance de...»"},
+];
+const DICT_DATA=[
+  {term:"Veto",def:"Droit des 5 membres permanents du Conseil de sécurité ONU (USA, Russie, Chine, France, UK) de bloquer toute résolution."},
+  {term:"Soft Power",def:"Influence d'un État par la culture, les valeurs et la diplomatie plutôt que par la force. Concept de Joseph Nye (1990)."},
+  {term:"Souveraineté",def:"Autorité suprême et exclusive d'un État sur son territoire. Principe fondamental depuis le Traité de Westphalie (1648)."},
+  {term:"Multilatéralisme",def:"Approche impliquant plusieurs États dans la résolution de problèmes communs. Opposé au bilatéralisme ou à l'unilatéralisme."},
+  {term:"Résolution Ch. VII",def:"Décision du Conseil de sécurité autorisant le recours à la force militaire. Contraignante pour tous les membres de l'ONU."},
+  {term:"DIH",def:"Droit International Humanitaire. Ensemble de règles limitant les effets des conflits armés. Conventions de Genève (1949)."},
+  {term:"Non-alignement",def:"Politique étrangère refusant l'alignement sur les grandes puissances. Mouvement fondé en 1961 à Belgrade."},
+  {term:"Realpolitik",def:"Approche pragmatique de la politique étrangère basée sur les intérêts nationaux, indépendamment des idéaux moraux."},
+  {term:"Sanctions",def:"Mesures de pression économiques (gel d'avoirs, embargo) utilisées comme alternative ou complément à l'action militaire."},
+  {term:"G7 / G20",def:"G7 : 7 pays industrialisés. G20 : 20 économies majeures représentant 85% du PIB mondial. Forums de coordination économique."},
+];
+const FICHES_DATA=[
+  {id:1,title:"Organisation des Nations Unies",icon:"🌐",color:"#2B78F5",items:["193 États membres, fondée en 1945","Conseil de sécurité : 5 permanents (veto) + 10 rotatifs","Assemblée générale : 1 État = 1 voix","Secrétaire général : António Guterres","CIJ (Cour internationale de Justice) siège à La Haye"]},
+  {id:2,title:"Union Européenne",icon:"🇪🇺",color:"#E03535",items:["27 États membres (Brexit en 2020)","Parlement européen : élu au suffrage universel direct","Commission : pouvoir exécutif, 27 commissaires","BCE (Francfort) : politique monétaire zone euro","Traité de Lisbonne (2009) : cadre institutionnel actuel"]},
+  {id:3,title:"OTAN",icon:"🛡️",color:"#7C3AED",items:["32 membres (Suède intégrée en 2024)","Article 5 : clause de défense collective","Siège à Bruxelles","Secrétaire général : Mark Rutte (depuis oct. 2024)","Objectif : 2% du PIB par membre"]},
+  {id:4,title:"Géopolitique 2025",icon:"🗺️",color:"#D97706",items:["Guerre Ukraine-Russie (depuis fév. 2022)","Tensions Taïwan : Chine vs USA","Conflit Gaza — instabilité Proche-Orient","Sahel : recomposition des influences (Russie/Wagner)","Indo-Pacifique : nouveau centre stratégique mondial"]},
+  {id:5,title:"Institutions françaises",icon:"🏛️",color:"#16A34A",items:["Ve République : Constitution du 4 oct. 1958","Président : élu au suffrage universel, mandat 5 ans","Premier ministre : nommé par le président","Parlement : Assemblée nationale + Sénat","Conseil constitutionnel : contrôle la constitutionnalité"]},
+];
+
+// ── APPRENDRE SCREEN ──────────────────────────────────────────
+function ApprendreScreen({T,onBack}:{T:Theme;onBack:()=>void}){
+  const [sub,setSub]=useState<"menu"|"discours"|"rhetori"|"dict"|"fiches">("menu");
+  const [selSpeech,setSelSpeech]=useState<typeof DISCOURS_DATA[0]|null>(null);
+  const [selLesson,setSelLesson]=useState<typeof RHETORIC_DATA[0]|null>(null);
+  const [dictQ,setDictQ]=useState("");
+  const [selFiche,setSelFiche]=useState<typeof FICHES_DATA[0]|null>(null);
+
+  if(sub==="discours")return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={()=>{if(selSpeech)setSelSpeech(null);else setSub("menu");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>{selSpeech?selSpeech.title:"Bibliothèque de discours"}</h2>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
+        {!selSpeech?(
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {DISCOURS_DATA.map(d=>(
+              <button key={d.id} onClick={()=>setSelSpeech(d)} style={{padding:16,borderRadius:14,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",gap:14,alignItems:"flex-start"}}>
+                <span style={{fontSize:28}}>{d.country}</span>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",justifyContent:"space-between"}}>
+                    <p style={{color:T.text,fontWeight:800,fontSize:15}}>{d.title}</p>
+                    <span style={{color:T.muted,fontSize:11}}>{d.year}</span>
+                  </div>
+                  <p style={{color:T.textD,fontSize:12,marginTop:2}}>{d.speaker} · {d.theme}</p>
+                  <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                    {d.techniques.map(t=><span key={t} style={{background:`${T.blueB}20`,color:T.blueB,fontSize:10,padding:"2px 8px",borderRadius:10,fontWeight:700}}>{t}</span>)}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
+              <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>{selSpeech.speaker} · {selSpeech.year}</p>
+              <p style={{color:T.text,fontSize:15,fontStyle:"italic",lineHeight:1.7,marginTop:8}}>&ldquo;{selSpeech.excerpt}&rdquo;</p>
+            </div>
+            <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
+              <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,marginBottom:10}}>TECHNIQUES UTILISÉES</p>
+              {selSpeech.techniques.map(t=>(
+                <div key={t} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:`1px solid ${T.b1}`}}>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:T.blueB,flexShrink:0}}/>
+                  <p style={{color:T.text,fontSize:13,fontWeight:600}}>{t}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{background:`${T.blueB}10`,border:`1px solid ${T.blueB}30`,borderRadius:14,padding:16}}>
+              <p style={{color:T.blueB,fontSize:12,fontWeight:800,marginBottom:6}}>POURQUOI CE DISCOURS EST MARQUANT</p>
+              <p style={{color:T.textD,fontSize:13,lineHeight:1.6}}>Thème : <strong style={{color:T.text}}>{selSpeech.theme}</strong>. Ce discours incarne les 3 piliers : crédibilité de l&apos;orateur (éthos), émotion transmise (pathos) et logique des arguments (logos).</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if(sub==="rhetori")return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={()=>{if(selLesson)setSelLesson(null);else setSub("menu");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>{selLesson?selLesson.title:"Cours de rhétorique"}</h2>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
+        {!selLesson?(
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {RHETORIC_DATA.map(r=>(
+              <button key={r.id} onClick={()=>setSelLesson(r)} style={{padding:16,borderRadius:14,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",gap:14,alignItems:"center"}}>
+                <span style={{fontSize:32,flexShrink:0}}>{r.icon}</span>
+                <div style={{flex:1}}>
+                  <p style={{color:T.text,fontWeight:800,fontSize:15}}>{r.title}</p>
+                  <p style={{color:T.textD,fontSize:12,marginTop:2}}>{r.desc}</p>
+                </div>
+                <Ic n="chevR" s={18} c={T.muted}/>
+              </button>
+            ))}
+          </div>
+        ):(
+          <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:20}}>
+            {selLesson.content.split('\n').map((line,i)=>{
+              if(!line)return <div key={i} style={{height:10}}/>;
+              if(/^[A-ZÀÉÈÊËÎÏÔÙÛ].*—/.test(line))return <p key={i} style={{color:T.blueB,fontWeight:800,fontSize:14,marginTop:12}}>{line}</p>;
+              if(line.startsWith('→'))return <p key={i} style={{color:T.textD,fontSize:13,fontStyle:"italic",marginLeft:12,marginTop:4}}>{line}</p>;
+              if(/^\d\./.test(line))return <p key={i} style={{color:T.text,fontSize:13,lineHeight:1.6,marginTop:8}}>{line}</p>;
+              return <p key={i} style={{color:T.text,fontSize:13,lineHeight:1.6}}>{line}</p>;
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if(sub==="dict")return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={()=>setSub("menu")} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Dictionnaire diplomatique</h2>
+      </div>
+      <div style={{padding:"12px 20px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <input value={dictQ} onChange={e=>setDictQ(e.target.value)} placeholder="Rechercher un terme…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 14px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"12px 20px",display:"flex",flexDirection:"column",gap:10}}>
+        {DICT_DATA.filter(d=>!dictQ||d.term.toLowerCase().includes(dictQ.toLowerCase())||d.def.toLowerCase().includes(dictQ.toLowerCase())).map(d=>(
+          <div key={d.term} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
+            <p style={{color:T.blueB,fontWeight:800,fontSize:14}}>{d.term}</p>
+            <p style={{color:T.textD,fontSize:13,marginTop:6,lineHeight:1.5}}>{d.def}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  if(sub==="fiches")return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={()=>{if(selFiche)setSelFiche(null);else setSub("menu");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>{selFiche?selFiche.title:"Fiches de révision"}</h2>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
+        {!selFiche?(
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {FICHES_DATA.map(f=>(
+              <button key={f.id} onClick={()=>setSelFiche(f)} style={{padding:16,borderRadius:14,border:`1.5px solid ${f.color}30`,background:`${f.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+                <span style={{fontSize:30,flexShrink:0}}>{f.icon}</span>
+                <div style={{flex:1}}>
+                  <p style={{color:T.text,fontWeight:800,fontSize:15}}>{f.title}</p>
+                  <p style={{color:T.textD,fontSize:12,marginTop:2}}>{f.items.length} points clés</p>
+                </div>
+                <Ic n="chevR" s={18} c={T.muted}/>
+              </button>
+            ))}
+          </div>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {selFiche.items.map((item,i)=>(
+              <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14,display:"flex",gap:12,alignItems:"flex-start"}}>
+                <div style={{width:24,height:24,borderRadius:"50%",background:`${selFiche.color}20`,border:`1px solid ${selFiche.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,fontWeight:800,color:selFiche.color}}>{i+1}</div>
+                <p style={{color:T.text,fontSize:13,lineHeight:1.5,flex:1}}>{item}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Apprendre</h2><p style={{color:T.muted,fontSize:11}}>Rhétorique · Diplomatie · Géopolitique</p></div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
+        {([{id:"discours",icon:"📜",label:"Discours",desc:"Grands discours historiques analysés",color:"#2B78F5"},{id:"rhetori",icon:"🏛️",label:"Rhétorique",desc:"Techniques d'argumentation",color:"#7C3AED"},{id:"dict",icon:"📖",label:"Dictionnaire",desc:"Termes diplomatiques expliqués",color:"#16A34A"},{id:"fiches",icon:"📋",label:"Fiches de révision",desc:"ONU · UE · OTAN · Géopolitique",color:"#D97706"}] as const).map(s=>(
+          <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1.5px solid ${s.color}30`,background:`${s.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+            onMouseEnter={e=>e.currentTarget.style.background=`${s.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${s.color}08`}>
+            <div style={{width:52,height:52,borderRadius:14,background:`${s.color}20`,border:`1px solid ${s.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{s.icon}</div>
+            <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{s.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{s.desc}</p></div>
+            <Ic n="chevR" s={18} c={T.muted}/>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── CARRIÈRE & CONCOURS SCREEN ────────────────────────────────
+function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
+  const [sub,setSub]=useState<"menu"|"generateur"|"builder"|"concours"|"lettre">("menu");
+  const [genSubject,setGenSubject]=useState("");
+  const [genResult,setGenResult]=useState("");
+  const [genLoading,setGenLoading]=useState(false);
+  const [buildPos,setBuildPos]=useState("");
+  const [buildResult,setBuildResult]=useState("");
+  const [buildLoading,setBuildLoading]=useState(false);
+  const [lettrePoste,setLettrePoste]=useState("");
+  const [lettreExp,setLettreExp]=useState("");
+  const [lettreResult,setLettreResult]=useState("");
+  const [lettreLoading,setLettreLoading]=useState(false);
+  const getKey=()=>typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+
+  const genDiscours=async()=>{
+    const key=getKey();if(!key){setGenResult("⚠️ Clé Gemini requise dans les paramètres.");return;}
+    setGenLoading(true);setGenResult("");
+    try{const r=await callGemini(`Tu es un expert en rhétorique. Génère un discours de 3 minutes (400 mots) sur : "${genSubject}". Structure : accroche percutante, problème, 3 arguments avec exemples concrets, conclusion mémorable. Utilise des figures de style (anaphore, métaphore).`,[{role:"user",parts:[{text:genSubject}]}],key,600);setGenResult(r);addXP(20);}
+    catch{setGenResult("Erreur. Réessaie.");}
+    setGenLoading(false);
+  };
+
+  const buildArgs=async()=>{
+    const key=getKey();if(!key){setBuildResult("⚠️ Clé Gemini requise.");return;}
+    setBuildLoading(true);setBuildResult("");
+    try{const r=await callGemini(`Expert en argumentation. Pour la position : "${buildPos}", génère : 3 arguments POUR avec exemple et chiffre, 3 arguments CONTRE avec exemple et chiffre, 3 réfutations. Format clair et structuré.`,[{role:"user",parts:[{text:buildPos}]}],key,500);setBuildResult(r);addXP(15);}
+    catch{setBuildResult("Erreur. Réessaie.");}
+    setBuildLoading(false);
+  };
+
+  const genLettre=async()=>{
+    const key=getKey();if(!key){setLettreResult("⚠️ Clé Gemini requise.");return;}
+    setLettreLoading(true);setLettreResult("");
+    try{const r=await callGemini(`Expert recruteur. Génère une lettre de motivation professionnelle et percutante. Poste : "${lettrePoste}". Expériences : "${lettreExp||"non précisées"}". 3 paragraphes, directe, valorise les compétences, finit par une demande d'entretien.`,[{role:"user",parts:[{text:`${lettrePoste} — ${lettreExp}`}]}],key,400);setLettreResult(r);addXP(15);}
+    catch{setLettreResult("Erreur. Réessaie.");}
+    setLettreLoading(false);
+  };
+
+  if(sub==="generateur")return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={()=>{setSub("menu");setGenResult("");setGenSubject("");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Générateur de discours</h2>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:12}}>
+        <p style={{color:T.textD,fontSize:13}}>Entre un sujet — l&apos;IA génère un discours structuré prêt à prononcer.</p>
+        <input value={genSubject} onChange={e=>setGenSubject(e.target.value)} onKeyDown={e=>e.key==="Enter"&&genDiscours()} placeholder="Ex: L'IA va-t-elle détruire l'emploi ?" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+        <button onClick={genDiscours} disabled={genLoading||!genSubject.trim()} style={{padding:"13px",borderRadius:12,border:"none",background:genSubject.trim()?T.blueB:T.b1,color:genSubject.trim()?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:genSubject.trim()?"pointer":"default",fontFamily:"inherit"}}>{genLoading?"Génération…":"Générer le discours · +20 XP"}</button>
+        {genResult&&<div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}><p style={{color:T.text,fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{genResult}</p></div>}
+      </div>
+    </div>
+  );
+
+  if(sub==="builder")return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={()=>{setSub("menu");setBuildResult("");setBuildPos("");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Builder d&apos;arguments</h2>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:12}}>
+        <p style={{color:T.textD,fontSize:13}}>Entre une position — l&apos;IA structure tes arguments pour et contre.</p>
+        <input value={buildPos} onChange={e=>setBuildPos(e.target.value)} onKeyDown={e=>e.key==="Enter"&&buildArgs()} placeholder="Ex: La peine de mort doit être rétablie" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+        <button onClick={buildArgs} disabled={buildLoading||!buildPos.trim()} style={{padding:"13px",borderRadius:12,border:"none",background:buildPos.trim()?T.purple:T.b1,color:buildPos.trim()?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:buildPos.trim()?"pointer":"default",fontFamily:"inherit"}}>{buildLoading?"Analyse…":"Structurer les arguments · +15 XP"}</button>
+        {buildResult&&<div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}><p style={{color:T.text,fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{buildResult}</p></div>}
+      </div>
+    </div>
+  );
+
+  if(sub==="lettre")return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={()=>{setSub("menu");setLettreResult("");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Lettre de motivation</h2>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:12}}>
+        <input value={lettrePoste} onChange={e=>setLettrePoste(e.target.value)} placeholder="Poste visé (ex: Chargé de mission politique)" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+        <textarea value={lettreExp} onChange={e=>setLettreExp(e.target.value)} placeholder="Tes expériences clés (optionnel)" rows={3} style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit",resize:"none"}}/>
+        <button onClick={genLettre} disabled={lettreLoading||!lettrePoste.trim()} style={{padding:"13px",borderRadius:12,border:"none",background:lettrePoste.trim()?T.green:T.b1,color:lettrePoste.trim()?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:lettrePoste.trim()?"pointer":"default",fontFamily:"inherit"}}>{lettreLoading?"Rédaction…":"Générer la lettre · +15 XP"}</button>
+        {lettreResult&&<div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}><p style={{color:T.text,fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{lettreResult}</p></div>}
+      </div>
+    </div>
+  );
+
+  if(sub==="concours")return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={()=>setSub("menu")} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Préparation concours</h2>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
+        <p style={{color:T.textD,fontSize:13,marginBottom:4}}>Simulations d&apos;entretien dédiées à chaque concours — bientôt disponibles.</p>
+        {([{name:"Sciences Po",desc:"Entretien de personnalité + culture générale",color:"#2B78F5"},{name:"ENS / Grandes Écoles",desc:"Oral de culture générale, dissertation",color:"#7C3AED"},{name:"Fonction publique",desc:"Entretien devant jury, note de synthèse",color:"#16A34A"},{name:"Barreau / CRFPA",desc:"Plaidoirie, procédure pénale et civile",color:"#E03535"}]).map(c=>(
+          <div key={c.name} style={{padding:16,borderRadius:14,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,display:"flex",alignItems:"center",gap:14}}>
+            <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:15}}>{c.name}</p><p style={{color:T.textD,fontSize:12,marginTop:2}}>{c.desc}</p></div>
+            <span style={{background:`${c.color}20`,color:c.color,fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>Bientôt</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+        <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Carrière & Concours</h2><p style={{color:T.muted,fontSize:11}}>Outils IA pour ta progression</p></div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
+        {([{id:"generateur",icon:"✍️",label:"Générateur de discours",desc:"Discours IA structuré sur n'importe quel sujet",color:"#2B78F5"},{id:"builder",icon:"🧱",label:"Builder d'arguments",desc:"Structure tes pour/contre instantanément",color:"#7C3AED"},{id:"concours",icon:"🎓",label:"Prépa concours",desc:"Sciences Po, ENS, Barreau, Fonction publique",color:"#D97706"},{id:"lettre",icon:"📝",label:"Lettre de motivation",desc:"Génère une lettre pro en 30 secondes",color:"#16A34A"}] as const).map(s=>(
+          <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1.5px solid ${s.color}30`,background:`${s.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+            onMouseEnter={e=>e.currentTarget.style.background=`${s.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${s.color}08`}>
+            <div style={{width:52,height:52,borderRadius:14,background:`${s.color}20`,border:`1px solid ${s.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{s.icon}</div>
+            <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{s.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{s.desc}</p></div>
+            <Ic n="chevR" s={18} c={T.muted}/>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SimulationHub({T}:{T:Theme}) {
-  const [view,setView] = useState<"hub"|"studio"|"sims">("hub");
+  const [view,setView] = useState<"hub"|"studio"|"sims"|"apprendre"|"carriere">("hub");
   const [showKeySetup,setShowKeySetup] = useState(false);
   const [pendingView,setPendingView] = useState<"studio"|"sims"|null>(null);
 
@@ -1696,31 +2040,41 @@ function SimulationHub({T}:{T:Theme}) {
 
   if(view==="studio") return <StudioScreen T={T}/>;
   if(view==="sims") return <SimulationScreen T={T}/>;
+  if(view==="apprendre") return <ApprendreScreen T={T} onBack={()=>setView("hub")}/>;
+  if(view==="carriere") return <CarriereScreen T={T} onBack={()=>setView("hub")}/>;
 
-  const cards = [
-    {id:"studio",icon:"mic",label:"Studio Débat",desc:"Débat audio face à un journaliste IA",color:"#2B78F5"},
-    {id:"sims",icon:"globe",label:"Simulations",desc:"ONU, Procès, Soutenance, Commercial…",color:"#7C3AED"},
-  ];
   return(
-    <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:20}}>
+    <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:20,overflowY:"auto",height:"100%",boxSizing:"border-box"}}>
       {showKeySetup&&<ApiKeySetupModal T={T} onDone={()=>{setShowKeySetup(false);if(pendingView)setView(pendingView);setPendingView(null);}}/>}
       <div>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>NEXUS</p>
         <h1 style={{fontSize:26,fontWeight:800,color:T.text}}>Simulation</h1>
         <p style={{color:T.textD,fontSize:13,marginTop:4}}>Entraîne-toi à l&apos;oral dans des situations réelles</p>
       </div>
-      <div style={{display:"flex",flexDirection:"column",gap:14}}>
-        {cards.map(c=>(
-          <button key={c.id} onClick={()=>launch(c.id as "studio"|"sims")} style={{padding:20,borderRadius:16,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
-            onMouseEnter={e=>(e.currentTarget.style.background=`${c.color}15`)}
-            onMouseLeave={e=>(e.currentTarget.style.background=`${c.color}08`)}>
+
+      {/* APPRENDRE & CARRIÈRE — en haut */}
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase"}}>RESSOURCES</p>
+        {([{id:"apprendre",icon:"📚",label:"Apprendre",desc:"Discours · Rhétorique · Fiches · Dictionnaire",color:"#2B78F5"},{id:"carriere",icon:"💼",label:"Carrière & Concours",desc:"Générateur de discours · Arguments · Lettre",color:"#16A34A"}] as const).map(c=>(
+          <button key={c.id} onClick={()=>{haptic();setView(c.id);}} style={{padding:18,borderRadius:16,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+            onMouseEnter={e=>e.currentTarget.style.background=`${c.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${c.color}08`}>
+            <div style={{width:52,height:52,borderRadius:14,background:`${c.color}20`,border:`1px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{c.icon}</div>
+            <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{c.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{c.desc}</p></div>
+            <Ic n="chevR" s={18} c={T.muted}/>
+          </button>
+        ))}
+      </div>
+
+      {/* DÉBAT & SIMULATIONS — en bas */}
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase"}}>ENTRAÎNEMENT</p>
+        {([{id:"studio",icon:"mic",label:"Studio Débat",desc:"Débat audio face à un journaliste IA",color:"#7C3AED"},{id:"sims",icon:"globe",label:"Simulations",desc:"ONU, Procès, Soutenance, Commercial…",color:"#E03535"}] as const).map(c=>(
+          <button key={c.id} onClick={()=>launch(c.id)} style={{padding:20,borderRadius:16,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+            onMouseEnter={e=>e.currentTarget.style.background=`${c.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${c.color}08`}>
             <div style={{width:52,height:52,borderRadius:14,background:`${c.color}20`,border:`1px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <Ic n={c.icon} s={26} c={c.color}/>
             </div>
-            <div style={{flex:1}}>
-              <p style={{color:T.text,fontWeight:800,fontSize:16}}>{c.label}</p>
-              <p style={{color:T.textD,fontSize:12,marginTop:3}}>{c.desc}</p>
-            </div>
+            <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{c.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{c.desc}</p></div>
             <Ic n="chevR" s={18} c={T.muted}/>
           </button>
         ))}
@@ -2743,6 +3097,8 @@ function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin
     try{return JSON.parse(localStorage.getItem("nexus_posts")||"[]");}catch{return [];}
   });
   const postCount = userPosts.length;
+  const xp = getXP();
+  const lvl = levelInfo(xp);
 
   return(
     <div>
@@ -2774,6 +3130,22 @@ function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin
               <p style={{color:T.muted,fontSize:11}}>{l}</p>
             </div>
           ))}
+        </div>
+        {/* XP & Niveau */}
+        <div style={{marginTop:14,background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:20}}>⚡</span>
+              <div>
+                <p style={{color:T.text,fontWeight:800,fontSize:14}}>{lvl?.t||"Apprenti"} <span style={{color:T.muted,fontSize:11,fontWeight:400}}>— Niveau {lvl?.l||1}</span></p>
+                <p style={{color:T.muted,fontSize:11}}>{xp} XP · prochain niveau à {lvl?.max||150} XP</p>
+              </div>
+            </div>
+            <span style={{color:T.blueB,fontWeight:800,fontSize:13}}>{xp} XP</span>
+          </div>
+          <div style={{height:6,background:T.b1,borderRadius:3,overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${Math.min(100,Math.round(xp/((lvl?.max||150))*100))}%`,background:`linear-gradient(90deg,${T.blueB},${T.purple})`,borderRadius:3,transition:"width .4s"}}/>
+          </div>
         </div>
         {isAdmin&&<ApiKeySettings T={T}/>}
         <button onClick={onPremium} style={{width:"100%",marginTop:12,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
@@ -2925,14 +3297,15 @@ export default function NexusApp() {
   const [adminTaps,setAdminTaps] = useState(0);
   const [showAdminPin,setShowAdminPin] = useState(false);
   const [isAdmin,setIsAdmin] = useState(()=>typeof window!=="undefined"&&localStorage.getItem("nexus_admin")==="1");
+  const [streak,setStreak] = useState(0);
 
   useEffect(()=>{
     if(typeof window==="undefined") return;
-    // Injecter les clés d'environnement si elles ne sont pas encore définies
     const envG = process.env.NEXT_PUBLIC_GEMINI_KEY;
     const envE = process.env.NEXT_PUBLIC_EL_KEY;
     if(envG && !localStorage.getItem("gemini_key")) localStorage.setItem("gemini_key",envG);
     if(envE && !localStorage.getItem("el_key")) localStorage.setItem("el_key",envE);
+    setStreak(updateStreak());
   },[]);
 
   useEffect(()=>{
@@ -3012,6 +3385,10 @@ export default function NexusApp() {
             <span style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text,letterSpacing:0.5}}>NEXUS</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {streak>0&&<div style={{display:"flex",alignItems:"center",gap:3,background:`${T.amber}20`,border:`1px solid ${T.amber}40`,borderRadius:10,padding:"4px 8px"}}>
+              <span style={{fontSize:14}}>🔥</span>
+              <span style={{color:T.amber,fontSize:12,fontWeight:800}}>{streak}</span>
+            </div>}
             <button onClick={()=>{haptic();setDark(d=>!d);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
               <Ic n={dark?"sun":"moon"} s={16} c={T.textD}/>
             </button>
