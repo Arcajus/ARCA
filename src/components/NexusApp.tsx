@@ -3723,7 +3723,7 @@ function InstallBanner({T,onDismiss}:{T:Theme;onDismiss:()=>void}) {
 
 // ── ROOT APP ──────────────────────────────────────────────────
 export default function NexusApp() {
-  const [dark,setDark] = useState(true);
+  const [dark,setDark] = useState(false);
   const T = dark ? DARK : LIGHT;
   const [tab,setTab] = useState<"feed"|"simulation"|"messages"|"events"|"profile">("feed");
   const [showPremium,setShowPremium] = useState(false);
