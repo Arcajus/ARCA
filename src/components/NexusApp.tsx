@@ -3131,22 +3131,6 @@ function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin
             </div>
           ))}
         </div>
-        {/* XP & Niveau */}
-        <div style={{marginTop:14,background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:20}}>⚡</span>
-              <div>
-                <p style={{color:T.text,fontWeight:800,fontSize:14}}>{lvl?.t||"Apprenti"} <span style={{color:T.muted,fontSize:11,fontWeight:400}}>— Niveau {lvl?.l||1}</span></p>
-                <p style={{color:T.muted,fontSize:11}}>{xp} XP · prochain niveau à {lvl?.max||150} XP</p>
-              </div>
-            </div>
-            <span style={{color:T.blueB,fontWeight:800,fontSize:13}}>{xp} XP</span>
-          </div>
-          <div style={{height:6,background:T.b1,borderRadius:3,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${Math.min(100,Math.round(xp/((lvl?.max||150))*100))}%`,background:`linear-gradient(90deg,${T.blueB},${T.purple})`,borderRadius:3,transition:"width .4s"}}/>
-          </div>
-        </div>
         {isAdmin&&<ApiKeySettings T={T}/>}
         <button onClick={onPremium} style={{width:"100%",marginTop:12,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
           <Ic n="zap" s={16} c={T.amber}/>Passer à NEXUS+ — 5,99€/mois
