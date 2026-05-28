@@ -3131,6 +3131,14 @@ function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin
             </div>
           ))}
         </div>
+        {/* Streak */}
+        {getStreak()>0&&<div style={{marginTop:14,background:`${T.amber}10`,border:`1px solid ${T.amber}30`,borderRadius:14,padding:14,display:"flex",alignItems:"center",gap:12}}>
+          <span style={{fontSize:28}}>🔥</span>
+          <div>
+            <p style={{color:T.amber,fontWeight:800,fontSize:15}}>{getStreak()} jour{getStreak()>1?"s":""} de suite</p>
+            <p style={{color:T.muted,fontSize:12,marginTop:2}}>Continue comme ça !</p>
+          </div>
+        </div>}
         {/* XP & Niveau */}
         <div style={{marginTop:14,background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -3385,10 +3393,6 @@ export default function NexusApp() {
             <span style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text,letterSpacing:0.5}}>NEXUS</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            {streak>0&&<div style={{display:"flex",alignItems:"center",gap:3,background:`${T.amber}20`,border:`1px solid ${T.amber}40`,borderRadius:10,padding:"4px 8px"}}>
-              <span style={{fontSize:14}}>🔥</span>
-              <span style={{color:T.amber,fontSize:12,fontWeight:800}}>{streak}</span>
-            </div>}
             <button onClick={()=>{haptic();setDark(d=>!d);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
               <Ic n={dark?"sun":"moon"} s={16} c={T.textD}/>
             </button>
