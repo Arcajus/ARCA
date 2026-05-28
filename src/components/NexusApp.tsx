@@ -156,15 +156,49 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
     window.speechSynthesis.onvoiceschanged=()=>{clearTimeout(fb);window.speechSynthesis.onvoiceschanged=null;init();};
   }
 }
+// Kokoro TTS — free, runs in browser, no API key needed
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _kokoroTTS: any=null;
+let _kokoroLoading=false;
+async function getKokoroTTS() {
+  if(_kokoroTTS) return _kokoroTTS;
+  if(_kokoroLoading) return null;
+  _kokoroLoading=true;
+  try{
+    const {KokoroTTS}=await import("kokoro-js");
+    _kokoroTTS=await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0",{dtype:"q8"});
+    return _kokoroTTS;
+  }catch{return null;}
+  finally{_kokoroLoading=false;}
+}
+async function speakKokoro(text:string,gender:"M"|"F",onEnd?:()=>void):Promise<boolean>{
+  try{
+    const tts=await getKokoroTTS();
+    if(!tts) return false;
+    const voice=gender==="F"?"bf_emma" as const:"bm_george" as const;
+    const audio=await tts.generate(cleanForSpeech(text.slice(0,500)),{voice});
+    const blob:Blob=audio.toBlob();
+    const url=URL.createObjectURL(blob);
+    if(_hfAudio){_hfAudio.pause();_hfAudio.onended=null;}
+    _hfAudio=new Audio(url);
+    _hfAudio.onended=()=>{URL.revokeObjectURL(url);onEnd?.();};
+    _hfAudio.onerror=()=>{URL.revokeObjectURL(url);onEnd?.();};
+    await _hfAudio.play();
+    return true;
+  }catch{return false;}
+}
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   _ttsActive = true;
   const elKey = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
   if (elKey) {
     speakEL(cleanForSpeech(text), gender, elKey, onEnd)
-      .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+      .then(ok => { if(!ok) return speakKokoro(text, gender, onEnd); return true; })
+      .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
       .catch(() => speakWeb(text, gender, onEnd));
   } else {
-    speakWeb(text, gender, onEnd);
+    speakKokoro(text, gender, onEnd)
+      .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
+      .catch(() => speakWeb(text, gender, onEnd));
   }
 }
 function stopSpeech() {
