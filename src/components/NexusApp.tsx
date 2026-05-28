@@ -117,19 +117,16 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
   const init = () => {
     const vs = window.speechSynthesis.getVoices();
     const pick = (c:(v:SpeechSynthesisVoice)=>boolean)=>vs.find(c)||null;
-    // Priorité: Apple Enhanced (iOS) > Google Français > Microsoft Denise/Henri > any fr-FR
+    const isEnhanced=(v:SpeechSynthesisVoice)=>/enhanced|améliorée|amelioree|premium|neural/i.test(v.name);
+    // Priorité: Apple Enhanced/Améliorée (iOS) > Google Français > Microsoft > any fr-FR
     const fr =
-      // Apple Enhanced — voix naturelles iOS (ex: "Marie (Enhanced)", "Thomas (Enhanced)")
-      (gender==="F" ? pick(v=>v.lang.startsWith("fr") && /enhanced/i.test(v.name) && /marie|amelie|amélie|juliette|zoé|zoe/i.test(v.name)) : null) ||
-      (gender==="M" ? pick(v=>v.lang.startsWith("fr") && /enhanced/i.test(v.name) && /thomas|pierre|nicolas/i.test(v.name)) : null) ||
-      pick(v=>v.lang.startsWith("fr") && /enhanced/i.test(v.name)) ||
-      // Apple standard
+      (gender==="F" ? pick(v=>v.lang.startsWith("fr") && isEnhanced(v) && /marie|amelie|amélie|juliette|zoé|zoe/i.test(v.name)) : null) ||
+      (gender==="M" ? pick(v=>v.lang.startsWith("fr") && isEnhanced(v) && /thomas|pierre|nicolas/i.test(v.name)) : null) ||
+      pick(v=>v.lang.startsWith("fr") && isEnhanced(v)) ||
       (gender==="F" ? pick(v=>v.lang==="fr-FR" && /marie|amelie|amélie/i.test(v.name)) : null) ||
       (gender==="M" ? pick(v=>v.lang==="fr-FR" && /thomas|pierre/i.test(v.name)) : null) ||
-      // Google
       pick(v=>v.lang==="fr-FR" && /google français/i.test(v.name)) ||
       pick(v=>v.lang==="fr-FR" && /google/i.test(v.name)) ||
-      // Microsoft
       (gender==="F" ? pick(v=>v.lang==="fr-FR" && /denise|hortense/i.test(v.name)) : null) ||
       (gender==="M" ? pick(v=>v.lang==="fr-FR" && /henri|paul/i.test(v.name)) : null) ||
       pick(v=>v.lang==="fr-FR" && /microsoft/i.test(v.name)) ||
