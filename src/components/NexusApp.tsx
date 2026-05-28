@@ -1219,15 +1219,10 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
         </div>
       )}
       {/* Live news header */}
-      <div style={{padding:"10px 20px",borderBottom:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:7,height:7,borderRadius:"50%",background:T.red,animation:"pulse 1s infinite",flexShrink:0}}/>
-          <span style={{color:T.red,fontSize:10,fontWeight:800,letterSpacing:1.5}}>ACTUALITÉS EN DIRECT</span>
-          {lastRefresh&&<span style={{color:T.muted,fontSize:10}}>· {lastRefresh.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</span>}
-        </div>
-        <button onClick={()=>refresh(false)} disabled={liveLoading} style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:T.card,border:`1px solid ${T.b1}`,borderRadius:8,cursor:"pointer",opacity:liveLoading?.5:1,flexShrink:0}}>
-          <Ic n="trending" s={15} c={T.textD}/>
-        </button>
+      <div style={{padding:"10px 20px",borderBottom:`1px solid ${T.b1}`,display:"flex",alignItems:"center",gap:8}}>
+        <div style={{width:7,height:7,borderRadius:"50%",background:T.red,animation:"pulse 1s infinite",flexShrink:0}}/>
+        <span style={{color:T.red,fontSize:10,fontWeight:800,letterSpacing:1.5}}>ACTUALITÉS EN DIRECT</span>
+        {lastRefresh&&<span style={{color:T.muted,fontSize:10}}>· {lastRefresh.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</span>}
       </div>
       {liveLoading&&liveNews.length===0&&(
         <div style={{padding:"20px",textAlign:"center"}}>
@@ -3290,6 +3285,7 @@ export default function NexusApp() {
   const [showAdminPin,setShowAdminPin] = useState(false);
   const [isAdmin,setIsAdmin] = useState(()=>typeof window!=="undefined"&&localStorage.getItem("nexus_admin")==="1");
   const [streak,setStreak] = useState(0);
+  const [feedKey,setFeedKey] = useState(0);
 
   useEffect(()=>{
     if(typeof window==="undefined") return;
@@ -3317,7 +3313,7 @@ export default function NexusApp() {
     haptic();
     setTabAnim("slideInRight");
     setTab(id);
-    if(id==="feed"){setFeedUnread(0);if(typeof window!=="undefined")localStorage.setItem("nexus_unread","0");}
+    if(id==="feed"){setFeedUnread(0);setFeedKey(k=>k+1);if(typeof window!=="undefined")localStorage.setItem("nexus_unread","0");}
     setTimeout(()=>setTabAnim("fadeIn"),300);
   };
 
@@ -3395,7 +3391,7 @@ export default function NexusApp() {
           <PremiumScreen T={T} onBack={()=>setShowPremium(false)}/>
         ) : (
           <div key={tab} style={{animation:`${tabAnim} .25s ease`,height:"100%"}}>
-            {tab==="feed"&&<FeedScreen T={T} onDebate={()=>switchTab("simulation")} onNewPosts={handleNewPosts}/>}
+            {tab==="feed"&&<FeedScreen key={feedKey} T={T} onDebate={()=>switchTab("simulation")} onNewPosts={handleNewPosts}/>}
             {tab==="simulation"&&<SimulationHub T={T}/>}
             {tab==="messages"&&<MessagesScreen T={T}/>}
             {tab==="events"&&<EventsScreen T={T}/>}
