@@ -3131,14 +3131,6 @@ function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin
             </div>
           ))}
         </div>
-        {/* Streak */}
-        {getStreak()>0&&<div style={{marginTop:14,background:`${T.amber}10`,border:`1px solid ${T.amber}30`,borderRadius:14,padding:14,display:"flex",alignItems:"center",gap:12}}>
-          <span style={{fontSize:28}}>🔥</span>
-          <div>
-            <p style={{color:T.amber,fontWeight:800,fontSize:15}}>{getStreak()} jour{getStreak()>1?"s":""} de suite</p>
-            <p style={{color:T.muted,fontSize:12,marginTop:2}}>Continue comme ça !</p>
-          </div>
-        </div>}
         {/* XP & Niveau */}
         <div style={{marginTop:14,background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -3189,6 +3181,13 @@ function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin
         )}
         {activeTab==="score"&&(
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {getStreak()>0&&<div style={{background:`${T.amber}10`,border:`1px solid ${T.amber}30`,borderRadius:14,padding:14,display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontSize:26}}>🔥</span>
+              <div>
+                <p style={{color:T.amber,fontWeight:800,fontSize:15}}>{getStreak()} jour{getStreak()>1?"s":""} de suite</p>
+                <p style={{color:T.muted,fontSize:12,marginTop:2}}>Continue comme ça !</p>
+              </div>
+            </div>}
             <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:20,textAlign:"center"}}>
               <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Score global d&apos;éloquence</p>
               <span style={{fontSize:52,fontWeight:900,color:T.blueB,fontFamily:"monospace"}}>78</span>
