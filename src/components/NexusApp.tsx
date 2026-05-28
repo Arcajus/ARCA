@@ -1853,6 +1853,37 @@ const FICHES_DATA=[
   {id:25,title:"Médias & Démocratie",icon:"📺",color:"#7C3AED",items:["Quatrième pouvoir : la presse comme contre-pouvoir démocratique — liberté de la presse garantie par l'art. 10 CEDH et l'art. 11 DDHC 1789","Concentration des médias en France : Bolloré (CNews, C8, BFM, RMC), Niel (Le Monde), Arnault (Le Parisien, Les Échos), Bouygues (TF1, LCI) — 90% des grands médias","Indice RSF 2024 : Norvège 1ère, France 21e, USA 55e, Turquie 158e, Russie 162e, Chine 172e, Corée du Nord 177e (sur 180)","Fake news et désinformation : rapport Mueller (2019) sur interférences russes élection USA 2016 — 126 millions d'Américains exposés à des contenus russes sur Facebook","Réseaux sociaux et démocratie : l'algorithme favorise les contenus polarisants (engagement > vérité) — 'bulle de filtre' (Pariser), 'chambre d'écho'","DSA (Digital Services Act, 2022) : obligation de transparence algorithmique, retrait des contenus illicites — très grandes plateformes (100M d'utilisateurs) soumises à audit","Presse et journaux : crise du modèle économique (chute de la publicité imprimée) — mutations vers le numérique — mécénat (Le Monde, Le Figaro)","TF1, France Télévisions : service public audiovisuel (France Télévisions) vs chaînes privées — redevance supprimée (2022), budget via TVA","Radio et podcast : 82% des Français écoutent la radio — essor des podcasts natifs numériques — Spotify, Deezer comme nouvelles plateformes","Al Jazeera : fondée en 1996 au Qatar, en arabe puis anglais — révolution dans les médias du monde arabe — accusée de partialité pro-Hamas","RT (Russia Today) : outil de soft power russe — interdite en Europe depuis mars 2022 après l'invasion de l'Ukraine — désinformation active","TikTok et IA : 1,7 milliard d'utilisateurs — algorithme opaque — loi américaine visant l'interdiction (2024) pour raisons sécuritaires","Journalistes tués : 100+ journalistes tués en 2023 (RSF) — Palestine premier pays de décès (dont Shireen Abu Akleh, Al Jazeera, 2022)","Whistleblowers : Snowden (NSA, 2013), Manning (documents militaires, 2010), WikiLeaks (Assange, poursuivi 2019-2024) — tension transparence vs sécurité nationale","L'affaire Cambridge Analytica (2018) : données de 87 millions d'utilisateurs Facebook exploitées pour cibler des électeurs — Trump 2016, Brexit","Médias et populisme : CNews soutenu par Bolloré = augmentation du vote RN selon plusieurs études — 'Fox News effect' aux USA","Service public à l'ère numérique : BBC (UK), France Télévisions, ARD/ZDF (All.) — légitimité contestée, financement en débat, concurrence SVOD","Deepfakes électoraux : détection des fausses vidéos (Elections Act en cours aux USA et UE) — ingérence électorale via deepfakes en 2024 (Slovaquie)","Droit à l'oubli (RGPD art. 17) : possibilité de demander la suppression de résultats de recherche — Google doit supprimer les liens — enjeu de mémoire numérique","Pluralisme médiatique et démocratie : la concentration médiatique menace l'indépendance éditoriale — Arcom surveille le pluralisme en France — question d'un financement public stable"]},
 ];
 
+const CONCOURS_STATS:{[k:string]:{annee:number;places:number;candidats:number;admis:number;taux:string;noteMin:string;noteMoy:string;info:string}[]}={
+  sciencespo:[
+    {annee:2024,places:890,candidats:11200,admis:890,taux:"7,9 %",noteMin:"10/20",noteMoy:"14,8/20",info:"Concours commun IEP. Épreuves écrites (histoire, questions contemporaines) + oral de personnalité."},
+    {annee:2023,places:880,candidats:10800,admis:880,taux:"8,1 %",noteMin:"10/20",noteMoy:"14,6/20",info:"Renforcement du poids de la géopolitique dans l'épreuve de questions contemporaines."},
+    {annee:2022,places:870,candidats:10500,admis:870,taux:"8,3 %",noteMin:"10/20",noteMoy:"14,5/20",info:"Retour à un format normal après les adaptations Covid."},
+    {annee:2021,places:850,candidats:9800,admis:850,taux:"8,7 %",noteMin:"10/20",noteMoy:"14,3/20",info:"Épreuves maintenues en présentiel malgré la crise sanitaire."},
+    {annee:2020,places:830,candidats:9200,admis:830,taux:"9,0 %",noteMin:"10/20",noteMoy:"14,1/20",info:"Épreuves partiellement adaptées en raison du 1er confinement."},
+  ],
+  ens:[
+    {annee:2024,places:204,candidats:1850,admis:204,taux:"11,0 %",noteMin:"10/20",noteMoy:"15,2/20",info:"ENS Ulm + ENS Lyon combinés (filières littéraires et scientifiques). 2 ans de classe préparatoire requis."},
+    {annee:2023,places:200,candidats:1790,admis:200,taux:"11,2 %",noteMin:"10/20",noteMoy:"15,1/20",info:"Hausse du nombre de candidats dans les filières sciences humaines et sociales."},
+    {annee:2022,places:196,candidats:1750,admis:196,taux:"11,2 %",noteMin:"10/20",noteMoy:"15,0/20",info:"Réforme des épreuves de philosophie et de sciences sociales."},
+    {annee:2021,places:190,candidats:1700,admis:190,taux:"11,2 %",noteMin:"10/20",noteMoy:"14,9/20",info:"Épreuves orales maintenues en présentiel avec protocole sanitaire renforcé."},
+    {annee:2020,places:185,candidats:1620,admis:185,taux:"11,4 %",noteMin:"10/20",noteMoy:"14,8/20",info:"Oraux reportés et adaptés suite au confinement de mars 2020."},
+  ],
+  fonction:[
+    {annee:2024,places:60,candidats:680,admis:60,taux:"8,8 %",noteMin:"8/20",noteMoy:"13,8/20",info:"INSP (Institut National du Service Public, ex-ENA). Concours externe, interne et 3e voie. Stage de 2 ans."},
+    {annee:2023,places:58,candidats:650,admis:58,taux:"8,9 %",noteMin:"8/20",noteMoy:"13,6/20",info:"2e promotion INSP — davantage de places ouvertes à la 3e voie (société civile)."},
+    {annee:2022,places:55,candidats:630,admis:55,taux:"8,7 %",noteMin:"8/20",noteMoy:"13,5/20",info:"1ère promotion INSP après la suppression de l'ENA, rebaptisée Promotion René Cassin."},
+    {annee:2021,places:80,candidats:700,admis:80,taux:"11,4 %",noteMin:"8/20",noteMoy:"13,2/20",info:"Dernière promotion ENA — Promotion Germaine Tillion. Annonce de la suppression dès 2022."},
+    {annee:2020,places:78,candidats:720,admis:78,taux:"10,8 %",noteMin:"8/20",noteMoy:"13,0/20",info:"Promotion Molière. Épreuves maintenues avec adaptation du calendrier."},
+  ],
+  droit:[
+    {annee:2024,places:3800,candidats:5200,admis:3120,taux:"60,0 %",noteMin:"10/20",noteMoy:"12,5/20",info:"CRFPA. Note éliminatoire dans l'épreuve principale (droit des obligations ou procédure). 18 mois de formation à l'école du barreau (EFB) après réussite."},
+    {annee:2023,places:3750,candidats:5100,admis:3060,taux:"60,0 %",noteMin:"10/20",noteMoy:"12,4/20",info:"Réforme partielle du programme : renforcement du droit des affaires et du droit européen."},
+    {annee:2022,places:3700,candidats:4900,admis:2940,taux:"60,0 %",noteMin:"10/20",noteMoy:"12,3/20",info:"Hausse des candidats issue d'une forte promotion L3/M1 post-Covid."},
+    {annee:2021,places:3600,candidats:4800,admis:2880,taux:"60,0 %",noteMin:"10/20",noteMoy:"12,2/20",info:"Retour aux épreuves en présentiel. Fort taux de réussite au 2e rattrapage."},
+    {annee:2020,places:3500,candidats:4700,admis:2450,taux:"52,1 %",noteMin:"10/20",noteMoy:"12,0/20",info:"Taux historiquement bas dû aux perturbations liées au 1er confinement et aux reports d'épreuves."},
+  ],
+};
+
 const CONCOURS_EPREUVES:{[k:string]:{annee:number;matiere:string;sujet:string;type:string}[]}={
   sciencespo:[
     {annee:2024,matiere:"Histoire",sujet:"L'État et ses transformations dans le monde depuis 1945",type:"Dissertation"},
@@ -2107,6 +2138,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
   const [lettreLoading,setLettreLoading]=useState(false);
   const [concoursKey,setConcoursKey]=useState<"sciencespo"|"ens"|"fonction"|"droit">("sciencespo");
   const [concoursAnnee,setConcoursAnnee]=useState<number|null>(null);
+  const [concoursTab,setConcoursTab]=useState<"epreuves"|"stats">("epreuves");
   const getKey=()=>typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
 
   const genDiscours=async()=>{
@@ -2187,6 +2219,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
     ];
     const meta=CONC_META.find(c=>c.key===concoursKey)!;
     const epreuves=CONCOURS_EPREUVES[concoursKey];
+    const stats=CONCOURS_STATS[concoursKey];
     const annees=[...new Set(epreuves.map(e=>e.annee))].sort((a,b)=>b-a);
     const filtered=concoursAnnee?epreuves.filter(e=>e.annee===concoursAnnee):epreuves;
     const typeColor=(t:string)=>({Dissertation:"#2B78F5","Note de synthèse":"#16A34A","Cas pratique":"#E03535","Mise en situation":"#D97706"}[t]||"#888");
@@ -2196,6 +2229,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
           <button onClick={()=>setSub("menu")} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
           <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Prépa concours</h2><p style={{color:T.muted,fontSize:11}}>{meta.desc}</p></div>
         </div>
+        {/* Concours tabs */}
         <div style={{display:"flex",gap:8,padding:"10px 14px",overflowX:"auto",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
           {CONC_META.map(c=>(
             <button key={c.key} onClick={()=>{setConcoursKey(c.key);setConcoursAnnee(null);}} style={{flexShrink:0,padding:"8px 14px",borderRadius:20,border:`1.5px solid ${concoursKey===c.key?c.color:T.b1}`,background:concoursKey===c.key?c.color:"transparent",color:concoursKey===c.key?"#fff":T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
@@ -2203,30 +2237,70 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
             </button>
           ))}
         </div>
-        <div style={{display:"flex",gap:6,padding:"8px 14px",overflowX:"auto",borderBottom:`1px solid ${T.b1}`,flexShrink:0,alignItems:"center"}}>
-          <button onClick={()=>setConcoursAnnee(null)} style={{flexShrink:0,padding:"5px 12px",borderRadius:14,border:`1px solid ${concoursAnnee===null?meta.color:T.b1}`,background:concoursAnnee===null?`${meta.color}20`:"transparent",color:concoursAnnee===null?meta.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Toutes</button>
-          {annees.map(a=>(
-            <button key={a} onClick={()=>setConcoursAnnee(concoursAnnee===a?null:a)} style={{flexShrink:0,padding:"5px 12px",borderRadius:14,border:`1px solid ${concoursAnnee===a?meta.color:T.b1}`,background:concoursAnnee===a?`${meta.color}20`:"transparent",color:concoursAnnee===a?meta.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{a}</button>
+        {/* Épreuves / Résultats tab switch */}
+        <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+          {(["epreuves","stats"] as const).map(t=>(
+            <button key={t} onClick={()=>setConcoursTab(t)} style={{flex:1,padding:"10px",background:"none",border:"none",borderBottom:`2.5px solid ${concoursTab===t?meta.color:"transparent"}`,color:concoursTab===t?meta.color:T.muted,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+              {t==="epreuves"?"📝 Sujets":"📊 Résultats"}
+            </button>
           ))}
         </div>
-        <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
-          <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>{filtered.length} épreuve{filtered.length>1?"s":""}</p>
-          {filtered.map((e,i)=>{
-            const tc=typeColor(e.type);
-            return(
-              <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,gap:8,flexWrap:"wrap"}}>
-                  <span style={{background:`${meta.color}18`,color:meta.color,fontSize:10,padding:"3px 10px",borderRadius:10,fontWeight:800}}>{e.matiere}</span>
-                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <span style={{background:`${tc}15`,color:tc,fontSize:10,padding:"3px 8px",borderRadius:10,fontWeight:700}}>{e.type}</span>
-                    <span style={{color:T.muted,fontSize:11,fontWeight:700}}>{e.annee}</span>
+
+        {concoursTab==="epreuves"&&<>
+          <div style={{display:"flex",gap:6,padding:"8px 14px",overflowX:"auto",borderBottom:`1px solid ${T.b1}`,flexShrink:0,alignItems:"center"}}>
+            <button onClick={()=>setConcoursAnnee(null)} style={{flexShrink:0,padding:"5px 12px",borderRadius:14,border:`1px solid ${concoursAnnee===null?meta.color:T.b1}`,background:concoursAnnee===null?`${meta.color}20`:"transparent",color:concoursAnnee===null?meta.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Toutes</button>
+            {annees.map(a=>(
+              <button key={a} onClick={()=>setConcoursAnnee(concoursAnnee===a?null:a)} style={{flexShrink:0,padding:"5px 12px",borderRadius:14,border:`1px solid ${concoursAnnee===a?meta.color:T.b1}`,background:concoursAnnee===a?`${meta.color}20`:"transparent",color:concoursAnnee===a?meta.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{a}</button>
+            ))}
+          </div>
+          <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
+            <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>{filtered.length} épreuve{filtered.length>1?"s":""}</p>
+            {filtered.map((e,i)=>{
+              const tc=typeColor(e.type);
+              return(
+                <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,gap:8,flexWrap:"wrap"}}>
+                    <span style={{background:`${meta.color}18`,color:meta.color,fontSize:10,padding:"3px 10px",borderRadius:10,fontWeight:800}}>{e.matiere}</span>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <span style={{background:`${tc}15`,color:tc,fontSize:10,padding:"3px 8px",borderRadius:10,fontWeight:700}}>{e.type}</span>
+                      <span style={{color:T.muted,fontSize:11,fontWeight:700}}>{e.annee}</span>
+                    </div>
+                  </div>
+                  <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5}}>{e.sujet}</p>
+                </div>
+              );
+            })}
+          </div>
+        </>}
+
+        {concoursTab==="stats"&&(
+          <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:12}}>
+            <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Statistiques d&apos;admission 2020-2024</p>
+            {stats.map((s,i)=>(
+              <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,padding:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <span style={{color:T.text,fontWeight:800,fontSize:17}}>{s.annee}</span>
+                  <span style={{background:`${meta.color}20`,color:meta.color,fontSize:14,padding:"4px 12px",borderRadius:10,fontWeight:800}}>{s.taux}</span>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:s.info?10:0}}>
+                  <div style={{background:T.bg2,borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+                    <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Candidats</p>
+                    <p style={{color:T.text,fontSize:16,fontWeight:800}}>{s.candidats.toLocaleString("fr-FR")}</p>
+                  </div>
+                  <div style={{background:T.bg2,borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+                    <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Admis</p>
+                    <p style={{color:"#16A34A",fontSize:16,fontWeight:800}}>{s.admis.toLocaleString("fr-FR")}</p>
+                  </div>
+                  <div style={{background:T.bg2,borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+                    <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Moy. admis</p>
+                    <p style={{color:meta.color,fontSize:14,fontWeight:800}}>{s.noteMoy}</p>
                   </div>
                 </div>
-                <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5}}>{e.sujet}</p>
+                {s.info&&<p style={{color:T.textD,fontSize:12,lineHeight:1.5,borderTop:`1px solid ${T.b1}`,paddingTop:8,marginTop:4}}>{s.info}</p>}
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
