@@ -2139,6 +2139,26 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
   const [concoursKey,setConcoursKey]=useState<"sciencespo"|"ens"|"fonction"|"droit">("sciencespo");
   const [concoursAnnee,setConcoursAnnee]=useState<number|null>(null);
   const [concoursTab,setConcoursTab]=useState<"epreuves"|"stats">("epreuves");
+  const [corrId,setCorrId]=useState<string|null>(null);
+  const [corrTexts,setCorrTexts]=useState<Record<string,string>>({});
+  const [corrLoading,setCorrLoading]=useState<string|null>(null);
+
+  const genCorrection=async(e:{annee:number;matiere:string;sujet:string;type:string},key2:string)=>{
+    const key=getKey();if(!key){setCorrTexts(p=>({...p,[key2]:"⚠️ Clé Gemini requise dans les paramètres."}));return;}
+    setCorrLoading(key2);
+    const prompts:Record<string,string>={
+      "Dissertation":`Tu es un professeur de classe préparatoire. Génère une correction complète de cette dissertation : "${e.sujet}" (matière : ${e.matiere}, concours ${e.annee}). Structure : 1) Analyse du sujet et définitions clés, 2) Problématique proposée, 3) Plan détaillé (I → A B C, II → A B C, III → A B C avec arguments et exemples précis pour chaque sous-partie), 4) Introduction rédigée, 5) Conclusion. Réponds en français.`,
+      "Note de synthèse":`Tu es un expert en fonction publique. Pour cette note de synthèse : "${e.sujet}" (${e.matiere}, ${e.annee}), génère : 1) Méthode de la note de synthèse, 2) Plan en 2 parties avec sous-parties, 3) Idées principales à traiter avec exemples concrets, 4) Points de vigilance (erreurs à éviter), 5) Conclusion opérationnelle. Réponds en français.`,
+      "Cas pratique":`Tu es un juriste expert. Pour ce cas pratique : "${e.sujet}" (${e.matiere}, ${e.annee}), génère : 1) Méthode de résolution du cas pratique (syllogisme juridique), 2) Qualification juridique des faits, 3) Règles de droit applicables avec références précises (articles, jurisprudence), 4) Application au cas, 5) Solution motivée. Réponds en français.`,
+      "Mise en situation":`Tu es un formateur en fonction publique. Pour cette mise en situation : "${e.sujet}" (${e.annee}), génère : 1) Analyse de la situation et enjeux, 2) Cadre juridique et réglementaire applicable, 3) Plan d'action détaillé (mesures immédiates, moyen terme, long terme), 4) Acteurs à mobiliser, 5) Points de vigilance. Réponds en français.`,
+    };
+    const prompt=prompts[e.type]||prompts["Dissertation"];
+    try{
+      const r=await callGemini(prompt,[{role:"user",parts:[{text:e.sujet}]}],key,800);
+      setCorrTexts(p=>({...p,[key2]:r}));addXP(10);
+    }catch{setCorrTexts(p=>({...p,[key2]:"Erreur. Réessaie."}));}
+    setCorrLoading(null);
+  };
   const getKey=()=>typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
 
   const genDiscours=async()=>{
@@ -2257,8 +2277,12 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
             <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>{filtered.length} épreuve{filtered.length>1?"s":""}</p>
             {filtered.map((e,i)=>{
               const tc=typeColor(e.type);
+              const cid=`${concoursKey}-${e.annee}-${i}`;
+              const open=corrId===cid;
+              const corrText=corrTexts[cid];
+              const loading=corrLoading===cid;
               return(
-                <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+                <div key={i} style={{background:T.card,border:`1px solid ${open?meta.color:T.b1}`,borderRadius:14,padding:14,transition:"border .2s"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,gap:8,flexWrap:"wrap"}}>
                     <span style={{background:`${meta.color}18`,color:meta.color,fontSize:10,padding:"3px 10px",borderRadius:10,fontWeight:800}}>{e.matiere}</span>
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -2266,7 +2290,25 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
                       <span style={{color:T.muted,fontSize:11,fontWeight:700}}>{e.annee}</span>
                     </div>
                   </div>
-                  <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5}}>{e.sujet}</p>
+                  <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5,marginBottom:10}}>{e.sujet}</p>
+                  <button onClick={()=>{
+                    if(open){setCorrId(null);}
+                    else{setCorrId(cid);if(!corrText&&!loading)genCorrection(e,cid);}
+                  }} style={{width:"100%",padding:"8px",borderRadius:10,border:`1px solid ${meta.color}40`,background:open?`${meta.color}15`:`${meta.color}08`,color:meta.color,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    {loading?"Génération en cours…":open&&corrText?"▲ Masquer la correction":"📖 Correction IA · +10 XP"}
+                  </button>
+                  {open&&corrText&&(
+                    <div style={{marginTop:10,background:T.bg2,borderRadius:10,padding:14,borderLeft:`3px solid ${meta.color}`}}>
+                      {corrText.split("\n").map((line,li)=>{
+                        if(!line.trim())return <div key={li} style={{height:6}}/>;
+                        if(/^\d+\)/.test(line)||/^[IVX]+\./.test(line)||/^[A-C]\)/.test(line))
+                          return <p key={li} style={{color:meta.color,fontWeight:800,fontSize:13,marginTop:10,marginBottom:2}}>{line}</p>;
+                        if(line.startsWith("→")||line.startsWith("-"))
+                          return <p key={li} style={{color:T.textD,fontSize:12,lineHeight:1.6,marginLeft:10}}>{line}</p>;
+                        return <p key={li} style={{color:T.text,fontSize:12,lineHeight:1.6}}>{line}</p>;
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
