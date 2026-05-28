@@ -2220,17 +2220,13 @@ function ApprendreScreen({T,onBack}:{T:Theme;onBack:()=>void}){
 
 // ── CARRIÈRE & CONCOURS SCREEN ────────────────────────────────
 function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
-  const [sub,setSub]=useState<"menu"|"generateur"|"builder"|"concours"|"lettre">("menu");
+  const [sub,setSub]=useState<"menu"|"generateur"|"builder"|"concours">("menu");
   const [genSubject,setGenSubject]=useState("");
   const [genResult,setGenResult]=useState("");
   const [genLoading,setGenLoading]=useState(false);
   const [buildPos,setBuildPos]=useState("");
   const [buildResult,setBuildResult]=useState("");
   const [buildLoading,setBuildLoading]=useState(false);
-  const [lettrePoste,setLettrePoste]=useState("");
-  const [lettreExp,setLettreExp]=useState("");
-  const [lettreResult,setLettreResult]=useState("");
-  const [lettreLoading,setLettreLoading]=useState(false);
   const [concoursKey,setConcoursKey]=useState<"sciencespo"|"ens"|"fonction"|"droit">("sciencespo");
   const [concoursAnnee,setConcoursAnnee]=useState<number|null>(null);
   const [concoursTab,setConcoursTab]=useState<"epreuves"|"stats"|"grilles">("epreuves");
@@ -2272,14 +2268,6 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
     setBuildLoading(false);
   };
 
-  const genLettre=async()=>{
-    const key=getKey();if(!key){setLettreResult("⚠️ Clé Gemini requise.");return;}
-    setLettreLoading(true);setLettreResult("");
-    try{const r=await callGemini(`Expert recruteur. Génère une lettre de motivation professionnelle et percutante. Poste : "${lettrePoste}". Expériences : "${lettreExp||"non précisées"}". 3 paragraphes, directe, valorise les compétences, finit par une demande d'entretien.`,[{role:"user",parts:[{text:`${lettrePoste} — ${lettreExp}`}]}],key,400);setLettreResult(r);addXP(15);}
-    catch{setLettreResult("Erreur. Réessaie.");}
-    setLettreLoading(false);
-  };
-
   if(sub==="generateur")return(
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
       <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
@@ -2306,21 +2294,6 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
         <input value={buildPos} onChange={e=>setBuildPos(e.target.value)} onKeyDown={e=>e.key==="Enter"&&buildArgs()} placeholder="Ex: La peine de mort doit être rétablie" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
         <button onClick={buildArgs} disabled={buildLoading||!buildPos.trim()} style={{padding:"13px",borderRadius:12,border:"none",background:buildPos.trim()?T.purple:T.b1,color:buildPos.trim()?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:buildPos.trim()?"pointer":"default",fontFamily:"inherit"}}>{buildLoading?"Analyse…":"Structurer les arguments · +15 XP"}</button>
         {buildResult&&<div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}><p style={{color:T.text,fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{buildResult}</p></div>}
-      </div>
-    </div>
-  );
-
-  if(sub==="lettre")return(
-    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
-        <button onClick={()=>{setSub("menu");setLettreResult("");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
-        <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Lettre de motivation</h2>
-      </div>
-      <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:12}}>
-        <input value={lettrePoste} onChange={e=>setLettrePoste(e.target.value)} placeholder="Poste visé (ex: Chargé de mission politique)" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-        <textarea value={lettreExp} onChange={e=>setLettreExp(e.target.value)} placeholder="Tes expériences clés (optionnel)" rows={3} style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit",resize:"none"}}/>
-        <button onClick={genLettre} disabled={lettreLoading||!lettrePoste.trim()} style={{padding:"13px",borderRadius:12,border:"none",background:lettrePoste.trim()?T.green:T.b1,color:lettrePoste.trim()?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:lettrePoste.trim()?"pointer":"default",fontFamily:"inherit"}}>{lettreLoading?"Rédaction…":"Générer la lettre · +15 XP"}</button>
-        {lettreResult&&<div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}><p style={{color:T.text,fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{lettreResult}</p></div>}
       </div>
     </div>
   );
@@ -2486,7 +2459,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
         <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Carrière & Concours</h2><p style={{color:T.muted,fontSize:11}}>Outils IA pour ta progression</p></div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
-        {([{id:"generateur",icon:"✍️",label:"Générateur de discours",desc:"Discours IA structuré sur n'importe quel sujet",color:"#2B78F5"},{id:"builder",icon:"🧱",label:"Builder d'arguments",desc:"Structure tes pour/contre instantanément",color:"#7C3AED"},{id:"concours",icon:"🎓",label:"Prépa concours",desc:"Sciences Po, ENS, Barreau, Fonction publique",color:"#D97706"},{id:"lettre",icon:"📝",label:"Lettre de motivation",desc:"Génère une lettre pro en 30 secondes",color:"#16A34A"}] as const).map(s=>(
+        {([{id:"generateur",icon:"✍️",label:"Générateur de discours",desc:"Discours IA structuré sur n'importe quel sujet",color:"#2B78F5"},{id:"builder",icon:"🧱",label:"Builder d'arguments",desc:"Structure tes pour/contre instantanément",color:"#7C3AED"},{id:"concours",icon:"🎓",label:"Prépa concours",desc:"Sciences Po, ENS, Barreau, Fonction publique",color:"#D97706"}] as const).map(s=>(
           <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1.5px solid ${s.color}30`,background:`${s.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
             onMouseEnter={e=>e.currentTarget.style.background=`${s.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${s.color}08`}>
             <div style={{width:52,height:52,borderRadius:14,background:`${s.color}20`,border:`1px solid ${s.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{s.icon}</div>
