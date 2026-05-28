@@ -1884,6 +1884,101 @@ const CONCOURS_STATS:{[k:string]:{annee:number;places:number;candidats:number;ad
   ],
 };
 
+const CONCOURS_GRILLES:{[k:string]:{epreuve:string;bareme:number;eliminatoire?:string;criteres:{label:string;pts:number;desc:string}[];conseils:string[]}[]}={
+  sciencespo:[
+    {epreuve:"Dissertation de culture générale",bareme:20,eliminatoire:"5/20",criteres:[
+      {label:"Compréhension du sujet",pts:4,desc:"Le sujet est correctement délimité, les termes définis, les enjeux identifiés. Hors-sujet = note éliminatoire."},
+      {label:"Problématique",pts:4,desc:"Une problématique explicite, non évidente, qui guide le devoir. Elle doit être clairement formulée en introduction."},
+      {label:"Plan et structure",pts:4,desc:"Plan apparent, équilibré, logique (2 ou 3 parties). Transitions rédigées. Cohérence entre les parties."},
+      {label:"Richesse du contenu",pts:5,desc:"Exemples précis (dates, noms, chiffres), références historiques, politiques, littéraires. Variété des domaines mobilisés."},
+      {label:"Expression écrite",pts:3,desc:"Syntaxe correcte, vocabulaire précis, style fluide. Pas de fautes rédhibitoires. Introduction et conclusion soignées."},
+    ],conseils:["Commencez par l'analyse des mots-clés avant de rédiger","Minimum 3 exemples concrets par partie","La problématique doit être une vraie question, pas un simple plan déguisé","Évitez le catalogue d'idées sans fil directeur","L'introduction doit représenter ~15% du devoir"]},
+    {epreuve:"Dissertation d'histoire",bareme:20,eliminatoire:"5/20",criteres:[
+      {label:"Maîtrise chronologique",pts:5,desc:"Les dates, événements et périodes sont correctement situés. Pas d'anachronismes. Connaissance solide du programme."},
+      {label:"Problématique historique",pts:4,desc:"Le devoir dépasse le simple récit pour proposer une interprétation historique. Capacité à mettre en tension des forces historiques."},
+      {label:"Plan thématique ou chronothématique",pts:4,desc:"Préférence pour un plan thématique. Chaque partie doit répondre à une sous-question de la problématique."},
+      {label:"Exemples et documents",pts:4,desc:"Acteurs historiques précis, événements datés, contextes explicités. Référence à des historiens si possible."},
+      {label:"Expression et rigueur",pts:3,desc:"Vocabulaire historique approprié, dates exactes, noms correctement orthographiés."},
+    ],conseils:["Ne jamais commencer par 'De tout temps...' ou 'Depuis la nuit des temps...'","Citez des historiens (Braudel, Hobsbawm, Furet...)","Distinguez causes, événements et conséquences","Le récit pur est insuffisant : analysez et interprétez","Soignez la conclusion : portée historique du sujet"]},
+    {epreuve:"Oral de personnalité",bareme:20,eliminatoire:"8/20",criteres:[
+      {label:"Connaissance du dossier",pts:4,desc:"Le candidat maîtrise son dossier scolaire et ses expériences extra-scolaires. Il répond précisément aux questions."},
+      {label:"Culture générale et actualité",pts:5,desc:"Connaissance des grands enjeux contemporains (politique, économie, géopolitique, société). Capacité à établir des liens."},
+      {label:"Qualité argumentative",pts:4,desc:"Les opinions sont défendues avec des arguments structurés et des exemples. Le candidat ne se contredit pas."},
+      {label:"Expression orale",pts:4,desc:"Clarté, fluidité, vocabulaire adapté, contact visuel. Pas de tics de langage excessifs. Gestion du stress."},
+      {label:"Personnalité et motivation",pts:3,desc:"Le candidat montre une vraie motivation pour Sciences Po, un projet cohérent, une personnalité affirmée."},
+    ],conseils:["Préparez un 'pitch' de 2 min sur votre parcours","Lisez la presse quotidiennement (Le Monde, Le Figaro, Courrier International)","Préparez 3 sujets d'actualité que vous maîtrisez parfaitement","Soyez prêt à défendre vos opinions sous pression","Montrez de la curiosité intellectuelle, pas seulement des bonnes notes"]},
+  ],
+  ens:[
+    {epreuve:"Dissertation de philosophie",bareme:20,eliminatoire:"5/20",criteres:[
+      {label:"Analyse conceptuelle",pts:5,desc:"Les concepts centraux sont définis avec précision. L'argumentation s'appuie sur des distinctions conceptuelles rigoureuses."},
+      {label:"Problématisation",pts:5,desc:"Le devoir soulève une vraie tension philosophique. La problématique révèle quelque chose de non-évident dans le sujet."},
+      {label:"Maîtrise de la tradition",pts:4,desc:"Références précises à des philosophes (nom, œuvre, argument). Pas de citations mal attribuées."},
+      {label:"Rigueur argumentative",pts:4,desc:"Chaque thèse est défendue par des arguments valides. Les objections sont anticipées et traitées."},
+      {label:"Style philosophique",pts:2,desc:"Écriture claire, précise, sans jargon inutile. La forme sert le fond."},
+    ],conseils:["La citation en épigraphe est un piège si elle n'est pas parfaitement maîtrisée","Préférez 3 parties à 2 : thèse, antithèse, dépassement","Chaque paragraphe doit avoir une thèse propre","La culture philosophique s'évalue sur la précision, pas la quantité","Les exemples littéraires ou scientifiques enrichissent si ils sont rigoureux"]},
+    {epreuve:"Dissertation de sciences sociales",bareme:20,eliminatoire:"5/20",criteres:[
+      {label:"Définition des concepts",pts:4,desc:"Les notions sociologiques, économiques ou politiques sont définies selon les auteurs de référence."},
+      {label:"Mobilisation des auteurs",pts:5,desc:"Références précises à des sociologues, économistes, politistes (Bourdieu, Weber, Durkheim, Rawls...)."},
+      {label:"Articulation théorie/empirie",pts:4,desc:"Les théories sont illustrées par des données empiriques, études, statistiques, enquêtes."},
+      {label:"Problématique et plan",pts:4,desc:"Problématique non triviale, plan en 2 ou 3 parties logiquement articulées."},
+      {label:"Expression",pts:3,desc:"Précision du vocabulaire des sciences sociales, pas d'approximation conceptuelle."},
+    ],conseils:["Maîtrisez les 10 auteurs incontournables : Bourdieu, Weber, Durkheim, Tocqueville, Marx, Rawls, Sen, Keynes, Foucault, Arendt","Chaque argument théorique doit être suivi d'une illustration empirique","Évitez le sens commun : utilisez le vocabulaire savant","Les débats entre auteurs montrent votre maîtrise","Mentionnez des études et enquêtes récentes"]},
+    {epreuve:"Grand oral ENS",bareme:20,eliminatoire:"8/20",criteres:[
+      {label:"Qualité de l'exposé",pts:5,desc:"Structure claire, introduction, développement, conclusion. Durée respectée (généralement 10 min)."},
+      {label:"Profondeur de la réflexion",pts:5,desc:"Le candidat va au-delà du cours, propose une réflexion personnelle et originale."},
+      {label:"Maîtrise de la bibliographie",pts:4,desc:"Références précises, capacité à discuter des œuvres et articles mentionnés."},
+      {label:"Réponse aux questions du jury",pts:4,desc:"Le candidat répond précisément, reconnaît ses limites, rebondit sur les questions."},
+      {label:"Expression et présence",pts:2,desc:"Clarté, articulation, rythme, absence de lecture. Contact avec le jury."},
+    ],conseils:["Préparez une bibliographie de 10-15 références que vous maîtrisez parfaitement","Anticipez 20 questions difficiles sur votre sujet","Ne lisez jamais vos notes lors de l'exposé","Si vous ne savez pas, dites-le honnêtement — le jury respecte l'honnêteté","L'originalité de la pensée prime sur l'érudition"]},
+  ],
+  fonction:[
+    {epreuve:"Note de synthèse",bareme:20,eliminatoire:"5/20",criteres:[
+      {label:"Fidélité aux documents",pts:6,desc:"La note ne contient que des informations tirées du dossier. Aucune idée personnelle non étayée. Les idées sont correctement attribuées."},
+      {label:"Exhaustivité",pts:4,desc:"Tous les documents sont exploités. Les idées essentielles sont toutes présentes. Aucun document majeur ignoré."},
+      {label:"Structure administrative",pts:4,desc:"Format respecté : titre, introduction (contexte + plan), développement en 2-3 parties titrées, conclusion. Pas de sous-titres excessifs."},
+      {label:"Style administratif",pts:4,desc:"Langage clair, neutre, concis. Pas de jugements de valeur. Formulations impersonnelles. Absence de fautes."},
+      {label:"Longueur et présentation",pts:2,desc:"Respect de la longueur indiquée (généralement 4-6 pages). Mise en page soignée, paragraphes aérés."},
+    ],conseils:["Ne jamais insérer d'idées personnelles : la note synthétise, elle n'argumente pas","La lecture active des documents (30-40 min) est aussi importante que la rédaction","Numérotez vos sources entre parenthèses ou en notes de bas de page","L'introduction doit poser l'enjeu du dossier en 2-3 phrases","Méthode : lire → annoter → regrouper les idées → rédiger le plan → rédiger"]},
+    {epreuve:"Dissertation de culture générale",bareme:20,eliminatoire:"5/20",criteres:[
+      {label:"Compréhension de l'enjeu administratif",pts:5,desc:"Le devoir montre une compréhension des réalités de l'administration et des politiques publiques."},
+      {label:"Problématique et plan",pts:4,desc:"Problématique claire, plan en 2-3 parties logiques, transitions apparentes."},
+      {label:"Exemples de politiques publiques",pts:5,desc:"Références à des lois, réformes, rapports officiels, données chiffrées sur l'administration française."},
+      {label:"Expression écrite",pts:3,desc:"Style administratif accessible, syntaxe correcte, vocabulaire juridique et administratif maîtrisé."},
+      {label:"Conclusion opérationnelle",pts:3,desc:"La conclusion propose des perspectives concrètes, non des généralités."},
+    ],conseils:["Maîtrisez les grandes réformes de l'État (RGPP, MAP, CAP22, INSP)","Citez des rapports officiels (Cour des comptes, OCDE, France Stratégie)","Montrez que vous connaissez le fonctionnement réel de l'administration","Les exemples étrangers (Royaume-Uni, Suède, Allemagne) enrichissent","Évitez les formules creuses : soyez précis et concret"]},
+    {epreuve:"Grand oral devant jury",bareme:20,eliminatoire:"8/20",criteres:[
+      {label:"Présentation personnelle",pts:3,desc:"Présentation claire du parcours, de la motivation, du projet professionnel dans la fonction publique."},
+      {label:"Connaissance des enjeux de l'administration",pts:5,desc:"Le candidat connaît les réformes en cours, les défis de modernisation, les politiques publiques majeures."},
+      {label:"Qualité argumentative",pts:5,desc:"Opinions défendues avec des arguments structurés, des exemples précis, une pensée rigoureuse."},
+      {label:"Gestion de la contradiction",pts:4,desc:"Le jury met le candidat sous pression : il doit maintenir ses positions ou les réviser avec élégance."},
+      {label:"Présence et expression",pts:3,desc:"Clarté, calme sous pression, contact visuel, absence de tics. Le candidat incarne le futur haut fonctionnaire."},
+    ],conseils:["Le jury cherche un futur dirigeant, pas un encyclopédiste","Préparez votre 'portrait chinois' administratif : quelle politique publique changeriez-vous ?","Lisez les rapports de la Cour des comptes et de l'inspection générale","Montrez que vous comprenez les contraintes budgétaires","L'humilité intelligente (reconnaître la complexité) vaut mieux que la certitude superficielle"]},
+  ],
+  droit:[
+    {epreuve:"Épreuve principale (droit des obligations)",bareme:20,eliminatoire:"10/20",criteres:[
+      {label:"Identification du problème juridique",pts:4,desc:"Le candidat identifie immédiatement et précisément le ou les problèmes de droit soulevés par le cas."},
+      {label:"Annonce du syllogisme",pts:3,desc:"La règle de droit applicable est clairement énoncée avec ses conditions d'application (majeure)."},
+      {label:"Application aux faits",pts:5,desc:"Les faits de l'espèce sont qualifiés selon les critères légaux et jurisprudentiels (mineure). Chaque condition est analysée."},
+      {label:"Références jurisprudentielles",pts:4,desc:"La jurisprudence pertinente est citée précisément (Cass. civ. 1ère, date ; CE, date). Les arrêts de principe sont maîtrisés."},
+      {label:"Solution motivée",pts:4,desc:"La conclusion juridique est clairement exprimée, motivée, et tient compte de toutes les hypothèses."},
+    ],conseils:["La méthode syllogistique est obligatoire : règle → application → solution","Citez toujours les articles du Code civil, pénal ou de procédure","Les arrêts de la Cour de cassation et du Conseil d'État sont incontournables","N'oubliez jamais les hypothèses alternatives","Le style doit être sobre et précis : évitez les formulations incertaines"]},
+    {epreuve:"Épreuve de procédure",bareme:20,eliminatoire:"8/20",criteres:[
+      {label:"Maîtrise des délais",pts:4,desc:"Les délais de procédure (appel, cassation, prescription) sont exactement connus et appliqués."},
+      {label:"Voies de recours",pts:4,desc:"Les voies de recours ordinaires (appel) et extraordinaires (pourvoi, révision) sont identifiées et appliquées."},
+      {label:"Compétence juridictionnelle",pts:4,desc:"La juridiction compétente (TJ, CA, Cass., TA, CAA, CE) est correctement déterminée selon la nature du litige."},
+      {label:"Principes directeurs du procès",pts:4,desc:"Contradictoire, égalité des armes, loyauté des preuves, droits de la défense sont appliqués."},
+      {label:"Rédaction des actes",pts:4,desc:"Si demandée, la rédaction d'actes de procédure (assignation, conclusions) respecte les mentions obligatoires."},
+    ],conseils:["Les délais sont éliminatoires : apprenez-les par cœur","Distinguez bien juridictions civiles, pénales et administratives","Maîtrisez la réforme de la procédure civile (décret 2019)","Les nullités de forme nécessitent un grief : vérifiez systématiquement","La procédure orale (tribunaux de proximité) diffère de la procédure écrite"]},
+    {epreuve:"Grand oral du CRFPA",bareme:20,eliminatoire:"8/20",criteres:[
+      {label:"Exposé structuré",pts:4,desc:"Introduction (contextualisation + problématique), développement en 2 parties, conclusion. Durée : 10 min."},
+      {label:"Maîtrise technique du droit",pts:6,desc:"Le candidat démontre une connaissance approfondie des textes, de la jurisprudence et de la doctrine sur le sujet tiré."},
+      {label:"Réponse aux questions",pts:5,desc:"Le candidat répond avec précision aux questions du jury, y compris sur des points techniques pointus."},
+      {label:"Posture d'avocat",pts:3,desc:"Argumentation convaincante, défense d'une position, capacité à plaider. Le candidat montre qu'il pense comme un avocat."},
+      {label:"Expression orale",pts:2,desc:"Clarté, fluidité, articulation, vocabulaire juridique précis. Absence de lecture."},
+    ],conseils:["Le sujet est tiré au sort : préparez tous les domaines du programme","La posture d'avocat est évaluée : prenez position, ne vous contentez pas d'exposer","Citez des arrêts récents (moins de 5 ans) pour montrer votre veille juridique","Préparez-vous à défendre des positions contraires à votre intuition","Le jury est souvent composé d'avocats : montrez que vous voulez vraiment exercer"]},
+  ],
+};
+
 const CONCOURS_EPREUVES:{[k:string]:{annee:number;matiere:string;sujet:string;type:string}[]}={
   sciencespo:[
     {annee:2024,matiere:"Histoire",sujet:"L'État et ses transformations dans le monde depuis 1945",type:"Dissertation"},
@@ -2138,7 +2233,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
   const [lettreLoading,setLettreLoading]=useState(false);
   const [concoursKey,setConcoursKey]=useState<"sciencespo"|"ens"|"fonction"|"droit">("sciencespo");
   const [concoursAnnee,setConcoursAnnee]=useState<number|null>(null);
-  const [concoursTab,setConcoursTab]=useState<"epreuves"|"stats">("epreuves");
+  const [concoursTab,setConcoursTab]=useState<"epreuves"|"stats"|"grilles">("epreuves");
   const [corrId,setCorrId]=useState<string|null>(null);
   const [corrTexts,setCorrTexts]=useState<Record<string,string>>({});
   const [corrLoading,setCorrLoading]=useState<string|null>(null);
@@ -2240,6 +2335,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
     const meta=CONC_META.find(c=>c.key===concoursKey)!;
     const epreuves=CONCOURS_EPREUVES[concoursKey];
     const stats=CONCOURS_STATS[concoursKey];
+    const grilles=CONCOURS_GRILLES[concoursKey];
     const annees=[...new Set(epreuves.map(e=>e.annee))].sort((a,b)=>b-a);
     const filtered=concoursAnnee?epreuves.filter(e=>e.annee===concoursAnnee):epreuves;
     const typeColor=(t:string)=>({Dissertation:"#2B78F5","Note de synthèse":"#16A34A","Cas pratique":"#E03535","Mise en situation":"#D97706"}[t]||"#888");
@@ -2257,11 +2353,11 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
             </button>
           ))}
         </div>
-        {/* Épreuves / Résultats tab switch */}
+        {/* Sujets / Résultats / Grilles tab switch */}
         <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
-          {(["epreuves","stats"] as const).map(t=>(
-            <button key={t} onClick={()=>setConcoursTab(t)} style={{flex:1,padding:"10px",background:"none",border:"none",borderBottom:`2.5px solid ${concoursTab===t?meta.color:"transparent"}`,color:concoursTab===t?meta.color:T.muted,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
-              {t==="epreuves"?"📝 Sujets":"📊 Résultats"}
+          {(["epreuves","stats","grilles"] as const).map(t=>(
+            <button key={t} onClick={()=>setConcoursTab(t as typeof concoursTab)} style={{flex:1,padding:"9px 4px",background:"none",border:"none",borderBottom:`2.5px solid ${concoursTab===t?meta.color:"transparent"}`,color:concoursTab===t?meta.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+              {t==="epreuves"?"📝 Sujets":t==="stats"?"📊 Résultats":"📋 Grilles"}
             </button>
           ))}
         </div>
@@ -2339,6 +2435,42 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
                   </div>
                 </div>
                 {s.info&&<p style={{color:T.textD,fontSize:12,lineHeight:1.5,borderTop:`1px solid ${T.b1}`,paddingTop:8,marginTop:4}}>{s.info}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {concoursTab==="grilles"&&(
+          <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:14}}>
+            <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Grilles de notation officielles</p>
+            {grilles.map((g,gi)=>(
+              <div key={gi} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,overflow:"hidden"}}>
+                <div style={{padding:"12px 14px",background:`${meta.color}10`,borderBottom:`1px solid ${meta.color}30`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <p style={{color:T.text,fontWeight:800,fontSize:14}}>{g.epreuve}</p>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    {g.eliminatoire&&<span style={{background:"#E0353520",color:"#E03535",fontSize:10,padding:"2px 8px",borderRadius:8,fontWeight:700}}>Élim. {g.eliminatoire}</span>}
+                    <span style={{background:`${meta.color}20`,color:meta.color,fontSize:12,padding:"2px 8px",borderRadius:8,fontWeight:800}}>{g.bareme}/20</span>
+                  </div>
+                </div>
+                <div style={{padding:"12px 14px",display:"flex",flexDirection:"column",gap:8}}>
+                  {g.criteres.map((c,ci)=>(
+                    <div key={ci} style={{display:"flex",gap:10,alignItems:"flex-start",paddingBottom:8,borderBottom:ci<g.criteres.length-1?`1px solid ${T.b1}`:"none"}}>
+                      <div style={{width:34,height:34,borderRadius:10,background:`${meta.color}15`,border:`1px solid ${meta.color}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        <p style={{color:meta.color,fontSize:13,fontWeight:800}}>{c.pts}</p>
+                      </div>
+                      <div style={{flex:1}}>
+                        <p style={{color:T.text,fontWeight:700,fontSize:13}}>{c.label}</p>
+                        <p style={{color:T.textD,fontSize:12,lineHeight:1.5,marginTop:2}}>{c.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{padding:"10px 14px",background:T.bg2,borderTop:`1px solid ${T.b1}`}}>
+                  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Conseils du jury</p>
+                  {g.conseils.map((tip,ti)=>(
+                    <p key={ti} style={{color:T.textD,fontSize:12,lineHeight:1.5,marginBottom:3}}>→ {tip}</p>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
