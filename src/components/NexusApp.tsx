@@ -162,28 +162,23 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
     window.speechSynthesis.onvoiceschanged=()=>{clearTimeout(fb);window.speechSynthesis.onvoiceschanged=null;init();};
   }
 }
-// Kokoro TTS — free, runs in browser, no API key needed
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _kokoroTTS: any=null;
-let _kokoroLoading=false;
-async function getKokoroTTS() {
-  if(_kokoroTTS) return _kokoroTTS;
-  if(_kokoroLoading) return null;
-  _kokoroLoading=true;
+// Azure TTS — voix neurales naturelles (DeniseNeural fr-FR), 500k chars/mois gratuits
+async function speakAzure(text:string,gender:"M"|"F",onEnd?:()=>void):Promise<boolean>{
+  if(typeof window==="undefined") return false;
+  const key=localStorage.getItem("azure_tts_key")||"";
+  const region=localStorage.getItem("azure_tts_region")||"eastus";
+  if(!key) return false;
   try{
-    const {KokoroTTS}=await import("kokoro-js");
-    _kokoroTTS=await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0",{dtype:"q8"});
-    return _kokoroTTS;
-  }catch{return null;}
-  finally{_kokoroLoading=false;}
-}
-async function speakKokoro(text:string,gender:"M"|"F",onEnd?:()=>void):Promise<boolean>{
-  try{
-    const tts=await getKokoroTTS();
-    if(!tts) return false;
-    const voice=gender==="F"?"bf_emma" as const:"bm_george" as const;
-    const audio=await tts.generate(cleanForSpeech(text.slice(0,500)),{voice});
-    const blob:Blob=audio.toBlob();
+    const voice=gender==="F"?"fr-FR-DeniseNeural":"fr-FR-HenriNeural";
+    const ssml=`<speak version='1.0' xml:lang='fr-FR'><voice name='${voice}'>${cleanForSpeech(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</voice></speak>`;
+    const res=await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,{
+      method:"POST",
+      headers:{"Ocp-Apim-Subscription-Key":key,"Content-Type":"application/ssml+xml","X-Microsoft-OutputFormat":"audio-24khz-48kbitrate-mono-mp3"},
+      body:ssml
+    });
+    if(!res.ok) return false;
+    const blob=await res.blob();
+    if(blob.size<100) return false;
     const url=URL.createObjectURL(blob);
     if(_hfAudio){_hfAudio.pause();_hfAudio.onended=null;}
     _hfAudio=new Audio(url);
@@ -196,9 +191,15 @@ async function speakKokoro(text:string,gender:"M"|"F",onEnd?:()=>void):Promise<b
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   _ttsActive = true;
   const elKey = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
+  const azureKey = typeof window !== "undefined" ? localStorage.getItem("azure_tts_key") : null;
   if (elKey) {
     speakEL(cleanForSpeech(text), gender, elKey, onEnd)
-      .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+      .then(ok => ok || speakAzure(text, gender, onEnd))
+      .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
+      .catch(() => speakWeb(text, gender, onEnd));
+  } else if(azureKey) {
+    speakAzure(text, gender, onEnd)
+      .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
       .catch(() => speakWeb(text, gender, onEnd));
   } else {
     speakWeb(text, gender, onEnd);
@@ -1646,6 +1647,8 @@ function MessagesScreen({T}:{T:Theme}) {
 function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
   const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
   const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
+  const [azk,setAzk] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_key")||"":"");
+  const [azr,setAzr] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_region")||"eastus":"");
   const save=(k:string,v:string)=>{if(typeof window!=="undefined")localStorage.setItem(k,v);};
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .2s"}}>
@@ -1677,7 +1680,20 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
             {ek&&<div style={{width:8,height:8,borderRadius:"50%",background:T.green,flexShrink:0}}/>}
           </div>
           <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-          <p style={{color:T.muted,fontSize:10,marginTop:6}}>Sans clé : voix navigateur (Google/Microsoft/Apple). Avec clé : voix naturelles ElevenLabs.</p>
+          <p style={{color:T.muted,fontSize:10,marginTop:6}}>Sans clé : voix navigateur. Avec clé : voix naturelles ElevenLabs.</p>
+        </div>
+        {/* Azure TTS */}
+        <div style={{background:T.bg2,borderRadius:12,padding:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <div style={{width:28,height:28,borderRadius:7,background:"#0078d420",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}>🔊</span></div>
+            <div style={{flex:1}}>
+              <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé Azure TTS <span style={{color:T.green,fontSize:10,fontWeight:700}}>(recommandé — voix DeniseNeural)</span></p>
+              <p style={{color:T.muted,fontSize:10}}>portal.azure.com → Speech → F0 gratuit · 500 000 chars/mois</p>
+            </div>
+            {azk&&<div style={{width:8,height:8,borderRadius:"50%",background:T.green,flexShrink:0}}/>}
+          </div>
+          <input type="password" value={azk} onChange={e=>{setAzk(e.target.value);save("azure_tts_key",e.target.value);}} placeholder="Clé Azure Speech…" style={{width:"100%",background:T.surf,border:`1px solid ${azk?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:6}}/>
+          <input type="text" value={azr} onChange={e=>{setAzr(e.target.value);save("azure_tts_region",e.target.value);}} placeholder="Région (ex: eastus, westeurope…)" style={{width:"100%",background:T.surf,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         </div>
         <button onClick={()=>{if(ck)onDone();}} disabled={!ck} style={{padding:15,borderRadius:14,border:"none",background:ck?T.blueB:T.b1,color:ck?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:ck?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
           {ck?"Démarrer la simulation →":"Entrez votre clé Gemini pour continuer"}
@@ -2570,6 +2586,8 @@ function SimulationHub({T}:{T:Theme}) {
 function ApiKeySettings({T}:{T:Theme}) {
   const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
   const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
+  const [azk,setAzk] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_key")||"":"");
+  const [azr,setAzr] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_region")||"eastus":"");
   const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
   return(
     <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
@@ -2578,10 +2596,16 @@ function ApiKeySettings({T}:{T:Theme}) {
         <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         <p style={{color:T.muted,fontSize:11,marginTop:5}}>aistudio.google.com → Get API key · Nécessaire pour les simulations IA</p>
       </div>
+      <div style={{background:T.card,border:`1px solid ${azk?"#0078d4":T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🔊 Azure TTS <span style={{color:"#16A34A",fontWeight:700,textTransform:"none",letterSpacing:0}}>(recommandé — DeniseNeural)</span></p>
+        <input type="password" value={azk} onChange={e=>{setAzk(e.target.value);save("azure_tts_key",e.target.value);}} placeholder="Clé Azure Speech…" style={{width:"100%",background:T.bg2,border:`1px solid ${azk?"#0078d4":T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:6}}/>
+        <input type="text" value={azr} onChange={e=>{setAzr(e.target.value);save("azure_tts_region",e.target.value);}} placeholder="Région Azure (ex: eastus)" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        <p style={{color:T.muted,fontSize:11,marginTop:5}}>portal.azure.com → Speech → F0 gratuit · 500 000 chars/mois · Voix française naturelle</p>
+      </div>
       <div style={{background:T.card,border:`1px solid ${ek?T.purple:T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
-        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🎙️ Clé ElevenLabs <span style={{color:T.muted,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optionnel — voix naturelles)</span></p>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🎙️ Clé ElevenLabs <span style={{color:T.muted,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optionnel)</span></p>
         <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        <p style={{color:T.muted,fontSize:11,marginTop:5}}>elevenlabs.io → Profile → API Keys · 10 000 chars/mois gratuit · Sans clé : voix navigateur</p>
+        <p style={{color:T.muted,fontSize:11,marginTop:5}}>elevenlabs.io → Profile → API Keys · 10 000 chars/mois gratuit</p>
       </div>
     </div>
   );
