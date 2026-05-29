@@ -162,7 +162,29 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
     window.speechSynthesis.onvoiceschanged=()=>{clearTimeout(fb);window.speechSynthesis.onvoiceschanged=null;init();};
   }
 }
-// Azure TTS — voix neurales naturelles (DeniseNeural fr-FR), 500k chars/mois gratuits
+// HuggingFace TTS — gratuit, sans carte bancaire, voix française (facebook/mms-tts-fra)
+async function speakHF(text:string,onEnd?:()=>void):Promise<boolean>{
+  if(typeof window==="undefined") return false;
+  const key=localStorage.getItem("hf_token")||"";
+  if(!key) return false;
+  try{
+    const res=await fetch("https://api-inference.huggingface.co/models/facebook/mms-tts-fra",{
+      method:"POST",
+      headers:{"Authorization":`Bearer ${key}`,"Content-Type":"application/json"},
+      body:JSON.stringify({inputs:cleanForSpeech(text.slice(0,400))})
+    });
+    if(!res.ok) return false;
+    const blob=await res.blob();
+    if(blob.size<100) return false;
+    const url=URL.createObjectURL(blob);
+    if(_hfAudio){_hfAudio.pause();_hfAudio.onended=null;}
+    _hfAudio=new Audio(url);
+    _hfAudio.onended=()=>{URL.revokeObjectURL(url);onEnd?.();};
+    _hfAudio.onerror=()=>{URL.revokeObjectURL(url);onEnd?.();};
+    await _hfAudio.play();
+    return true;
+  }catch{return false;}
+}
 async function speakAzure(text:string,gender:"M"|"F",onEnd?:()=>void):Promise<boolean>{
   if(typeof window==="undefined") return false;
   const key=localStorage.getItem("azure_tts_key")||"";
@@ -190,15 +212,23 @@ async function speakAzure(text:string,gender:"M"|"F",onEnd?:()=>void):Promise<bo
 }
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
   _ttsActive = true;
-  const elKey = typeof window !== "undefined" ? localStorage.getItem("el_key") : null;
-  const azureKey = typeof window !== "undefined" ? localStorage.getItem("azure_tts_key") : null;
+  const w=typeof window!=="undefined";
+  const elKey = w ? localStorage.getItem("el_key") : null;
+  const azureKey = w ? localStorage.getItem("azure_tts_key") : null;
+  const hfKey = w ? localStorage.getItem("hf_token") : null;
   if (elKey) {
     speakEL(cleanForSpeech(text), gender, elKey, onEnd)
       .then(ok => ok || speakAzure(text, gender, onEnd))
+      .then(ok => ok || speakHF(text, onEnd))
       .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
       .catch(() => speakWeb(text, gender, onEnd));
   } else if(azureKey) {
     speakAzure(text, gender, onEnd)
+      .then(ok => ok || speakHF(text, onEnd))
+      .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
+      .catch(() => speakWeb(text, gender, onEnd));
+  } else if(hfKey) {
+    speakHF(text, onEnd)
       .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
       .catch(() => speakWeb(text, gender, onEnd));
   } else {
@@ -2588,6 +2618,7 @@ function ApiKeySettings({T}:{T:Theme}) {
   const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
   const [azk,setAzk] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_key")||"":"");
   const [azr,setAzr] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_region")||"eastus":"");
+  const [hfk,setHfk] = useState(typeof window!=="undefined"?localStorage.getItem("hf_token")||"":"");
   const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
   return(
     <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
@@ -2602,8 +2633,13 @@ function ApiKeySettings({T}:{T:Theme}) {
         <input type="text" value={azr} onChange={e=>{setAzr(e.target.value);save("azure_tts_region",e.target.value);}} placeholder="Région Azure (ex: eastus)" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         <p style={{color:T.muted,fontSize:11,marginTop:5}}>portal.azure.com → Speech → F0 gratuit · 500 000 chars/mois · Voix française naturelle</p>
       </div>
+      <div style={{background:T.card,border:`1px solid ${hfk?"#FF6B00":T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🤗 HuggingFace TTS <span style={{color:T.green,fontWeight:700,textTransform:"none",letterSpacing:0}}>(gratuit — sans carte bancaire)</span></p>
+        <input type="password" value={hfk} onChange={e=>{setHfk(e.target.value);save("hf_token",e.target.value);}} placeholder="hf_…" style={{width:"100%",background:T.bg2,border:`1px solid ${hfk?"#FF6B00":T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        <p style={{color:T.muted,fontSize:11,marginTop:5}}>huggingface.co → Settings → Access Tokens → New token (Read) · Gratuit sans carte</p>
+      </div>
       <div style={{background:T.card,border:`1px solid ${ek?T.purple:T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
-        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🎙️ Clé ElevenLabs <span style={{color:T.muted,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optionnel)</span></p>
+        <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🎙️ ElevenLabs <span style={{color:T.muted,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optionnel)</span></p>
         <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         <p style={{color:T.muted,fontSize:11,marginTop:5}}>elevenlabs.io → Profile → API Keys · 10 000 chars/mois gratuit</p>
       </div>
