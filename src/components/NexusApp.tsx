@@ -1315,9 +1315,14 @@ const RSS_SOURCES = [
   {name:"Féminisme",      url:G("féminisme égalité femmes droits genre"),       tag:"GENRE",         tagC:"#A93226"},
   {name:"Jeunesse",       url:G("jeunesse lycéens étudiants génération"),       tag:"JEUNESSE",      tagC:"#2ECC71"},
 ];
-type LiveArticle = {id:string;title:string;src:string;tag:string;tagC:string;time:string;imgUrl:string|null;link:string;verif?:{label:string;color:string}};
+type LiveArticle = {id:string;title:string;src:string;tag:string;tagC:string;time:string;imgUrl:string|null;videoUrl?:string;link:string;verif?:{label:string;color:string}};
 
-function parseRawRSS(xml:string):{title:string;link:string;pubDate:string;guid:string;thumbnail:string|undefined}[]{
+function getYtId(url:string):string|null{
+  const m=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m?m[1]:null;
+}
+
+function parseRawRSS(xml:string):{title:string;link:string;pubDate:string;guid:string;thumbnail:string|undefined;videoUrl:string|undefined}[]{
   try{
     if(typeof DOMParser==="undefined") return [];
     const doc=new DOMParser().parseFromString(xml,"text/xml");
@@ -1328,7 +1333,9 @@ function parseRawRSS(xml:string):{title:string;link:string;pubDate:string;guid:s
       const thumb=el.getElementsByTagNameNS("http://search.yahoo.com/mrss/","thumbnail")[0]?.getAttribute("url")
         ||el.getElementsByTagNameNS("http://search.yahoo.com/mrss/","content")[0]?.getAttribute("url")
         ||el.querySelector("enclosure[type^='image']")?.getAttribute("url")||undefined;
-      return{title:txt("title"),link,pubDate:txt("pubDate")||txt("published"),guid:txt("guid")||link,thumbnail:thumb};
+      const videoUrl=el.querySelector("enclosure[type^='video']")?.getAttribute("url")
+        ||undefined;
+      return{title:txt("title"),link,pubDate:txt("pubDate")||txt("published"),guid:txt("guid")||link,thumbnail:thumb,videoUrl};
     });
   }catch{return [];}
 }
@@ -1380,7 +1387,7 @@ async function fetchLiveNews(onChunk?:(articles:LiveArticle[])=>void): Promise<L
   const rssKey = typeof window!=="undefined"?localStorage.getItem("rss2json_key")||"":"";
   const fetchOne=async(src:typeof RSS_SOURCES[0])=>{
     try{
-      type RSSItem={title:string;link:string;pubDate?:string;published?:string;guid?:string;thumbnail?:string|null;enclosure?:{link?:string}};
+      type RSSItem={title:string;link:string;pubDate?:string;published?:string;guid?:string;thumbnail?:string|null;enclosure?:{link?:string;type?:string}};
       let items:RSSItem[]|null=null;
       try{
         const apiParam=rssKey?`&api_key=${rssKey}`:"";
@@ -1401,9 +1408,16 @@ async function fetchLiveNews(onChunk?:(articles:LiveArticle[])=>void): Promise<L
         const id=`${src.name}-${item.guid||item.link}`;
         if(!title||seen.has(id)) continue;
         seen.add(id);
+        const lnk=item.link||"";
+        const ytId=getYtId(lnk);
+        const encVideo=item.enclosure?.type?.startsWith("video")?item.enclosure.link:undefined;
+        const encImg=(!item.enclosure?.type||item.enclosure.type.startsWith("image"))?item.enclosure?.link:undefined;
+        const parsedVideo=(item as {videoUrl?:string}).videoUrl;
         const a:LiveArticle={id,title,src:src.name,tag:src.tag,tagC:src.tagC,
           time:makeTimeStr(item.pubDate||item.published||""),
-          imgUrl:item.thumbnail||item.enclosure?.link||null,link:item.link||""};
+          imgUrl:item.thumbnail||encImg||null,
+          videoUrl:ytId?`yt:${ytId}`:(encVideo||parsedVideo||undefined),
+          link:lnk};
         batch.push(a);all.push(a);
       }
       if(batch.length&&onChunk) onChunk([...all]);
@@ -1664,9 +1678,31 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
               </div>
             </div>
           </div>
-          <div style={{width:"100%",height:200,overflow:"hidden",background:T.bg2}}>
-            <img src={p.imgUrl||getFallbackImg(p.tag)} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).src=getFallbackImg(p.tag);}}/>
-          </div>
+          {(()=>{
+            const ytId=p.videoUrl?.startsWith("yt:")?p.videoUrl.slice(3):null;
+            const directVideo=p.videoUrl&&!p.videoUrl.startsWith("yt:")?p.videoUrl:null;
+            if(ytId) return(
+              <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",position:"relative",width:"100%",height:200,overflow:"hidden",background:"#000"}}>
+                <img src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`} alt="" style={{width:"100%",height:"100%",objectFit:"cover",opacity:.85}}/>
+                <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(255,255,255,.8)"}}>
+                    <Ic n="play" s={22} c="#fff"/>
+                  </div>
+                </div>
+                <div style={{position:"absolute",bottom:8,right:10,background:"rgba(0,0,0,.75)",borderRadius:4,padding:"2px 7px"}}>
+                  <span style={{color:"#fff",fontSize:11,fontWeight:700}}>YouTube</span>
+                </div>
+              </a>
+            );
+            if(directVideo) return(
+              <video src={directVideo} controls preload="none" poster={p.imgUrl||undefined} style={{width:"100%",height:200,objectFit:"cover",background:"#000",display:"block"}}/>
+            );
+            return(
+              <div style={{width:"100%",height:200,overflow:"hidden",background:T.bg2}}>
+                <img src={p.imgUrl||getFallbackImg(p.tag)} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).src=getFallbackImg(p.tag);}}/>
+              </div>
+            );
+          })()}
           <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"12px 16px 8px",textDecoration:"none"}}>
             <p style={{color:T.text,fontSize:16,fontWeight:700,lineHeight:1.5,margin:0}}>{p.title}</p>
             <p style={{color:T.blueB,fontSize:12,marginTop:6,fontWeight:600}}>Lire l&apos;article complet →</p>
