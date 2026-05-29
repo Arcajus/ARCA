@@ -1071,47 +1071,114 @@ function StudioScreen({T}:{T:Theme}) {
 }
 
 // ── LIVE NEWS ─────────────────────────────────────────────────
+const G=(q:string)=>`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=fr&gl=FR&ceid=FR:fr`;
+const GW=(q:string)=>`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=fr&gl=WORLD&ceid=WORLD:fr`;
 const RSS_SOURCES = [
-  // Presse française
-  {name:"Le Monde",        url:"https://www.lemonde.fr/rss/une.xml",                                                                    tag:"LE MONDE",       tagC:"#E03535"},
-  {name:"Le Figaro",       url:"https://www.lefigaro.fr/rss/figaro_actualites.xml",                                                     tag:"LE FIGARO",      tagC:"#C0392B"},
-  {name:"L'Express",       url:"https://www.lexpress.fr/rss/alaune.xml",                                                                tag:"L'EXPRESS",      tagC:"#E67E22"},
-  {name:"Libération",      url:"https://www.liberation.fr/arc/outboundfeeds/rss/?outputType=xml",                                       tag:"LIBÉRATION",     tagC:"#8E44AD"},
-  {name:"20 Minutes",      url:"https://www.20minutes.fr/feeds/rss/actu",                                                               tag:"20 MINUTES",     tagC:"#2980B9"},
-  {name:"Courrier Int.",   url:"https://www.courrierinternational.com/feed/all/rss.xml",                                                 tag:"COURRIER INT.",  tagC:"#16A085"},
-  {name:"Le Point",        url:"https://www.lepoint.fr/rss.xml",                                                                        tag:"LE POINT",       tagC:"#D4AC0D"},
-  {name:"L'Obs",           url:"https://www.nouvelobs.com/rss.xml",                                                                     tag:"L'OBS",          tagC:"#A93226"},
-  {name:"Les Échos",       url:"https://www.lesechos.fr/rss/rss_une.xml",                                                               tag:"LES ÉCHOS",      tagC:"#1A5276"},
-  // Médias internationaux francophones
-  {name:"France 24",       url:"https://www.france24.com/fr/rss",                                                                       tag:"FRANCE 24",      tagC:"#2B78F5"},
-  {name:"RFI",             url:"https://www.rfi.fr/fr/rss",                                                                             tag:"RFI",            tagC:"#27AE60"},
-  {name:"BBC Afrique",     url:"https://feeds.bbci.co.uk/afrique/rss.xml",                                                              tag:"BBC",            tagC:"#7C3AED"},
-  {name:"TV5 Monde",       url:"https://information.tv5monde.com/rss",                                                                  tag:"TV5MONDE",       tagC:"#1ABC9C"},
-  {name:"Jeune Afrique",   url:"https://www.jeuneafrique.com/feed/",                                                                    tag:"JEUNE AFRIQUE",  tagC:"#F39C12"},
-  {name:"DW Français",     url:"https://rss.dw.com/rdf/rss-fr-tout",                                                                    tag:"DW",             tagC:"#2C3E50"},
-  {name:"Euronews",        url:"https://feeds.feedburner.com/euronews/fr/home",                                                         tag:"EURONEWS",       tagC:"#0A74DA"},
-  {name:"RTBF",            url:"https://www.rtbf.be/rss/info.xml",                                                                      tag:"RTBF",           tagC:"#D35400"},
-  // Google News thématiques — France & monde
-  {name:"France Actu",     url:"https://news.google.com/rss?hl=fr&gl=FR&ceid=FR:fr",                                                    tag:"FRANCE",         tagC:"#2980B9"},
-  {name:"Politique FR",    url:"https://news.google.com/rss/search?q=politique+france&hl=fr&gl=FR&ceid=FR:fr",                          tag:"POLITIQUE",      tagC:"#C0392B"},
-  {name:"Économie FR",     url:"https://news.google.com/rss/search?q=économie+france&hl=fr&gl=FR&ceid=FR:fr",                           tag:"ÉCONOMIE",       tagC:"#1A5276"},
-  {name:"ONU",             url:"https://news.google.com/rss/search?q=ONU+nations+unies&hl=fr&gl=FR&ceid=FR:fr",                         tag:"ONU",            tagC:"#0077B5"},
-  {name:"UNICEF",          url:"https://news.google.com/rss/search?q=UNICEF+enfants+humanitaire&hl=fr&gl=FR&ceid=FR:fr",               tag:"UNICEF",         tagC:"#00AEEF"},
-  {name:"Géopolitique",    url:"https://news.google.com/rss/search?q=géopolitique+relations+internationales&hl=fr&gl=FR&ceid=FR:fr",    tag:"GÉOPOLITIQUE",   tagC:"#D35400"},
-  {name:"Diplomatie",      url:"https://news.google.com/rss/search?q=diplomatie+ambassadeur+traité&hl=fr&gl=FR&ceid=FR:fr",             tag:"DIPLOMATIE",     tagC:"#9B59B6"},
-  {name:"Conflits",        url:"https://news.google.com/rss/search?q=conflit+guerre+paix&hl=fr&gl=FR&ceid=FR:fr",                       tag:"CONFLITS",       tagC:"#E74C3C"},
-  {name:"Ukraine",         url:"https://news.google.com/rss/search?q=ukraine+russie+guerre&hl=fr&gl=FR&ceid=FR:fr",                     tag:"UKRAINE",        tagC:"#F4D03F"},
-  {name:"Moyen-Orient",    url:"https://news.google.com/rss/search?q=moyen-orient+israel+gaza&hl=fr&gl=FR&ceid=FR:fr",                  tag:"MOYEN-ORIENT",   tagC:"#E67E22"},
-  {name:"Afrique",         url:"https://news.google.com/rss/search?q=afrique+actualité+politique&hl=fr&gl=FR&ceid=FR:fr",               tag:"AFRIQUE",        tagC:"#F39C12"},
-  {name:"Asie",            url:"https://news.google.com/rss/search?q=chine+japon+inde+asie&hl=fr&gl=FR&ceid=FR:fr",                     tag:"ASIE",           tagC:"#E74C3C"},
-  {name:"Europe",          url:"https://news.google.com/rss/search?q=union+européenne+parlement&hl=fr&gl=FR&ceid=FR:fr",                tag:"EUROPE",         tagC:"#2E86C1"},
-  {name:"Amérique",        url:"https://news.google.com/rss/search?q=états-unis+amérique+latine&hl=fr&gl=FR&ceid=FR:fr",                tag:"AMÉRIQUES",      tagC:"#1ABC9C"},
-  {name:"Droits Humains",  url:"https://news.google.com/rss/search?q=droits+humains+ONG+humanitaire&hl=fr&gl=FR&ceid=FR:fr",            tag:"DROITS",         tagC:"#A93226"},
-  {name:"Climat",          url:"https://news.google.com/rss/search?q=climat+COP+réchauffement+environnement&hl=fr&gl=FR&ceid=FR:fr",    tag:"CLIMAT",         tagC:"#27AE60"},
-  {name:"Science",         url:"https://news.google.com/rss/search?q=science+recherche+découverte&hl=fr&gl=FR&ceid=FR:fr",              tag:"SCIENCE",        tagC:"#8E44AD"},
-  {name:"Histoire",        url:"https://news.google.com/rss/search?q=histoire+patrimoine+mémoire&hl=fr&gl=FR&ceid=FR:fr",               tag:"HISTOIRE",       tagC:"#784212"},
-  {name:"Société FR",      url:"https://news.google.com/rss/search?q=société+france+social&hl=fr&gl=FR&ceid=FR:fr",                     tag:"SOCIÉTÉ",        tagC:"#2C3E50"},
-  {name:"Tech & IA",       url:"https://news.google.com/rss/search?q=intelligence+artificielle+technologie&hl=fr&gl=FR&ceid=FR:fr",     tag:"TECH & IA",      tagC:"#1ABC9C"},
+  // ── Presse française directe
+  {name:"Le Monde",       url:"https://www.lemonde.fr/rss/une.xml",                              tag:"LE MONDE",      tagC:"#E03535"},
+  {name:"Le Figaro",      url:"https://www.lefigaro.fr/rss/figaro_actualites.xml",               tag:"LE FIGARO",     tagC:"#C0392B"},
+  {name:"L'Express",      url:"https://www.lexpress.fr/rss/alaune.xml",                          tag:"L'EXPRESS",     tagC:"#E67E22"},
+  {name:"Libération",     url:"https://www.liberation.fr/arc/outboundfeeds/rss/?outputType=xml", tag:"LIBÉRATION",    tagC:"#8E44AD"},
+  {name:"20 Minutes",     url:"https://www.20minutes.fr/feeds/rss/actu",                         tag:"20 MINUTES",    tagC:"#2980B9"},
+  {name:"Courrier Int.",  url:"https://www.courrierinternational.com/feed/all/rss.xml",           tag:"COURRIER INT.", tagC:"#16A085"},
+  {name:"Le Point",       url:"https://www.lepoint.fr/rss.xml",                                  tag:"LE POINT",      tagC:"#D4AC0D"},
+  {name:"Les Échos",      url:"https://www.lesechos.fr/rss/rss_une.xml",                         tag:"LES ÉCHOS",     tagC:"#1A5276"},
+  // ── Médias internationaux
+  {name:"France 24",      url:"https://www.france24.com/fr/rss",                                 tag:"FRANCE 24",     tagC:"#2B78F5"},
+  {name:"RFI",            url:"https://www.rfi.fr/fr/rss",                                       tag:"RFI",           tagC:"#27AE60"},
+  {name:"BBC Afrique",    url:"https://feeds.bbci.co.uk/afrique/rss.xml",                        tag:"BBC",           tagC:"#7C3AED"},
+  {name:"TV5 Monde",      url:"https://information.tv5monde.com/rss",                            tag:"TV5MONDE",      tagC:"#1ABC9C"},
+  {name:"DW Français",    url:"https://rss.dw.com/rdf/rss-fr-tout",                              tag:"DW",            tagC:"#2C3E50"},
+  {name:"Jeune Afrique",  url:"https://www.jeuneafrique.com/feed/",                              tag:"JEUNE AFRIQUE", tagC:"#F39C12"},
+  // ── France — politique & société
+  {name:"Politique FR",       url:G("politique france gouvernement"),           tag:"POLITIQUE",     tagC:"#C0392B"},
+  {name:"Assemblée",          url:G("assemblée nationale sénat loi"),           tag:"PARLEMENT",     tagC:"#922B21"},
+  {name:"Élections",          url:G("élections france vote résultats"),         tag:"ÉLECTIONS",     tagC:"#E74C3C"},
+  {name:"Macron",             url:G("macron elysée premier ministre"),          tag:"ÉLYSÉE",        tagC:"#A93226"},
+  {name:"Société FR",         url:G("société france social grève"),             tag:"SOCIÉTÉ",       tagC:"#2C3E50"},
+  {name:"Justice FR",         url:G("justice tribunal cour france"),            tag:"JUSTICE",       tagC:"#784212"},
+  {name:"Sécurité FR",        url:G("sécurité police gendarmerie france"),      tag:"SÉCURITÉ",      tagC:"#2E4057"},
+  {name:"Immigration FR",     url:G("immigration migrants asile france"),       tag:"IMMIGRATION",   tagC:"#6C3483"},
+  {name:"Éducation FR",       url:G("éducation école université france"),       tag:"ÉDUCATION",     tagC:"#1F618D"},
+  {name:"Santé FR",           url:G("santé hôpital médecine france"),           tag:"SANTÉ",         tagC:"#148F77"},
+  {name:"Économie FR",        url:G("économie croissance france PIB"),          tag:"ÉCONOMIE",      tagC:"#1A5276"},
+  {name:"Emploi FR",          url:G("emploi chômage travail france"),           tag:"EMPLOI",        tagC:"#117A65"},
+  {name:"Logement FR",        url:G("logement immobilier crise france"),        tag:"LOGEMENT",      tagC:"#7D6608"},
+  {name:"Énergie FR",         url:G("énergie nucléaire électricité france"),    tag:"ÉNERGIE",       tagC:"#1A5276"},
+  {name:"Transport FR",       url:G("transport sncf ratp grève france"),        tag:"TRANSPORT",     tagC:"#2980B9"},
+  {name:"Culture FR",         url:G("culture musée cinéma art france"),         tag:"CULTURE",       tagC:"#7D3C98"},
+  {name:"Sport FR",           url:G("sport football rugby france résultats"),   tag:"SPORT",         tagC:"#1E8449"},
+  // ── Organisations internationales
+  {name:"ONU",            url:G("ONU nations unies résolution conseil"),        tag:"ONU",           tagC:"#0077B5"},
+  {name:"UNICEF",         url:G("UNICEF enfants humanitaire aide"),             tag:"UNICEF",        tagC:"#00AEEF"},
+  {name:"UNESCO",         url:G("UNESCO patrimoine culture éducation"),         tag:"UNESCO",        tagC:"#B7950B"},
+  {name:"OMS",            url:G("OMS santé mondiale pandémie vaccin"),          tag:"OMS",           tagC:"#1ABC9C"},
+  {name:"OTAN",           url:G("OTAN alliance atlantique défense"),            tag:"OTAN",          tagC:"#2874A6"},
+  {name:"FMI Banque M.",  url:G("FMI banque mondiale économie dette"),          tag:"FMI",           tagC:"#1F618D"},
+  {name:"Union Africaine",url:G("union africaine sommet afrique"),              tag:"UA",            tagC:"#E67E22"},
+  {name:"G7 G20",         url:G("G7 G20 sommet leaders mondiaux"),             tag:"G7/G20",        tagC:"#2C3E50"},
+  {name:"CPI",            url:G("cour pénale internationale crime guerre"),     tag:"CPI",           tagC:"#922B21"},
+  {name:"OMC",            url:G("OMC commerce international tarifs"),           tag:"OMC",           tagC:"#117A65"},
+  // ── Géopolitique par région
+  {name:"Géopolitique",   url:G("géopolitique relations internationales"),      tag:"GÉOPOLITIQUE",  tagC:"#D35400"},
+  {name:"Diplomatie",     url:G("diplomatie ambassadeur accord traité"),        tag:"DIPLOMATIE",    tagC:"#9B59B6"},
+  {name:"Conflits",       url:G("conflit guerre armée militaire"),              tag:"CONFLITS",      tagC:"#E74C3C"},
+  {name:"Ukraine-Russie", url:G("ukraine russie guerre frontière"),             tag:"UKRAINE",       tagC:"#F4D03F"},
+  {name:"Gaza-Israël",    url:G("gaza israel palestiniens conflit"),            tag:"GAZA",          tagC:"#E67E22"},
+  {name:"Moyen-Orient",   url:G("moyen-orient iran liban syrie"),               tag:"MOYEN-ORIENT",  tagC:"#CA6F1E"},
+  {name:"Chine",          url:G("chine xi jinping pékin politique"),            tag:"CHINE",         tagC:"#C0392B"},
+  {name:"USA",            url:G("états-unis maison blanche congrès"),           tag:"USA",           tagC:"#2874A6"},
+  {name:"Russie",         url:G("russie poutine moscou kremlin"),               tag:"RUSSIE",        tagC:"#922B21"},
+  {name:"Inde",           url:G("inde modi new delhi politique"),               tag:"INDE",          tagC:"#F39C12"},
+  {name:"Japon-Corée",    url:G("japon corée asie pacifique"),                  tag:"ASIE-PAC.",     tagC:"#E74C3C"},
+  {name:"Afrique subsah.",url:G("afrique subsaharienne sahel mali niger"),      tag:"SAHEL",         tagC:"#D4AC0D"},
+  {name:"Maghreb",        url:G("maroc algérie tunisie maghreb"),               tag:"MAGHREB",       tagC:"#F0B27A"},
+  {name:"Afrique Est",    url:G("ethiopie kenya tanzanie afrique est"),         tag:"AF. EST",       tagC:"#A9DFBF"},
+  {name:"Amérique Lat.",  url:G("brésil mexique venezuela amérique latine"),    tag:"AM. LATINE",    tagC:"#1ABC9C"},
+  {name:"Europe Est",     url:G("pologne roumanie hongrie europe est"),         tag:"EU. EST",       tagC:"#85C1E9"},
+  {name:"Balkans",        url:G("serbie kosovo balkans europe"),                tag:"BALKANS",       tagC:"#7FB3D3"},
+  {name:"Caucase",        url:G("géorgie arménie azerbaïdjan caucase"),         tag:"CAUCASE",       tagC:"#A569BD"},
+  {name:"Asie Centrale",  url:G("kazakhstan ouzbékistan asie centrale"),        tag:"ASIE CENT.",    tagC:"#F8C471"},
+  {name:"Océanie",        url:G("australie nouvelle-zélande pacifique"),        tag:"OCÉANIE",       tagC:"#76D7C4"},
+  // ── Thèmes transversaux
+  {name:"Droits Humains", url:G("droits humains libertés ONG amnesty"),         tag:"DROITS",        tagC:"#A93226"},
+  {name:"Réfugiés",       url:G("réfugiés déplacés HCR migration forcée"),      tag:"RÉFUGIÉS",      tagC:"#5D6D7E"},
+  {name:"Développement",  url:G("développement durable pauvreté aide"),         tag:"DÉVELOPPEMENT", tagC:"#27AE60"},
+  {name:"Alimentation",   url:G("fao faim sécurité alimentaire agriculture"),   tag:"ALIMENTATION",  tagC:"#28B463"},
+  {name:"Eau",            url:G("eau potable accès ressources hydrique"),       tag:"EAU",           tagC:"#5DADE2"},
+  {name:"Climat",         url:G("climat COP réchauffement gaz effet serre"),    tag:"CLIMAT",        tagC:"#27AE60"},
+  {name:"Biodiversité",   url:G("biodiversité espèces extinctions nature"),     tag:"BIODIVERSITÉ",  tagC:"#1E8449"},
+  {name:"Énergie monde",  url:G("pétrole gaz renouvelable énergie monde"),      tag:"ÉNERGIE MONDE", tagC:"#F39C12"},
+  // ── Sciences & Innovation
+  {name:"Science",        url:G("science recherche découverte laboratoire"),    tag:"SCIENCE",       tagC:"#8E44AD"},
+  {name:"Médecine",       url:G("médecine cancer traitement vaccin"),           tag:"MÉDECINE",      tagC:"#117A65"},
+  {name:"Espace",         url:G("espace nasa esa cosmos satellite"),            tag:"ESPACE",        tagC:"#1A237E"},
+  {name:"IA",             url:G("intelligence artificielle IA GPT robot"),      tag:"IA",            tagC:"#1ABC9C"},
+  {name:"Tech",           url:G("technologie numérique innovation startup"),    tag:"TECH",          tagC:"#2980B9"},
+  {name:"Cyber",          url:G("cybersécurité piratage hacking données"),      tag:"CYBER",         tagC:"#2C3E50"},
+  {name:"Spatial FR",     url:G("france espace ariane cnes spatial"),           tag:"SPATIAL",       tagC:"#1A237E"},
+  // ── Histoire & Mémoire
+  {name:"Histoire",       url:G("histoire patrimoine mémoire anniversaire"),    tag:"HISTOIRE",      tagC:"#784212"},
+  {name:"Histoire FR",    url:G("histoire france révolution empire guerre"),    tag:"HIST. FR",      tagC:"#6E2F1A"},
+  {name:"Commémoration",  url:G("commémoration mémoire guerre résistance"),     tag:"MÉMOIRE",       tagC:"#5D4037"},
+  {name:"Archéologie",    url:G("archéologie fouilles découverte antique"),     tag:"ARCHÉO",        tagC:"#8D6E63"},
+  // ── Droit & Institutions
+  {name:"Droit",          url:G("droit loi constitution juridique"),            tag:"DROIT",         tagC:"#4A235A"},
+  {name:"Droits UE",      url:G("droit européen directive règlement bruxelles"),tag:"DROIT UE",      tagC:"#1F618D"},
+  {name:"Conseil État",   url:G("conseil état constitutionnel juridiction FR"), tag:"JURIDICTIONS",  tagC:"#6C3483"},
+  // ── Économie monde
+  {name:"Éco Mondiale",   url:G("économie mondiale croissance récession"),      tag:"ÉCO MONDE",     tagC:"#1A5276"},
+  {name:"Marchés",        url:G("bourse marchés financiers actions"),           tag:"MARCHÉS",       tagC:"#2E86C1"},
+  {name:"Commerce",       url:G("commerce international exportation douanes"),  tag:"COMMERCE",      tagC:"#148F77"},
+  {name:"Inflation",      url:G("inflation prix banque centrale taux"),         tag:"INFLATION",     tagC:"#D35400"},
+  {name:"Cryptomonnaie",  url:G("bitcoin cryptomonnaie blockchain ethereum"),   tag:"CRYPTO",        tagC:"#F39C12"},
+  // ── Médias & Société
+  {name:"Médias",         url:G("médias presse liberté journalisme"),           tag:"MÉDIAS",        tagC:"#2C3E50"},
+  {name:"Réseaux Sociaux",url:G("réseaux sociaux twitter instagram tiktok"),    tag:"RS",            tagC:"#1DA1F2"},
+  {name:"Désinformation", url:G("désinformation fake news complot manipulation"),tag:"DESINFORMATION",tagC:"#E74C3C"},
+  {name:"Religion",       url:G("religion islam christianisme laïcité"),        tag:"RELIGION",      tagC:"#7D6608"},
+  {name:"Féminisme",      url:G("féminisme égalité femmes droits genre"),       tag:"GENRE",         tagC:"#A93226"},
+  {name:"Jeunesse",       url:G("jeunesse lycéens étudiants génération"),       tag:"JEUNESSE",      tagC:"#2ECC71"},
 ];
 type LiveArticle = {id:string;title:string;src:string;tag:string;tagC:string;time:string;imgUrl:string|null;link:string;verif?:{label:string;color:string}};
 
@@ -1175,9 +1242,9 @@ async function fetchLiveNews(onChunk?:(articles:LiveArticle[])=>void): Promise<L
       if(batch.length&&onChunk) onChunk([...all]);
     }catch{/*skip*/}
   };
-  // Batch sources in groups of 6 for speed without overloading
+  // Batch sources in groups of 20 for max speed
   const groups:typeof RSS_SOURCES[]=[];
-  for(let i=0;i<RSS_SOURCES.length;i+=6) groups.push(RSS_SOURCES.slice(i,i+6) as unknown as typeof RSS_SOURCES);
+  for(let i=0;i<RSS_SOURCES.length;i+=20) groups.push(RSS_SOURCES.slice(i,i+20) as unknown as typeof RSS_SOURCES);
   for(const group of groups) await Promise.allSettled((group as typeof RSS_SOURCES).map(fetchOne));
   return all;
 }
