@@ -1150,12 +1150,13 @@ async function fetchLiveNews(onChunk?:(articles:LiveArticle[])=>void): Promise<L
       let items:RSSItem[]|null=null;
       try{
         const apiParam=rssKey?`&api_key=${rssKey}`:"";
-        const r=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=10${apiParam}`,{signal:AbortSignal.timeout(5000)});
+        const ts=`&_=${Date.now()}`;
+        const r=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=10${apiParam}${ts}`,{signal:AbortSignal.timeout(5000),cache:"no-store"});
         if(r.ok){const d=await r.json();if(d.status==="ok"&&d.items?.length) items=d.items;}
       }catch{/*fallback*/}
       if(!items){
         try{
-          const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(src.url)}`,{signal:AbortSignal.timeout(5000)});
+          const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(src.url)}&_=${Date.now()}`,{signal:AbortSignal.timeout(5000),cache:"no-store"});
           if(r.ok){const t=await r.text();const parsed=parseRawRSS(t);if(parsed.length) items=parsed;}
         }catch{/*unavailable*/}
       }
@@ -1208,7 +1209,14 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
 
   const refresh = async(withGemini=false)=>{
     setLiveLoading(true);
-    const articles = await fetchLiveNews((chunk)=>{ setLiveNews(chunk); setLiveLoading(false); });
+    const articles = await fetchLiveNews((chunk)=>{
+      setLiveNews(prev=>{
+        const existingIds=new Set(prev.map(a=>a.id));
+        const newOnes=chunk.filter(a=>!existingIds.has(a.id));
+        return newOnes.length ? [...newOnes,...prev].slice(0,200) : prev;
+      });
+      setLiveLoading(false);
+    });
     if(withGemini){
       const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(key){
