@@ -1341,6 +1341,38 @@ function makeTimeStr(pubStr:string):string{
   if(diff<86400000) return `${Math.floor(diff/3600000)}h`;
   return `${Math.floor(diff/86400000)}j`;
 }
+function timeFromTs(ts:number):string{
+  const diff=Date.now()-ts;
+  if(diff<3600000) return `${Math.max(1,Math.floor(diff/60000))}min`;
+  if(diff<86400000) return `${Math.floor(diff/3600000)}h`;
+  if(diff<604800000) return `${Math.floor(diff/86400000)}j`;
+  return new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+}
+const TAG_IMGS: Record<string,string> = {
+  "GÉOPOLITIQUE":"photo-1541872703-74c5e44368f9","DIPLOMATIE":"photo-1569950044272-e4ef57e0e29b",
+  "CONFLITS":"photo-1582481725274-d63bdf929a90","GUERRE":"photo-1582481725274-d63bdf929a90",
+  "UKRAINE":"photo-1582481725274-d63bdf929a90","OTAN":"photo-1541872703-74c5e44368f9",
+  "ONU":"photo-1541872703-74c5e44368f9","UNICEF":"photo-1532375810709-75b1da00537c",
+  "UNESCO":"photo-1481627834876-b7833e8f5570","OMS":"photo-1532375810709-75b1da00537c",
+  "POLITIQUE":"photo-1540910419892-4a36d2c3266c","ÉLECTIONS":"photo-1540910419892-4a36d2c3266c",
+  "PARLEMENT":"photo-1540910419892-4a36d2c3266c","ÉLYSÉE":"photo-1540910419892-4a36d2c3266c",
+  "ÉCONOMIE":"photo-1551288049-bebda4e38f71","FMI":"photo-1551288049-bebda4e38f71",
+  "MARCHÉS":"photo-1551288049-bebda4e38f71","INFLATION":"photo-1551288049-bebda4e38f71",
+  "ÉDUCATION":"photo-1523050854058-8df90110c9f1","SCIENCE":"photo-1507003211169-0a1dd7228f2d",
+  "MÉDECINE":"photo-1532375810709-75b1da00537c","ESPACE":"photo-1541697418-d4b63bda48a2",
+  "CLIMAT":"photo-1504711434969-e33886168f5c","BIODIVERSITÉ":"photo-1504711434969-e33886168f5c",
+  "ENVIRONNEMENT":"photo-1504711434969-e33886168f5c","CULTURE":"photo-1481627834876-b7833e8f5570",
+  "HISTOIRE":"photo-1481627834876-b7833e8f5570","IA":"photo-1551288049-bebda4e38f71",
+  "TECH":"photo-1551288049-bebda4e38f71","CYBER":"photo-1551288049-bebda4e38f71",
+  "IMMIGRATION":"photo-1532375810709-75b1da00537c","RÉFUGIÉS":"photo-1532375810709-75b1da00537c",
+  "DROITS":"photo-1532375810709-75b1da00537c","JUSTICE":"photo-1481627834876-b7833e8f5570",
+  "SPORT":"photo-1540910419892-4a36d2c3266c","GAZA":"photo-1582481725274-d63bdf929a90",
+  "MOYEN-ORIENT":"photo-1582481725274-d63bdf929a90","SAHEL":"photo-1504711434969-e33886168f5c",
+};
+function getFallbackImg(tag:string):string{
+  const id=TAG_IMGS[tag]||TAG_IMGS[Object.keys(TAG_IMGS).find(k=>tag.includes(k))||""]||"photo-1541872703-74c5e44368f9";
+  return `https://images.unsplash.com/${id}?w=700&q=70`;
+}
 
 async function fetchLiveNews(onChunk?:(articles:LiveArticle[])=>void): Promise<LiveArticle[]> {
   const seen=new Set<string>();
@@ -1584,7 +1616,7 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
                     <Tag label="MON ANALYSE" color={T.blueB} small/>
-                    <span style={{color:T.muted,fontSize:11}}>· {p.time}</span>
+                    <span style={{color:T.muted,fontSize:11}}>· {timeFromTs(p.id)}</span>
                   </div>
                 </div>
               </div>
@@ -1627,12 +1659,14 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
               </div>
               <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3,flexWrap:"wrap"}}>
                 <Tag label={p.tag} color={p.tagC} small/>
-                {p.time&&<span style={{color:T.muted,fontSize:11}}>· {p.time}</span>}
+                <span style={{color:T.muted,fontSize:11}}>· {timeFromTs(p.publishedAt||Date.now())}</span>
                 <span style={{color:T.muted,fontSize:11}}>· {p.src}</span>
               </div>
             </div>
           </div>
-          {p.imgUrl&&<div style={{width:"100%",height:220,overflow:"hidden"}}><img src={p.imgUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).parentElement!.style.display="none"}}/></div>}
+          <div style={{width:"100%",height:200,overflow:"hidden",background:T.bg2}}>
+            <img src={p.imgUrl||getFallbackImg(p.tag)} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).src=getFallbackImg(p.tag);}}/>
+          </div>
           <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"12px 16px 8px",textDecoration:"none"}}>
             <p style={{color:T.text,fontSize:16,fontWeight:700,lineHeight:1.5,margin:0}}>{p.title}</p>
             <p style={{color:T.blueB,fontSize:12,marginTop:6,fontWeight:600}}>Lire l&apos;article complet →</p>
@@ -4428,7 +4462,7 @@ function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin
                 <div style={{display:"flex",gap:12,marginTop:10}}>
                   <span style={{color:T.muted,fontSize:12,display:"flex",alignItems:"center",gap:4}}><Ic n="heart" s={14} c={T.muted}/>0</span>
                   <span style={{color:T.muted,fontSize:12,display:"flex",alignItems:"center",gap:4}}><Ic n="comment" s={14} c={T.muted}/>0</span>
-                  <span style={{color:T.muted,fontSize:11,marginLeft:"auto"}}>{p.time}</span>
+                  <span style={{color:T.muted,fontSize:11,marginLeft:"auto"}}>{timeFromTs(p.id)}</span>
                 </div>
               </div>
             ))}
