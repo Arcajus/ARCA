@@ -425,11 +425,146 @@ const NEWS = [
   {id:8,type:"video",tag:"ÉLECTIONS",tagC:"#E03535",time:"10h",title:"Débat présidentiel virtuel NEXUS — simulation complète 4 candidats IA",hot:false,imgUrl:"https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=700&q=80",likes:1240,comments:387,dur:"48:10",src:"NEXUS Débats",verified:false},
   {id:9,type:"article",tag:"HISTOIRE",tagC:"#7C3AED",time:"12h",title:"Esclavage et mémoire : les rébellions oubliées qui ont changé le monde",hot:false,imgUrl:"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=700&q=80",likes:328,comments:74,src:"NEXUS Culture",verified:false},
 ];
-const EVENTS_DATA = [
-  {id:1,date:"24",month:"MAI",day:"Sam",title:"Forum Méditerranée & Diplomatie",loc:"Palais du Pharo, Marseille",type:"Conférence",lat:43.2947,lng:5.3614,attendees:284},
-  {id:2,date:"1",month:"JUN",day:"Dim",title:"Débat public : Europe fédérale, utopie ou nécessité ?",loc:"MuCEM, Marseille",type:"Débat",lat:43.2977,lng:5.3617,attendees:156},
-  {id:3,date:"7",month:"JUN",day:"Sam",title:"Rencontres Géopolitiques d'Aix-en-Provence",loc:"Aix-en-Provence",type:"Forum",lat:43.5297,lng:5.4474,attendees:412},
-  {id:4,date:"15",month:"JUN",day:"Dim",title:"Simulation ONU — Session étudiante Sciences Po",loc:"Sciences Po Paris",type:"Simulation",lat:48.8517,lng:2.3294,attendees:89},
+type EventItem2={id:number;date:string;month:string;day:string;title:string;loc:string;type:string;lat:number;lng:number;attendees:number;isUser?:boolean;desc?:string;mode?:string;link?:string};
+const EVENTS_DATA:EventItem2[] = [
+  // ── JUIN 2026
+  {id:1,date:"2",month:"JUN",day:"Mar",title:"Forum Méditerranée & Diplomatie",loc:"Palais du Pharo, Marseille",type:"Forum",lat:43.2947,lng:5.3614,attendees:284,mode:"🏛️ Présentiel",desc:"Forum annuel sur la diplomatie méditerranéenne et les relations euro-africaines."},
+  {id:2,date:"3",month:"JUN",day:"Mer",title:"Webinaire ONU : Objectifs de Développement Durable 2030",loc:"Nations Unies, New York",type:"Conférence",lat:40.7489,lng:-73.9680,attendees:4200,mode:"💻 En ligne",link:"https://www.un.org",desc:"Bilan à mi-parcours des ODD. Intervenants : experts ONU, représentants gouvernements."},
+  {id:3,date:"5",month:"JUN",day:"Ven",title:"Journée mondiale de l'environnement — Conférence PNUE",loc:"Nairobi, Kenya",type:"Conférence",lat:-1.2921,lng:36.8219,attendees:1800,mode:"🔄 Hybride",link:"https://www.unep.org",desc:"Conférence internationale sur la biodiversité et le climat."},
+  {id:4,date:"7",month:"JUN",day:"Dim",title:"Rencontres Géopolitiques d'Aix-en-Provence",loc:"Sciences Po Aix, Aix-en-Provence",type:"Forum",lat:43.5297,lng:5.4474,attendees:412,mode:"🏛️ Présentiel",desc:"3 jours de conférences sur les grands enjeux géopolitiques mondiaux."},
+  {id:5,date:"9",month:"JUN",day:"Mar",title:"Model United Nations — Sciences Po Paris",loc:"Sciences Po Paris",type:"Simulation",lat:48.8517,lng:2.3294,attendees:320,mode:"🏛️ Présentiel",desc:"Simulation du Conseil de sécurité et de l'Assemblée générale de l'ONU."},
+  {id:6,date:"10",month:"JUN",day:"Mer",title:"Sommet virtuel : Droits des femmes & ONU Femmes",loc:"Genève / En ligne",type:"Sommet",lat:46.2044,lng:6.1432,attendees:2100,mode:"🔄 Hybride",link:"https://www.unwomen.org",desc:"Conférence sur l'égalité de genre et les droits des femmes dans le monde."},
+  {id:7,date:"12",month:"JUN",day:"Ven",title:"Forum Économique : L'Euro à l'heure des tensions géopolitiques",loc:"Palais Brongniart, Paris",type:"Forum",lat:48.8649,lng:2.3424,attendees:580,mode:"🏛️ Présentiel"},
+  {id:8,date:"14",month:"JUN",day:"Dim",title:"Concours d'éloquence Sciences Po Bordeaux",loc:"Sciences Po Bordeaux",type:"Concours",lat:44.8378,lng:-0.5792,attendees:140,mode:"🏛️ Présentiel"},
+  {id:9,date:"15",month:"JUN",day:"Lun",title:"Conférence : L'Afrique et le nouvel ordre mondial",loc:"Institut Monde Arabe, Paris",type:"Conférence",lat:48.8520,lng:2.3553,attendees:230,mode:"🔄 Hybride",link:"https://www.imarabe.org"},
+  {id:10,date:"16",month:"JUN",day:"Mar",title:"Webinaire UNICEF : Nutrition et malnutrition infantile",loc:"UNICEF, Genève",type:"Webinaire",lat:46.2044,lng:6.1432,attendees:1500,mode:"💻 En ligne",link:"https://www.unicef.org"},
+  {id:11,date:"17",month:"JUN",day:"Mer",title:"Forum Mondial sur les Réfugiés — HCR",loc:"Genève, Suisse",type:"Forum",lat:46.2044,lng:6.1432,attendees:3400,mode:"🔄 Hybride",link:"https://www.unhcr.org"},
+  {id:12,date:"18",month:"JUN",day:"Jeu",title:"Conférence : 80 ans de la ONU — Bilan et perspectives",loc:"Palais des Nations, Genève",type:"Conférence",lat:46.2267,lng:6.1414,attendees:900,mode:"🔄 Hybride",link:"https://www.un.org"},
+  {id:13,date:"19",month:"JUN",day:"Ven",title:"Journée mondiale des réfugiés — événement mondial",loc:"Monde entier / En ligne",type:"Commémoration",lat:48.8566,lng:2.3522,attendees:50000,mode:"💻 En ligne",link:"https://www.unhcr.org"},
+  {id:14,date:"20",month:"JUN",day:"Sam",title:"Hackathon IA & Diplomatie — Sciences Po Paris",loc:"Sciences Po Paris",type:"Hackathon",lat:48.8517,lng:2.3294,attendees:200,mode:"🏛️ Présentiel"},
+  {id:15,date:"21",month:"JUN",day:"Dim",title:"Forum Jeunesse ONU — Voix pour le futur",loc:"New York / En ligne",type:"Forum",lat:40.7489,lng:-73.9680,attendees:5000,mode:"💻 En ligne",link:"https://www.un.org/youth"},
+  {id:16,date:"23",month:"JUN",day:"Mar",title:"Conférence sur la sécurité alimentaire mondiale — FAO",loc:"Rome, Italie",type:"Conférence",lat:41.9028,lng:12.4964,attendees:1200,mode:"🔄 Hybride",link:"https://www.fao.org"},
+  {id:17,date:"24",month:"JUN",day:"Mer",title:"Sommet franco-allemand — Relations bilatérales",loc:"Élysée, Paris",type:"Sommet",lat:48.8698,lng:2.3160,attendees:150,mode:"🏛️ Présentiel"},
+  {id:18,date:"25",month:"JUN",day:"Jeu",title:"Webinaire : Intelligence Artificielle et droit international",loc:"Institut de droit international, En ligne",type:"Webinaire",lat:48.8566,lng:2.3522,attendees:800,mode:"💻 En ligne",link:"https://www.iil.be"},
+  {id:19,date:"26",month:"JUN",day:"Ven",title:"Journée internationale contre la torture — Conférence ONU",loc:"Genève / En ligne",type:"Conférence",lat:46.2044,lng:6.1432,attendees:600,mode:"💻 En ligne",link:"https://www.un.org"},
+  {id:20,date:"27",month:"JUN",day:"Sam",title:"Forum des Droits de l'Homme — Amnesty International France",loc:"Paris",type:"Forum",lat:48.8566,lng:2.3522,attendees:350,mode:"🔄 Hybride",link:"https://www.amnesty.fr"},
+  {id:21,date:"28",month:"JUN",day:"Dim",title:"Conférence internationale sur le droit humanitaire — CICR",loc:"Genève, Suisse",type:"Conférence",lat:46.2044,lng:6.1432,attendees:700,mode:"🔄 Hybride",link:"https://www.icrc.org"},
+  {id:22,date:"30",month:"JUN",day:"Mar",title:"Assemblée annuelle FMI & Banque Mondiale",loc:"Washington DC, USA",type:"Sommet",lat:38.8951,lng:-77.0364,attendees:5000,mode:"🔄 Hybride",link:"https://www.imf.org"},
+  // ── JUILLET 2026
+  {id:23,date:"1",month:"JUL",day:"Mer",title:"Conférence Internationale sur le Changement Climatique",loc:"Bonn, Allemagne",type:"Conférence",lat:50.7374,lng:7.0982,attendees:2800,mode:"🔄 Hybride",link:"https://unfccc.int"},
+  {id:24,date:"3",month:"JUL",day:"Ven",title:"Forum de Paris sur la Paix — Session d'été",loc:"Grande Halle de la Villette, Paris",type:"Forum",lat:48.8929,lng:2.3920,attendees:1400,mode:"🏛️ Présentiel"},
+  {id:25,date:"6",month:"JUL",day:"Lun",title:"Simulation ONU mondiale — NMUN New York",loc:"New York, USA",type:"Simulation",lat:40.7489,lng:-73.9680,attendees:5000,mode:"🏛️ Présentiel"},
+  {id:26,date:"7",month:"JUL",day:"Mar",title:"Conférence : Le Sahel en crise — Solutions diplomatiques",loc:"Institut Montaigne, Paris",type:"Conférence",lat:48.8750,lng:2.3118,attendees:180,mode:"🔄 Hybride",link:"https://www.institutmontaigne.org"},
+  {id:27,date:"9",month:"JUL",day:"Jeu",title:"Webinaire UNESCO : Patrimoine mondial en péril",loc:"UNESCO, Paris / En ligne",type:"Webinaire",lat:48.8500,lng:2.3055,attendees:2000,mode:"💻 En ligne",link:"https://www.unesco.org"},
+  {id:28,date:"11",month:"JUL",day:"Sam",title:"Anniversaire ONU : 80 ans — Événements mondiaux",loc:"Monde entier",type:"Commémoration",lat:48.8566,lng:2.3522,attendees:100000,mode:"🔄 Hybride",link:"https://www.un.org"},
+  {id:29,date:"13",month:"JUL",day:"Lun",title:"Sommet de l'OTAN — Réunion des chefs d'État",loc:"Bruxelles, Belgique",type:"Sommet",lat:50.8503,lng:4.3517,attendees:400,mode:"🏛️ Présentiel"},
+  {id:30,date:"14",month:"JUL",day:"Mar",title:"Défilé du 14 juillet — Fête Nationale française",loc:"Champs-Élysées, Paris",type:"Commémoration",lat:48.8698,lng:2.3078,attendees:400000,mode:"🏛️ Présentiel"},
+  {id:31,date:"15",month:"JUL",day:"Mer",title:"Forum Étudiant : Géopolitique et nouvelles puissances",loc:"Sciences Po Lyon",type:"Forum",lat:45.7640,lng:4.8357,attendees:160,mode:"🔄 Hybride"},
+  {id:32,date:"17",month:"JUL",day:"Ven",title:"Journée internationale de la justice — CPI",loc:"La Haye, Pays-Bas / En ligne",type:"Conférence",lat:52.0705,lng:4.3007,attendees:800,mode:"💻 En ligne",link:"https://www.icc-cpi.int"},
+  {id:33,date:"18",month:"JUL",day:"Sam",title:"Journée mondiale Nelson Mandela — Ubuntu Global",loc:"Johannesburg / En ligne",type:"Commémoration",lat:-26.2041,lng:28.0473,attendees:25000,mode:"🔄 Hybride"},
+  {id:34,date:"20",month:"JUL",day:"Lun",title:"Conférence sur la dette des pays en développement",loc:"CNUCED, Genève",type:"Conférence",lat:46.2044,lng:6.1432,attendees:500,mode:"🔄 Hybride",link:"https://unctad.org"},
+  {id:35,date:"22",month:"JUL",day:"Mer",title:"Forum Asie-Europe (ASEM) — Dialogue politique",loc:"Bruxelles / En ligne",type:"Forum",lat:50.8503,lng:4.3517,attendees:1200,mode:"🔄 Hybride"},
+  {id:36,date:"24",month:"JUL",day:"Ven",title:"Conférence internationale : Sécurité en Méditerranée",loc:"Rome, Italie",type:"Conférence",lat:41.9028,lng:12.4964,attendees:600,mode:"🏛️ Présentiel"},
+  {id:37,date:"26",month:"JUL",day:"Dim",title:"Webinaire : L'Inde, nouvelle superpuissance ?",loc:"En ligne",type:"Webinaire",lat:28.6139,lng:77.2090,attendees:1800,mode:"💻 En ligne"},
+  {id:38,date:"28",month:"JUL",day:"Mar",title:"Conférence sur la prolifération nucléaire — AIEA",loc:"Vienne, Autriche",type:"Conférence",lat:48.2082,lng:16.3738,attendees:900,mode:"🔄 Hybride",link:"https://www.iaea.org"},
+  {id:39,date:"30",month:"JUL",day:"Jeu",title:"Forum Mondial sur la Migration — OIM",loc:"Genève / En ligne",type:"Forum",lat:46.2044,lng:6.1432,attendees:2400,mode:"🔄 Hybride",link:"https://www.iom.int"},
+  // ── AOÛT 2026
+  {id:40,date:"3",month:"AOÛ",day:"Lun",title:"Conférence d'été de l'Institut des Relations Internationales",loc:"Grenoble",type:"Conférence",lat:45.1885,lng:5.7245,attendees:220,mode:"🏛️ Présentiel"},
+  {id:41,date:"6",month:"AOÛ",day:"Jeu",title:"Anniversaire Hiroshima — Cérémonie internationale",loc:"Hiroshima, Japon / En ligne",type:"Commémoration",lat:34.3853,lng:132.4553,attendees:50000,mode:"🔄 Hybride"},
+  {id:42,date:"9",month:"AOÛ",day:"Dim",title:"Anniversaire Nagasaki — Conférence contre les armes nucléaires",loc:"Nagasaki, Japon / En ligne",type:"Commémoration",lat:32.7503,lng:129.8779,attendees:30000,mode:"🔄 Hybride"},
+  {id:43,date:"10",month:"AOÛ",day:"Lun",title:"Forum Africain du Développement Durable",loc:"Dakar, Sénégal",type:"Forum",lat:14.7167,lng:-17.4677,attendees:800,mode:"🔄 Hybride"},
+  {id:44,date:"12",month:"AOÛ",day:"Mer",title:"Journée internationale de la jeunesse — ONU Live",loc:"En ligne mondial",type:"Conférence",lat:48.8566,lng:2.3522,attendees:20000,mode:"💻 En ligne",link:"https://www.un.org/youth"},
+  {id:45,date:"15",month:"AOÛ",day:"Sam",title:"Commémorations du 15 août 1945 — Fin de la Seconde Guerre",loc:"Paris & Monde / En ligne",type:"Commémoration",lat:48.8566,lng:2.3522,attendees:40000,mode:"🔄 Hybride"},
+  {id:46,date:"18",month:"AOÛ",day:"Mar",title:"Forum Économique d'été : Avenir de l'Euro",loc:"Frankfurt, Allemagne",type:"Forum",lat:50.1109,lng:8.6821,attendees:700,mode:"🔄 Hybride"},
+  {id:47,date:"20",month:"AOÛ",day:"Jeu",title:"Conférence sur la déforestation amazonienne",loc:"Brasília, Brésil / En ligne",type:"Conférence",lat:-15.7942,lng:-47.8822,attendees:1500,mode:"🔄 Hybride"},
+  {id:48,date:"23",month:"AOÛ",day:"Dim",title:"Forum de la Francophonie — Jeunesse & Avenir",loc:"Paris / En ligne",type:"Forum",lat:48.8566,lng:2.3522,attendees:1100,mode:"🔄 Hybride",link:"https://www.francophonie.org"},
+  {id:49,date:"25",month:"AOÛ",day:"Mar",title:"Webinaire OCDE : Inégalités mondiales et politiques publiques",loc:"Paris / En ligne",type:"Webinaire",lat:48.8483,lng:2.2940,attendees:3000,mode:"💻 En ligne",link:"https://www.oecd.org"},
+  {id:50,date:"27",month:"AOÛ",day:"Jeu",title:"Conférence internationale : Cybersécurité & Géopolitique",loc:"Tallinn, Estonie",type:"Conférence",lat:59.4370,lng:24.7536,attendees:600,mode:"🔄 Hybride"},
+  {id:51,date:"29",month:"AOÛ",day:"Sam",title:"Forum Mondial sur l'Eau — Solutions pour 2030",loc:"Marrakech, Maroc",type:"Forum",lat:31.6295,lng:-7.9811,attendees:2000,mode:"🔄 Hybride"},
+  {id:52,date:"31",month:"AOÛ",day:"Lun",title:"Conférence : Mémoire de la Résistance — 80 ans de la Libération",loc:"Musée de l'Armée, Paris",type:"Commémoration",lat:48.8549,lng:2.3124,attendees:300,mode:"🏛️ Présentiel"},
+  // ── SEPTEMBRE 2026
+  {id:53,date:"1",month:"SEP",day:"Mar",title:"Rentrée académique ONU — Assemblée Générale",loc:"New York, USA",type:"Sommet",lat:40.7489,lng:-73.9680,attendees:8000,mode:"🔄 Hybride",link:"https://www.un.org/ga"},
+  {id:54,date:"2",month:"SEP",day:"Mer",title:"Forum de la Paix — Dialogue inter-religieux mondial",loc:"Rome, Italie / En ligne",type:"Forum",lat:41.9028,lng:12.4964,attendees:1200,mode:"🔄 Hybride"},
+  {id:55,date:"5",month:"SEP",day:"Sam",title:"Concours d'éloquence inter-universitaire — Île-de-France",loc:"Sorbonne, Paris",type:"Concours",lat:48.8488,lng:2.3426,attendees:280,mode:"🏛️ Présentiel"},
+  {id:56,date:"7",month:"SEP",day:"Lun",title:"Sommet Afrique-Europe — Partenariat stratégique",loc:"Bruxelles, Belgique",type:"Sommet",lat:50.8503,lng:4.3517,attendees:600,mode:"🔄 Hybride"},
+  {id:57,date:"8",month:"SEP",day:"Mar",title:"Journée mondiale de l'alphabétisation — UNESCO",loc:"Monde / En ligne",type:"Conférence",lat:48.8500,lng:2.3055,attendees:10000,mode:"💻 En ligne",link:"https://www.unesco.org"},
+  {id:58,date:"10",month:"SEP",day:"Jeu",title:"Forum Mondial : Avenir du Travail — OIT",loc:"Genève / En ligne",type:"Forum",lat:46.2044,lng:6.1432,attendees:2500,mode:"🔄 Hybride",link:"https://www.ilo.org"},
+  {id:59,date:"13",month:"SEP",day:"Dim",title:"Conférence : Intelligence artificielle & démocratie",loc:"Sciences Po Paris / En ligne",type:"Conférence",lat:48.8517,lng:2.3294,attendees:400,mode:"🔄 Hybride"},
+  {id:60,date:"15",month:"SEP",day:"Mar",title:"Journée internationale de la démocratie — ONU",loc:"En ligne mondial",type:"Conférence",lat:48.8566,lng:2.3522,attendees:15000,mode:"💻 En ligne",link:"https://www.un.org"},
+  {id:61,date:"17",month:"SEP",day:"Jeu",title:"Forum Mondial sur l'Éducation — UNESCO",loc:"Paris / En ligne",type:"Forum",lat:48.8500,lng:2.3055,attendees:3000,mode:"🔄 Hybride",link:"https://www.unesco.org"},
+  {id:62,date:"18",month:"SEP",day:"Ven",title:"Conférence sur la Méditerranée et le Maghreb",loc:"Tunis, Tunisie",type:"Conférence",lat:36.8190,lng:10.1658,attendees:450,mode:"🔄 Hybride"},
+  {id:63,date:"20",month:"SEP",day:"Dim",title:"Sommet Mondial Climat — Leaders de 195 pays",loc:"New York / En ligne",type:"Sommet",lat:40.7489,lng:-73.9680,attendees:10000,mode:"🔄 Hybride",link:"https://unfccc.int"},
+  {id:64,date:"21",month:"SEP",day:"Lun",title:"Journée internationale de la Paix — ONU",loc:"New York & Monde / En ligne",type:"Commémoration",lat:40.7489,lng:-73.9680,attendees:100000,mode:"💻 En ligne",link:"https://www.un.org/peace"},
+  {id:65,date:"23",month:"SEP",day:"Mer",title:"Débat général Assemblée Générale ONU",loc:"New York, USA",type:"Sommet",lat:40.7489,lng:-73.9680,attendees:5000,mode:"🔄 Hybride",link:"https://www.un.org/ga"},
+  {id:66,date:"25",month:"SEP",day:"Ven",title:"Forum Économique : Afrique émergente",loc:"Abidjan, Côte d'Ivoire",type:"Forum",lat:5.3600,lng:-4.0083,attendees:900,mode:"🔄 Hybride"},
+  {id:67,date:"26",month:"SEP",day:"Sam",title:"Journée mondiale des langues — Conférence multilingue",loc:"Strasbourg / En ligne",type:"Conférence",lat:48.5734,lng:7.7521,attendees:600,mode:"💻 En ligne"},
+  {id:68,date:"28",month:"SEP",day:"Lun",title:"Conférence sur les armes chimiques — OIAC",loc:"La Haye, Pays-Bas",type:"Conférence",lat:52.0705,lng:4.3007,attendees:700,mode:"🏛️ Présentiel"},
+  {id:69,date:"30",month:"SEP",day:"Mer",title:"Forum Paris sur la Paix — Édition annuelle",loc:"Paris / En ligne",type:"Forum",lat:48.8798,lng:2.3478,attendees:4000,mode:"🔄 Hybride",link:"https://parispeaceforum.org"},
+  // ── OCTOBRE 2026
+  {id:70,date:"1",month:"OCT",day:"Jeu",title:"Journée mondiale des personnes âgées — ONU",loc:"En ligne mondial",type:"Conférence",lat:48.8566,lng:2.3522,attendees:8000,mode:"💻 En ligne",link:"https://www.un.org"},
+  {id:71,date:"3",month:"OCT",day:"Sam",title:"Conférence franco-africaine sur l'aide au développement",loc:"Institut Monde Arabe, Paris",type:"Conférence",lat:48.8520,lng:2.3553,attendees:350,mode:"🔄 Hybride"},
+  {id:72,date:"5",month:"OCT",day:"Lun",title:"Journée mondiale des enseignants — UNESCO",loc:"Paris / En ligne",type:"Conférence",lat:48.8500,lng:2.3055,attendees:5000,mode:"💻 En ligne",link:"https://www.unesco.org"},
+  {id:73,date:"7",month:"OCT",day:"Mer",title:"Commémoration : 3 ans depuis le 7 octobre — Conférence paix",loc:"Paris / En ligne",type:"Commémoration",lat:48.8566,lng:2.3522,attendees:800,mode:"🔄 Hybride"},
+  {id:74,date:"9",month:"OCT",day:"Ven",title:"Journée mondiale de la Poste — UPU Forum",loc:"Berne, Suisse",type:"Conférence",lat:46.9480,lng:7.4474,attendees:400,mode:"🔄 Hybride"},
+  {id:75,date:"10",month:"OCT",day:"Sam",title:"Journée mondiale de la santé mentale — OMS",loc:"Monde / En ligne",type:"Conférence",lat:46.2044,lng:6.1432,attendees:20000,mode:"💻 En ligne",link:"https://www.who.int"},
+  {id:76,date:"13",month:"OCT",day:"Mar",title:"Forum Mondial sur la Réduction des Risques de Catastrophes",loc:"Genève / En ligne",type:"Forum",lat:46.2044,lng:6.1432,attendees:2000,mode:"🔄 Hybride"},
+  {id:77,date:"15",month:"OCT",day:"Jeu",title:"Conférence : Relations Chine-Occident, nouveau paradigme",loc:"Chatham House, Londres / En ligne",type:"Conférence",lat:51.5074,lng:-0.1278,attendees:700,mode:"🔄 Hybride",link:"https://www.chathamhouse.org"},
+  {id:78,date:"16",month:"OCT",day:"Ven",title:"Journée mondiale de l'alimentation — FAO",loc:"Rome / En ligne",type:"Conférence",lat:41.9028,lng:12.4964,attendees:15000,mode:"💻 En ligne",link:"https://www.fao.org"},
+  {id:79,date:"17",month:"OCT",day:"Sam",title:"Journée mondiale du refus de la misère",loc:"Paris & Monde / En ligne",type:"Commémoration",lat:48.8566,lng:2.3522,attendees:30000,mode:"🔄 Hybride"},
+  {id:80,date:"19",month:"OCT",day:"Lun",title:"G20 — Session extraordinaire économie mondiale",loc:"Johannesburg, Afrique du Sud",type:"Sommet",lat:-26.2041,lng:28.0473,attendees:2000,mode:"🔄 Hybride"},
+  {id:81,date:"21",month:"OCT",day:"Mer",title:"Conférence européenne sur la cybersécurité — ENISA",loc:"Barcelone, Espagne / En ligne",type:"Conférence",lat:41.3874,lng:2.1686,attendees:1200,mode:"🔄 Hybride"},
+  {id:82,date:"23",month:"OCT",day:"Ven",title:"Forum sur la liberté de la presse — RSF",loc:"Paris",type:"Forum",lat:48.8566,lng:2.3522,attendees:400,mode:"🏛️ Présentiel",link:"https://rsf.org"},
+  {id:83,date:"24",month:"OCT",day:"Sam",title:"Journée des Nations Unies — 81 ans de l'ONU",loc:"New York & Monde / En ligne",type:"Commémoration",lat:40.7489,lng:-73.9680,attendees:50000,mode:"💻 En ligne",link:"https://www.un.org"},
+  {id:84,date:"25",month:"OCT",day:"Dim",title:"Conférence internationale : Migrations et intégration",loc:"Berlin, Allemagne / En ligne",type:"Conférence",lat:52.5200,lng:13.4050,attendees:800,mode:"🔄 Hybride"},
+  {id:85,date:"27",month:"OCT",day:"Mar",title:"Forum Mondial : Économie numérique et régulation",loc:"Genève / En ligne",type:"Forum",lat:46.2044,lng:6.1432,attendees:1500,mode:"🔄 Hybride"},
+  {id:86,date:"29",month:"OCT",day:"Jeu",title:"Commémoration du krach de 1929 — Conférence économie",loc:"En ligne",type:"Commémoration",lat:48.8566,lng:2.3522,attendees:2000,mode:"💻 En ligne"},
+  // ── NOVEMBRE 2026
+  {id:87,date:"2",month:"NOV",day:"Lun",title:"Conférence sur la Démocratie et les Élections — OSCE",loc:"Varsovie, Pologne",type:"Conférence",lat:52.2297,lng:21.0122,attendees:600,mode:"🔄 Hybride"},
+  {id:88,date:"4",month:"NOV",day:"Mer",title:"Commémoration de l'Armistice 1918 — Conférence historique",loc:"Verdun, France / En ligne",type:"Commémoration",lat:49.1600,lng:5.3800,attendees:1200,mode:"🔄 Hybride"},
+  {id:89,date:"6",month:"NOV",day:"Ven",title:"COP31 — Ouverture Conférence Climat ONU",loc:"Nairobi, Kenya / En ligne",type:"Sommet",lat:-1.2921,lng:36.8219,attendees:25000,mode:"🔄 Hybride",link:"https://unfccc.int"},
+  {id:90,date:"8",month:"NOV",day:"Dim",title:"Forum des étudiants en droit international",loc:"Strasbourg / En ligne",type:"Forum",lat:48.5734,lng:7.7521,attendees:300,mode:"🔄 Hybride"},
+  {id:91,date:"9",month:"NOV",day:"Lun",title:"Anniversaire chute du Mur de Berlin — Conférence Europe",loc:"Berlin / En ligne",type:"Commémoration",lat:52.5200,lng:13.4050,attendees:5000,mode:"🔄 Hybride"},
+  {id:92,date:"11",month:"NOV",day:"Mer",title:"Commémoration de l'Armistice — Cérémonie Arc de Triomphe",loc:"Paris, France",type:"Commémoration",lat:48.8738,lng:2.2950,attendees:100000,mode:"🏛️ Présentiel"},
+  {id:93,date:"13",month:"NOV",day:"Ven",title:"Forum Mondial de la Santé — OMS",loc:"Genève / En ligne",type:"Forum",lat:46.2044,lng:6.1432,attendees:3000,mode:"🔄 Hybride",link:"https://www.who.int"},
+  {id:94,date:"15",month:"NOV",day:"Dim",title:"Conférence : Moyen-Orient, vers une paix durable ?",loc:"Doha, Qatar / En ligne",type:"Conférence",lat:25.2854,lng:51.5310,attendees:900,mode:"🔄 Hybride"},
+  {id:95,date:"17",month:"NOV",day:"Mar",title:"Conférence internationale des juristes — Droit pénal",loc:"La Haye, Pays-Bas",type:"Conférence",lat:52.0705,lng:4.3007,attendees:700,mode:"🏛️ Présentiel"},
+  {id:96,date:"19",month:"NOV",day:"Jeu",title:"Journée mondiale de l'enfance — UNICEF Live",loc:"Monde / En ligne",type:"Conférence",lat:48.8566,lng:2.3522,attendees:40000,mode:"💻 En ligne",link:"https://www.unicef.org"},
+  {id:97,date:"20",month:"NOV",day:"Ven",title:"Forum : Droits de l'enfant 35 ans — Convention ONU",loc:"Genève / En ligne",type:"Forum",lat:46.2044,lng:6.1432,attendees:2000,mode:"🔄 Hybride",link:"https://www.unicef.org"},
+  {id:98,date:"21",month:"NOV",day:"Sam",title:"Conférence francophone sur l'éloquence et la rhétorique",loc:"Lyon, France",type:"Conférence",lat:45.7640,lng:4.8357,attendees:250,mode:"🏛️ Présentiel"},
+  {id:99,date:"23",month:"NOV",day:"Lun",title:"Sommet Asie-Pacifique — APEC",loc:"Séoul, Corée du Sud / En ligne",type:"Sommet",lat:37.5665,lng:126.9780,attendees:3000,mode:"🔄 Hybride"},
+  {id:100,date:"25",month:"NOV",day:"Mer",title:"Journée internationale contre les violences faites aux femmes",loc:"Monde / En ligne",type:"Conférence",lat:48.8566,lng:2.3522,attendees:50000,mode:"💻 En ligne",link:"https://www.unwomen.org"},
+  {id:101,date:"27",month:"NOV",day:"Ven",title:"Forum : Intelligence artificielle et souveraineté",loc:"Paris / En ligne",type:"Forum",lat:48.8566,lng:2.3522,attendees:600,mode:"🔄 Hybride"},
+  {id:102,date:"28",month:"NOV",day:"Sam",title:"Conférence sur la solidarité internationale — ONG",loc:"Bruxelles / En ligne",type:"Conférence",lat:50.8503,lng:4.3517,attendees:400,mode:"🔄 Hybride"},
+  // ── DÉCEMBRE 2026
+  {id:103,date:"1",month:"DÉC",day:"Mar",title:"Journée mondiale contre le SIDA — ONUSIDA",loc:"Monde / En ligne",type:"Conférence",lat:46.2044,lng:6.1432,attendees:30000,mode:"💻 En ligne",link:"https://www.unaids.org"},
+  {id:104,date:"3",month:"DÉC",day:"Jeu",title:"Journée internationale des personnes handicapées — ONU",loc:"En ligne mondial",type:"Conférence",lat:48.8566,lng:2.3522,attendees:12000,mode:"💻 En ligne",link:"https://www.un.org"},
+  {id:105,date:"5",month:"DÉC",day:"Sam",title:"Journée mondiale du sol — FAO Conférence",loc:"Rome / En ligne",type:"Conférence",lat:41.9028,lng:12.4964,attendees:1500,mode:"💻 En ligne",link:"https://www.fao.org"},
+  {id:106,date:"7",month:"DÉC",day:"Lun",title:"Commémoration Pearl Harbor — Relations USA-Japon",loc:"Honolulu, USA / En ligne",type:"Commémoration",lat:21.3654,lng:-157.9762,attendees:5000,mode:"🔄 Hybride"},
+  {id:107,date:"9",month:"DÉC",day:"Mer",title:"Journée internationale contre la corruption — ONU",loc:"En ligne mondial",type:"Conférence",lat:48.8566,lng:2.3522,attendees:8000,mode:"💻 En ligne",link:"https://www.unodc.org"},
+  {id:108,date:"10",month:"DÉC",day:"Jeu",title:"Cérémonie Nobel de la Paix — Oslo",loc:"Oslo, Norvège / En ligne",type:"Commémoration",lat:59.9139,lng:10.7522,attendees:3000,mode:"🔄 Hybride"},
+  {id:109,date:"10",month:"DÉC",day:"Jeu",title:"Journée des Droits de l'Homme — ONU",loc:"Genève & Monde / En ligne",type:"Conférence",lat:46.2044,lng:6.1432,attendees:25000,mode:"💻 En ligne",link:"https://www.ohchr.org"},
+  {id:110,date:"14",month:"DÉC",day:"Lun",title:"Forum Mondial : Bilan 2026 et perspectives 2027",loc:"Bruxelles / En ligne",type:"Forum",lat:50.8503,lng:4.3517,attendees:1000,mode:"🔄 Hybride"},
+  {id:111,date:"16",month:"DÉC",day:"Mer",title:"Conférence : Francophonie et influence culturelle française",loc:"Paris / En ligne",type:"Conférence",lat:48.8566,lng:2.3522,attendees:300,mode:"🔄 Hybride"},
+  {id:112,date:"18",month:"DÉC",day:"Ven",title:"Journée internationale des migrants — OIM",loc:"En ligne mondial",type:"Conférence",lat:46.2044,lng:6.1432,attendees:10000,mode:"💻 En ligne",link:"https://www.iom.int"},
+  {id:113,date:"20",month:"DÉC",day:"Dim",title:"Forum de Dakar — Relations franco-africaines",loc:"Dakar, Sénégal / En ligne",type:"Forum",lat:14.7167,lng:-17.4677,attendees:600,mode:"🔄 Hybride"},
+  // ── JANVIER 2027
+  {id:114,date:"1",month:"JAN",day:"Ven",title:"Discours du Nouvel An — Chefs d'État mondiaux",loc:"Monde / En ligne",type:"Commémoration",lat:48.8566,lng:2.3522,attendees:500000,mode:"💻 En ligne"},
+  {id:115,date:"15",month:"JAN",day:"Ven",title:"Forum Économique Mondial — Davos 2027",loc:"Davos, Suisse / En ligne",type:"Sommet",lat:46.8026,lng:9.8372,attendees:3000,mode:"🔄 Hybride",link:"https://www.weforum.org"},
+  {id:116,date:"20",month:"JAN",day:"Mer",title:"Conférence annuelle : Justice internationale et droits",loc:"La Haye / En ligne",type:"Conférence",lat:52.0705,lng:4.3007,attendees:500,mode:"🔄 Hybride"},
+  {id:117,date:"27",month:"JAN",day:"Mer",title:"Journée de la mémoire de l'Holocauste — ONU",loc:"Jérusalem & Monde / En ligne",type:"Commémoration",lat:31.7683,lng:35.2137,attendees:50000,mode:"🔄 Hybride",link:"https://www.un.org"},
+  // ── FÉVRIER 2027
+  {id:118,date:"4",month:"FÉV",day:"Jeu",title:"Conférence sur la sécurité de Munich",loc:"Munich, Allemagne / En ligne",type:"Conférence",lat:48.1351,lng:11.5820,attendees:2000,mode:"🔄 Hybride",link:"https://securityconference.org"},
+  {id:119,date:"14",month:"FÉV",day:"Sam",title:"Forum Valentine pour la Diplomatie Humanitaire",loc:"Genève / En ligne",type:"Forum",lat:46.2044,lng:6.1432,attendees:400,mode:"🔄 Hybride"},
+  {id:120,date:"21",month:"FÉV",day:"Dim",title:"Journée internationale de la langue maternelle — UNESCO",loc:"Paris / En ligne",type:"Conférence",lat:48.8500,lng:2.3055,attendees:5000,mode:"💻 En ligne",link:"https://www.unesco.org"},
+  // ── ÉVÉNEMENTS EN LIGNE PERMANENTS / SÉRIES
+  {id:121,date:"★",month:"",day:"Récurrent",title:"Cours en ligne ONU : Introduction au droit international",loc:"En ligne — Coursera/edX",type:"Formation",lat:48.8566,lng:2.3522,attendees:50000,mode:"💻 En ligne",link:"https://www.edx.org",desc:"Cours certifiant offert par l'Université des Nations Unies. Ouvert à tous, gratuit en audit."},
+  {id:122,date:"★",month:"",day:"Récurrent",title:"Conférences TED en français — Géopolitique & Société",loc:"En ligne — TED.com",type:"Formation",lat:48.8566,lng:2.3522,attendees:200000,mode:"💻 En ligne",link:"https://www.ted.com/talks?language=fr",desc:"Centaines de conférences disponibles sur la géopolitique, la diplomatie, la société."},
+  {id:123,date:"★",month:"",day:"Récurrent",title:"Sciences Po MOOC — Géopolitique mondiale",loc:"En ligne — Coursera",type:"Formation",lat:48.8517,lng:2.3294,attendees:30000,mode:"💻 En ligne",link:"https://www.coursera.org",desc:"MOOC Sciences Po Paris sur la géopolitique mondiale. Certifiant et reconnu."},
+  {id:124,date:"★",month:"",day:"Récurrent",title:"Conférences de l'IFRI — Institut français des relations int.",loc:"Paris / YouTube",type:"Conférence",lat:48.8566,lng:2.3522,attendees:5000,mode:"🔄 Hybride",link:"https://www.ifri.org",desc:"L'IFRI publie régulièrement des conférences et débats sur la géopolitique mondiale."},
+  {id:125,date:"★",month:"",day:"Récurrent",title:"France Culture — Cours et Conférences en podcast",loc:"En ligne — France Culture",type:"Formation",lat:48.8566,lng:2.3522,attendees:500000,mode:"💻 En ligne",link:"https://www.radiofrance.fr/franceculture",desc:"Milliers d'heures de conférences, cours et débats sur tous les sujets des concours."},
+  {id:126,date:"★",month:"",day:"Récurrent",title:"Webinaires hebdomadaires : Actualité internationale",loc:"Institut Montaigne, En ligne",type:"Webinaire",lat:48.8750,lng:2.3118,attendees:2000,mode:"💻 En ligne",link:"https://www.institutmontaigne.org",desc:"Chaque semaine, analyses et débats sur l'actualité géopolitique et économique mondiale."},
+  {id:127,date:"★",month:"",day:"Récurrent",title:"Simulation ONU en ligne — UNA-USA",loc:"En ligne mondial",type:"Simulation",lat:40.7489,lng:-73.9680,attendees:10000,mode:"💻 En ligne",link:"https://www.una-usa.org",desc:"Simulations ONU en ligne ouvertes aux étudiants du monde entier. Plusieurs sessions par an."},
+  {id:128,date:"★",month:"",day:"Récurrent",title:"Le Grand Continent — Conférences Europe",loc:"En ligne",type:"Conférence",lat:48.8566,lng:2.3522,attendees:8000,mode:"💻 En ligne",link:"https://legrandcontinent.eu",desc:"Revue géopolitique européenne avec conférences et débats réguliers en ligne."},
 ];
 const CONVOS = [
   {id:1,name:"Communauté Géopolitique",last:"Quelqu'un a suivi le G7 ce matin ?",time:"14:23",unread:5,init:"GÉO"},
@@ -1531,7 +1666,7 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
 
 // ── EVENTS SCREEN ─────────────────────────────────────────────
 function EventsScreen({T}:{T:Theme}) {
-  type EventItem = {id:number;date:string;month:string;day:string;title:string;loc:string;type:string;lat:number;lng:number;attendees:number;isUser?:boolean;desc?:string};
+  type EventItem = {id:number;date:string;month:string;day:string;title:string;loc:string;type:string;lat:number;lng:number;attendees:number;isUser?:boolean;desc?:string;mode?:string;link?:string};
   const [reg,setReg] = useState<Set<number>>(new Set());
   const [filter,setFilter] = useState("Tout");
   const [userLoc,setUserLoc] = useState<{lat:number;lng:number}|null>(null);
@@ -1591,7 +1726,8 @@ function EventsScreen({T}:{T:Theme}) {
   };
 
   const allEvents:EventItem[]=[...EVENTS_DATA,...userEvents];
-  const filtered=filter==="Tout"?allEvents:allEvents.filter(e=>e.type===filter);
+  const modeFilters=["💻 En ligne","🔄 Hybride","🏛️ Présentiel"];
+  const filtered=filter==="Tout"?allEvents:modeFilters.includes(filter)?allEvents.filter(e=>e.mode===filter):allEvents.filter(e=>e.type===filter);
   const sorted=userLoc?[...filtered].sort((a,b)=>haversine(userLoc.lat,userLoc.lng,a.lat,a.lng)-haversine(userLoc.lat,userLoc.lng,b.lat,b.lng)):filtered;
 
   return(
@@ -1636,8 +1772,8 @@ function EventsScreen({T}:{T:Theme}) {
           </div>
         </div>
       )}
-      <div style={{display:"flex",gap:8,overflowX:"auto"}}>
-        {["Tout","Conférence","Débat","Forum","Simulation","Atelier"].map(f=>(
+      <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
+        {["Tout","💻 En ligne","🔄 Hybride","🏛️ Présentiel","Conférence","Forum","Sommet","Webinaire","Simulation","Concours","Commémoration"].map(f=>(
           <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 14px",borderRadius:20,border:`1px solid ${filter===f?T.blueB:T.b1}`,background:filter===f?T.blueB:"transparent",color:filter===f?"#fff":T.textD,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{f}</button>
         ))}
       </div>
@@ -1668,13 +1804,17 @@ function EventsScreen({T}:{T:Theme}) {
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                   <Ic n="map" s={12} c={T.muted}/><span style={{color:T.textD,fontSize:12}}>{ev.loc}</span>
                 </div>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                {ev.mode&&<div style={{marginBottom:6}}><span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:6,background:ev.mode.includes("ligne")?"#3B82F615":ev.mode.includes("Hybride")?"#F59E0B15":"#10B98115",color:ev.mode.includes("ligne")?"#3B82F6":ev.mode.includes("Hybride")?"#F59E0B":"#10B981",border:`1px solid ${ev.mode.includes("ligne")?"#3B82F630":ev.mode.includes("Hybride")?"#F59E0B30":"#10B98130"}`}}>{ev.mode}</span></div>}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
                   <span style={{color:T.muted,fontSize:11}}>
                     {dist!==null?`📍 ${fmtDist(dist)} · `:""}{ev.attendees} inscrit{ev.attendees>1?"s":""}
                   </span>
-                  <button onClick={()=>setReg(s=>{const ns=new Set(s);ns.has(ev.id)?ns.delete(ev.id):ns.add(ev.id);return ns;})} style={{padding:"6px 14px",borderRadius:8,border:`1px solid ${reg.has(ev.id)?T.green:T.blueB}`,background:reg.has(ev.id)?`${T.green}15`:T.blueG,color:reg.has(ev.id)?T.green:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                    {reg.has(ev.id)?"✓ Inscrit":"S'inscrire"}
-                  </button>
+                  <div style={{display:"flex",gap:6}}>
+                    {ev.link&&<a href={ev.link} target="_blank" rel="noopener noreferrer" style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${T.blueB}50`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",textDecoration:"none"}}>🔗 Suivre</a>}
+                    <button onClick={()=>setReg(s=>{const ns=new Set(s);ns.has(ev.id)?ns.delete(ev.id):ns.add(ev.id);return ns;})} style={{padding:"6px 14px",borderRadius:8,border:`1px solid ${reg.has(ev.id)?T.green:T.blueB}`,background:reg.has(ev.id)?`${T.green}15`:T.blueG,color:reg.has(ev.id)?T.green:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                      {reg.has(ev.id)?"✓ Inscrit":"S'inscrire"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
