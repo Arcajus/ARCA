@@ -2175,8 +2175,9 @@ function EventsScreen({T}:{T:Theme}) {
   };
 
   const allEvents:EventItem[]=[...EVENTS_DATA,...userEvents];
-  const modeFilters=["💻 En ligne","🔄 Hybride","🏛️ Présentiel"];
-  const filtered=filter==="Tout"?allEvents:modeFilters.includes(filter)?allEvents.filter(e=>e.mode===filter):allEvents.filter(e=>e.type===filter);
+  // ev.mode contient des emojis dans les données — on filtre par inclusion du mot clé
+  const modeLabels=["En ligne","Hybride","Présentiel"];
+  const filtered=filter==="Tout"?allEvents:modeLabels.includes(filter)?allEvents.filter(e=>e.mode?.includes(filter)):allEvents.filter(e=>e.type===filter);
   const sorted=userLoc?[...filtered].sort((a,b)=>haversine(userLoc.lat,userLoc.lng,a.lat,a.lng)-haversine(userLoc.lat,userLoc.lng,b.lat,b.lng)):filtered;
 
   return(
@@ -2230,10 +2231,18 @@ function EventsScreen({T}:{T:Theme}) {
           </div>
         </div>
       )}
-      <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
-        {["Tout","💻 En ligne","🔄 Hybride","🏛️ Présentiel","Conférence","Forum","Sommet","Webinaire","Simulation","Concours","Commémoration"].map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 14px",borderRadius:20,border:`1px solid ${filter===f?T.blueB:T.b1}`,background:filter===f?T.blueB:"transparent",color:filter===f?"#fff":T.textD,fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{f}</button>
-        ))}
+      <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
+        {(["Tout","En ligne","Hybride","Présentiel","Conférence","Forum","Sommet","Webinaire","Simulation","Concours","Commémoration"] as const).map(f=>{
+          const isModeFilter=["En ligne","Hybride","Présentiel"].includes(f);
+          const modeColor=f==="En ligne"?"#3B82F6":f==="Hybride"?"#F59E0B":f==="Présentiel"?"#10B981":T.blueB;
+          const active=filter===f;
+          return(
+            <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 13px",borderRadius:6,border:`1px solid ${active?(isModeFilter?modeColor:T.blueB):T.b1}`,background:active?(isModeFilter?modeColor:T.blueB):"transparent",color:active?"#fff":T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .15s",display:"flex",alignItems:"center",gap:5}}>
+              {isModeFilter&&<span style={{width:6,height:6,borderRadius:"50%",background:active?"#ffffff80":modeColor,display:"inline-block",flexShrink:0}}/>}
+              {f}
+            </button>
+          );
+        })}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
         {sorted.length===0&&<div style={{textAlign:"center",padding:40}}><p style={{color:T.muted,fontSize:14}}>Aucun événement dans cette catégorie</p></div>}
@@ -2262,7 +2271,20 @@ function EventsScreen({T}:{T:Theme}) {
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                   <Ic n="map" s={12} c={T.muted}/><span style={{color:T.textD,fontSize:12}}>{ev.loc}</span>
                 </div>
-                {ev.mode&&<div style={{marginBottom:6}}><span style={{fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:6,background:ev.mode.includes("ligne")?"#3B82F615":ev.mode.includes("Hybride")?"#F59E0B15":"#10B98115",color:ev.mode.includes("ligne")?"#3B82F6":ev.mode.includes("Hybride")?"#F59E0B":"#10B981",border:`1px solid ${ev.mode.includes("ligne")?"#3B82F630":ev.mode.includes("Hybride")?"#F59E0B30":"#10B98130"}`}}>{ev.mode}</span></div>}
+                {ev.mode&&(()=>{
+                  const isOnline=ev.mode.includes("ligne");
+                  const isHybrid=ev.mode.includes("Hybride");
+                  const col=isOnline?"#3B82F6":isHybrid?"#F59E0B":"#10B981";
+                  const label=isOnline?"En ligne":isHybrid?"Hybride":"Présentiel";
+                  const icon=isOnline?"globe":isHybrid?"globe":"users";
+                  return(
+                    <div style={{marginBottom:6,display:"inline-flex",alignItems:"center",gap:5,padding:"3px 8px",borderRadius:5,background:`${col}10`,border:`1px solid ${col}25`}}>
+                      <span style={{width:6,height:6,borderRadius:"50%",background:col,display:"inline-block",flexShrink:0}}/>
+                      <Ic n={icon} s={11} c={col}/>
+                      <span style={{fontSize:11,fontWeight:700,color:col,letterSpacing:.2}}>{label}</span>
+                    </div>
+                  );
+                })()}
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
                   <span style={{color:T.muted,fontSize:11}}>
                     {dist!==null?<><Ic n="map" s={10} c={T.muted}/> {fmtDist(dist)} · </>:""}{ev.attendees} inscrit{ev.attendees>1?"s":""}
