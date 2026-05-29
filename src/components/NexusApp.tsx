@@ -373,7 +373,7 @@ const JOURNALISTS = [
 const LEVELS = [
   {id:"novice",tier:1,label:"Novice",sub:"Citoyen lambda",premium:false},
   {id:"initie",tier:2,label:"Initié",sub:"Militant, conseiller municipal",premium:false},
-  {id:"confirme",tier:3,label:"Confirmé",sub:"Avocat, cadre, haut fonctionnaire",premium:false},
+  {id:"confirme",tier:3,label:"Confirmé",sub:"Avocat, cadre, haut fonctionnaire",premium:true},
   {id:"expert",tier:4,label:"Expert",sub:"Ancien député, banquier",premium:true},
   {id:"elite",tier:5,label:"Élite",sub:"Ancien ministre, ambassadeur",premium:true},
 ];
@@ -583,58 +583,58 @@ const CONVOS = [
 
 // ── DEMO PROFILES (30 fake users for prototype) ──────────────
 const DEMO_PROFILES = [
-  {id:"dp1",name:"Amira Konaté",init:"AK",role:"Doctorante en droit international",location:"Paris",verified:true,color:"#2B78F5",followers:1420,bio:"Spécialiste droit humanitaire · CIJ · ONU"},
-  {id:"dp2",name:"Baptiste Renard",init:"BR",role:"Journaliste géopolitique",location:"Bruxelles",verified:true,color:"#16A34A",followers:3280,bio:"Correspondant UE · Le Monde diplomatique"},
-  {id:"dp3",name:"Chiara Romano",init:"CR",role:"Chercheuse en relations internationales",location:"Rome",verified:false,color:"#7C3AED",followers:890,bio:"Sciences Po Paris · LUISS Roma"},
-  {id:"dp4",name:"Daouda Traoré",init:"DT",role:"Analyste politique Afrique",location:"Dakar",verified:true,color:"#D97706",followers:2150,bio:"Institut Afrique Monde · Géopolitique subsaharienne"},
-  {id:"dp5",name:"Elena Vasquez",init:"EV",role:"Avocate droits de l'homme",location:"Madrid",verified:true,color:"#E03535",followers:1870,bio:"Amnesty International · Barreau de Paris"},
-  {id:"dp6",name:"Farid Mansouri",init:"FM",role:"Économiste politique",location:"Lyon",verified:false,color:"#2B78F5",followers:640,bio:"ENS Lyon · Économie des inégalités"},
-  {id:"dp7",name:"Giulia Ferrari",init:"GF",role:"Eurodéputée (fictif)",location:"Strasbourg",verified:true,color:"#16A34A",followers:8900,bio:"Parlement européen · Commission affaires étrangères"},
-  {id:"dp8",name:"Hassan Al-Rashid",init:"HR",role:"Diplomat & Think-tank",location:"Genève",verified:true,color:"#7C3AED",followers:4200,bio:"GCSP · Sécurité internationale · Moyen-Orient"},
+  {id:"dp1",name:"Amira Konaté",init:"AK",role:"Doctorante en droit international",location:"Paris",verified:true,color:"#2B78F5",followers:1420,bio:"Spécialiste droit humanitaire · CIJ · ONU",story:{type:"photo",caption:"À La Haye pour la présentation de ma thèse sur les avis consultatifs de la CIJ 🏛️",bg:"linear-gradient(135deg,#2B78F5,#7C3AED)"}},
+  {id:"dp2",name:"Baptiste Renard",init:"BR",role:"Journaliste géopolitique",location:"Bruxelles",verified:true,color:"#16A34A",followers:3280,bio:"Correspondant UE · Le Monde diplomatique",story:{type:"video",caption:"Live depuis le Parlement européen — session extraordinaire sur la défense commune 🎙️",bg:"linear-gradient(135deg,#16A34A,#0891B2)"}},
+  {id:"dp3",name:"Chiara Romano",init:"CR",role:"Chercheuse en relations internationales",location:"Rome",verified:false,color:"#7C3AED",followers:890,bio:"Sciences Po Paris · LUISS Roma",story:{type:"photo",caption:"En vacances à Athènes — ville berceau de la démocratie ☀️",bg:"linear-gradient(135deg,#7C3AED,#E03535)"}},
+  {id:"dp4",name:"Daouda Traoré",init:"DT",role:"Analyste politique Afrique",location:"Dakar",verified:true,color:"#D97706",followers:2150,bio:"Institut Afrique Monde · Géopolitique subsaharienne",story:{type:"photo",caption:"Forum sur la sécurité au Sahel — j'ai participé au panel principal à Dakar 🌍",bg:"linear-gradient(135deg,#D97706,#E03535)"}},
+  {id:"dp5",name:"Elena Vasquez",init:"EV",role:"Avocate droits de l'homme",location:"Madrid",verified:true,color:"#E03535",followers:1870,bio:"Amnesty International · Barreau de Paris",story:{type:"share",caption:"Je partage cet article sur la situation des défenseurs des droits humains en Iran 🔗",bg:"linear-gradient(135deg,#E03535,#D97706)"}},
+  {id:"dp6",name:"Farid Mansouri",init:"FM",role:"Économiste politique",location:"Lyon",verified:false,color:"#2B78F5",followers:640,bio:"ENS Lyon · Économie des inégalités",story:{type:"photo",caption:"Conférence à l'ENS Lyon sur les inégalités économiques — 200 étudiants présents 📊",bg:"linear-gradient(135deg,#2B78F5,#16A34A)"}},
+  {id:"dp7",name:"Giulia Ferrari",init:"GF",role:"Eurodéputée (fictif)",location:"Strasbourg",verified:true,color:"#16A34A",followers:8900,bio:"Parlement européen · Commission affaires étrangères",story:{type:"video",caption:"Déclaration officielle sur la politique d'élargissement de l'UE à Strasbourg 🇪🇺",bg:"linear-gradient(135deg,#16A34A,#2B78F5)"}},
+  {id:"dp8",name:"Hassan Al-Rashid",init:"HR",role:"Diplomat & Think-tank",location:"Genève",verified:true,color:"#7C3AED",followers:4200,bio:"GCSP · Sécurité internationale · Moyen-Orient",story:{type:"photo",caption:"Au GCSP Genève — rencontre avec des diplomates de 30 pays sur la sécurité régionale 🌐",bg:"linear-gradient(135deg,#7C3AED,#2B78F5)"}},
   {id:"dp9",name:"Isabelle Morin",init:"IM",role:"Professeure de Sciences politiques",location:"Toulouse",verified:false,color:"#D97706",followers:1100,bio:"Université Toulouse Capitole · Démocratie comparée"},
-  {id:"dp10",name:"Jonas Weber",init:"JW",role:"Analyste défense & OTAN",location:"Berlin",verified:true,color:"#E03535",followers:2700,bio:"Stiftung Wissenschaft · Institut Montaigne"},
-  {id:"dp11",name:"Kofi Mensah",init:"KM",role:"Étudiant Sciences Po",location:"Abidjan",verified:false,color:"#2B78F5",followers:380,bio:"Sciences Po Paris '27 · Relation franco-africaines"},
-  {id:"dp12",name:"Layla Benali",init:"LB",role:"Journaliste investigatrice",location:"Tunis",verified:true,color:"#16A34A",followers:5600,bio:"Inkyfada · Nawaat · Presse indépendante Maghreb"},
+  {id:"dp10",name:"Jonas Weber",init:"JW",role:"Analyste défense & OTAN",location:"Berlin",verified:true,color:"#E03535",followers:2700,bio:"Stiftung Wissenschaft · Institut Montaigne",story:{type:"video",caption:"Mon analyse du dernier sommet OTAN — quelques observations clés à ne pas manquer 🎯",bg:"linear-gradient(135deg,#E03535,#7C3AED)"}},
+  {id:"dp11",name:"Kofi Mensah",init:"KM",role:"Étudiant Sciences Po",location:"Abidjan",verified:false,color:"#2B78F5",followers:380,bio:"Sciences Po Paris '27 · Relation franco-africaines",story:{type:"photo",caption:"Mon 1er jour sur le campus de Sciences Po Paris — rêve réalisé ! 🎓",bg:"linear-gradient(135deg,#2B78F5,#D97706)"}},
+  {id:"dp12",name:"Layla Benali",init:"LB",role:"Journaliste investigatrice",location:"Tunis",verified:true,color:"#16A34A",followers:5600,bio:"Inkyfada · Nawaat · Presse indépendante Maghreb",story:{type:"share",caption:"Mon reportage sur la liberté de la presse en Tunisie vient d'être publié 📰",bg:"linear-gradient(135deg,#16A34A,#7C3AED)"}},
   {id:"dp13",name:"Marc Dupont",init:"MD",role:"Consultant stratégie politique",location:"Paris",verified:false,color:"#7C3AED",followers:720,bio:"Ex-conseiller ministériel · Campus politique"},
-  {id:"dp14",name:"Nadia Petrov",init:"NP",role:"Correspondante Europe de l'Est",location:"Varsovie",verified:true,color:"#D97706",followers:3100,bio:"ARTE · Le Figaro · Ukraine & Russie"},
-  {id:"dp15",name:"Omar Diallo",init:"OD",role:"Avocat pénaliste international",location:"La Haye",verified:true,color:"#E03535",followers:1950,bio:"CPI · Tribunal pénal international"},
-  {id:"dp16",name:"Priya Sharma",init:"PS",role:"Chercheuse Indo-Pacifique",location:"New Delhi",verified:true,color:"#2B78F5",followers:2830,bio:"Observer Research Foundation · Géopolitique Asie"},
-  {id:"dp17",name:"Quentin Leclerc",init:"QL",role:"Étudiant prépa Sciences Po",location:"Bordeaux",verified:false,color:"#16A34A",followers:210,bio:"Concours SciencesPo 2025 · Rhétorique & débat"},
-  {id:"dp18",name:"Rania Aziz",init:"RA",role:"Militante droits des femmes",location:"Le Caire",verified:false,color:"#7C3AED",followers:4400,bio:"Féminisme · Droits MENA · Militante digitale"},
-  {id:"dp19",name:"Sébastien Blanc",init:"SBl",role:"Historien contemporain",location:"Strasbourg",verified:true,color:"#D97706",followers:1640,bio:"Université de Strasbourg · Histoire du XXe siècle"},
+  {id:"dp14",name:"Nadia Petrov",init:"NP",role:"Correspondante Europe de l'Est",location:"Varsovie",verified:true,color:"#D97706",followers:3100,bio:"ARTE · Le Figaro · Ukraine & Russie",story:{type:"photo",caption:"En reportage à Varsovie — 3 ans après l'invasion russe, que reste-t-il du traumatisme ? 📸",bg:"linear-gradient(135deg,#D97706,#E03535)"}},
+  {id:"dp15",name:"Omar Diallo",init:"OD",role:"Avocat pénaliste international",location:"La Haye",verified:true,color:"#E03535",followers:1950,bio:"CPI · Tribunal pénal international",story:{type:"video",caption:"Intervention à la CPI — affaire en cours, commentaires sous embargo jusqu'au verdict 🏛️",bg:"linear-gradient(135deg,#E03535,#2B78F5)"}},
+  {id:"dp16",name:"Priya Sharma",init:"PS",role:"Chercheuse Indo-Pacifique",location:"New Delhi",verified:true,color:"#2B78F5",followers:2830,bio:"Observer Research Foundation · Géopolitique Asie",story:{type:"photo",caption:"En vacances aux Maldives — consciente que ces îles disparaîtront d'ici 2100 🌊",bg:"linear-gradient(135deg,#2B78F5,#16A34A)"}},
+  {id:"dp17",name:"Quentin Leclerc",init:"QL",role:"Étudiant prépa Sciences Po",location:"Bordeaux",verified:false,color:"#16A34A",followers:210,bio:"Concours SciencesPo 2025 · Rhétorique & débat",story:{type:"photo",caption:"Résultat admissible au concours Sciences Po — le travail paye ! 🥳",bg:"linear-gradient(135deg,#16A34A,#2B78F5)"}},
+  {id:"dp18",name:"Rania Aziz",init:"RA",role:"Militante droits des femmes",location:"Le Caire",verified:false,color:"#7C3AED",followers:4400,bio:"Féminisme · Droits MENA · Militante digitale",story:{type:"share",caption:"Je partage le manifeste des 100 militantes arabes pour l'égalité des droits 📢",bg:"linear-gradient(135deg,#7C3AED,#E03535)"}},
+  {id:"dp19",name:"Sébastien Blanc",init:"SBl",role:"Historien contemporain",location:"Strasbourg",verified:true,color:"#D97706",followers:1640,bio:"Université de Strasbourg · Histoire du XXe siècle",story:{type:"photo",caption:"Visite des Archives nationales à Paris — découverte de documents inédits sur Mai 68 🗄️",bg:"linear-gradient(135deg,#D97706,#7C3AED)"}},
   {id:"dp20",name:"Tamar Cohen",init:"TC",role:"Analyste sécurité Israel-Palestine",location:"Tel Aviv",verified:true,color:"#E03535",followers:6200,bio:"INSS · Conflit israélo-palestinien"},
-  {id:"dp21",name:"Uriel Morales",init:"UM",role:"Économiste Latino-Amérique",location:"Buenos Aires",verified:false,color:"#2B78F5",followers:830,bio:"CEPAL · Économie politique Amérique du Sud"},
-  {id:"dp22",name:"Valentina Cruz",init:"VC",role:"Juriste droit européen",location:"Barcelone",verified:true,color:"#16A34A",followers:1290,bio:"CJUE · Droit UE · Libertés fondamentales"},
-  {id:"dp23",name:"William Osei",init:"WO",role:"Diplomate UA",location:"Addis-Abeba",verified:true,color:"#7C3AED",followers:3700,bio:"Union Africaine · Paix et sécurité · CAERT"},
+  {id:"dp21",name:"Uriel Morales",init:"UM",role:"Économiste Latino-Amérique",location:"Buenos Aires",verified:false,color:"#2B78F5",followers:830,bio:"CEPAL · Économie politique Amérique du Sud",story:{type:"video",caption:"Live depuis Buenos Aires : le peso argentin et la politique économique de Milei 📉",bg:"linear-gradient(135deg,#2B78F5,#D97706)"}},
+  {id:"dp22",name:"Valentina Cruz",init:"VC",role:"Juriste droit européen",location:"Barcelone",verified:true,color:"#16A34A",followers:1290,bio:"CJUE · Droit UE · Libertés fondamentales",story:{type:"photo",caption:"En vacances à Lisbonne — entre deux dossiers sur la CJUE 😊",bg:"linear-gradient(135deg,#16A34A,#E03535)"}},
+  {id:"dp23",name:"William Osei",init:"WO",role:"Diplomate UA",location:"Addis-Abeba",verified:true,color:"#7C3AED",followers:3700,bio:"Union Africaine · Paix et sécurité · CAERT",story:{type:"photo",caption:"Sommet de l'Union Africaine — j'ai participé au panel sécurité & développement 🌍",bg:"linear-gradient(135deg,#7C3AED,#16A34A)"}},
   {id:"dp24",name:"Xinyi Zhang",init:"XZ",role:"Analyste Chine & Asie",location:"Shanghai",verified:false,color:"#D97706",followers:950,bio:"Fudan University · Politique étrangère chinoise"},
-  {id:"dp25",name:"Yasmine Dubois",init:"YD",role:"Journaliste politique France",location:"Paris",verified:true,color:"#E03535",followers:7800,bio:"France Info · L'Obs · Politique intérieure"},
-  {id:"dp26",name:"Zara Nkosi",init:"ZN",role:"Militante écologie & justice",location:"Johannesburg",verified:false,color:"#2B78F5",followers:2100,bio:"Activisme climatique · Justice environnementale Afrique"},
+  {id:"dp25",name:"Yasmine Dubois",init:"YD",role:"Journaliste politique France",location:"Paris",verified:true,color:"#E03535",followers:7800,bio:"France Info · L'Obs · Politique intérieure",story:{type:"video",caption:"Mon direct depuis l'Élysée — réactions à l'annonce du Premier ministre 📺",bg:"linear-gradient(135deg,#E03535,#7C3AED)"}},
+  {id:"dp26",name:"Zara Nkosi",init:"ZN",role:"Militante écologie & justice",location:"Johannesburg",verified:false,color:"#2B78F5",followers:2100,bio:"Activisme climatique · Justice environnementale Afrique",story:{type:"share",caption:"Je partage ce rapport accablant sur la pollution minière en Afrique du Sud 🌱",bg:"linear-gradient(135deg,#2B78F5,#16A34A)"}},
   {id:"dp27",name:"Antoine Lefebvre",init:"AL",role:"Professeur de philosophie politique",location:"Paris",verified:true,color:"#16A34A",followers:4300,bio:"Sciences Po Paris · Rousseau · Rawls · Libéralisme"},
-  {id:"dp28",name:"Béatrice Nzinga",init:"BN",role:"Chercheuse panafricanisme",location:"Kinshasa",verified:false,color:"#7C3AED",followers:670,bio:"UNIKIN · Héritage Lumumba · Panafricanisme"},
+  {id:"dp28",name:"Béatrice Nzinga",init:"BN",role:"Chercheuse panafricanisme",location:"Kinshasa",verified:false,color:"#7C3AED",followers:670,bio:"UNIKIN · Héritage Lumumba · Panafricanisme",story:{type:"photo",caption:"À Kinshasa pour commémorer les 65 ans de l'assassinat de Lumumba 🕯️",bg:"linear-gradient(135deg,#7C3AED,#D97706)"}},
   {id:"dp29",name:"Cédric Martin",init:"CM",role:"Analyste renseignement",location:"Paris",verified:true,color:"#D97706",followers:5100,bio:"Ex-DGSE · Géostratégie · Renseignement ouvert"},
-  {id:"dp30",name:"Diana Pham",init:"DP",role:"Avocate droit international pénal",location:"Genève",verified:true,color:"#E03535",followers:2400,bio:"CPI · Crimes de guerre · Droit humanitaire"},
+  {id:"dp30",name:"Diana Pham",init:"DP",role:"Avocate droit international pénal",location:"Genève",verified:true,color:"#E03535",followers:2400,bio:"CPI · Crimes de guerre · Droit humanitaire",story:{type:"video",caption:"Retour sur mon plaidoyer à la CPI — pourquoi ce procès est historique ⚖️",bg:"linear-gradient(135deg,#E03535,#16A34A)"}},
 ];
 
 // ── DEMO POSTS (fake articles from demo profiles) ─────────────
 const now2 = Date.now();
 const h=(n:number)=>now2-n*3600000;
-const DEMO_POSTS: Array<{id:string;profileId:string;title:string;text:string;tag:string;tagC:string;time:number;source:string;sourceUrl:string;verified:boolean;verifiedLabel?:string;likes:number;comments:number}> = [
-  {id:"demo1",profileId:"dp1",title:"La CIJ et les nouvelles demandes d'avis consultatifs",text:"La Cour internationale de justice a reçu une demande d'avis consultatif de l'Assemblée générale de l'ONU sur les obligations des États en matière de changement climatique. C'est un tournant majeur : pour la première fois, le droit international climatique pourrait être codifié par la plus haute juridiction mondiale. Les implications pour les petits États insulaires menacés de submersion sont considérables.",tag:"DROIT",tagC:"#7C3AED",time:h(2),source:"Cour internationale de justice",sourceUrl:"https://www.icj-cij.org",verified:true,verifiedLabel:"Source officielle",likes:234,comments:47},
-  {id:"demo2",profileId:"dp2",title:"L'UE face à la fragmentation des démocraties",text:"Le rapport annuel de Freedom House 2024 confirme une tendance inquiétante : 18 des 27 États membres de l'UE ont subi une érosion de leurs indicateurs démocratiques au cours des cinq dernières années. La Hongrie et la Slovaquie sont les cas les plus documentés, mais des signaux préoccupants émergent également en France (recul des libertés syndicales) et en Allemagne (montée de l'AfD). L'article 7 du TUE s'avère un outil trop rigide pour répondre à cette crise.",tag:"EUROPE",tagC:"#2B78F5",time:h(5),source:"Freedom House",sourceUrl:"https://freedomhouse.org",verified:true,verifiedLabel:"Source vérifiée",likes:412,comments:89},
-  {id:"demo3",profileId:"dp4",title:"Le Sahel post-CEDEAO : vers une recomposition géopolitique",text:"Le retrait du Mali, du Burkina Faso et du Niger de la CEDEAO en janvier 2024 pour former l'Alliance des États du Sahel (AES) marque une rupture historique dans l'architecture sécuritaire africaine. L'influence française s'effondre (départ de Barkhane, expulsion des ambassadeurs), remplacée par Wagner/Africa Corps et des partenariats avec la Russie. La question centrale : l'AES peut-elle réellement assurer la sécurité sans le soutien logistique occidental ?",tag:"AFRIQUE",tagC:"#D97706",time:h(8),source:"Institut Afrique Monde",sourceUrl:"https://www.institutafriquemond.org",verified:false,likes:567,comments:134},
+const DEMO_POSTS: Array<{id:string;profileId:string;title:string;text:string;tag:string;tagC:string;time:number;source:string;sourceUrl:string;verified:boolean;verifiedLabel?:string;likes:number;comments:number;mediaType?:"photo"|"video";mediaBg?:string}> = [
+  {id:"demo1",profileId:"dp1",title:"La CIJ et les nouvelles demandes d'avis consultatifs",text:"La Cour internationale de justice a reçu une demande d'avis consultatif de l'Assemblée générale de l'ONU sur les obligations des États en matière de changement climatique. C'est un tournant majeur : pour la première fois, le droit international climatique pourrait être codifié par la plus haute juridiction mondiale. Les implications pour les petits États insulaires menacés de submersion sont considérables.",tag:"DROIT",tagC:"#7C3AED",time:h(2),source:"Cour internationale de justice",sourceUrl:"https://www.icj-cij.org",verified:true,verifiedLabel:"Source officielle",likes:234,comments:47,mediaType:"photo",mediaBg:"linear-gradient(135deg,#2B78F5,#7C3AED)"},
+  {id:"demo2",profileId:"dp2",title:"L'UE face à la fragmentation des démocraties",text:"Le rapport annuel de Freedom House 2024 confirme une tendance inquiétante : 18 des 27 États membres de l'UE ont subi une érosion de leurs indicateurs démocratiques au cours des cinq dernières années. La Hongrie et la Slovaquie sont les cas les plus documentés, mais des signaux préoccupants émergent également en France (recul des libertés syndicales) et en Allemagne (montée de l'AfD). L'article 7 du TUE s'avère un outil trop rigide pour répondre à cette crise.",tag:"EUROPE",tagC:"#2B78F5",time:h(5),source:"Freedom House",sourceUrl:"https://freedomhouse.org",verified:true,verifiedLabel:"Source vérifiée",likes:412,comments:89,mediaType:"video",mediaBg:"linear-gradient(135deg,#16A34A,#2B78F5)"},
+  {id:"demo3",profileId:"dp4",title:"Le Sahel post-CEDEAO : vers une recomposition géopolitique",text:"Le retrait du Mali, du Burkina Faso et du Niger de la CEDEAO en janvier 2024 pour former l'Alliance des États du Sahel (AES) marque une rupture historique dans l'architecture sécuritaire africaine. L'influence française s'effondre (départ de Barkhane, expulsion des ambassadeurs), remplacée par Wagner/Africa Corps et des partenariats avec la Russie. La question centrale : l'AES peut-elle réellement assurer la sécurité sans le soutien logistique occidental ?",tag:"AFRIQUE",tagC:"#D97706",time:h(8),source:"Institut Afrique Monde",sourceUrl:"https://www.institutafriquemond.org",verified:false,likes:567,comments:134,mediaType:"photo",mediaBg:"linear-gradient(135deg,#D97706,#16A34A)"},
   {id:"demo4",profileId:"dp5",title:"Détention arbitraire : le comité ONU interpelle la France",text:"Le Groupe de travail sur la détention arbitraire de l'ONU a conclu en mars 2024 que la France avait violé le droit international en maintenant en détention provisoire pendant 36 mois un ressortissant franco-algérien sans base légale suffisante. La France est régulièrement épinglée pour ses délais de détention provisoire qui excèdent les standards européens. Cette décision, non contraignante mais politiquement significative, relance le débat sur la réforme de la procédure pénale.",tag:"DROIT",tagC:"#7C3AED",time:h(12),source:"OHCHR / ONU",sourceUrl:"https://www.ohchr.org",verified:true,verifiedLabel:"Source officielle ONU",likes:189,comments:52},
   {id:"demo5",profileId:"dp7",title:"Budget européen 2028-2034 : les lignes de fracture",text:"Les négociations sur le prochain cadre financier pluriannuel de l'UE (2028-2034) débutent dans un contexte tendu. L'élargissement aux pays des Balkans et à l'Ukraine nécessiterait une augmentation du budget de 30%, que les 'frugaux' (Pays-Bas, Autriche, Suède) refusent catégoriquement. Le Parlement européen demande des ressources propres nouvelles (taxe carbone aux frontières, taxe sur les GAFAM) pour réduire la dépendance aux contributions nationales.",tag:"EUROPE",tagC:"#2B78F5",time:h(15),source:"Parlement européen",sourceUrl:"https://europarl.europa.eu",verified:true,verifiedLabel:"Source institutionnelle",likes:298,comments:67},
-  {id:"demo6",profileId:"dp10",title:"OTAN 2024 : le défi de la solidarité collective",text:"75 ans après sa fondation, l'OTAN se retrouve face à son plus grand défi depuis la Guerre froide. Les dépenses de défense atteignent 2% du PIB dans 23 des 32 membres — un record. Mais la question centrale n'est plus financière : c'est celle de la volonté politique. L'article 5 serait-il réellement déclenché si un État baltique était attaqué ? Les déclarations divergentes des dirigeants européens et américains alimentent les doutes.",tag:"GÉOPOLITIQUE",tagC:"#E03535",time:h(18),source:"OTAN / analyse Berlin Policy Journal",sourceUrl:"https://berlinpolicyjournal.com",verified:true,verifiedLabel:"Analyse vérifiée",likes:876,comments:201},
+  {id:"demo6",profileId:"dp10",title:"OTAN 2024 : le défi de la solidarité collective",text:"75 ans après sa fondation, l'OTAN se retrouve face à son plus grand défi depuis la Guerre froide. Les dépenses de défense atteignent 2% du PIB dans 23 des 32 membres — un record. Mais la question centrale n'est plus financière : c'est celle de la volonté politique. L'article 5 serait-il réellement déclenché si un État baltique était attaqué ? Les déclarations divergentes des dirigeants européens et américains alimentent les doutes.",tag:"GÉOPOLITIQUE",tagC:"#E03535",time:h(18),source:"OTAN / analyse Berlin Policy Journal",sourceUrl:"https://berlinpolicyjournal.com",verified:true,verifiedLabel:"Analyse vérifiée",likes:876,comments:201,mediaType:"video",mediaBg:"linear-gradient(135deg,#E03535,#7C3AED)"},
   {id:"demo7",profileId:"dp12",title:"Tunisie : la répression des médias indépendants s'intensifie",text:"Depuis l'adoption de la Constitution de 2022 par Kaïs Saïed, les arrestations de journalistes tunisiens se multiplient. En 2024, 14 journalistes ou blogueurs sont derrière les barreaux, dont plusieurs correspondants de médias internationaux. Le décret 54 sur la 'cybercriminalité' est utilisé pour criminaliser toute critique du pouvoir. La Tunisie, modèle de la transition démocratique arabe après 2011, est désormais classée 'partiellement libre' par Freedom House.",tag:"DROIT",tagC:"#7C3AED",time:h(22),source:"Reporters sans frontières",sourceUrl:"https://rsf.org",verified:true,verifiedLabel:"RSF vérifié",likes:445,comments:98},
   {id:"demo8",profileId:"dp8",title:"Les négociations de désarmement nucléaire : impasse totale",text:"Les discussions entre grandes puissances nucléaires sont au point mort depuis 2021. La Russie a suspendu sa participation au traité New START, la Chine refuse d'entrer dans tout cadre multilatéral tant qu'elle n'atteint pas la parité avec USA et Russie, et les États-Unis ont conditionné tout dialogue à une dénucléarisation nord-coréenne préalable. Le monde dispose aujourd'hui de ~13 000 têtes nucléaires, dont 90% entre mains russo-américaines.",tag:"GÉOPOLITIQUE",tagC:"#E03535",time:h(26),source:"Bulletin of the Atomic Scientists",sourceUrl:"https://thebulletin.org",verified:true,verifiedLabel:"Source scientifique",likes:334,comments:77},
-  {id:"demo9",profileId:"dp16",title:"L'Inde et la présidence du G20 : une diplomatie tous azimuts",text:"Sous la présidence indienne du G20 en 2023, New Delhi a réussi à faire adopter une déclaration finale unanime — exploit diplomatique considérable compte tenu des divergences sur l'Ukraine. L'Inde a ainsi prouvé qu'elle pouvait jouer le rôle de médiateur entre le bloc occidental et le Sud global. Cette stratégie de 'multi-alignement' (ni avec les USA ni avec la Chine/Russie) est désormais la marque de fabrique de la diplomatie Modi.",tag:"GÉOPOLITIQUE",tagC:"#E03535",time:h(30),source:"Observer Research Foundation",sourceUrl:"https://www.orfonline.org",verified:true,verifiedLabel:"Think-tank vérifié",likes:523,comments:112},
+  {id:"demo9",profileId:"dp16",title:"L'Inde et la présidence du G20 : une diplomatie tous azimuts",text:"Sous la présidence indienne du G20 en 2023, New Delhi a réussi à faire adopter une déclaration finale unanime — exploit diplomatique considérable compte tenu des divergences sur l'Ukraine. L'Inde a ainsi prouvé qu'elle pouvait jouer le rôle de médiateur entre le bloc occidental et le Sud global. Cette stratégie de 'multi-alignement' (ni avec les USA ni avec la Chine/Russie) est désormais la marque de fabrique de la diplomatie Modi.",tag:"GÉOPOLITIQUE",tagC:"#E03535",time:h(30),source:"Observer Research Foundation",sourceUrl:"https://www.orfonline.org",verified:true,verifiedLabel:"Think-tank vérifié",likes:523,comments:112,mediaType:"photo",mediaBg:"linear-gradient(135deg,#2B78F5,#D97706)"},
   {id:"demo10",profileId:"dp14",title:"Pologne : le retour de l'État de droit après Tusk ?",text:"L'élection de Donald Tusk comme Premier ministre en octobre 2023 et la formation d'une coalition pro-européenne ont mis fin à 8 ans de gouvernance PiS. Mais démonter l'appareil institutionnel du parti Droit et Justice prend du temps : la Cour suprême, la Cour constitutionnelle et les médias publics restent partiellement sous influence du PiS. La Commission européenne a annoncé le déblocage de 35 milliards d'euros de fonds conditionnellement.",tag:"EUROPE",tagC:"#2B78F5",time:h(36),source:"Le Figaro / Reuters",sourceUrl:"https://lefigaro.fr",verified:true,verifiedLabel:"Source vérifiée",likes:287,comments:64},
   {id:"demo11",profileId:"dp18",title:"Féminisme et Islam : le faux débat ?",text:"La question du voile en France continue de diviser. Mais le débat tel qu'il est posé — laïcité vs religion — occulte la voix des premières concernées. Des études sociologiques récentes (CNRS, 2023) montrent que 67% des femmes portant le hijab en France le vivent comme un choix personnel, non comme une contrainte. La conflation entre patriarcat islamique et pratique religieuse volontaire nuit à la fois à la laïcité et au féminisme. Les femmes musulmanes ne sont pas un objet de politique publique.",tag:"SOCIÉTÉ",tagC:"#16A34A",time:h(40),source:"CNRS / Revue française de sociologie",sourceUrl:"https://www.cnrs.fr",verified:false,likes:1240,comments:398},
   {id:"demo12",profileId:"dp20",title:"Gaza 2024 : le droit international à l'épreuve",text:"Plus de 35 000 morts civils documentés (ONU, mai 2024), des hôpitaux détruits, des convois humanitaires bloqués. La CIJ a ordonné à Israël de prendre des mesures pour prévenir les actes de génocide (26 janvier 2024), sans ordonner de cessez-le-feu. La CPI a demandé des mandats d'arrêt contre Netanyahou, Gallant et des dirigeants du Hamas. La question centrale : quand le droit international n'est pas appliqué, que vaut-il ?",tag:"DROIT",tagC:"#7C3AED",time:h(44),source:"Cour pénale internationale / ONU",sourceUrl:"https://www.icc-cpi.int",verified:true,verifiedLabel:"Sources officielles",likes:2890,comments:745},
   {id:"demo13",profileId:"dp23",title:"Union Africaine : réformes institutionnelles en cours",text:"La réforme de l'Union Africaine, engagée depuis 2016 sous l'impulsion du rapport Kagame, avance lentement. L'UA cherche à réduire sa dépendance aux financements extérieurs (actuellement 60% du budget provient de l'UE et des USA) en augmentant les contributions nationales et en levant un prélèvement de 0,2% sur les importations. La Zone de libre-échange continentale africaine (ZLECAF), opérationnelle depuis 2021, représente un marché potentiel de 1,3 milliard de personnes.",tag:"AFRIQUE",tagC:"#D97706",time:h(50),source:"Commission de l'Union Africaine",sourceUrl:"https://au.int",verified:true,verifiedLabel:"Source institutionnelle",likes:431,comments:89},
-  {id:"demo14",profileId:"dp27",title:"Rawls contre Sandel : la justice entre liberté et communauté",text:"Le débat philosophique entre John Rawls et Michael Sandel reste l'un des plus féconds de la philosophie politique contemporaine. Pour Rawls, la justice exige un voile d'ignorance : nous devons décider des règles sans savoir quelle position nous occuperons dans la société. Pour Sandel, cette abstraction est impossible et indésirable : nous sommes des êtres situés, définis par nos communautés, et la politique doit en tenir compte. Ce débat éclaire directement les tensions actuelles entre libéralisme et populisme.",tag:"PHILOSOPHIE",tagC:"#7C3AED",time:h(55),source:"Harvard Political Review",sourceUrl:"https://harvardpolitics.com",verified:false,likes:678,comments:156},
+  {id:"demo14",profileId:"dp27",title:"Rawls contre Sandel : la justice entre liberté et communauté",text:"Le débat philosophique entre John Rawls et Michael Sandel reste l'un des plus féconds de la philosophie politique contemporaine. Pour Rawls, la justice exige un voile d'ignorance : nous devons décider des règles sans savoir quelle position nous occuperons dans la société. Pour Sandel, cette abstraction est impossible et indésirable : nous sommes des êtres situés, définis par nos communautés, et la politique doit en tenir compte. Ce débat éclaire directement les tensions actuelles entre libéralisme et populisme.",tag:"PHILOSOPHIE",tagC:"#7C3AED",time:h(55),source:"Harvard Political Review",sourceUrl:"https://harvardpolitics.com",verified:false,likes:678,comments:156,mediaType:"photo",mediaBg:"linear-gradient(135deg,#7C3AED,#2B78F5)"},
   {id:"demo15",profileId:"dp2",title:"Desinformation : l'Europe contre les réseaux sociaux",text:"Le Digital Services Act (DSA) de l'UE, entré en vigueur en 2023, oblige les très grandes plateformes (META, X, TikTok, Google) à évaluer et réduire les risques systémiques, dont la désinformation. Les premières enquêtes de la Commission révèlent des manquements graves de X (ex-Twitter) : amplification de contenus violents, insuffisance des modèles de transparence. L'UE peut infliger des amendes jusqu'à 6% du CA mondial — un outil inédit.",tag:"NUMÉRIQUE",tagC:"#2B78F5",time:h(60),source:"Commission européenne / DSA",sourceUrl:"https://ec.europa.eu",verified:true,verifiedLabel:"Source officielle UE",likes:543,comments:121},
-  {id:"demo16",profileId:"dp3",title:"L'extrême droite en Europe : une vague ou un raz-de-marée ?",text:"Aux élections européennes de juin 2024, les partis d'extrême droite ont progressé dans la quasi-totalité des États membres mais sans atteindre la majorité absolue. Le groupe ECR (dont FdI de Meloni) et ID (dont le RN) totalisent ~23% des sièges. Ils restent exclus des coalitions gouvernementales au niveau européen, mais leur influence sur le discours — migration, sécurité, identité — est considérable. L'extrême droite joue désormais le rôle de faiseur d'agenda.",tag:"EUROPE",tagC:"#2B78F5",time:h(68),source:"EuropeElects / Politico",sourceUrl:"https://politico.eu",verified:true,verifiedLabel:"Données électorales",likes:892,comments:234},
+  {id:"demo16",profileId:"dp3",title:"L'extrême droite en Europe : une vague ou un raz-de-marée ?",text:"Aux élections européennes de juin 2024, les partis d'extrême droite ont progressé dans la quasi-totalité des États membres mais sans atteindre la majorité absolue. Le groupe ECR (dont FdI de Meloni) et ID (dont le RN) totalisent ~23% des sièges. Ils restent exclus des coalitions gouvernementales au niveau européen, mais leur influence sur le discours — migration, sécurité, identité — est considérable. L'extrême droite joue désormais le rôle de faiseur d'agenda.",tag:"EUROPE",tagC:"#2B78F5",time:h(68),source:"EuropeElects / Politico",sourceUrl:"https://politico.eu",verified:true,verifiedLabel:"Données électorales",likes:892,comments:234,mediaType:"video",mediaBg:"linear-gradient(135deg,#2B78F5,#E03535)"},
   {id:"demo17",profileId:"dp25",title:"François Bayrou Premier ministre : enjeux et défis",text:"La nomination de François Bayrou comme Premier ministre en décembre 2024 signe le retour du centrisme historique au sommet de l'exécutif. Chef du MoDem depuis 1994, il dispose d'une connaissance encyclopédique des institutions mais d'une majorité parlementaire inexistante. Sa priorité affichée : le redressement des finances publiques avec un déficit à 6% du PIB. La question de la réforme des retraites, restée dans les esprits, sera le premier test de sa capacité à gouverner sans majorité.",tag:"POLITIQUE",tagC:"#E03535",time:h(72),source:"France Info / Le Monde",sourceUrl:"https://lemonde.fr",verified:true,verifiedLabel:"Source journalistique",likes:1120,comments:367},
   {id:"demo18",profileId:"dp29",title:"Services de renseignement : la réforme silencieuse",text:"La loi de programmation du renseignement 2023-2027 a considérablement élargi les capacités de surveillance de la DGSI et de la DGSE. Le cadre légal des 'boîtes noires' algorithmiques permettant d'analyser les flux de communication en temps réel a été étendu. Ces dispositifs, défendus au nom de la lutte antiterroriste, soulèvent des questions fondamentales sur le respect de la vie privée et l'équilibre entre sécurité nationale et libertés individuelles.",tag:"SÉCURITÉ",tagC:"#D97706",time:h(78),source:"Légifrance / CNCTR",sourceUrl:"https://www.legifrance.gouv.fr",verified:true,verifiedLabel:"Source officielle",likes:387,comments:94},
   {id:"demo19",profileId:"dp6",title:"Inégalités en France : le rapport Piketty 2024",text:"La France reste l'un des pays les moins inégalitaires de l'OCDE en termes de revenus, mais les inégalités de patrimoine ont fortement augmenté depuis 2010. Le 1% le plus riche détient désormais 25% du patrimoine total. La réforme de l'ISF en IFI (2018) a surtout bénéficié aux très hauts patrimoines sans effets mesurables sur l'investissement productif. Thomas Piketty préconise un impôt mondial sur la fortune, idée qui progresse lentement dans les enceintes du G20.",tag:"ÉCONOMIE",tagC:"#16A34A",time:h(85),source:"World Inequality Lab / EHESS",sourceUrl:"https://wid.world",verified:false,likes:654,comments:178},
@@ -1130,7 +1130,7 @@ Style authentique : ${opponent.style.split(".")[0]}`;
 }
 
 // ── TOPIC PICKER ─────────────────────────────────────────────
-function TopicPicker({topic,setTopic,T}:{topic:string;setTopic:(t:string)=>void;T:Theme}) {
+function TopicPicker({topic,setTopic,T,onPremium}:{topic:string;setTopic:(t:string)=>void;T:Theme;onPremium:()=>void}) {
   const [catId,setCatId] = useState<string|null>(null);
   const cat = DEBATE_CATEGORIES.find(c=>c.id===catId);
   return (
@@ -1147,9 +1147,15 @@ function TopicPicker({topic,setTopic,T}:{topic:string;setTopic:(t:string)=>void;
       </div>
       {cat&&(
         <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:240,overflowY:"auto",border:`1px solid ${T.b1}`,borderRadius:10,padding:8}}>
-          {cat.topics.map(t=>(
-            <button key={t} onClick={()=>{setTopic(t);setCatId(null);}} style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${topic===t?T.blueB:T.b1}`,background:topic===t?T.blueG:"transparent",cursor:"pointer",textAlign:"left",color:topic===t?T.blueB:T.text,fontSize:12,fontWeight:topic===t?700:400,transition:"all .15s",fontFamily:"inherit"}}>{t}</button>
-          ))}
+          {cat.topics.map((t,i)=>{
+            const isPrem = i>=5;
+            return(
+              <button key={t} onClick={()=>{if(isPrem){onPremium();}else{setTopic(t);setCatId(null);}}} style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${isPrem?T.amber+"40":topic===t?T.blueB:T.b1}`,background:topic===t&&!isPrem?T.blueG:isPrem?`${T.amber}08`:"transparent",cursor:"pointer",textAlign:"left",color:isPrem?T.amber:topic===t?T.blueB:T.text,fontSize:12,fontWeight:topic===t?700:400,transition:"all .15s",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                <span>{t}</span>
+                {isPrem&&<Ic n="lock" s={11} c={T.amber}/>}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1196,7 +1202,7 @@ function BriefingScreen({topic,T,onStart,onSkip}:{topic:string;T:Theme;onStart:(
 }
 
 // ── STUDIO SCREEN ─────────────────────────────────────────────
-function StudioScreen({T}:{T:Theme}) {
+function StudioScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
   const [step,setStep] = useState<"home"|"journalist"|"level"|"topic"|"public"|"brief"|"stage">("home");
   const [journalist,setJournalist] = useState<typeof JOURNALISTS[0]|null>(null);
   const [level,setLevel] = useState<typeof LEVELS[0]|null>(null);
@@ -1274,7 +1280,7 @@ function StudioScreen({T}:{T:Theme}) {
         </div>
       </div>
       {/* Topic — catégories */}
-      <TopicPicker topic={topic} setTopic={setTopic} T={T}/>
+      <TopicPicker topic={topic} setTopic={setTopic} T={T} onPremium={onPremium}/>
       {/* Public */}
       <div>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Public en salle</p>
@@ -1554,6 +1560,7 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
   const [search,setSearch] = useState("");
   const [composeSrc,setComposeSrc] = useState("");
   const [verifying,setVerifying] = useState(false);
+  const [selectedStory,setSelectedStory] = useState<typeof DEMO_PROFILES[0]|null>(null);
   type UserPost = {id:number;text:string;time:string;src:string;verif:{label:string;color:string;comment:string}|null};
   const [userPosts,setUserPosts] = useState<UserPost[]>(()=>{
     if(typeof window==="undefined") return [];
@@ -1698,18 +1705,71 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
           </div>
         </div>
       </div>
+      {/* Story viewer modal */}
+      {selectedStory&&(
+        <div onClick={()=>setSelectedStory(null)} style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,.92)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"fadeIn .2s"}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:430,height:"100%",maxHeight:"100vh",display:"flex",flexDirection:"column",position:"relative"}}>
+            {/* Story background */}
+            <div style={{flex:1,background:(selectedStory as any).story?.bg||`linear-gradient(135deg,${selectedStory.color},#7C3AED)`,display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:24,position:"relative"}}>
+              {/* Progress bar */}
+              <div style={{position:"absolute",top:16,left:16,right:16,height:3,background:"rgba(255,255,255,.3)",borderRadius:2}}>
+                <div style={{height:"100%",width:"70%",background:"rgba(255,255,255,.9)",borderRadius:2}}/>
+              </div>
+              {/* Header */}
+              <div style={{position:"absolute",top:28,left:16,right:40,display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:"rgba(255,255,255,.25)",border:"2px solid rgba(255,255,255,.6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff"}}>
+                  {selectedStory.init.slice(0,2)}
+                </div>
+                <div>
+                  <p style={{color:"#fff",fontWeight:700,fontSize:13}}>{selectedStory.name}</p>
+                  <p style={{color:"rgba(255,255,255,.7)",fontSize:10}}>{selectedStory.role}</p>
+                </div>
+                {(selectedStory as any).story?.type==="video"&&<span style={{marginLeft:"auto",background:"rgba(255,255,255,.2)",color:"#fff",fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>▶ VIDÉO</span>}
+                {(selectedStory as any).story?.type==="share"&&<span style={{marginLeft:"auto",background:"rgba(255,255,255,.2)",color:"#fff",fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>🔗 LIEN</span>}
+              </div>
+              {/* Media placeholder */}
+              {(selectedStory as any).story?.type==="photo"&&(
+                <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
+                  <div style={{width:80,height:80,borderRadius:20,background:"rgba(255,255,255,.15)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
+                    <Ic n="image" s={36} c="rgba(255,255,255,.8)"/>
+                  </div>
+                  <p style={{color:"rgba(255,255,255,.6)",fontSize:11}}>Photo · {selectedStory.location}</p>
+                </div>
+              )}
+              {(selectedStory as any).story?.type==="video"&&(
+                <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
+                  <div style={{width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,.15)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
+                    <Ic n="play" s={36} c="rgba(255,255,255,.8)"/>
+                  </div>
+                  <p style={{color:"rgba(255,255,255,.6)",fontSize:11}}>Vidéo · {selectedStory.location}</p>
+                </div>
+              )}
+              {/* Caption */}
+              <div style={{background:"rgba(0,0,0,.4)",backdropFilter:"blur(8px)",borderRadius:16,padding:"14px 16px"}}>
+                <p style={{color:"#fff",fontSize:14,lineHeight:1.5,fontWeight:500}}>{(selectedStory as any).story?.caption}</p>
+                <p style={{color:"rgba(255,255,255,.5)",fontSize:10,marginTop:6}}>{selectedStory.role} · {selectedStory.location}</p>
+              </div>
+            </div>
+            {/* Close button */}
+            <button onClick={()=>setSelectedStory(null)} style={{position:"absolute",top:28,right:16,width:32,height:32,borderRadius:"50%",background:"rgba(255,255,255,.2)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <Ic n="x" s={16} c="#fff"/>
+            </button>
+          </div>
+        </div>
+      )}
       {/* Stories */}
       <div style={{padding:"10px 20px",borderBottom:`1px solid ${T.b1}`,display:"flex",gap:12,overflowX:"auto"}}>
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0}}>
           <div style={{width:52,height:52,borderRadius:"50%",background:T.blueG,border:`1.5px dashed ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="plus" s={18} c={T.blueB}/></div>
           <span style={{fontSize:10,color:T.muted,fontWeight:600}}>Ma story</span>
         </div>
-        {DEMO_PROFILES.slice(0,18).map((p,i)=>(
-          <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0,cursor:"pointer"}}>
-            <div style={{width:52,height:52,borderRadius:"50%",padding:2,background:`linear-gradient(135deg,${p.color},#7C3AED)`}}>
+        {DEMO_PROFILES.filter(p=>(p as any).story).slice(0,18).map((p,i)=>(
+          <div key={i} onClick={()=>setSelectedStory(p)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0,cursor:"pointer"}}>
+            <div style={{width:52,height:52,borderRadius:"50%",padding:2,background:(p as any).story?.bg||`linear-gradient(135deg,${p.color},#7C3AED)`}}>
               <div style={{width:"100%",height:"100%",borderRadius:"50%",background:T.card,border:`2px solid ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:p.color,position:"relative"}}>
                 {p.init.slice(0,2)}
                 {p.verified&&<div style={{position:"absolute",bottom:-1,right:-1,width:14,height:14,borderRadius:"50%",background:T.blueB,border:`1.5px solid ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="check" s={8} c="#fff"/></div>}
+                {(p as any).story?.type==="video"&&<div style={{position:"absolute",top:-2,right:-2,width:14,height:14,borderRadius:"50%",background:"#E03535",border:`1.5px solid ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="play" s={7} c="#fff"/></div>}
               </div>
             </div>
             <span style={{fontSize:9,color:T.textD,fontWeight:600,maxWidth:52,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{p.name.split(" ")[0]}</span>
@@ -1766,126 +1826,148 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
           ))}
         </div>
       )}
-      {/* Demo community posts */}
-      <div style={{display:"flex",flexDirection:"column"}}>
-        {DEMO_POSTS.filter(p=>{
-          const searchMatch = !search || p.title.toLowerCase().includes(search.toLowerCase())||p.text.toLowerCase().includes(search.toLowerCase());
-          const FILTER_MAP: Record<string,string[]> = {"Géopolitique":["GÉOPOLITIQUE","SÉCURITÉ"],"Diplomatie":["DIPLOMATIE"],"Histoire":["HISTOIRE"],"Droit":["DROIT"],"Élections":["POLITIQUE","ÉLECTIONS"],"Europe":["EUROPE"],"Afrique":["AFRIQUE"]};
-          const kws = filter!=="Tout"?FILTER_MAP[filter]||[]:null;
-          const tagMatch = !kws || kws.some(k=>p.tag.toUpperCase().includes(k)||p.title.toUpperCase().includes(k));
-          return searchMatch && tagMatch;
-        }).map(p=>{
-          const prof = DEMO_PROFILES.find(d=>d.id===p.profileId)!;
-          return(
-            <div key={p.id} style={{background:T.card,borderBottom:`1px solid ${T.b1}`,animation:"fadeUp .4s ease"}}>
-              <div style={{padding:"12px 16px 8px",display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:38,height:38,borderRadius:"50%",background:`${prof?.color||T.blueB}20`,border:`1.5px solid ${prof?.color||T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:prof?.color||T.blueB,flexShrink:0,position:"relative"}}>
-                  {(prof?.init||"?").slice(0,2)}
-                  {prof?.verified&&<div style={{position:"absolute",bottom:-1,right:-1,width:13,height:13,borderRadius:"50%",background:T.blueB,border:`1.5px solid ${T.card}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="check" s={7} c="#fff"/></div>}
-                </div>
-                <div style={{flex:1}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                    <span style={{color:T.text,fontWeight:700,fontSize:13}}>{prof?.name||"Utilisateur"}</span>
-                    {prof?.verified&&<span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:9,padding:"2px 6px",borderRadius:4,fontWeight:800}}>✓ Vérifié</span>}
+      {/* Mixed feed: demo community posts + NEXUS official, sorted by time */}
+      {(()=>{
+        const D_MAP: Record<string,string[]> = {"Géopolitique":["GÉOPOLITIQUE","SÉCURITÉ"],"Diplomatie":["DIPLOMATIE"],"Histoire":["HISTOIRE"],"Droit":["DROIT"],"Élections":["POLITIQUE","ÉLECTIONS"],"Europe":["EUROPE"],"Afrique":["AFRIQUE"]};
+        const N_MAP: Record<string,string[]> = {"Géopolitique":["GÉOPOLITIQUE","GUERRE","DIPLOMATIE","INTERNATIONAL"],"Diplomatie":["DIPLOMATIE"],"Histoire":["HISTOIRE"],"Droit":["DROIT","IMMIGRATION"],"Élections":["ÉLECTIONS","POLITIQUE"],"Europe":["EUROPE","DIPLOMATIE"],"Afrique":["AFRIQUE"]};
+        const kd = filter!=="Tout"?D_MAP[filter]||[]:null;
+        const kn = filter!=="Tout"?N_MAP[filter]||[]:null;
+        const demoFiltered = DEMO_POSTS.filter(p=>{
+          const sm = !search||p.title.toLowerCase().includes(search.toLowerCase())||p.text.toLowerCase().includes(search.toLowerCase());
+          const tm = !kd||kd.some(k=>p.tag.toUpperCase().includes(k)||p.title.toUpperCase().includes(k));
+          return sm&&tm;
+        }).map(p=>({kind:"demo" as const, ts:p.time, p}));
+        const nexusFiltered = interleave(nexusPosts.filter(p=>{
+          const sm = !search||p.title.toLowerCase().includes(search.toLowerCase())||p.src.toLowerCase().includes(search.toLowerCase());
+          const tm = !kn||kn.some(k=>p.tag.toUpperCase().includes(k)||p.title.toUpperCase().includes(k));
+          return sm&&tm;
+        })).slice(0,100).map(p=>({kind:"nexus" as const, ts:p.publishedAt||0, p}));
+        const merged = [...demoFiltered,...nexusFiltered].sort((a,b)=>b.ts-a.ts);
+        return(
+          <div style={{display:"flex",flexDirection:"column"}}>
+            {merged.map(item=>{
+              if(item.kind==="demo"){
+                const p=item.p;
+                const prof=DEMO_PROFILES.find(d=>d.id===p.profileId)!;
+                return(
+                  <div key={p.id} style={{background:T.card,borderBottom:`1px solid ${T.b1}`,animation:"fadeUp .4s ease"}}>
+                    <div style={{padding:"12px 16px 8px",display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:38,height:38,borderRadius:"50%",background:`${prof?.color||T.blueB}20`,border:`1.5px solid ${prof?.color||T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:prof?.color||T.blueB,flexShrink:0,position:"relative"}}>
+                        {(prof?.init||"?").slice(0,2)}
+                        {prof?.verified&&<div style={{position:"absolute",bottom:-1,right:-1,width:13,height:13,borderRadius:"50%",background:T.blueB,border:`1.5px solid ${T.card}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="check" s={7} c="#fff"/></div>}
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                          <span style={{color:T.text,fontWeight:700,fontSize:13}}>{prof?.name||"Utilisateur"}</span>
+                          {prof?.verified&&<span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:9,padding:"2px 6px",borderRadius:4,fontWeight:800}}>✓ Vérifié</span>}
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>
+                          <Tag label={p.tag} color={p.tagC} small/>
+                          <span style={{color:T.muted,fontSize:10}}>· {timeFromTs(p.time)}</span>
+                          <span style={{color:T.muted,fontSize:10}}>· {prof?.role}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{padding:"0 16px 10px"}}>
+                      <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.5,marginBottom:6}}>{p.title}</p>
+                      <p style={{color:T.textD,fontSize:13,lineHeight:1.6}}>{p.text}</p>
+                      {p.mediaType&&(
+                        <div style={{margin:"10px -16px 0",height:180,background:p.mediaBg||T.bg2,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8,position:"relative",overflow:"hidden"}}>
+                          <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(0,0,0,.35)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            <Ic n={p.mediaType==="video"?"play":"image"} s={24} c="#fff"/>
+                          </div>
+                          <span style={{color:"rgba(255,255,255,.85)",fontSize:11,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>{p.mediaType==="video"?"Vidéo":"Photo"}</span>
+                          {p.mediaType==="video"&&(
+                            <div style={{position:"absolute",top:8,right:10,background:"rgba(0,0,0,.65)",borderRadius:4,padding:"2px 8px",display:"flex",alignItems:"center",gap:5}}>
+                              <div style={{width:6,height:6,borderRadius:"50%",background:"#E03535"}}/>
+                              <span style={{color:"#fff",fontSize:10,fontWeight:700}}>VIDÉO</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div style={{marginTop:8,padding:"6px 10px",background:p.verified?`${T.blueB}08`:`${T.amber}08`,border:`1px solid ${p.verified?T.blueB+"30":T.amber+"30"}`,borderRadius:8,display:"flex",alignItems:"center",gap:6}}>
+                        <Ic n={p.verified?"check":"info"} s={11} c={p.verified?T.blueB:T.amber}/>
+                        <span style={{color:p.verified?T.blueB:T.amber,fontSize:10,fontWeight:700}}>{p.verified?"Source vérifiée":"Non vérifié"} · {p.source}</span>
+                      </div>
+                    </div>
+                    <div style={{padding:"8px 16px 12px",display:"flex",alignItems:"center",borderTop:`1px solid ${T.b1}`,gap:4}}>
+                      <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"4px 8px"}}>
+                        <Ic n="heart" s={15} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>{p.likes}</span>
+                      </button>
+                      <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"4px 8px"}}>
+                        <Ic n="msg" s={15} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>{p.comments}</span>
+                      </button>
+                      <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"4px 8px"}}>
+                        <Ic n="share" s={15} c={T.textD}/>
+                      </button>
+                      <button onClick={onDebate} style={{marginLeft:"auto",background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"5px 12px",color:T.blueB,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
+                    </div>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>
-                    <Tag label={p.tag} color={p.tagC} small/>
-                    <span style={{color:T.muted,fontSize:10}}>· {timeFromTs(p.time)}</span>
-                    <span style={{color:T.muted,fontSize:10}}>· {prof?.role}</span>
+                );
+              } else {
+                const p=item.p;
+                return(
+                  <div key={p.id} style={{background:T.card,borderBottom:`1px solid ${T.b1}`,animation:"fadeUp .4s ease"}}>
+                    <div style={{padding:"14px 16px 10px",display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:40,height:40,borderRadius:"50%",background:"#000",border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:"#fff",flexShrink:0}}>N</div>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                          <span style={{color:T.text,fontWeight:800,fontSize:14}}>NEXUS Intelligence</span>
+                          <span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:10,padding:"2px 7px",borderRadius:4,fontWeight:800,letterSpacing:.5}}>✓ OFFICIEL</span>
+                          {p.verif&&<span style={{background:`${p.verif.color}15`,color:p.verif.color,fontSize:10,padding:"2px 7px",borderRadius:4,fontWeight:800}}>✦ {p.verif.label}</span>}
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3,flexWrap:"wrap"}}>
+                          <Tag label={p.tag} color={p.tagC} small/>
+                          <span style={{color:T.muted,fontSize:11}}>· {timeFromTs(p.publishedAt||Date.now())}</span>
+                          <span style={{color:T.muted,fontSize:11}}>· {p.src}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {(()=>{
+                      const ytId=p.videoUrl?.startsWith("yt:")?p.videoUrl.slice(3):null;
+                      const directVideo=p.videoUrl&&!p.videoUrl.startsWith("yt:")?p.videoUrl:null;
+                      if(ytId) return(
+                        <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",position:"relative",width:"100%",height:200,overflow:"hidden",background:"#000"}}>
+                          <img src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`} alt="" style={{width:"100%",height:"100%",objectFit:"cover",opacity:.85}}/>
+                          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(255,255,255,.8)"}}>
+                              <Ic n="play" s={22} c="#fff"/>
+                            </div>
+                          </div>
+                          <div style={{position:"absolute",bottom:8,right:10,background:"rgba(0,0,0,.75)",borderRadius:4,padding:"2px 7px"}}>
+                            <span style={{color:"#fff",fontSize:11,fontWeight:700}}>YouTube</span>
+                          </div>
+                        </a>
+                      );
+                      if(directVideo) return(
+                        <video src={directVideo} controls preload="none" poster={p.imgUrl||undefined} style={{width:"100%",height:200,objectFit:"cover",background:"#000",display:"block"}}/>
+                      );
+                      return(
+                        <div style={{width:"100%",height:200,overflow:"hidden",background:T.bg2}}>
+                          <img src={p.imgUrl||getFallbackImg(p.tag,p.id)} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).src=getFallbackImg(p.tag,p.id);}}/>
+                        </div>
+                      );
+                    })()}
+                    <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"12px 16px 8px",textDecoration:"none"}}>
+                      <p style={{color:T.text,fontSize:16,fontWeight:700,lineHeight:1.5,margin:0}}>{p.title}</p>
+                      <p style={{color:T.blueB,fontSize:12,marginTop:6,fontWeight:600}}>Lire l&apos;article complet →</p>
+                    </a>
+                    <div style={{padding:"10px 16px 14px",display:"flex",alignItems:"center"}}>
+                      <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 14px 0 0"}}>
+                        <Ic n="heart" s={17} c={T.textD}/><span style={{fontSize:13,fontWeight:600}}>0</span>
+                      </button>
+                      <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 14px"}}>
+                        <Ic n="share" s={17} c={T.textD}/>
+                      </button>
+                      <button onClick={onDebate} style={{marginLeft:"auto",background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"6px 14px",color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div style={{padding:"0 16px 10px"}}>
-                <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.5,marginBottom:6}}>{p.title}</p>
-                <p style={{color:T.textD,fontSize:13,lineHeight:1.6}}>{p.text}</p>
-                <div style={{marginTop:8,padding:"6px 10px",background:p.verified?`${T.blueB}08`:`${T.amber}08`,border:`1px solid ${p.verified?T.blueB+"30":T.amber+"30"}`,borderRadius:8,display:"flex",alignItems:"center",gap:6}}>
-                  <Ic n={p.verified?"check":"info"} s={11} c={p.verified?T.blueB:T.amber}/>
-                  <span style={{color:p.verified?T.blueB:T.amber,fontSize:10,fontWeight:700}}>{p.verified?"Source vérifiée":"Non vérifié"} · {p.source}</span>
-                </div>
-              </div>
-              <div style={{padding:"8px 16px 12px",display:"flex",alignItems:"center",borderTop:`1px solid ${T.b1}`,gap:4}}>
-                <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"4px 8px"}}>
-                  <Ic n="heart" s={15} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>{p.likes}</span>
-                </button>
-                <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"4px 8px"}}>
-                  <Ic n="msg" s={15} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>{p.comments}</span>
-                </button>
-                <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"4px 8px"}}>
-                  <Ic n="share" s={15} c={T.textD}/>
-                </button>
-                <button onClick={onDebate} style={{marginLeft:"auto",background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"5px 12px",color:T.blueB,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* NEXUS Official auto-published posts */}
-      <div style={{display:"flex",flexDirection:"column"}}>
-      {interleave(nexusPosts.filter(p=>{
-        const searchMatch = !search || p.title.toLowerCase().includes(search.toLowerCase())||p.src.toLowerCase().includes(search.toLowerCase());
-        const FILTER_MAP: Record<string,string[]> = {"Géopolitique":["GÉOPOLITIQUE","GUERRE","DIPLOMATIE","INTERNATIONAL"],"Diplomatie":["DIPLOMATIE"],"Histoire":["HISTOIRE"],"Droit":["DROIT","IMMIGRATION"],"Élections":["ÉLECTIONS","POLITIQUE"],"Europe":["EUROPE","DIPLOMATIE"],"Afrique":["AFRIQUE"]};
-        const kws = filter!=="Tout"?FILTER_MAP[filter]||[]:null;
-        const tagMatch = !kws || kws.some(k=>p.tag.toUpperCase().includes(k)||p.title.toUpperCase().includes(k));
-        return searchMatch && tagMatch;
-      })).slice(0,100).map(p=>(
-        <div key={p.id} style={{background:T.card,borderBottom:`1px solid ${T.b1}`,animation:"fadeUp .4s ease"}}>
-          <div style={{padding:"14px 16px 10px",display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:40,height:40,borderRadius:"50%",background:"#000",border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:"#fff",flexShrink:0}}>N</div>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                <span style={{color:T.text,fontWeight:800,fontSize:14}}>NEXUS Intelligence</span>
-                <span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:10,padding:"2px 7px",borderRadius:4,fontWeight:800,letterSpacing:.5}}>✓ OFFICIEL</span>
-                {p.verif&&<span style={{background:`${p.verif.color}15`,color:p.verif.color,fontSize:10,padding:"2px 7px",borderRadius:4,fontWeight:800}}>✦ {p.verif.label}</span>}
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3,flexWrap:"wrap"}}>
-                <Tag label={p.tag} color={p.tagC} small/>
-                <span style={{color:T.muted,fontSize:11}}>· {timeFromTs(p.publishedAt||Date.now())}</span>
-                <span style={{color:T.muted,fontSize:11}}>· {p.src}</span>
-              </div>
-            </div>
+                );
+              }
+            })}
           </div>
-          {(()=>{
-            const ytId=p.videoUrl?.startsWith("yt:")?p.videoUrl.slice(3):null;
-            const directVideo=p.videoUrl&&!p.videoUrl.startsWith("yt:")?p.videoUrl:null;
-            if(ytId) return(
-              <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",position:"relative",width:"100%",height:200,overflow:"hidden",background:"#000"}}>
-                <img src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`} alt="" style={{width:"100%",height:"100%",objectFit:"cover",opacity:.85}}/>
-                <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(255,255,255,.8)"}}>
-                    <Ic n="play" s={22} c="#fff"/>
-                  </div>
-                </div>
-                <div style={{position:"absolute",bottom:8,right:10,background:"rgba(0,0,0,.75)",borderRadius:4,padding:"2px 7px"}}>
-                  <span style={{color:"#fff",fontSize:11,fontWeight:700}}>YouTube</span>
-                </div>
-              </a>
-            );
-            if(directVideo) return(
-              <video src={directVideo} controls preload="none" poster={p.imgUrl||undefined} style={{width:"100%",height:200,objectFit:"cover",background:"#000",display:"block"}}/>
-            );
-            return(
-              <div style={{width:"100%",height:200,overflow:"hidden",background:T.bg2}}>
-                <img src={p.imgUrl||getFallbackImg(p.tag,p.id)} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).src=getFallbackImg(p.tag,p.id);}}/>
-              </div>
-            );
-          })()}
-          <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"12px 16px 8px",textDecoration:"none"}}>
-            <p style={{color:T.text,fontSize:16,fontWeight:700,lineHeight:1.5,margin:0}}>{p.title}</p>
-            <p style={{color:T.blueB,fontSize:12,marginTop:6,fontWeight:600}}>Lire l&apos;article complet →</p>
-          </a>
-          <div style={{padding:"10px 16px 14px",display:"flex",alignItems:"center"}}>
-            <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 14px 0 0"}}>
-              <Ic n="heart" s={17} c={T.textD}/><span style={{fontSize:13,fontWeight:600}}>0</span>
-            </button>
-            <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 14px"}}>
-              <Ic n="share" s={17} c={T.textD}/>
-            </button>
-            <button onClick={onDebate} style={{marginLeft:"auto",background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"6px 14px",color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
-          </div>
-        </div>
-      ))}
-      </div>
+        );
+      })()}
       {/* Empty state — only shown when no live news yet and not loading */}
       {nexusPosts.length===0&&!liveLoading&&(
         <div style={{padding:"32px 20px",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
@@ -3742,7 +3824,7 @@ function SimulationHub({T}:{T:Theme}) {
     setView(id);
   };
 
-  if(view==="studio") return <StudioScreen T={T}/>;
+  if(view==="studio") return <StudioScreen T={T} onPremium={()=>setShowPremiumHub(true)}/>;
   if(view==="sims") return <SimulationScreen T={T}/>;
   if(view==="apprendre") return <ApprendreScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
   if(view==="carriere") return <CarriereScreen T={T} onBack={()=>setView("hub")}/>;
@@ -5144,7 +5226,7 @@ export default function NexusApp() {
       )}
 
       {/* Content */}
-      <div ref={scrollRef} style={{flex:1,overflowY:"auto",overflowX:"hidden"}}>
+      <div ref={scrollRef} style={{flex:1,overflowY:tab==="simulation"?"hidden":"auto",overflowX:"hidden"}}>
         {showPremium ? (
           <PremiumScreen T={T} onBack={()=>setShowPremium(false)}/>
         ) : (
