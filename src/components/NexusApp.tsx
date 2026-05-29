@@ -1664,8 +1664,196 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
   );
 }
 
+// ── OPPORTUNITIES DATA ────────────────────────────────────────
+type Opportunity={id:number;title:string;org:string;orgEmoji:string;type:"Stage"|"Alternance"|"Emploi"|"Bénévolat"|"JPO";domain:string;location:string;zone:"France"|"Europe"|"Monde";duration?:string;deadline?:string;link:string;desc:string;remote?:boolean};
+const OPPORTUNITIES_DATA:Opportunity[]=[
+  // ── ONU / UN ──
+  {id:1,title:"Programme de stages — Nations Unies",org:"Nations Unies",orgEmoji:"🇺🇳",type:"Stage",domain:"Relations internationales",location:"New York / Genève / Vienne",zone:"Monde",duration:"3–6 mois",link:"https://careers.un.org/internship",desc:"Programme officiel de stages ONU dans toutes ses directions : politique, droits de l'homme, communication, économie."},
+  {id:2,title:"Programme Jeunes Professionnels (JPO) — ONU",org:"Nations Unies",orgEmoji:"🇺🇳",type:"JPO",domain:"Diplomatie / Développement",location:"New York / monde entier",zone:"Monde",duration:"2 ans renouvelables",link:"https://inspira.un.org",desc:"Contrat 2 ans financé par la France. Requis : Master, <32 ans, 2 ans d'expérience. Candidature via le MEAE."},
+  {id:3,title:"Volontaire des Nations Unies (UNV)",org:"ONU – Programme UNV",orgEmoji:"🇺🇳",type:"Bénévolat",domain:"Développement / Humanitaire",location:"150+ pays",zone:"Monde",duration:"1–2 ans",link:"https://www.unv.org",desc:"Volontariat ONU dans 150 pays. Indemnité de subsistance couverte. Master + 2–5 ans d'expérience selon poste."},
+  {id:4,title:"Délégué·e Jeunesse ONU — Forum politique",org:"Nations Unies – Jeunesse",orgEmoji:"🇺🇳",type:"Bénévolat",domain:"Jeunesse / RI",location:"New York",zone:"Monde",deadline:"Candidatures : septembre",link:"https://www.un.org/development/desa/youth/",desc:"Participer au Forum de haut niveau ou à des conférences ONU comme délégué jeune. Financement partiel disponible selon pays."},
+  // ── UNICEF ──
+  {id:5,title:"Stage UNICEF France — Communication & Plaidoyer",org:"UNICEF France",orgEmoji:"💙",type:"Stage",domain:"Communication / Droits de l'enfant",location:"Paris",zone:"France",duration:"4–6 mois",deadline:"Ouvert en continu",link:"https://www.unicef.fr/nous-rejoindre",desc:"Stage au siège UNICEF France. Campagnes de sensibilisation, contenu numérique, plaidoyer politique auprès des institutions."},
+  {id:6,title:"Jeune Ambassadeur·rice UNICEF",org:"UNICEF France",orgEmoji:"💙",type:"Bénévolat",domain:"Sensibilisation / Jeunesse (15–25 ans)",location:"France entière",zone:"France",link:"https://www.unicef.fr/article/devenez-jeune-ambassadeur",desc:"Programme bénévole pour les 15–25 ans. Mobiliser son lycée/université autour des droits de l'enfant et des ODD. Formation assurée."},
+  {id:7,title:"Bénévole UNICEF — Comité local",org:"UNICEF France",orgEmoji:"💙",type:"Bénévolat",domain:"Humanitaire / Collecte",location:"France entière",zone:"France",link:"https://www.unicef.fr/devenir-benevole",desc:"Rejoindre un comité local UNICEF. Collecte de fonds, organisation d'événements, sensibilisation dans les écoles."},
+  {id:8,title:"Club UNICEF Campus — Ambassadeur universitaire",org:"UNICEF France",orgEmoji:"💙",type:"Bénévolat",domain:"Sensibilisation étudiante",location:"Universités françaises",zone:"France",link:"https://www.unicef.fr/nous-rejoindre/campus-benevole",desc:"Créer ou rejoindre un club UNICEF dans ton université. Organiser des collectes, événements, projections. Accompagnement UNICEF."},
+  {id:9,title:"Stage UNICEF HQ — Programme & Politique",org:"UNICEF International",orgEmoji:"💙",type:"Stage",domain:"Politique sociale / RI",location:"New York, USA",zone:"Monde",duration:"6 mois",link:"https://www.unicef.org/careers/internships",desc:"Stage au siège mondial UNICEF. Protection de l'enfance, urgences humanitaires, plaidoyer. Anglais courant requis."},
+  // ── UNESCO ──
+  {id:10,title:"Stage UNESCO — Éducation & Culture",org:"UNESCO",orgEmoji:"🎓",type:"Stage",domain:"Éducation / Culture / Sciences",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.unesco.org/en/careers/internships",desc:"Stages dans toutes les divisions de l'UNESCO à Paris : éducation, sciences, culture, communication."},
+  {id:11,title:"Forum Jeunesse UNESCO",org:"UNESCO",orgEmoji:"🎓",type:"Bénévolat",domain:"Jeunesse / Culture",location:"Paris / Monde",zone:"Monde",link:"https://www.unesco.org/en/youth",desc:"Participation aux conférences UNESCO, groupes de travail thématiques. Pour les 18–35 ans."},
+  // ── FAO ──
+  {id:12,title:"Stage FAO — Sécurité alimentaire mondiale",org:"FAO (ONU)",orgEmoji:"🌾",type:"Stage",domain:"Agriculture / Alimentation",location:"Rome, Italie",zone:"Europe",duration:"3–6 mois",link:"https://www.fao.org/employment/internship",desc:"Stage à l'Organisation de l'ONU pour l'alimentation. Politiques agricoles, urgences alimentaires, développement rural."},
+  // ── OIT / ILO ──
+  {id:13,title:"Stage OIT — Droit du travail international",org:"OIT (ILO)",orgEmoji:"⚖️",type:"Stage",domain:"Droit / Travail",location:"Genève, Suisse",zone:"Monde",duration:"3–6 mois",link:"https://www.ilo.org/employment/internship",desc:"Stage à l'Organisation internationale du travail. Normes du travail, lutte contre le travail des enfants, emploi décent."},
+  {id:14,title:"JPO OIT — Jeune expert professionnel",org:"OIT (ILO)",orgEmoji:"⚖️",type:"JPO",domain:"Droit / Travail / RI",location:"Genève / Terrain",zone:"Monde",duration:"2 ans",link:"https://www.ilo.org/employment/junior-professional-officers",desc:"Programme JPO financé par la France à l'OIT. Requis : Master, 2 ans d'expérience, <32 ans. Via MEAE."},
+  // ── OMS / WHO ──
+  {id:15,title:"Stage OMS — Santé mondiale",org:"OMS (WHO)",orgEmoji:"🏥",type:"Stage",domain:"Santé publique",location:"Genève, Suisse",zone:"Monde",duration:"6 mois",link:"https://www.who.int/careers/internships",desc:"Programme de stages OMS. Épidémies, santé mentale, accès aux médicaments, politiques sanitaires."},
+  // ── HCR / UNHCR ──
+  {id:16,title:"Stage HCR — Droit des réfugiés",org:"HCR (UNHCR)",orgEmoji:"🔵",type:"Stage",domain:"Droit / Réfugiés",location:"Genève / terrain mondial",zone:"Monde",duration:"6 mois",link:"https://www.unhcr.org/careers/internships",desc:"Stage au Haut Commissariat pour les réfugiés. Protection juridique, assistance terrain, plaidoyer. Postes en terrain disponibles."},
+  {id:17,title:"Bénévole HCR / partenaires terrain",org:"HCR (UNHCR)",orgEmoji:"🔵",type:"Bénévolat",domain:"Humanitaire",location:"Monde entier",zone:"Monde",link:"https://www.unhcr.org/get-involved/volunteer",desc:"Mission de terrain dans les camps de réfugiés via les ONG partenaires HCR (IRC, NRC, etc.)."},
+  // ── CICR ──
+  {id:18,title:"Stage CICR — Droit international humanitaire",org:"CICR (ICRC)",orgEmoji:"🔴",type:"Stage",domain:"Droit humanitaire",location:"Genève, Suisse",zone:"Monde",duration:"3–12 mois",link:"https://www.icrc.org/fr/jobs/internship",desc:"Stage au Comité international de la Croix-Rouge. DIH, protection des civils, opérations terrain."},
+  {id:19,title:"Délégué·e terrain — CICR",org:"CICR (ICRC)",orgEmoji:"🔴",type:"Emploi",domain:"Humanitaire / Terrain",location:"Zones de conflit",zone:"Monde",link:"https://www.icrc.org/fr/jobs",desc:"Poste de délégué en zone de conflit. Requis : expérience humanitaire, langue (arabe/russe/espagnol), Master+."},
+  // ── TRIBUNAUX INTERNATIONAUX ──
+  {id:20,title:"Stage CPI — Juriste international",org:"Cour Pénale Internationale",orgEmoji:"⚖️",type:"Stage",domain:"Droit pénal international",location:"La Haye, Pays-Bas",zone:"Europe",duration:"6 mois",link:"https://www.icc-cpi.int/vacancies",desc:"Stage à la CPI. Bureau du Procureur, Chambre préliminaire, section Victimes. Master Droit requis."},
+  {id:21,title:"Stage CIJ — Cour internationale de Justice",org:"CIJ (ICJ)",orgEmoji:"⚖️",type:"Stage",domain:"Droit international public",location:"La Haye, Pays-Bas",zone:"Europe",duration:"3 mois",link:"https://www.icj-cij.org/internship",desc:"Stage à la CIJ. Recherche juridique sur les affaires inter-étatiques. Master Droit international requis."},
+  {id:22,title:"Stage CEDH — Cour européenne des droits de l'homme",org:"CEDH / Conseil de l'Europe",orgEmoji:"🏛️",type:"Stage",domain:"Droits de l'homme / Droit",location:"Strasbourg",zone:"Europe",duration:"3 mois",link:"https://www.echr.coe.int/internships",desc:"Stage à la CEDH. Filtrage des requêtes, rédaction de documents juridiques. En français ou anglais."},
+  {id:23,title:"Stage Mécanisme Résiduel TPIY/TPIR",org:"MICT (ONU)",orgEmoji:"⚖️",type:"Stage",domain:"Droit pénal international",location:"La Haye / Arusha",zone:"Monde",duration:"3–6 mois",link:"https://www.irmct.org/en/jobs/internships",desc:"Stage au Mécanisme pour les Tribunaux pénaux de l'ONU. Recherche sur les crimes de guerre, génocides."},
+  {id:24,title:"Stage Tribunal de l'Union européenne",org:"Tribunal UE (CJUE)",orgEmoji:"⚖️",type:"Stage",domain:"Droit européen",location:"Luxembourg",zone:"Europe",duration:"5 mois",link:"https://curia.europa.eu/jcms/jcms/Jo2_7008/",desc:"Stage au Tribunal de l'UE (contentieux administratif). Assistance aux juges, rédaction de notes juridiques."},
+  {id:25,title:"Stage Cour de Justice de l'UE",org:"CJUE",orgEmoji:"⚖️",type:"Stage",domain:"Droit européen",location:"Luxembourg",zone:"Europe",duration:"5 mois",link:"https://curia.europa.eu/jcms/jcms/Jo2_7008/",desc:"Stage au cabinet des juges ou avocats généraux de la CJUE. Excellent niveau en droit de l'UE requis."},
+  // ── INSTITUTIONS EUROPÉENNES ──
+  {id:26,title:"Stage Robert Schuman — Parlement européen",org:"Parlement européen",orgEmoji:"🇪🇺",type:"Stage",domain:"Politique européenne",location:"Bruxelles / Strasbourg",zone:"Europe",duration:"5 mois",deadline:"Mars (sept.) / Oct. (fév.)",link:"https://www.europarl.europa.eu/traineeships",desc:"Programme phare du PE. Groupes politiques ou directions générales. Rémunéré 1350 €/mois."},
+  {id:27,title:"Stage Blue Book — Commission européenne",org:"Commission européenne",orgEmoji:"🇪🇺",type:"Stage",domain:"Toutes directions (RI, Commerce, Climat…)",location:"Bruxelles",zone:"Europe",duration:"5 mois",link:"https://traineeships.ec.europa.eu",desc:"Stage rémunéré (1430 €/mois) dans toutes les DG de la Commission. Relations extérieures, Commerce, Environnement, etc."},
+  {id:28,title:"Stage SEAE — Diplomatie européenne",org:"Service européen d'action extérieure",orgEmoji:"🇪🇺",type:"Stage",domain:"Diplomatie / RI",location:"Bruxelles / Délégations UE",zone:"Europe",duration:"5 mois",link:"https://www.eeas.europa.eu/eeas/traineeships_en",desc:"Stage dans le service diplomatique de l'UE. Travail dans les délégations mondiales ou au siège de Bruxelles."},
+  {id:29,title:"Stage Conseil de l'Europe",org:"Conseil de l'Europe",orgEmoji:"🏛️",type:"Stage",domain:"Droits de l'homme / Démocratie",location:"Strasbourg",zone:"Europe",duration:"3 mois",link:"https://www.coe.int/en/web/jobs/traineeships",desc:"500 stages/an au Conseil de l'Europe. Droits de l'homme, démocratie, état de droit."},
+  {id:30,title:"Stage APCE — Assemblée parlementaire",org:"Conseil de l'Europe",orgEmoji:"🏛️",type:"Stage",domain:"Politique / Droit",location:"Strasbourg",zone:"Europe",duration:"3 mois",link:"https://www.coe.int/en/web/jobs/traineeships",desc:"Stage à l'Assemblée parlementaire du Conseil de l'Europe. Commissions thématiques, résolutions, rédaction de rapports."},
+  {id:31,title:"Stage OTAN",org:"OTAN",orgEmoji:"🛡️",type:"Stage",domain:"Défense / RI / Cyber",location:"Bruxelles",zone:"Europe",duration:"3–6 mois",link:"https://www.nato.int/cps/en/natohq/85562.htm",desc:"Stages dans les divisions OTAN (opérations, communication, cyber). Pour ressortissants des pays membres."},
+  {id:32,title:"Stage OSCE — Sécurité européenne",org:"OSCE",orgEmoji:"🔶",type:"Stage",domain:"Sécurité / RI",location:"Vienne, Autriche",zone:"Europe",duration:"3–6 mois",link:"https://www.osce.org/internships",desc:"Stage à l'OSCE. Prévention des conflits, démocratie, droits de l'homme, non-prolifération."},
+  {id:33,title:"Assistant·e parlementaire — Parlement européen",org:"Parlement européen",orgEmoji:"🇪🇺",type:"Emploi",domain:"Politique / Législatif",location:"Bruxelles / Strasbourg",zone:"Europe",link:"https://www.europarl.europa.eu",desc:"Poste salarié auprès d'un eurodéputé. Recherche, rédaction, agenda, suivi des dossiers législatifs. CDD 5 ans."},
+  // ── FRANCE ──
+  {id:34,title:"Stage Ministère des Affaires étrangères",org:"MEAE (France)",orgEmoji:"🇫🇷",type:"Stage",domain:"Diplomatie / RI",location:"Paris / Ambassades",zone:"France",duration:"6 mois max",link:"https://www.diplomatie.gouv.fr/fr/le-ministere-et-son-reseau/recruter-au-ministere/",desc:"Stages dans les directions du MEAE ou dans les ambassades françaises. Direction politique, juridique, culturelle ou économique."},
+  {id:35,title:"Concours diplomate — Conseiller des Affaires étrangères",org:"MEAE (France)",orgEmoji:"🇫🇷",type:"Emploi",domain:"Diplomatie",location:"France / Monde",zone:"France",link:"https://www.diplomatie.gouv.fr/fr/le-ministere-et-son-reseau/recruter-au-ministere/concours/",desc:"Concours du MEAE pour devenir diplomate. Cadres Orient, Amériques, Asie, Afrique. Préparation : écoles de commerce, Sciences Po."},
+  {id:36,title:"Stage AFD — Développement international",org:"AFD",orgEmoji:"🌿",type:"Stage",domain:"Développement / Finance",location:"Paris / Terrain mondial",zone:"France",duration:"4–6 mois",link:"https://www.afd.fr/fr/rejoindre-lafd/stages",desc:"Stage à l'AFD. Financement de projets en Afrique, Asie, Amérique latine. Approches économiques et sociales."},
+  {id:37,title:"Alternance AFD — Chargé·e de projet RI",org:"AFD",orgEmoji:"🌿",type:"Alternance",domain:"RI / Développement",location:"Paris",zone:"France",duration:"1–2 ans",link:"https://www.afd.fr/fr/rejoindre-lafd/alternance",desc:"Alternance M1/M2 sur des projets de développement international. Candidatures sur LinkedIn et site AFD."},
+  {id:38,title:"Stage Assemblée Nationale — Collaborateur·rice",org:"Assemblée Nationale",orgEmoji:"🏛️",type:"Stage",domain:"Politique / Législatif",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.assemblee-nationale.fr/stages",desc:"Stage auprès d'un·e député·e ou dans les services de l'AN. Suivi législatif, recherche, relations publiques."},
+  {id:39,title:"Stage Sénat — Commission des affaires étrangères",org:"Sénat",orgEmoji:"🏛️",type:"Stage",domain:"RI / Droit",location:"Paris",zone:"France",duration:"3 mois",link:"https://www.senat.fr/stage.html",desc:"Stage dans les services du Sénat. Direction européenne, commission des affaires étrangères, défense."},
+  {id:40,title:"Attaché·e de coopération culturelle — Ambassades",org:"MEAE / Institut Français",orgEmoji:"🇫🇷",type:"Emploi",domain:"Diplomatie culturelle",location:"Ambassades monde entier",zone:"Monde",link:"https://www.institutfrancais.com/fr/emplois",desc:"Promotion de la langue et de la culture françaises dans les ambassades. Poste contractuel via l'Institut Français."},
+  {id:41,title:"Stage Réseau ONU France (UNRIC)",org:"UNRIC France",orgEmoji:"🇺🇳",type:"Stage",domain:"Communication / RI",location:"Paris",zone:"France",duration:"3–4 mois",link:"https://unric.org/fr/",desc:"Stage au Centre d'information des Nations Unies pour la France. Communication, événements, sensibilisation multilingue."},
+  // ── ONG ──
+  {id:42,title:"Stage Amnesty International France",org:"Amnesty International",orgEmoji:"🕯️",type:"Stage",domain:"Droits de l'homme / Communication",location:"Paris",zone:"France",duration:"4–6 mois",link:"https://www.amnesty.fr/rejoignez-nous/stages",desc:"Stage au siège Amnesty France. Communication digitale, campagnes de plaidoyer, recherche sur les violations."},
+  {id:43,title:"Bénévole Amnesty International France",org:"Amnesty International",orgEmoji:"🕯️",type:"Bénévolat",domain:"Droits de l'homme",location:"France entière",zone:"France",link:"https://www.amnesty.fr/rejoignez-nous/benevoles",desc:"Rejoindre un groupe local. Lettres d'urgence, manifestations, campagnes, sensibilisation dans les lycées."},
+  {id:44,title:"Stage Amnesty International — Siège mondial",org:"Amnesty International",orgEmoji:"🕯️",type:"Stage",domain:"Droits de l'homme / Recherche",location:"Londres, Royaume-Uni",zone:"Monde",duration:"6 mois",link:"https://www.amnesty.org/en/careers",desc:"Stage au siège mondial d'Amnesty à Londres. Recherche, publications, campagnes. Anglais courant requis."},
+  {id:45,title:"Stage MSF — Communication & Humanitaire",org:"Médecins Sans Frontières",orgEmoji:"🏥",type:"Stage",domain:"Humanitaire / Communication",location:"Paris",zone:"France",duration:"4–6 mois",link:"https://www.msf.fr/nos-actions/rejoindre-msf/stages",desc:"Stage au siège MSF Paris. Communication, logistique humanitaire, RH expatriés. Mission terrain possible selon profil."},
+  {id:46,title:"Logisticien·ne terrain — MSF",org:"Médecins Sans Frontières",orgEmoji:"🏥",type:"Emploi",domain:"Logistique humanitaire",location:"Zones de crise",zone:"Monde",link:"https://www.msf.fr/nos-actions/rejoindre-msf/logisticien",desc:"Poste en zones de crise. Gestion des bases, chaîne d'approvisionnement, équipements médicaux. Mission 6–12 mois."},
+  {id:47,title:"Bénévole Croix-Rouge Française",org:"Croix-Rouge Française",orgEmoji:"🔴",type:"Bénévolat",domain:"Humanitaire / Social",location:"France entière",zone:"France",link:"https://www.croix-rouge.fr/benevoles",desc:"Maraude, soutien aux réfugiés, collecte alimentaire. 600 délégations locales en France."},
+  {id:48,title:"Stage Croix-Rouge — Coopération internationale",org:"Croix-Rouge Française",orgEmoji:"🔴",type:"Stage",domain:"Coopération internationale",location:"Paris / Terrain",zone:"France",duration:"4–6 mois",link:"https://www.croix-rouge.fr/stages",desc:"Stage dans la Direction de l'Action Internationale. Projets terrain (Afrique, Moyen-Orient), coordination FICR."},
+  {id:49,title:"Stage Human Rights Watch",org:"Human Rights Watch",orgEmoji:"👁️",type:"Stage",domain:"Droits de l'homme / Journalisme",location:"Paris / Bruxelles / New York",zone:"Monde",duration:"3–6 mois",link:"https://www.hrw.org/jobs",desc:"Recherche, rédaction de rapports, plaidoyer institutionnel. Anglais courant requis."},
+  {id:50,title:"Stage Reporters Sans Frontières",org:"RSF",orgEmoji:"✒️",type:"Stage",domain:"Liberté de la presse / Droits",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://rsf.org/fr/rejoignez-nous",desc:"Suivi des journalistes emprisonnés, communication, production du classement mondial de la liberté de la presse."},
+  {id:51,title:"Stage Oxfam France — Plaidoyer",org:"Oxfam France",orgEmoji:"🟠",type:"Stage",domain:"Inégalités / Justice fiscale",location:"Paris",zone:"France",duration:"4–6 mois",link:"https://www.oxfamfrance.org/agir/rejoindre-oxfam/",desc:"Plaidoyer Oxfam France : inégalités mondiales, justice fiscale, justice climatique. Recherche, communication, lobbying."},
+  {id:52,title:"Stage Save the Children",org:"Save the Children",orgEmoji:"🟢",type:"Stage",domain:"Droits de l'enfant",location:"Paris / Londres",zone:"Europe",duration:"4–6 mois",link:"https://www.savethechildren.net/careers",desc:"Programmes d'urgence ou de développement pour les enfants. Paris (section FR) ou Londres (siège international)."},
+  {id:53,title:"Stage WWF France — Politique environnementale",org:"WWF France",orgEmoji:"🐼",type:"Stage",domain:"Environnement / Politique",location:"Paris",zone:"France",duration:"4–6 mois",link:"https://www.wwf.fr/nous-rejoindre/stages",desc:"Politiques de conservation, énergie, forêts, océans. Plaidoyer institutionnel, communication."},
+  {id:54,title:"Stage Greenpeace France — Campagnes",org:"Greenpeace France",orgEmoji:"🌱",type:"Stage",domain:"Environnement / Communication",location:"Paris",zone:"France",duration:"4–6 mois",link:"https://www.greenpeace.fr/nous-rejoindre/stages/",desc:"Campagnes énergie, forêts, océans, agriculture. Communication, mobilisation citoyenne, plaidoyer."},
+  {id:55,title:"Bénévole Greenpeace",org:"Greenpeace",orgEmoji:"🌱",type:"Bénévolat",domain:"Environnement",location:"France entière",zone:"France",link:"https://www.greenpeace.fr/nous-rejoindre/benevoles/",desc:"Rejoindre les équipes locales Greenpeace. Actions terrain, sensibilisation, présence aux événements."},
+  {id:56,title:"Stage ACTED — ONG humanitaire",org:"ACTED",orgEmoji:"🌍",type:"Stage",domain:"Humanitaire / Terrain",location:"Paris / Terrain mondial",zone:"France",duration:"4–6 mois",link:"https://www.acted.org/fr/rejoindre-acted/stages/",desc:"Stage siège (Paris) ou terrain (Moyen-Orient, Asie Centrale, Sahel). 40+ pays couverts."},
+  {id:57,title:"Coordonnateur·rice terrain — ACTED",org:"ACTED",orgEmoji:"🌍",type:"Emploi",domain:"Coordination humanitaire",location:"Zones de crise",zone:"Monde",link:"https://www.acted.org/fr/rejoindre-acted/postes/",desc:"Gestion d'équipes terrain, rapports bailleurs, sécurité. Expérience terrain exigée."},
+  {id:58,title:"Stage Handicap International (HI)",org:"Humanity & Inclusion",orgEmoji:"♿",type:"Stage",domain:"Droits / Humanitaire",location:"Lyon / Bruxelles",zone:"Europe",duration:"4–6 mois",link:"https://www.hi.org/fr/rejoignez-nous/stages",desc:"Plaidoyer contre les mines antipersonnel, droits des personnes handicapées en situations d'urgence."},
+  // ── INSTITUTIONS INTERNATIONALES ──
+  {id:59,title:"Stage OCDE — Politiques publiques",org:"OCDE",orgEmoji:"📊",type:"Stage",domain:"Économie / Politiques publiques",location:"Paris",zone:"France",duration:"6 mois",link:"https://www.oecd.org/careers/internship-programme/",desc:"600 stages/an à l'OCDE Paris. Économie, éducation, santé, fiscalité, énergie. Rémunéré."},
+  {id:60,title:"Analyste politiques publiques — OCDE",org:"OCDE",orgEmoji:"📊",type:"Emploi",domain:"Économie / Politiques publiques",location:"Paris",zone:"France",link:"https://www.oecd.org/careers",desc:"Poste d'analyste ou économiste à l'OCDE. Master/PhD en économie ou sciences politiques. Anglais + français requis."},
+  {id:61,title:"Stage OIM — Migration internationale",org:"OIM (IOM)",orgEmoji:"🔵",type:"Stage",domain:"Migration / Humanitaire",location:"Genève / Terrain",zone:"Monde",duration:"3–6 mois",link:"https://www.iom.int/careers/internship",desc:"Stage à l'Organisation Internationale pour les Migrations. Politiques migratoires, assistance terrain, intégration."},
+  {id:62,title:"Stage HCDH — Droits de l'homme ONU",org:"HCDH (OHCHR)",orgEmoji:"🕊️",type:"Stage",domain:"Droits de l'homme",location:"Genève / New York",zone:"Monde",duration:"3–6 mois",link:"https://www.ohchr.org/en/get-involved/opportunities",desc:"Stage au Haut-Commissariat aux droits de l'homme. Rapports de pays, mécanismes conventionnels, Conseil des DH."},
+  {id:63,title:"Stage PNUD — Développement durable",org:"PNUD (UNDP)",orgEmoji:"🌍",type:"Stage",domain:"Développement durable",location:"New York / Pays programmes",zone:"Monde",duration:"3–6 mois",link:"https://jobs.undp.org",desc:"Stage au Programme des Nations Unies pour le développement. Projets dans 170 pays sur les ODD, gouvernance, résilience climatique."},
+  {id:64,title:"Stage PNUE — Environnement mondial",org:"PNUE (UNEP)",orgEmoji:"🌍",type:"Stage",domain:"Environnement / Climat",location:"Nairobi / Genève / Paris",zone:"Monde",duration:"3–6 mois",link:"https://www.unep.org/work-with-unep/internships",desc:"Stage au Programme ONU pour l'environnement. Biodiversité, changement climatique, pollution, économie verte."},
+  {id:65,title:"Stage ONUDC — Lutte contre la criminalité",org:"ONUDC (ONU)",orgEmoji:"🇺🇳",type:"Stage",domain:"Criminalité / Droit international",location:"Vienne, Autriche",zone:"Europe",duration:"3–6 mois",link:"https://www.unodc.org/unodc/en/about-unodc/internships.html",desc:"Stage à l'Office ONU contre la drogue et le crime. Trafic, terrorisme, corruption internationale."},
+  {id:66,title:"Stage Banque Mondiale — Développement",org:"Banque Mondiale",orgEmoji:"🌐",type:"Stage",domain:"Finance internationale / Développement",location:"Washington DC",zone:"Monde",duration:"3–6 mois",link:"https://www.worldbank.org/en/about/careers/programs-and-internships",desc:"Junior Professional Associates. Développement économique, lutte contre la pauvreté, projets dans pays émergents."},
+  {id:67,title:"Stage FMI — Économie internationale",org:"FMI",orgEmoji:"💱",type:"Stage",domain:"Économie / Finance",location:"Washington DC",zone:"Monde",duration:"6–12 mois",link:"https://www.imf.org/careers",desc:"Stage au FMI. Analyse macro-économique, surveillance des économies mondiales, programmes d'ajustement."},
+  // ── ÉCOLES / ALTERNANCES SPÉCIALES ──
+  {id:68,title:"Alternance Sciences Po — Institutions partenaires",org:"Sciences Po Paris",orgEmoji:"🎓",type:"Alternance",domain:"RI / Politique publique",location:"Paris",zone:"France",duration:"1–2 ans",link:"https://www.sciencespo.fr/apprentissage",desc:"Alternance via Sciences Po avec ONG, institutions européennes, ministères. Master RI, PSIA, Gouvernance."},
+  {id:69,title:"Alternance Sciences Po Aix — RI & Sécurité",org:"Sciences Po Aix",orgEmoji:"🎓",type:"Alternance",domain:"RI / Sécurité",location:"Aix-en-Provence",zone:"France",duration:"1–2 ans",link:"https://www.sciencespo-aix.fr/formation/alternance/",desc:"Alternance avec collectivités, institutions européennes, ONG. Spécialités RI et sécurité internationale."},
+  {id:70,title:"Fondation Jean-Jaurès — Stage analyse politique",org:"Fondation Jean-Jaurès",orgEmoji:"📚",type:"Stage",domain:"Analyse politique / RI",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://jean-jaures.org/nous-rejoindre/",desc:"Stage au think tank progressiste français. Rédaction de notes, veille internationale, organisation de conférences."},
+  {id:71,title:"Institut Montaigne — Stage analyse politique",org:"Institut Montaigne",orgEmoji:"📚",type:"Stage",domain:"Analyse politique / Économie",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.institutmontaigne.org/devenez-collaborateur",desc:"Stage dans le think tank centriste. Études politiques, économiques, géopolitiques. Rédaction de rapports d'analyse."},
+  {id:72,title:"Stage IRIS — Institut de Relations Internationales",org:"IRIS",orgEmoji:"🔭",type:"Stage",domain:"Géopolitique / Recherche",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.iris-france.org/nous-rejoindre/",desc:"Stage au principal think tank français de RI. Recherche géopolitique, organisation d'événements, édition de la Revue internationale."},
+  {id:73,title:"Stage IFRI — Affaires internationales",org:"IFRI",orgEmoji:"🔭",type:"Stage",domain:"Géopolitique / Recherche",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.ifri.org/fr/travailler-chez-lifri",desc:"Stage à l'Institut Français des Relations Internationales. Centres thématiques : Russie, Asie, Énergie, Sécurité. Renommé mondialement."},
+  {id:74,title:"Stage Fondation Robert Schuman — Europe",org:"Fondation Robert Schuman",orgEmoji:"🇪🇺",type:"Stage",domain:"Europe / Politique",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.robert-schuman.eu/fr/stages",desc:"Stage dans le think tank pro-européen. Analyse des politiques de l'UE, rédaction de publications, organisation de colloques."},
+  {id:75,title:"Stage UNESCO — Programme MAB Biosphère",org:"UNESCO",orgEmoji:"🎓",type:"Stage",domain:"Environnement / Sciences",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.unesco.org/en/careers/internships",desc:"Stage dans le programme Man and Biosphere de l'UNESCO. Conservation, biodiversité, développement durable."},
+];
+
+// ── OPPORTUNITIES SCREEN ──────────────────────────────────────
+function OpportunitiesScreen({T}:{T:Theme}) {
+  const [typeFilter,setTypeFilter] = useState("Tout");
+  const [zoneFilter,setZoneFilter] = useState("Tout");
+  const [search,setSearch] = useState("");
+  const [saved,setSaved] = useState<Set<number>>(()=>{
+    if(typeof window==="undefined") return new Set();
+    try{return new Set(JSON.parse(localStorage.getItem("nexus_saved_opps")||"[]"));}catch{return new Set();}
+  });
+  const toggleSave=(id:number)=>{
+    setSaved(s=>{
+      const ns=new Set(s);
+      ns.has(id)?ns.delete(id):ns.add(id);
+      localStorage.setItem("nexus_saved_opps",JSON.stringify([...ns]));
+      return ns;
+    });
+  };
+  const types=["Tout","Stage","Alternance","Emploi","Bénévolat","JPO"];
+  const zones=["Tout","🇫🇷 France","🇪🇺 Europe","🌐 Monde"];
+  const zoneMap:Record<string,string>={"🇫🇷 France":"France","🇪🇺 Europe":"Europe","🌐 Monde":"Monde"};
+  const typeColors:Record<string,string>={Stage:T.blueB,Alternance:"#7C3AED",Emploi:"#16A34A",Bénévolat:"#D97706",JPO:"#E03535"};
+  const q=search.toLowerCase();
+  const filtered=OPPORTUNITIES_DATA.filter(o=>{
+    if(typeFilter!=="Tout"&&o.type!==typeFilter) return false;
+    if(zoneFilter!=="Tout"&&o.zone!==zoneMap[zoneFilter]) return false;
+    if(q&&!o.title.toLowerCase().includes(q)&&!o.org.toLowerCase().includes(q)&&!o.domain.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const savedList=filtered.filter(o=>saved.has(o.id));
+  const unsavedList=filtered.filter(o=>!saved.has(o.id));
+  const display=[...savedList,...unsavedList];
+  return(
+    <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
+      <div>
+        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Carrières & Engagement</p>
+        <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:26,fontWeight:800,color:T.text,marginBottom:4}}>Opportunités</h1>
+        <p style={{color:T.textD,fontSize:12}}>Stages · Alternances · Emplois · Bénévolat — ONU, UE, ONG &amp; +</p>
+      </div>
+      <div style={{position:"relative"}}>
+        <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",lineHeight:1,display:"flex"}}><Ic n="search" s={14} c={T.muted}/></span>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher un poste, organisation…" style={{width:"100%",padding:"9px 12px 9px 34px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+      </div>
+      <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
+        {types.map(t=>(
+          <button key={t} onClick={()=>setTypeFilter(t)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${typeFilter===t?(typeColors[t]||T.blueB):T.b1}`,background:typeFilter===t?(typeColors[t]||T.blueB):"transparent",color:typeFilter===t?"#fff":T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{t}</button>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:6,overflowX:"auto"}}>
+        {zones.map(z=>(
+          <button key={z} onClick={()=>setZoneFilter(z)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${zoneFilter===z?T.blueB:T.b1}`,background:zoneFilter===z?T.blueG:"transparent",color:zoneFilter===z?T.blueB:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{z}</button>
+        ))}
+      </div>
+      <p style={{color:T.muted,fontSize:11,fontWeight:600}}>{display.length} opportunité{display.length>1?"s":""} trouvée{display.length>1?"s":""}{saved.size>0?" · "+savedList.length+" sauvegardée"+(savedList.length>1?"s":""):""}</p>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {display.length===0&&<div style={{textAlign:"center",padding:40}}><p style={{color:T.muted,fontSize:14}}>Aucune opportunité pour ces filtres</p></div>}
+        {display.map(o=>{
+          const col=typeColors[o.type]||T.blueB;
+          const isSaved=saved.has(o.id);
+          return(
+            <div key={o.id} style={{background:T.card,border:`1px solid ${isSaved?col+"50":T.b1}`,borderRadius:14,padding:14,display:"flex",flexDirection:"column",gap:8,animation:"fadeUp .3s ease"}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
+                    <span style={{fontSize:16}}>{o.orgEmoji}</span>
+                    <span style={{color:T.textD,fontSize:11,fontWeight:700}}>{o.org}</span>
+                    <span style={{fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:5,background:`${col}18`,color:col,border:`1px solid ${col}30`}}>{o.type}</span>
+                    <span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:T.bg2,color:T.muted,border:`1px solid ${T.b1}`}}>{o.zone==="France"?"🇫🇷":o.zone==="Europe"?"🇪🇺":"🌐"} {o.zone}</span>
+                  </div>
+                  <p style={{color:T.text,fontSize:13,fontWeight:700,lineHeight:1.4}}>{o.title}</p>
+                </div>
+                <button onClick={()=>toggleSave(o.id)} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,fontSize:16}}>
+                  {isSaved?"🔖":"🏷️"}
+                </button>
+              </div>
+              <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{o.desc}</p>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <div style={{display:"flex",alignItems:"center",gap:4}}><Ic n="map" s={11} c={T.muted}/><span style={{color:T.muted,fontSize:11}}>{o.location}</span></div>
+                <span style={{color:T.b1}}>·</span>
+                <span style={{color:T.muted,fontSize:11}}>🔬 {o.domain}</span>
+                {o.duration&&<><span style={{color:T.b1}}>·</span><span style={{color:T.muted,fontSize:11}}>⏱ {o.duration}</span></>}
+              </div>
+              {o.deadline&&<div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:6,background:`${T.amber}15`,border:`1px solid ${T.amber}30`,alignSelf:"flex-start"}}><span style={{fontSize:10}}>⚠️</span><span style={{color:T.amber,fontSize:11,fontWeight:700}}>{o.deadline}</span></div>}
+              <a href={o.link} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"9px 14px",borderRadius:9,border:`1px solid ${col}`,background:`${col}10`,color:col,fontSize:12,fontWeight:800,textDecoration:"none",fontFamily:"inherit"}}>
+                Voir l&apos;offre →
+              </a>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── EVENTS SCREEN ─────────────────────────────────────────────
 function EventsScreen({T}:{T:Theme}) {
+  const [subTab,setSubTab] = useState<"events"|"opps">("events");
   type EventItem = {id:number;date:string;month:string;day:string;title:string;loc:string;type:string;lat:number;lng:number;attendees:number;isUser?:boolean;desc?:string;mode?:string;link?:string};
   const [reg,setReg] = useState<Set<number>>(new Set());
   const [filter,setFilter] = useState("Tout");
@@ -1731,7 +1919,16 @@ function EventsScreen({T}:{T:Theme}) {
   const sorted=userLoc?[...filtered].sort((a,b)=>haversine(userLoc.lat,userLoc.lng,a.lat,a.lng)-haversine(userLoc.lat,userLoc.lng,b.lat,b.lng)):filtered;
 
   return(
-    <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
+    <div style={{display:"flex",flexDirection:"column",gap:0}}>
+      <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`,background:T.card}}>
+        {([["events","📅 Agenda"],["opps","💼 Opportunités"]] as [string,string][]).map(([id,label])=>(
+          <button key={id} onClick={()=>setSubTab(id as "events"|"opps")} style={{flex:1,padding:"13px 8px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700,color:subTab===id?T.blueB:T.textD,borderBottom:subTab===id?`2px solid ${T.blueB}`:"2px solid transparent",transition:"all .2s"}}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {subTab==="opps"&&<OpportunitiesScreen T={T}/>}
+      {subTab==="events"&&<div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
         <div>
           <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Agenda</p>
@@ -1821,6 +2018,7 @@ function EventsScreen({T}:{T:Theme}) {
           );
         })}
       </div>
+    </div>}
     </div>
   );
 }
