@@ -1664,7 +1664,9 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
               </div>
             </div>
           </div>
-          {p.imgUrl&&<div style={{width:"100%",height:200,overflow:"hidden"}}><img src={p.imgUrl} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).parentElement!.style.display="none"}}/></div>}
+          <div style={{width:"100%",height:200,overflow:"hidden",background:T.bg2}}>
+            <img src={p.imgUrl||getFallbackImg(p.tag)} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).src=getFallbackImg(p.tag);}}/>
+          </div>
           <a href={p.link} target="_blank" rel="noopener noreferrer" style={{display:"block",padding:"12px 16px 8px",textDecoration:"none"}}>
             <p style={{color:T.text,fontSize:16,fontWeight:700,lineHeight:1.5,margin:0}}>{p.title}</p>
             <p style={{color:T.blueB,fontSize:12,marginTop:6,fontWeight:600}}>Lire l&apos;article complet →</p>
