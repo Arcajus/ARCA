@@ -360,15 +360,15 @@ function Ic({n,s=22,c="currentColor",w=1.6}:{n:string;s?:number;c?:string;w?:num
 
 // ── DATA ─────────────────────────────────────────────────────
 const JOURNALISTS = [
-  {id:"j1",name:"Élise Moreau",role:"Grande Reporter",spec:"Géopolitique mondiale",init:"EM",live:true,gender:"F"},
-  {id:"j2",name:"Marc Fontaine",role:"Éditorialiste",spec:"Politique européenne",init:"MF",live:false,gender:"M"},
-  {id:"j3",name:"Yasmine Kadi",role:"Correspondante",spec:"Moyen-Orient & conflits",init:"YK",live:true,gender:"F"},
-  {id:"j4",name:"Bernard Cléry",role:"Chroniqueur senior",spec:"Histoire & diplomatie",init:"BC",live:false,gender:"M"},
-  {id:"j5",name:"Aïcha Diallo",role:"Militante & Chroniqueuse",spec:"Droits LGBTQ+, féminisme intersectionnel",init:"AD",live:true,gender:"F"},
-  {id:"j6",name:"Théo Marchetti",role:"Correspondant de Guerre",spec:"Conflits armés, armées, zones de crise",init:"TM",live:false,gender:"M"},
-  {id:"j7",name:"Dr. Léa Fontaine",role:"Journaliste Scientifique",spec:"Médecine, bioéthique, transhumanisme",init:"LF",live:true,gender:"F"},
-  {id:"j8",name:"Omar Benali",role:"Analyste Économique",spec:"Finance mondiale, cryptomonnaies, inégalités",init:"OB",live:false,gender:"M"},
-  {id:"j9",name:"Camille Rousseau",role:"Philosophe & Débatteur",spec:"Philosophie politique, éthique, déontologie",init:"CR",live:true,gender:"F"},
+  {id:"j1",name:"Élise Moreau",role:"Grande Reporter",spec:"Géopolitique mondiale",init:"EM",live:true,gender:"F",premium:false},
+  {id:"j2",name:"Marc Fontaine",role:"Éditorialiste",spec:"Politique européenne",init:"MF",live:false,gender:"M",premium:false},
+  {id:"j3",name:"Yasmine Kadi",role:"Correspondante",spec:"Moyen-Orient & conflits",init:"YK",live:true,gender:"F",premium:true},
+  {id:"j4",name:"Bernard Cléry",role:"Chroniqueur senior",spec:"Histoire & diplomatie",init:"BC",live:false,gender:"M",premium:true},
+  {id:"j5",name:"Aïcha Diallo",role:"Militante & Chroniqueuse",spec:"Droits LGBTQ+, féminisme intersectionnel",init:"AD",live:true,gender:"F",premium:true},
+  {id:"j6",name:"Théo Marchetti",role:"Correspondant de Guerre",spec:"Conflits armés, armées, zones de crise",init:"TM",live:false,gender:"M",premium:true},
+  {id:"j7",name:"Dr. Léa Fontaine",role:"Journaliste Scientifique",spec:"Médecine, bioéthique, transhumanisme",init:"LF",live:true,gender:"F",premium:true},
+  {id:"j8",name:"Omar Benali",role:"Analyste Économique",spec:"Finance mondiale, cryptomonnaies, inégalités",init:"OB",live:false,gender:"M",premium:true},
+  {id:"j9",name:"Camille Rousseau",role:"Philosophe & Débatteur",spec:"Philosophie politique, éthique, déontologie",init:"CR",live:true,gender:"F",premium:true},
 ];
 const LEVELS = [
   {id:"novice",tier:1,label:"Novice",sub:"Citoyen lambda",premium:false},
@@ -672,7 +672,7 @@ const DEMO_PROFILES = [
   {id:"dp29",name:"Cédric Martin",init:"CM",role:"Analyste renseignement",location:"Paris",verified:true,color:"#D97706",followers:5100,bio:"Ex-DGSE · Géostratégie · Renseignement ouvert"},
   {id:"dp30",name:"Diana Pham",init:"DP",role:"Avocate droit international pénal",location:"Genève",verified:true,color:"#E03535",followers:2400,bio:"CPI · Crimes de guerre · Droit humanitaire",story:{type:"video",caption:"Retour sur mon plaidoyer à la CPI — pourquoi ce procès est historique ⚖️",bg:"linear-gradient(135deg,#E03535,#16A34A)"}},
 ];
-const ALL_STORIES = [...DEMO_PROFILES.filter(p=>(p as any).story), ...WISDOM_STORIES] as any[];
+const ALL_STORIES = [...DEMO_PROFILES.filter(p=>(p as any).story)] as any[];
 
 // ── DEMO POSTS (fake articles from demo profiles) ─────────────
 const now2 = Date.now();
@@ -1308,16 +1308,17 @@ function StudioScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Journaliste</p>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {JOURNALISTS.map(j=>(
-            <button key={j.id} onClick={()=>setJournalist(j)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:`1.5px solid ${journalist?.id===j.id?T.blueB:T.b1}`,background:journalist?.id===j.id?T.blueG:T.card,cursor:"pointer",textAlign:"left",transition:"all .2s"}}>
+            <button key={j.id} onClick={()=>j.premium?onPremium():setJournalist(j)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:`1.5px solid ${j.premium?T.amber+"40":journalist?.id===j.id?T.blueB:T.b1}`,background:journalist?.id===j.id&&!j.premium?T.blueG:j.premium?`${T.amber}06`:T.card,cursor:"pointer",textAlign:"left",transition:"all .2s",opacity:j.premium?.85:1,position:"relative"}}>
               <Avatar init={j.init} size={42} T={T}/>
               <div style={{flex:1}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{color:T.text,fontWeight:700,fontSize:14}}>{j.name}</span>
-                  {j.live&&<span style={{background:`${T.red}15`,color:T.red,fontSize:9,padding:"2px 6px",borderRadius:4,fontWeight:800}}>EN DIRECT</span>}
+                  <span style={{color:j.premium?T.amber:T.text,fontWeight:700,fontSize:14}}>{j.name}</span>
+                  {j.live&&!j.premium&&<span style={{background:`${T.red}15`,color:T.red,fontSize:9,padding:"2px 6px",borderRadius:4,fontWeight:800}}>EN DIRECT</span>}
+                  {j.premium&&<span style={{background:`${T.amber}20`,color:T.amber,fontSize:9,padding:"2px 6px",borderRadius:4,fontWeight:800}}>⭐ PREMIUM</span>}
                 </div>
                 <p style={{color:T.textD,fontSize:12,marginTop:2}}>{j.role} · {j.spec}</p>
               </div>
-              {journalist?.id===j.id&&<Ic n="check" s={18} c={T.blueB}/>}
+              {j.premium?<Ic n="lock" s={15} c={T.amber}/>:journalist?.id===j.id?<Ic n="check" s={18} c={T.blueB}/>:null}
             </button>
           ))}
         </div>
@@ -1701,8 +1702,7 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
 
   useEffect(()=>{
     refresh();
-    // Auto-refresh every 30 minutes
-    refreshTimerRef.current=setInterval(()=>refresh(),60*1000);
+    refreshTimerRef.current=setInterval(()=>refresh(),3*60*1000);
     return()=>{if(refreshTimerRef.current)clearInterval(refreshTimerRef.current);};
   },[]);// eslint-disable-line
 
@@ -1966,13 +1966,21 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
           const sm = !search||p.title.toLowerCase().includes(search.toLowerCase())||p.text.toLowerCase().includes(search.toLowerCase());
           const tm = !kd||kd.some(k=>p.tag.toUpperCase().includes(k)||p.title.toUpperCase().includes(k));
           return sm&&tm;
-        }).map(p=>({kind:"demo" as const, ts:p.time, p}));
+        }).map(p=>({kind:"demo" as const, p}));
         const nexusFiltered = interleave(nexusPosts.filter(p=>{
           const sm = !search||p.title.toLowerCase().includes(search.toLowerCase())||p.src.toLowerCase().includes(search.toLowerCase());
           const tm = !kn||kn.some(k=>p.tag.toUpperCase().includes(k)||p.title.toUpperCase().includes(k));
           return sm&&tm;
-        })).slice(0,100).map(p=>({kind:"nexus" as const, ts:p.publishedAt||0, p}));
-        const merged = [...demoFiltered,...nexusFiltered].sort((a,b)=>b.ts-a.ts);
+        })).slice(0,100).map(p=>({kind:"nexus" as const, p}));
+        // Round-robin: 1 demo every 5 nexus so demo posts are always visible
+        const merged: Array<{kind:"demo"|"nexus";p:any}> = [];
+        const dQ=[...demoFiltered], nQ=[...nexusFiltered];
+        let nCount=0;
+        while(nQ.length||dQ.length){
+          if(nCount<5&&nQ.length){merged.push(nQ.shift()!);nCount++;}
+          else if(dQ.length){merged.push(dQ.shift()!);nCount=0;}
+          else{merged.push(nQ.shift()!);}
+        }
         return(
           <div style={{display:"flex",flexDirection:"column"}}>
             {merged.map(item=>{
@@ -3513,11 +3521,12 @@ const CONCOURS_EPREUVES:{[k:string]:{annee:number;matiere:string;sujet:string;ty
 
 // ── APPRENDRE SCREEN ──────────────────────────────────────────
 function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:()=>void}){
-  const [sub,setSub]=useState<"menu"|"discours"|"rhetori"|"dict"|"fiches">("menu");
+  const [sub,setSub]=useState<"menu"|"discours"|"rhetori"|"dict"|"fiches"|"sagesse">("menu");
   const [selSpeech,setSelSpeech]=useState<typeof DISCOURS_DATA[0]|null>(null);
   const [selLesson,setSelLesson]=useState<typeof RHETORIC_DATA[0]|null>(null);
   const [dictQ,setDictQ]=useState("");
   const [selFiche,setSelFiche]=useState<typeof FICHES_DATA[0]|null>(null);
+  const [sagesseCat,setSagesseCat]=useState<"proverbe"|"philosophe"|"auteur"|"bible">("proverbe");
 
   if(sub==="discours")return(
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -3577,6 +3586,53 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
       </div>
     </div>
   );
+
+  if(sub==="sagesse"){
+    const catDefs:{id:"proverbe"|"philosophe"|"auteur"|"bible";label:string;color:string;emoji:string}[]=[
+      {id:"proverbe",label:"Proverbes",color:"#D97706",emoji:"📜"},
+      {id:"philosophe",label:"Philosophes",color:"#7C3AED",emoji:"🧠"},
+      {id:"auteur",label:"Auteurs",color:"#2B78F5",emoji:"✍️"},
+      {id:"bible",label:"Bible",color:"#16A34A",emoji:"📖"},
+    ];
+    const entries=WISDOM_STORIES.filter(w=>w.story.type===sagesseCat);
+    return(
+      <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+          <button onClick={()=>setSub("menu")} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+          <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Citations & Sagesse</h2>
+        </div>
+        <div style={{display:"flex",gap:8,padding:"12px 20px",borderBottom:`1px solid ${T.b1}`,flexShrink:0,overflowX:"auto"}}>
+          {catDefs.map(c=>(
+            <button key={c.id} onClick={()=>setSagesseCat(c.id)}
+              style={{padding:"7px 14px",borderRadius:20,border:`1.5px solid ${sagesseCat===c.id?c.color:T.b1}`,background:sagesseCat===c.id?`${c.color}15`:T.card,color:sagesseCat===c.id?c.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
+              {c.emoji} {c.label}
+            </button>
+          ))}
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
+          {entries.map(w=>{
+            const cat=catDefs.find(c=>c.id===w.story.type)!;
+            return(
+              <div key={w.id} style={{background:T.card,border:`1px solid ${cat.color}30`,borderRadius:16,overflow:"hidden"}}>
+                <div style={{background:w.story.bg,padding:"20px 16px",minHeight:80,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
+                  <p style={{color:"#fff",fontSize:14,fontStyle:"italic",lineHeight:1.7,fontWeight:500,textShadow:"0 1px 4px rgba(0,0,0,0.5)"}}>
+                    &ldquo;{w.story.quote}&rdquo;
+                  </p>
+                </div>
+                <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    <p style={{color:cat.color,fontWeight:800,fontSize:13}}>{w.story.attribution||w.name}</p>
+                    <p style={{color:T.muted,fontSize:11,marginTop:2}}>{w.role}</p>
+                  </div>
+                  <span style={{fontSize:20}}>{cat.emoji}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   if(sub==="rhetori")return(
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -3674,7 +3730,7 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
         <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Apprendre</h2><p style={{color:T.muted,fontSize:11}}>Rhétorique · Diplomatie · Géopolitique</p></div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
-        {([{id:"discours",icon:"send",label:"Discours",desc:"Grands discours historiques analysés",color:"#2B78F5"},{id:"rhetori",icon:"award",label:"Rhétorique",desc:"Techniques d'argumentation",color:"#7C3AED"},{id:"dict",icon:"info",label:"Dictionnaire",desc:"Termes diplomatiques expliqués",color:"#16A34A"},{id:"fiches",icon:"check",label:"Fiches de révision",desc:"ONU · UE · OTAN · Géopolitique",color:"#D97706"}] as const).map(s=>(
+        {([{id:"discours",icon:"send",label:"Discours",desc:"Grands discours historiques analysés",color:"#2B78F5"},{id:"rhetori",icon:"award",label:"Rhétorique",desc:"Techniques d'argumentation",color:"#7C3AED"},{id:"dict",icon:"info",label:"Dictionnaire",desc:"Termes diplomatiques expliqués",color:"#16A34A"},{id:"fiches",icon:"check",label:"Fiches de révision",desc:"ONU · UE · OTAN · Géopolitique",color:"#D97706"},{id:"sagesse",icon:"star",label:"Citations & Sagesse",desc:"Proverbes · Philosophes · Auteurs · Bible",color:"#E03535"}] as const).map(s=>(
           <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1.5px solid ${s.color}30`,background:`${s.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
             onMouseEnter={e=>e.currentTarget.style.background=`${s.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${s.color}08`}>
             <div style={{width:52,height:52,borderRadius:14,background:`${s.color}20`,border:`1px solid ${s.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={s.color}/></div>
