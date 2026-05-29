@@ -581,6 +581,64 @@ const CONVOS = [
   {id:12,name:"Sciences Po Bordeaux",last:"Inscription ouverte — simulation Conseil de sécurité",time:"Mer",unread:6,init:"SB"},
 ];
 
+// ── WISDOM STORIES ────────────────────────────────────────────
+type WisdomEntry = {id:string;name:string;init:string;role:string;color:string;location?:string;story:{type:string;quote?:string;attribution?:string;caption?:string;bg:string;imgUrl?:string}};
+const WISDOM_STORIES: WisdomEntry[] = [
+  // PROVERBES
+  {id:"ws1",name:"Proverbe · Africain",init:"P1",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"Si tu veux aller vite, marche seul. Si tu veux aller loin, marche ensemble.",attribution:"Proverbe africain",bg:"linear-gradient(135deg,#D97706,#16A34A)",imgUrl:"https://picsum.photos/seed/proverbe1/430/760"}},
+  {id:"ws2",name:"Proverbe · Chinois",init:"P2",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"L'homme qui déplace des montagnes commence par emporter de petites pierres.",attribution:"Proverbe chinois",bg:"linear-gradient(135deg,#E03535,#D97706)",imgUrl:"https://picsum.photos/seed/proverbe2/430/760"}},
+  {id:"ws3",name:"Proverbe · Chinois",init:"P3",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"Mieux vaut allumer une bougie que maudire l'obscurité.",attribution:"Proverbe chinois",bg:"linear-gradient(135deg,#2B78F5,#7C3AED)",imgUrl:"https://picsum.photos/seed/proverbe3/430/760"}},
+  {id:"ws4",name:"Proverbe · Africain",init:"P4",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"Ce que l'on fait pour les autres demeure. Ce que l'on fait pour soi disparaît.",attribution:"Proverbe africain",bg:"linear-gradient(135deg,#16A34A,#D97706)",imgUrl:"https://picsum.photos/seed/proverbe4/430/760"}},
+  {id:"ws5",name:"Proverbe · Latin",init:"P5",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"Il n'y a pas de vent favorable pour celui qui ne sait pas où il va.",attribution:"Sénèque",bg:"linear-gradient(135deg,#7C3AED,#2B78F5)",imgUrl:"https://picsum.photos/seed/proverbe5/430/760"}},
+  {id:"ws6",name:"Proverbe · Japonais",init:"P6",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"Les mots qu'on ne dit pas sont les fleurs du silence.",attribution:"Proverbe japonais",bg:"linear-gradient(135deg,#16A34A,#7C3AED)",imgUrl:"https://picsum.photos/seed/proverbe6/430/760"}},
+  {id:"ws7",name:"Proverbe · Universel",init:"P7",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"Ne juge pas chaque jour à la récolte que tu fais, mais aux graines que tu sèmes.",attribution:"Robert Louis Stevenson",bg:"linear-gradient(135deg,#2B78F5,#16A34A)",imgUrl:"https://picsum.photos/seed/proverbe7/430/760"}},
+  {id:"ws8",name:"Proverbe · Africain",init:"P8",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"L'eau qui dort est plus dangereuse que l'eau qui court.",attribution:"Proverbe africain",bg:"linear-gradient(135deg,#0891B2,#16A34A)",imgUrl:"https://picsum.photos/seed/proverbe8/430/760"}},
+  {id:"ws9",name:"Proverbe · Taoïste",init:"P9",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"Un voyage de mille lieues commence toujours par un seul pas.",attribution:"Lao Tseu",bg:"linear-gradient(135deg,#7C3AED,#E03535)",imgUrl:"https://picsum.photos/seed/proverbe9/430/760"}},
+  {id:"ws10",name:"Proverbe · Africain",init:"P10",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"L'éducation est l'arme la plus puissante que vous puissiez utiliser pour changer le monde.",attribution:"Nelson Mandela",bg:"linear-gradient(135deg,#16A34A,#2B78F5)",imgUrl:"https://picsum.photos/seed/proverbe10/430/760"}},
+  {id:"ws11",name:"Proverbe · Biblique",init:"P11",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"Educa un enfant dans la voie qu'il doit suivre, et quand il sera vieux, il ne s'en détournera pas.",attribution:"Proverbes 22:6",bg:"linear-gradient(135deg,#D97706,#7C3AED)",imgUrl:"https://picsum.photos/seed/proverbe11/430/760"}},
+  {id:"ws12",name:"Proverbe · Universel",init:"P12",role:"Sagesse ancestrale",color:"#D97706",story:{type:"proverbe",quote:"La chute n'est pas un échec. L'échec, c'est de rester là où on est tombé.",attribution:"Proverbe",bg:"linear-gradient(135deg,#E03535,#2B78F5)",imgUrl:"https://picsum.photos/seed/proverbe12/430/760"}},
+  // PHILOSOPHES
+  {id:"ws13",name:"Socrate",init:"So",role:"Philosophe · 470–399 av. J.-C.",color:"#7C3AED",story:{type:"philosophe",quote:"Je sais que je ne sais rien.",attribution:"Socrate",bg:"linear-gradient(135deg,#7C3AED,#2B78F5)",imgUrl:"https://picsum.photos/seed/philo1/430/760"}},
+  {id:"ws14",name:"Aristote",init:"Ar",role:"Philosophe · 384–322 av. J.-C.",color:"#7C3AED",story:{type:"philosophe",quote:"L'excellence n'est pas un acte, c'est une habitude.",attribution:"Aristote",bg:"linear-gradient(135deg,#7C3AED,#16A34A)",imgUrl:"https://picsum.photos/seed/philo2/430/760"}},
+  {id:"ws15",name:"Platon",init:"Pl",role:"Philosophe · 428–348 av. J.-C.",color:"#7C3AED",story:{type:"philosophe",quote:"La nécessité est la mère de l'invention.",attribution:"Platon",bg:"linear-gradient(135deg,#2B78F5,#7C3AED)",imgUrl:"https://picsum.photos/seed/philo3/430/760"}},
+  {id:"ws16",name:"Descartes",init:"De",role:"Philosophe · 1596–1650",color:"#7C3AED",story:{type:"philosophe",quote:"Je pense, donc je suis.",attribution:"Descartes",bg:"linear-gradient(135deg,#7C3AED,#E03535)",imgUrl:"https://picsum.photos/seed/philo4/430/760"}},
+  {id:"ws17",name:"Voltaire",init:"Vo",role:"Philosophe · 1694–1778",color:"#7C3AED",story:{type:"philosophe",quote:"Il faut cultiver notre jardin.",attribution:"Voltaire",bg:"linear-gradient(135deg,#D97706,#7C3AED)",imgUrl:"https://picsum.photos/seed/philo5/430/760"}},
+  {id:"ws18",name:"Nietzsche",init:"Ni",role:"Philosophe · 1844–1900",color:"#7C3AED",story:{type:"philosophe",quote:"Ce qui ne me tue pas me rend plus fort.",attribution:"Nietzsche",bg:"linear-gradient(135deg,#E03535,#7C3AED)",imgUrl:"https://picsum.photos/seed/philo6/430/760"}},
+  {id:"ws19",name:"Rousseau",init:"Ro",role:"Philosophe · 1712–1778",color:"#7C3AED",story:{type:"philosophe",quote:"L'homme est né libre, et partout il est dans les fers.",attribution:"Rousseau",bg:"linear-gradient(135deg,#7C3AED,#D97706)",imgUrl:"https://picsum.photos/seed/philo7/430/760"}},
+  {id:"ws20",name:"Kant",init:"Ka",role:"Philosophe · 1724–1804",color:"#7C3AED",story:{type:"philosophe",quote:"Aie le courage de te servir de ta propre intelligence.",attribution:"Kant",bg:"linear-gradient(135deg,#2B78F5,#7C3AED)",imgUrl:"https://picsum.photos/seed/philo8/430/760"}},
+  {id:"ws21",name:"Sartre",init:"Sa",role:"Philosophe · 1905–1980",color:"#7C3AED",story:{type:"philosophe",quote:"L'existence précède l'essence.",attribution:"Sartre",bg:"linear-gradient(135deg,#7C3AED,#16A34A)",imgUrl:"https://picsum.photos/seed/philo9/430/760"}},
+  {id:"ws22",name:"Simone de Beauvoir",init:"SB",role:"Philosophe · 1908–1986",color:"#7C3AED",story:{type:"philosophe",quote:"On ne naît pas femme, on le devient.",attribution:"Simone de Beauvoir",bg:"linear-gradient(135deg,#E03535,#7C3AED)",imgUrl:"https://picsum.photos/seed/philo10/430/760"}},
+  {id:"ws23",name:"Albert Camus",init:"AC",role:"Philosophe · 1913–1960",color:"#7C3AED",story:{type:"philosophe",quote:"Au milieu de l'hiver, j'ai découvert en moi un invincible été.",attribution:"Albert Camus",bg:"linear-gradient(135deg,#2B78F5,#16A34A)",imgUrl:"https://picsum.photos/seed/philo11/430/760"}},
+  {id:"ws24",name:"Hannah Arendt",init:"HA",role:"Philosophe · 1906–1975",color:"#7C3AED",story:{type:"philosophe",quote:"La tyrannie est la seule forme de gouvernement qui ne puisse se maintenir que par la terreur.",attribution:"Hannah Arendt",bg:"linear-gradient(135deg,#7C3AED,#E03535)",imgUrl:"https://picsum.photos/seed/philo12/430/760"}},
+  // AUTEURS
+  {id:"ws25",name:"Victor Hugo",init:"VH",role:"Auteur · Les Misérables",color:"#2B78F5",story:{type:"auteur",quote:"Vous qui souffrez parce que vous aimez, aimez encore davantage. Mourir d'amour, c'est vivre par lui.",attribution:"Victor Hugo",bg:"linear-gradient(135deg,#2B78F5,#7C3AED)",imgUrl:"https://picsum.photos/seed/auteur1/430/760"}},
+  {id:"ws26",name:"Marcel Proust",init:"MP",role:"Auteur · À la recherche du temps perdu",color:"#2B78F5",story:{type:"auteur",quote:"Le vrai voyage de découverte ne consiste pas à chercher de nouveaux paysages, mais à avoir de nouveaux yeux.",attribution:"Marcel Proust",bg:"linear-gradient(135deg,#7C3AED,#2B78F5)",imgUrl:"https://picsum.photos/seed/auteur2/430/760"}},
+  {id:"ws27",name:"Aimé Césaire",init:"AiC",role:"Auteur · Cahier d'un retour au pays natal",color:"#2B78F5",story:{type:"auteur",quote:"Ma bouche sera la bouche des malheurs qui n'ont point de bouche, ma voix, la liberté de celles qui s'affaissent au cachot du désespoir.",attribution:"Aimé Césaire",bg:"linear-gradient(135deg,#E03535,#2B78F5)",imgUrl:"https://picsum.photos/seed/auteur3/430/760"}},
+  {id:"ws28",name:"Simone de Beauvoir",init:"SdB",role:"Auteur · Le Deuxième Sexe",color:"#2B78F5",story:{type:"auteur",quote:"Toute oppression crée un état de guerre.",attribution:"Simone de Beauvoir",bg:"linear-gradient(135deg,#E03535,#16A34A)",imgUrl:"https://picsum.photos/seed/auteur4/430/760"}},
+  {id:"ws29",name:"Montaigne",init:"Mo",role:"Auteur · Les Essais",color:"#2B78F5",story:{type:"auteur",quote:"Chaque homme porte la forme entière de l'humaine condition.",attribution:"Montaigne",bg:"linear-gradient(135deg,#D97706,#2B78F5)",imgUrl:"https://picsum.photos/seed/auteur5/430/760"}},
+  {id:"ws30",name:"Dostoïevski",init:"Do",role:"Auteur · L'Idiot",color:"#2B78F5",story:{type:"auteur",quote:"Aimer quelqu'un, c'est le voir tel que Dieu l'a voulu.",attribution:"Dostoïevski",bg:"linear-gradient(135deg,#2B78F5,#D97706)",imgUrl:"https://picsum.photos/seed/auteur6/430/760"}},
+  {id:"ws31",name:"Albert Camus",init:"AlC",role:"Auteur · L'Étranger",color:"#2B78F5",story:{type:"auteur",quote:"Il faut imaginer Sisyphe heureux.",attribution:"Albert Camus",bg:"linear-gradient(135deg,#16A34A,#2B78F5)",imgUrl:"https://picsum.photos/seed/auteur7/430/760"}},
+  {id:"ws32",name:"Frantz Fanon",init:"FF",role:"Auteur · Les Damnés de la Terre",color:"#2B78F5",story:{type:"auteur",quote:"Chaque génération doit, dans une relative opacité, découvrir sa mission, la remplir ou la trahir.",attribution:"Frantz Fanon",bg:"linear-gradient(135deg,#E03535,#D97706)",imgUrl:"https://picsum.photos/seed/auteur8/430/760"}},
+  {id:"ws33",name:"Léopold Sédar Senghor",init:"LS",role:"Auteur · Négritude",color:"#2B78F5",story:{type:"auteur",quote:"La négritude, c'est la simple reconnaissance du fait d'être noir, et l'acceptation de ce destin.",attribution:"Léopold Sédar Senghor",bg:"linear-gradient(135deg,#16A34A,#7C3AED)",imgUrl:"https://picsum.photos/seed/auteur9/430/760"}},
+  {id:"ws34",name:"Antoine de Saint-Exupéry",init:"ASE",role:"Auteur · Le Petit Prince",color:"#2B78F5",story:{type:"auteur",quote:"L'essentiel est invisible pour les yeux.",attribution:"Antoine de Saint-Exupéry",bg:"linear-gradient(135deg,#D97706,#E03535)",imgUrl:"https://picsum.photos/seed/auteur10/430/760"}},
+  {id:"ws35",name:"George Orwell",init:"GO",role:"Auteur · 1984",color:"#2B78F5",story:{type:"auteur",quote:"La guerre, c'est la paix. La liberté, c'est l'esclavage. L'ignorance, c'est la force.",attribution:"George Orwell",bg:"linear-gradient(135deg,#E03535,#16A34A)",imgUrl:"https://picsum.photos/seed/auteur11/430/760"}},
+  {id:"ws36",name:"Voltaire",init:"VoC",role:"Auteur · Candide",color:"#2B78F5",story:{type:"auteur",quote:"Il faut cultiver notre jardin.",attribution:"Voltaire",bg:"linear-gradient(135deg,#D97706,#16A34A)",imgUrl:"https://picsum.photos/seed/auteur12/430/760"}},
+  // BIBLE
+  {id:"ws37",name:"La Bible · Psaumes",init:"Ps",role:"Paroles sacrées · Psaumes 23:1",color:"#D97706",story:{type:"bible",quote:"L'Éternel est mon berger : je ne manquerai de rien.",attribution:"Psaumes 23:1",bg:"linear-gradient(135deg,#D97706,#7C3AED)",imgUrl:"https://picsum.photos/seed/bible1/430/760"}},
+  {id:"ws38",name:"La Bible · Jean",init:"Jn",role:"Paroles sacrées · Jean 3:16",color:"#D97706",story:{type:"bible",quote:"Car Dieu a tant aimé le monde qu'il a donné son Fils unique, afin que quiconque croit en lui ne périsse point, mais qu'il ait la vie éternelle.",attribution:"Jean 3:16",bg:"linear-gradient(135deg,#7C3AED,#D97706)",imgUrl:"https://picsum.photos/seed/bible2/430/760"}},
+  {id:"ws39",name:"La Bible · Matthieu",init:"Mt",role:"Paroles sacrées · Matthieu 5:9",color:"#D97706",story:{type:"bible",quote:"Heureux les artisans de paix, car ils seront appelés fils de Dieu.",attribution:"Matthieu 5:9",bg:"linear-gradient(135deg,#16A34A,#D97706)",imgUrl:"https://picsum.photos/seed/bible3/430/760"}},
+  {id:"ws40",name:"La Bible · Proverbes",init:"Pv",role:"Paroles sacrées · Proverbes 3:5",color:"#D97706",story:{type:"bible",quote:"Confie-toi en l'Éternel de tout ton cœur, et ne t'appuie pas sur ta propre sagesse.",attribution:"Proverbes 3:5",bg:"linear-gradient(135deg,#D97706,#2B78F5)",imgUrl:"https://picsum.photos/seed/bible4/430/760"}},
+  {id:"ws41",name:"La Bible · Romains",init:"Rm",role:"Paroles sacrées · Romains 8:28",color:"#D97706",story:{type:"bible",quote:"Nous savons, d'ailleurs, que toutes choses concourent au bien de ceux qui aiment Dieu.",attribution:"Romains 8:28",bg:"linear-gradient(135deg,#2B78F5,#D97706)",imgUrl:"https://picsum.photos/seed/bible5/430/760"}},
+  {id:"ws42",name:"La Bible · 1 Corinthiens",init:"1Co",role:"Paroles sacrées · 1 Corinthiens 13:4",color:"#D97706",story:{type:"bible",quote:"L'amour est patient, l'amour est plein de bonté ; l'amour n'est point envieux ; l'amour ne se vante point, il ne s'enfle point d'orgueil.",attribution:"1 Corinthiens 13:4",bg:"linear-gradient(135deg,#E03535,#D97706)",imgUrl:"https://picsum.photos/seed/bible6/430/760"}},
+  {id:"ws43",name:"La Bible · Philippiens",init:"Ph",role:"Paroles sacrées · Philippiens 4:13",color:"#D97706",story:{type:"bible",quote:"Je puis tout par celui qui me fortifie.",attribution:"Philippiens 4:13",bg:"linear-gradient(135deg,#D97706,#16A34A)",imgUrl:"https://picsum.photos/seed/bible7/430/760"}},
+  {id:"ws44",name:"La Bible · Jérémie",init:"Jr",role:"Paroles sacrées · Jérémie 29:11",color:"#D97706",story:{type:"bible",quote:"Car je connais les projets que j'ai formés sur vous, dit l'Éternel, projets de paix et non de malheur, afin de vous donner un avenir et une espérance.",attribution:"Jérémie 29:11",bg:"linear-gradient(135deg,#16A34A,#D97706)",imgUrl:"https://picsum.photos/seed/bible8/430/760"}},
+  {id:"ws45",name:"La Bible · Ésaïe",init:"És",role:"Paroles sacrées · Ésaïe 40:31",color:"#D97706",story:{type:"bible",quote:"Mais ceux qui se confient en l'Éternel renouvellent leurs forces. Ils prennent le vol comme les aigles.",attribution:"Ésaïe 40:31",bg:"linear-gradient(135deg,#2B78F5,#16A34A)",imgUrl:"https://picsum.photos/seed/bible9/430/760"}},
+  {id:"ws46",name:"La Bible · Psaumes",init:"Ps2",role:"Paroles sacrées · Psaumes 46:2",color:"#D97706",story:{type:"bible",quote:"Dieu est notre refuge et notre force, un secours qui ne manque jamais dans la détresse.",attribution:"Psaumes 46:2",bg:"linear-gradient(135deg,#7C3AED,#16A34A)",imgUrl:"https://picsum.photos/seed/bible10/430/760"}},
+  {id:"ws47",name:"La Bible · Matthieu",init:"Mt2",role:"Paroles sacrées · Matthieu 6:33",color:"#D97706",story:{type:"bible",quote:"Cherchez premièrement le royaume et la justice de Dieu ; et toutes ces choses vous seront données par-dessus.",attribution:"Matthieu 6:33",bg:"linear-gradient(135deg,#D97706,#E03535)",imgUrl:"https://picsum.photos/seed/bible11/430/760"}},
+  {id:"ws48",name:"La Bible · Galates",init:"Ga",role:"Paroles sacrées · Galates 6:9",color:"#D97706",story:{type:"bible",quote:"Ne nous lassons pas de faire le bien ; car nous moissonnerons au temps convenable, si nous ne nous relâchons pas.",attribution:"Galates 6:9",bg:"linear-gradient(135deg,#16A34A,#2B78F5)",imgUrl:"https://picsum.photos/seed/bible12/430/760"}},
+  {id:"ws49",name:"La Bible · Deutéronome",init:"Dt",role:"Paroles sacrées · Deutéronome 31:6",color:"#D97706",story:{type:"bible",quote:"Fortifiez-vous et ayez du courage ! Ne craignez point et ne soyez point effrayés devant eux ; car l'Éternel, ton Dieu, marchera lui-même avec toi.",attribution:"Deutéronome 31:6",bg:"linear-gradient(135deg,#D97706,#7C3AED)",imgUrl:"https://picsum.photos/seed/bible13/430/760"}},
+  {id:"ws50",name:"La Bible · Josué",init:"Jo",role:"Paroles sacrées · Josué 1:9",color:"#D97706",story:{type:"bible",quote:"Je t'ordonne d'être ferme et courageux. Ne t'effraie point et ne t'épouvante point, car l'Éternel, ton Dieu, est avec toi dans tout ce que tu entreprendras.",attribution:"Josué 1:9",bg:"linear-gradient(135deg,#7C3AED,#16A34A)",imgUrl:"https://picsum.photos/seed/bible14/430/760"}},
+];
 // ── DEMO PROFILES (30 fake users for prototype) ──────────────
 const DEMO_PROFILES = [
   {id:"dp1",name:"Amira Konaté",init:"AK",role:"Doctorante en droit international",location:"Paris",verified:true,color:"#2B78F5",followers:1420,bio:"Spécialiste droit humanitaire · CIJ · ONU",story:{type:"photo",caption:"À La Haye pour la présentation de ma thèse sur les avis consultatifs de la CIJ 🏛️",bg:"linear-gradient(135deg,#2B78F5,#7C3AED)"}},
@@ -614,6 +672,7 @@ const DEMO_PROFILES = [
   {id:"dp29",name:"Cédric Martin",init:"CM",role:"Analyste renseignement",location:"Paris",verified:true,color:"#D97706",followers:5100,bio:"Ex-DGSE · Géostratégie · Renseignement ouvert"},
   {id:"dp30",name:"Diana Pham",init:"DP",role:"Avocate droit international pénal",location:"Genève",verified:true,color:"#E03535",followers:2400,bio:"CPI · Crimes de guerre · Droit humanitaire",story:{type:"video",caption:"Retour sur mon plaidoyer à la CPI — pourquoi ce procès est historique ⚖️",bg:"linear-gradient(135deg,#E03535,#16A34A)"}},
 ];
+const ALL_STORIES = [...DEMO_PROFILES.filter(p=>(p as any).story), ...WISDOM_STORIES] as any[];
 
 // ── DEMO POSTS (fake articles from demo profiles) ─────────────
 const now2 = Date.now();
@@ -1560,7 +1619,10 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
   const [search,setSearch] = useState("");
   const [composeSrc,setComposeSrc] = useState("");
   const [verifying,setVerifying] = useState(false);
-  const [selectedStory,setSelectedStory] = useState<typeof DEMO_PROFILES[0]|null>(null);
+  const [storyIdx,setStoryIdx] = useState<number|null>(null);
+  const [storyProgress,setStoryProgress] = useState(0);
+  const storyTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const storyProgressRef = useRef<ReturnType<typeof setInterval>|null>(null);
   type UserPost = {id:number;text:string;time:string;src:string;verif:{label:string;color:string;comment:string}|null};
   const [userPosts,setUserPosts] = useState<UserPost[]>(()=>{
     if(typeof window==="undefined") return [];
@@ -1571,6 +1633,22 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
     if(typeof window==="undefined") return [];
     try{return JSON.parse(localStorage.getItem("nexus_official_posts")||"[]");}catch{return [];}
   });
+
+  useEffect(()=>{
+    if(storyProgressRef.current) clearInterval(storyProgressRef.current);
+    if(storyTimerRef.current) clearTimeout(storyTimerRef.current);
+    if(storyIdx===null){setStoryProgress(0);return;}
+    setStoryProgress(0);
+    storyProgressRef.current = setInterval(()=>setStoryProgress(p=>Math.min(p+1,100)),55);
+    storyTimerRef.current = setTimeout(()=>{
+      setStoryIdx(i=>i!==null&&i<ALL_STORIES.length-1?i+1:null);
+    },5500);
+    return()=>{
+      if(storyProgressRef.current) clearInterval(storyProgressRef.current);
+      if(storyTimerRef.current) clearTimeout(storyTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[storyIdx]);
 
   const refresh = async(withGemini=false)=>{
     setLiveLoading(true);
@@ -1706,75 +1784,127 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
         </div>
       </div>
       {/* Story viewer modal */}
-      {selectedStory&&(
-        <div onClick={()=>setSelectedStory(null)} style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,.92)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"fadeIn .2s"}}>
-          <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:430,height:"100%",maxHeight:"100vh",display:"flex",flexDirection:"column",position:"relative"}}>
-            {/* Story background */}
-            <div style={{flex:1,background:(selectedStory as any).story?.bg||`linear-gradient(135deg,${selectedStory.color},#7C3AED)`,display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:24,position:"relative"}}>
+      {storyIdx!==null&&(()=>{
+        const s = ALL_STORIES[storyIdx] as any;
+        const st = s.story;
+        const isWisdom = !!st.quote;
+        const hasPrev = storyIdx>0;
+        const hasNext = storyIdx<ALL_STORIES.length-1;
+        const goNext=()=>{if(storyProgressRef.current)clearInterval(storyProgressRef.current);if(storyTimerRef.current)clearTimeout(storyTimerRef.current);if(hasNext)setStoryIdx(storyIdx+1);else setStoryIdx(null);};
+        const goPrev=()=>{if(storyProgressRef.current)clearInterval(storyProgressRef.current);if(storyTimerRef.current)clearTimeout(storyTimerRef.current);if(hasPrev)setStoryIdx(storyIdx-1);};
+        return(
+          <div style={{position:"fixed",inset:0,zIndex:500,background:"#000",display:"flex",alignItems:"center",justifyContent:"center",animation:"fadeIn .15s"}}>
+            <div style={{width:"100%",maxWidth:430,height:"100%",position:"relative",overflow:"hidden"}}>
+              {/* Real image background */}
+              {st.imgUrl&&<img src={st.imgUrl} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:.45}} onError={e=>{(e.target as HTMLImageElement).style.display="none";}}/>}
+              {/* Gradient overlay */}
+              <div style={{position:"absolute",inset:0,background:st.bg||`linear-gradient(135deg,${s.color||"#2B78F5"},#7C3AED)`}}/>
+              <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 40%,transparent 50%,rgba(0,0,0,.7) 100%)"}}/>
               {/* Progress bar */}
-              <div style={{position:"absolute",top:16,left:16,right:16,height:3,background:"rgba(255,255,255,.3)",borderRadius:2}}>
-                <div style={{height:"100%",width:"70%",background:"rgba(255,255,255,.9)",borderRadius:2}}/>
+              <div style={{position:"absolute",top:16,left:12,right:12,height:3,background:"rgba(255,255,255,.3)",borderRadius:2}}>
+                <div style={{height:"100%",width:`${storyProgress}%`,background:"rgba(255,255,255,.95)",borderRadius:2,transition:"width .05s linear"}}/>
               </div>
               {/* Header */}
-              <div style={{position:"absolute",top:28,left:16,right:40,display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:36,height:36,borderRadius:"50%",background:"rgba(255,255,255,.25)",border:"2px solid rgba(255,255,255,.6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff"}}>
-                  {selectedStory.init.slice(0,2)}
+              <div style={{position:"absolute",top:28,left:16,right:48,display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:38,height:38,borderRadius:"50%",background:"rgba(255,255,255,.2)",border:"2px solid rgba(255,255,255,.6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",flexShrink:0}}>
+                  {s.init?.slice(0,2)||"N"}
                 </div>
                 <div>
-                  <p style={{color:"#fff",fontWeight:700,fontSize:13}}>{selectedStory.name}</p>
-                  <p style={{color:"rgba(255,255,255,.7)",fontSize:10}}>{selectedStory.role}</p>
+                  <p style={{color:"#fff",fontWeight:700,fontSize:13,lineHeight:1.2}}>{s.name}</p>
+                  <p style={{color:"rgba(255,255,255,.7)",fontSize:10,lineHeight:1.2}}>{s.role}</p>
                 </div>
-                {(selectedStory as any).story?.type==="video"&&<span style={{marginLeft:"auto",background:"rgba(255,255,255,.2)",color:"#fff",fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>▶ VIDÉO</span>}
-                {(selectedStory as any).story?.type==="share"&&<span style={{marginLeft:"auto",background:"rgba(255,255,255,.2)",color:"#fff",fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>🔗 LIEN</span>}
+                {st.type==="video"&&<span style={{marginLeft:"auto",background:"rgba(255,0,0,.7)",color:"#fff",fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>▶ VIDÉO</span>}
+                {st.type==="proverbe"&&<span style={{marginLeft:"auto",background:"rgba(217,119,6,.7)",color:"#fff",fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>💬 PROVERBE</span>}
+                {st.type==="philosophe"&&<span style={{marginLeft:"auto",background:"rgba(124,58,237,.7)",color:"#fff",fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>🏛️ PHILOSOPHIE</span>}
+                {st.type==="auteur"&&<span style={{marginLeft:"auto",background:"rgba(43,120,245,.7)",color:"#fff",fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>📚 LITTÉRATURE</span>}
+                {st.type==="bible"&&<span style={{marginLeft:"auto",background:"rgba(217,119,6,.85)",color:"#fff",fontSize:10,padding:"3px 8px",borderRadius:8,fontWeight:700}}>✝ BIBLE</span>}
               </div>
-              {/* Media placeholder */}
-              {(selectedStory as any).story?.type==="photo"&&(
-                <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
-                  <div style={{width:80,height:80,borderRadius:20,background:"rgba(255,255,255,.15)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
-                    <Ic n="image" s={36} c="rgba(255,255,255,.8)"/>
+              {/* Content center */}
+              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",padding:"80px 24px 160px"}}>
+                {!isWisdom&&st.type==="photo"&&(
+                  <div style={{textAlign:"center"}}>
+                    <div style={{width:80,height:80,borderRadius:20,background:"rgba(255,255,255,.15)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto"}}>
+                      <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </div>
+                    <p style={{color:"rgba(255,255,255,.55)",fontSize:11,marginTop:10}}>📸 {s.location||""}</p>
                   </div>
-                  <p style={{color:"rgba(255,255,255,.6)",fontSize:11}}>Photo · {selectedStory.location}</p>
-                </div>
-              )}
-              {(selectedStory as any).story?.type==="video"&&(
-                <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
-                  <div style={{width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,.15)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
-                    <Ic n="play" s={36} c="rgba(255,255,255,.8)"/>
+                )}
+                {!isWisdom&&st.type==="video"&&(
+                  <div style={{textAlign:"center"}}>
+                    <div style={{width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,.15)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto"}}>
+                      <svg viewBox="0 0 24 24" width="36" height="36" fill="rgba(255,255,255,.8)"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </div>
+                    <p style={{color:"rgba(255,255,255,.55)",fontSize:11,marginTop:10}}>🎬 {s.location||""}</p>
                   </div>
-                  <p style={{color:"rgba(255,255,255,.6)",fontSize:11}}>Vidéo · {selectedStory.location}</p>
-                </div>
-              )}
-              {/* Caption */}
-              <div style={{background:"rgba(0,0,0,.4)",backdropFilter:"blur(8px)",borderRadius:16,padding:"14px 16px"}}>
-                <p style={{color:"#fff",fontSize:14,lineHeight:1.5,fontWeight:500}}>{(selectedStory as any).story?.caption}</p>
-                <p style={{color:"rgba(255,255,255,.5)",fontSize:10,marginTop:6}}>{selectedStory.role} · {selectedStory.location}</p>
+                )}
+                {isWisdom&&(
+                  <div style={{textAlign:"center"}}>
+                    <p style={{color:"rgba(255,255,255,.3)",fontSize:48,lineHeight:1,marginBottom:8}}>&ldquo;</p>
+                    <p style={{color:"#fff",fontSize:16,fontWeight:600,lineHeight:1.6,textAlign:"center",textShadow:"0 2px 8px rgba(0,0,0,.5)"}}>{st.quote}</p>
+                    <p style={{color:"rgba(255,255,255,.3)",fontSize:48,lineHeight:1,marginTop:4}}>&rdquo;</p>
+                  </div>
+                )}
               </div>
+              {/* Caption / attribution box */}
+              <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"16px 20px 36px"}}>
+                <div style={{background:"rgba(0,0,0,.5)",backdropFilter:"blur(12px)",borderRadius:16,padding:"14px 16px"}}>
+                  {isWisdom?(
+                    <>
+                      <p style={{color:"rgba(255,255,255,.9)",fontSize:13,fontWeight:700,lineHeight:1.4}}>— {st.attribution}</p>
+                      <p style={{color:"rgba(255,255,255,.4)",fontSize:10,marginTop:4,textTransform:"uppercase",letterSpacing:.8}}>
+                        {st.type==="proverbe"?"Proverbe":st.type==="philosophe"?"Philosophie":st.type==="auteur"?"Littérature":st.type==="bible"?"Paroles sacrées":"Sagesse"}
+                      </p>
+                    </>
+                  ):(
+                    <>
+                      <p style={{color:"#fff",fontSize:14,lineHeight:1.5,fontWeight:500}}>{st.caption}</p>
+                      <p style={{color:"rgba(255,255,255,.45)",fontSize:10,marginTop:6}}>{s.role} · {s.location}</p>
+                    </>
+                  )}
+                </div>
+              </div>
+              {/* Tap zones */}
+              <div onClick={goPrev} style={{position:"absolute",left:0,top:56,bottom:0,width:"38%",cursor:hasPrev?"pointer":"default"}}/>
+              <div onClick={goNext} style={{position:"absolute",right:0,top:56,bottom:0,width:"62%",cursor:"pointer"}}/>
+              {/* Close button */}
+              <button onClick={()=>setStoryIdx(null)} style={{position:"absolute",top:28,right:16,width:32,height:32,borderRadius:"50%",background:"rgba(255,255,255,.2)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="#fff" strokeWidth="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
-            {/* Close button */}
-            <button onClick={()=>setSelectedStory(null)} style={{position:"absolute",top:28,right:16,width:32,height:32,borderRadius:"50%",background:"rgba(255,255,255,.2)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <Ic n="x" s={16} c="#fff"/>
-            </button>
           </div>
-        </div>
-      )}
+        );
+      })()}
       {/* Stories */}
       <div style={{padding:"10px 20px",borderBottom:`1px solid ${T.b1}`,display:"flex",gap:12,overflowX:"auto"}}>
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0}}>
           <div style={{width:52,height:52,borderRadius:"50%",background:T.blueG,border:`1.5px dashed ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="plus" s={18} c={T.blueB}/></div>
           <span style={{fontSize:10,color:T.muted,fontWeight:600}}>Ma story</span>
         </div>
-        {DEMO_PROFILES.filter(p=>(p as any).story).slice(0,18).map((p,i)=>(
-          <div key={i} onClick={()=>setSelectedStory(p)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0,cursor:"pointer"}}>
-            <div style={{width:52,height:52,borderRadius:"50%",padding:2,background:(p as any).story?.bg||`linear-gradient(135deg,${p.color},#7C3AED)`}}>
-              <div style={{width:"100%",height:"100%",borderRadius:"50%",background:T.card,border:`2px solid ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:p.color,position:"relative"}}>
-                {p.init.slice(0,2)}
-                {p.verified&&<div style={{position:"absolute",bottom:-1,right:-1,width:14,height:14,borderRadius:"50%",background:T.blueB,border:`1.5px solid ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="check" s={8} c="#fff"/></div>}
-                {(p as any).story?.type==="video"&&<div style={{position:"absolute",top:-2,right:-2,width:14,height:14,borderRadius:"50%",background:"#E03535",border:`1.5px solid ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="play" s={7} c="#fff"/></div>}
+        {ALL_STORIES.map((p,i)=>{
+          const st = (p as any).story;
+          const isWisdom = !!st.quote;
+          const icon = st.type==="proverbe"?"💬":st.type==="philosophe"?"🏛️":st.type==="auteur"?"📚":st.type==="bible"?"✝":"📖";
+          return(
+            <div key={i} onClick={()=>{setStoryIdx(i);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0,cursor:"pointer"}}>
+              <div style={{width:52,height:52,borderRadius:"50%",padding:2,background:st.bg||`linear-gradient(135deg,${(p as any).color||"#2B78F5"},#7C3AED)`}}>
+                {isWisdom?(
+                  <div style={{width:"100%",height:"100%",borderRadius:"50%",background:"rgba(0,0,0,.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>
+                    {icon}
+                  </div>
+                ):(
+                  <div style={{width:"100%",height:"100%",borderRadius:"50%",background:"#fff",border:"2px solid rgba(255,255,255,.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:(p as any).color||"#2B78F5",position:"relative"}}>
+                    {(p as any).init?.slice(0,2)||"?"}
+                    {(p as any).verified&&<div style={{position:"absolute",bottom:-1,right:-1,width:14,height:14,borderRadius:"50%",background:"#2B78F5",border:"1.5px solid #fff",display:"flex",alignItems:"center",justifyContent:"center"}}><svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg></div>}
+                    {st.type==="video"&&<div style={{position:"absolute",top:-2,right:-2,width:14,height:14,borderRadius:"50%",background:"#E03535",border:"1.5px solid #fff",display:"flex",alignItems:"center",justifyContent:"center"}}><svg viewBox="0 0 24 24" width="7" height="7" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>}
+                  </div>
+                )}
               </div>
+              <span style={{fontSize:9,color:T.textD,fontWeight:600,maxWidth:52,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
+                {(p as any).name.split(" ")[0]}
+              </span>
             </div>
-            <span style={{fontSize:9,color:T.textD,fontWeight:600,maxWidth:52,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{p.name.split(" ")[0]}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {/* Search + Filters */}
       <div style={{padding:"10px 20px 0",borderBottom:`1px solid ${T.b1}`}}>
