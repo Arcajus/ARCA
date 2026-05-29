@@ -1246,7 +1246,7 @@ function BriefingScreen({topic,T,onStart,onSkip}:{topic:string;T:Theme;onStart:(
 }
 
 // STUDIO SCREEN 
-function StudioScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
+function StudioScreen({T,onPremium,onBack}:{T:Theme;onPremium:()=>void;onBack?:()=>void}) {
  const [step,setStep] = useState<"home"|"journalist"|"level"|"topic"|"public"|"brief"|"stage">("home");
  const [journalist,setJournalist] = useState<typeof JOURNALISTS[0]|null>(null);
  const [level,setLevel] = useState<typeof LEVELS[0]|null>(null);
@@ -1264,9 +1264,12 @@ function StudioScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
 
  return(
  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16,height:"100%",overflowY:"auto",boxSizing:"border-box"}}>
- <div style={{paddingBottom:4}}>
- <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Studio Audio</p>
- <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text,lineHeight:1.1}}>Débat en direct</h1>
+ <div style={{display:"flex",alignItems:"center",gap:12,paddingBottom:4}}>
+ {onBack&&<button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0}}><Ic n="chevL" s={22} c={T.text}/></button>}
+ <div>
+ <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Studio Audio</p>
+ <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text,lineHeight:1.1}}>Débat en direct</h1>
+ </div>
  </div>
  {/* Mode selector */}
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
@@ -3993,8 +3996,8 @@ function SimulationHub({T}:{T:Theme}) {
  setView(id);
  };
 
- if(view==="studio") return <StudioScreen T={T} onPremium={()=>setShowPremiumHub(true)}/>;
- if(view==="sims") return <SimulationScreen T={T}/>;
+ if(view==="studio") return <StudioScreen T={T} onPremium={()=>setShowPremiumHub(true)} onBack={()=>setView("hub")}/>;
+ if(view==="sims") return <SimulationScreen T={T} onBack={()=>setView("hub")}/>;
  if(view==="apprendre") return <ApprendreScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
  if(view==="carriere") return <CarriereScreen T={T} onBack={()=>setView("hub")}/>;
  if(view==="sagesse") return <CitationsSagesseScreen T={T} onBack={()=>setView("hub")}/>;
@@ -4698,7 +4701,7 @@ STRUCTURE OBLIGATOIRE :
 }
 
 // SIMULATION SCREEN 
-function SimulationScreen({T}:{T:Theme}) {
+function SimulationScreen({T,onBack}:{T:Theme;onBack?:()=>void}) {
  const [mode,setMode] = useState<"home"|"un"|"trial"|"interview"|"elections"|"soutenance"|"examen"|"pitch"|"secu"|"prise"|"tutorat">("home");
  const [unRole,setUnRole] = useState<typeof UN_DEL[0]|null>(null);
  const [unTopic,setUnTopic] = useState("");
@@ -4939,9 +4942,12 @@ RÈGLES ABSOLUES :
 
  return(
  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16,height:"100%",overflowY:"auto",boxSizing:"border-box"}}>
+ <div style={{display:"flex",alignItems:"center",gap:12}}>
+ {onBack&&<button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0}}><Ic n="chevL" s={22} c={T.text}/></button>}
  <div>
- <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Simulations IA</p>
- <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text}}>Simulateur</h1>
+ <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Simulations IA</p>
+ <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>Simulateur</h1>
+ </div>
  </div>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
  {[
