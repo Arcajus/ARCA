@@ -1355,30 +1355,51 @@ function timeFromTs(ts:number):string{
   if(diff<604800000) return `${Math.floor(diff/86400000)}j`;
   return new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
 }
-const TAG_IMGS: Record<string,string> = {
-  "GÉOPOLITIQUE":"photo-1541872703-74c5e44368f9","DIPLOMATIE":"photo-1569950044272-e4ef57e0e29b",
-  "CONFLITS":"photo-1582481725274-d63bdf929a90","GUERRE":"photo-1582481725274-d63bdf929a90",
-  "UKRAINE":"photo-1582481725274-d63bdf929a90","OTAN":"photo-1541872703-74c5e44368f9",
-  "ONU":"photo-1541872703-74c5e44368f9","UNICEF":"photo-1532375810709-75b1da00537c",
-  "UNESCO":"photo-1481627834876-b7833e8f5570","OMS":"photo-1532375810709-75b1da00537c",
-  "POLITIQUE":"photo-1540910419892-4a36d2c3266c","ÉLECTIONS":"photo-1540910419892-4a36d2c3266c",
-  "PARLEMENT":"photo-1540910419892-4a36d2c3266c","ÉLYSÉE":"photo-1540910419892-4a36d2c3266c",
-  "ÉCONOMIE":"photo-1551288049-bebda4e38f71","FMI":"photo-1551288049-bebda4e38f71",
-  "MARCHÉS":"photo-1551288049-bebda4e38f71","INFLATION":"photo-1551288049-bebda4e38f71",
-  "ÉDUCATION":"photo-1523050854058-8df90110c9f1","SCIENCE":"photo-1507003211169-0a1dd7228f2d",
-  "MÉDECINE":"photo-1532375810709-75b1da00537c","ESPACE":"photo-1541697418-d4b63bda48a2",
-  "CLIMAT":"photo-1504711434969-e33886168f5c","BIODIVERSITÉ":"photo-1504711434969-e33886168f5c",
-  "ENVIRONNEMENT":"photo-1504711434969-e33886168f5c","CULTURE":"photo-1481627834876-b7833e8f5570",
-  "HISTOIRE":"photo-1481627834876-b7833e8f5570","IA":"photo-1551288049-bebda4e38f71",
-  "TECH":"photo-1551288049-bebda4e38f71","CYBER":"photo-1551288049-bebda4e38f71",
-  "IMMIGRATION":"photo-1532375810709-75b1da00537c","RÉFUGIÉS":"photo-1532375810709-75b1da00537c",
-  "DROITS":"photo-1532375810709-75b1da00537c","JUSTICE":"photo-1481627834876-b7833e8f5570",
-  "SPORT":"photo-1540910419892-4a36d2c3266c","GAZA":"photo-1582481725274-d63bdf929a90",
-  "MOYEN-ORIENT":"photo-1582481725274-d63bdf929a90","SAHEL":"photo-1504711434969-e33886168f5c",
+const TAG_IMG_POOLS: Record<string,string[]> = {
+  "GÉOPOLITIQUE":["photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1551288049-bebda4e38f71","photo-1453928582365-b6ad33cbcf64"],
+  "DIPLOMATIE":["photo-1569950044272-e4ef57e0e29b","photo-1541872703-74c5e44368f9","photo-1453928582365-b6ad33cbcf64","photo-1529107386315-e1a2ed48a620"],
+  "CONFLITS":["photo-1582481725274-d63bdf929a90","photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1453928582365-b6ad33cbcf64"],
+  "GUERRE":["photo-1582481725274-d63bdf929a90","photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1529107386315-e1a2ed48a620"],
+  "UKRAINE":["photo-1582481725274-d63bdf929a90","photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1453928582365-b6ad33cbcf64"],
+  "ONU":["photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1529107386315-e1a2ed48a620","photo-1453928582365-b6ad33cbcf64"],
+  "UNESCO":["photo-1481627834876-b7833e8f5570","photo-1523050854058-8df90110c9f1","photo-1507003211169-0a1dd7228f2d","photo-1541872703-74c5e44368f9"],
+  "UNICEF":["photo-1532375810709-75b1da00537c","photo-1523050854058-8df90110c9f1","photo-1481627834876-b7833e8f5570","photo-1569950044272-e4ef57e0e29b"],
+  "POLITIQUE":["photo-1540910419892-4a36d2c3266c","photo-1529107386315-e1a2ed48a620","photo-1541872703-74c5e44368f9","photo-1453928582365-b6ad33cbcf64"],
+  "ÉLECTIONS":["photo-1540910419892-4a36d2c3266c","photo-1529107386315-e1a2ed48a620","photo-1551288049-bebda4e38f71","photo-1569950044272-e4ef57e0e29b"],
+  "ÉCONOMIE":["photo-1551288049-bebda4e38f71","photo-1529107386315-e1a2ed48a620","photo-1453928582365-b6ad33cbcf64","photo-1540910419892-4a36d2c3266c"],
+  "ÉDUCATION":["photo-1523050854058-8df90110c9f1","photo-1481627834876-b7833e8f5570","photo-1507003211169-0a1dd7228f2d","photo-1532375810709-75b1da00537c"],
+  "SCIENCE":["photo-1507003211169-0a1dd7228f2d","photo-1523050854058-8df90110c9f1","photo-1551288049-bebda4e38f71","photo-1481627834876-b7833e8f5570"],
+  "MÉDECINE":["photo-1532375810709-75b1da00537c","photo-1507003211169-0a1dd7228f2d","photo-1523050854058-8df90110c9f1","photo-1551288049-bebda4e38f71"],
+  "ESPACE":["photo-1541697418-d4b63bda48a2","photo-1507003211169-0a1dd7228f2d","photo-1551288049-bebda4e38f71","photo-1523050854058-8df90110c9f1"],
+  "CLIMAT":["photo-1504711434969-e33886168f5c","photo-1532375810709-75b1da00537c","photo-1481627834876-b7833e8f5570","photo-1507003211169-0a1dd7228f2d"],
+  "CULTURE":["photo-1481627834876-b7833e8f5570","photo-1523050854058-8df90110c9f1","photo-1507003211169-0a1dd7228f2d","photo-1532375810709-75b1da00537c"],
+  "HISTOIRE":["photo-1481627834876-b7833e8f5570","photo-1453928582365-b6ad33cbcf64","photo-1541872703-74c5e44368f9","photo-1507003211169-0a1dd7228f2d"],
+  "IA":["photo-1551288049-bebda4e38f71","photo-1507003211169-0a1dd7228f2d","photo-1529107386315-e1a2ed48a620","photo-1523050854058-8df90110c9f1"],
+  "TECH":["photo-1551288049-bebda4e38f71","photo-1507003211169-0a1dd7228f2d","photo-1529107386315-e1a2ed48a620","photo-1541697418-d4b63bda48a2"],
+  "IMMIGRATION":["photo-1532375810709-75b1da00537c","photo-1569950044272-e4ef57e0e29b","photo-1453928582365-b6ad33cbcf64","photo-1504711434969-e33886168f5c"],
+  "GAZA":["photo-1582481725274-d63bdf929a90","photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1453928582365-b6ad33cbcf64"],
+  "SAHEL":["photo-1504711434969-e33886168f5c","photo-1532375810709-75b1da00537c","photo-1569950044272-e4ef57e0e29b","photo-1541872703-74c5e44368f9"],
+  "SPORT":["photo-1540910419892-4a36d2c3266c","photo-1529107386315-e1a2ed48a620","photo-1551288049-bebda4e38f71","photo-1453928582365-b6ad33cbcf64"],
 };
-function getFallbackImg(tag:string):string{
-  const id=TAG_IMGS[tag]||TAG_IMGS[Object.keys(TAG_IMGS).find(k=>tag.includes(k))||""]||"photo-1541872703-74c5e44368f9";
-  return `https://images.unsplash.com/${id}?w=700&q=70`;
+const FALLBACK_POOL=["photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1551288049-bebda4e38f71","photo-1481627834876-b7833e8f5570","photo-1532375810709-75b1da00537c","photo-1523050854058-8df90110c9f1","photo-1504711434969-e33886168f5c","photo-1507003211169-0a1dd7228f2d"];
+function getFallbackImg(tag:string,seed:string=""):string{
+  const pool=TAG_IMG_POOLS[tag]||TAG_IMG_POOLS[Object.keys(TAG_IMG_POOLS).find(k=>tag.includes(k))||""]||FALLBACK_POOL;
+  const hash=(seed+tag).split("").reduce((a,c)=>a+c.charCodeAt(0),0);
+  return `https://images.unsplash.com/${pool[hash%pool.length]}?w=700&q=70`;
+}
+function interleave<T extends {src:string}>(items:T[]):T[]{
+  const groups=new Map<string,T[]>();
+  for(const item of items){if(!groups.has(item.src))groups.set(item.src,[]);groups.get(item.src)!.push(item);}
+  const sources=[...groups.values()];
+  const result:T[]=[];
+  let i=0;
+  while(result.length<items.length){
+    let added=false;
+    for(let j=0;j<sources.length;j++){const s=sources[(i+j)%sources.length];if(s.length){result.push(s.shift()!);added=true;break;}}
+    if(!added)break;
+    i++;
+  }
+  return result;
 }
 
 async function fetchLiveNews(onChunk?:(articles:LiveArticle[])=>void): Promise<LiveArticle[]> {
@@ -1655,13 +1676,13 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
       )}
       {/* NEXUS Official auto-published posts */}
       <div style={{display:"flex",flexDirection:"column"}}>
-      {nexusPosts.filter(p=>{
+      {interleave(nexusPosts.filter(p=>{
         const searchMatch = !search || p.title.toLowerCase().includes(search.toLowerCase())||p.src.toLowerCase().includes(search.toLowerCase());
         const FILTER_MAP: Record<string,string[]> = {"Géopolitique":["GÉOPOLITIQUE","GUERRE","DIPLOMATIE","INTERNATIONAL"],"Diplomatie":["DIPLOMATIE"],"Histoire":["HISTOIRE"],"Droit":["DROIT","IMMIGRATION"],"Élections":["ÉLECTIONS","POLITIQUE"],"Europe":["EUROPE","DIPLOMATIE"],"Afrique":["AFRIQUE"]};
         const kws = filter!=="Tout"?FILTER_MAP[filter]||[]:null;
         const tagMatch = !kws || kws.some(k=>p.tag.toUpperCase().includes(k)||p.title.toUpperCase().includes(k));
         return searchMatch && tagMatch;
-      }).slice(0,100).map(p=>(
+      })).slice(0,100).map(p=>(
         <div key={p.id} style={{background:T.card,borderBottom:`1px solid ${T.b1}`,animation:"fadeUp .4s ease"}}>
           <div style={{padding:"14px 16px 10px",display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:40,height:40,borderRadius:"50%",background:"#000",border:`2px solid ${T.blueB}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:"#fff",flexShrink:0}}>N</div>
@@ -1699,7 +1720,7 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
             );
             return(
               <div style={{width:"100%",height:200,overflow:"hidden",background:T.bg2}}>
-                <img src={p.imgUrl||getFallbackImg(p.tag)} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).src=getFallbackImg(p.tag);}}/>
+                <img src={p.imgUrl||getFallbackImg(p.tag,p.id)} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{(e.target as HTMLImageElement).src=getFallbackImg(p.tag,p.id);}}/>
               </div>
             );
           })()}
