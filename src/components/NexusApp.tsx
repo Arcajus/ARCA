@@ -3584,7 +3584,7 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
  {RHETORIC_DATA.map(r=>(
  <button key={r.id} onClick={()=>{if((r as any).premium){onPremium();}else{setSelLesson(r);}}} style={{padding:16,borderRadius:14,border:`1px solid ${(r as any).premium?T.amber+"40":T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",gap:14,alignItems:"center",opacity:(r as any).premium?.9:1}}>
- <div style={{width:44,height:44,borderRadius:12,background:`${T.blueB}15`,border:`1px solid ${T.blueB}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={r.icon} s={22} c={T.blueB}/></div>
+ <div style={{width:44,height:44,borderRadius:12,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={r.icon} s={22} c={T.blueB}/></div>
  <div style={{flex:1}}>
  <p style={{color:T.text,fontWeight:800,fontSize:15}}>{r.title}</p>
  <p style={{color:T.textD,fontSize:12,marginTop:2}}>{r.desc}</p>
@@ -3638,8 +3638,8 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  {!selFiche?(
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
  {FICHES_DATA.map(f=>(
- <button key={f.id} onClick={()=>{if((f as any).premium){onPremium();}else{setSelFiche(f);}}} style={{padding:16,borderRadius:14,border:`1.5px solid ${(f as any).premium?T.amber+"40":f.color+"30"}`,background:`${f.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,opacity:(f as any).premium?.9:1}}>
- <div style={{width:44,height:44,borderRadius:12,background:`${f.color}20`,border:`1px solid ${f.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={f.icon} s={22} c={f.color}/></div>
+ <button key={f.id} onClick={()=>{if((f as any).premium){onPremium();}else{setSelFiche(f);}}} style={{padding:16,borderRadius:14,border:`1px solid ${(f as any).premium?T.amber+"40":T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,opacity:(f as any).premium?.9:1}}>
+ <div style={{width:44,height:44,borderRadius:12,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={f.icon} s={22} c={f.color}/></div>
  <div style={{flex:1}}>
  <p style={{color:T.text,fontWeight:800,fontSize:15}}>{f.title}</p>
  <p style={{color:T.textD,fontSize:12,marginTop:2}}>{f.items.length} points clés</p>
@@ -3670,9 +3670,9 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  </div>
  <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
  {([{id:"discours",icon:"send",label:"Discours",desc:"Grands discours historiques analysés",color:"#2B78F5"},{id:"rhetori",icon:"award",label:"Rhétorique",desc:"Techniques d'argumentation",color:"#7C3AED"},{id:"dict",icon:"info",label:"Dictionnaire",desc:"Termes diplomatiques expliqués",color:"#16A34A"},{id:"fiches",icon:"check",label:"Fiches de révision",desc:"ONU · UE · OTAN · Géopolitique",color:"#D97706"}] as const).map(s=>(
- <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1.5px solid ${s.color}30`,background:`${s.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
- onMouseEnter={e=>e.currentTarget.style.background=`${s.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${s.color}08`}>
- <div style={{width:52,height:52,borderRadius:14,background:`${s.color}20`,border:`1px solid ${s.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={s.color}/></div>
+ <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+ onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
+ <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={s.color}/></div>
  <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{s.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{s.desc}</p></div>
  <Ic n="chevR" s={18} c={T.muted}/>
  </button>
@@ -3971,9 +3971,9 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
  </div>
  <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
  {([{id:"generateur",icon:"send",label:"Générateur de discours",desc:"Discours IA structuré sur n'importe quel sujet",color:"#2B78F5"},{id:"builder",icon:"info",label:"Builder d'arguments",desc:"Structure tes pour/contre instantanément",color:"#7C3AED"},{id:"concours",icon:"award",label:"Prépa concours",desc:"Sciences Po, ENS, Barreau, Fonction publique",color:"#D97706"}] as const).map(s=>(
- <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1.5px solid ${s.color}30`,background:`${s.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
- onMouseEnter={e=>e.currentTarget.style.background=`${s.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${s.color}08`}>
- <div style={{width:52,height:52,borderRadius:14,background:`${s.color}20`,border:`1px solid ${s.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={s.color}/></div>
+ <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+ onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
+ <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={s.color}/></div>
  <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{s.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{s.desc}</p></div>
  <Ic n="chevR" s={18} c={T.muted}/>
  </button>
@@ -4016,9 +4016,9 @@ function SimulationHub({T}:{T:Theme}) {
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase"}}>RESSOURCES</p>
  {([{id:"apprendre",icon:"info",label:"Apprendre",desc:"Discours · Rhétorique · Fiches · Dictionnaire",color:"#2B78F5"},{id:"carriere",icon:"brief",label:"Carrière & Concours",desc:"Générateur de discours · Arguments · Lettre",color:"#16A34A"},{id:"sagesse",icon:"star",label:"Citations & Sagesse",desc:"Proverbes · Philosophes · Auteurs",color:"#E03535"}] as const).map(c=>(
- <button key={c.id} onClick={()=>{haptic();setView(c.id);}} style={{padding:18,borderRadius:16,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
- onMouseEnter={e=>e.currentTarget.style.background=`${c.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${c.color}08`}>
- <div style={{width:52,height:52,borderRadius:14,background:`${c.color}20`,border:`1px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={c.icon} s={26} c={c.color}/></div>
+ <button key={c.id} onClick={()=>{haptic();setView(c.id);}} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+ onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
+ <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={c.icon} s={26} c={c.color}/></div>
  <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{c.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{c.desc}</p></div>
  <Ic n="chevR" s={18} c={T.muted}/>
  </button>
@@ -4029,9 +4029,9 @@ function SimulationHub({T}:{T:Theme}) {
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase"}}>ENTRAÎNEMENT</p>
  {([{id:"studio",icon:"mic",label:"Studio Débat",desc:"Débat audio face à un journaliste IA",color:"#7C3AED"},{id:"sims",icon:"globe",label:"Simulations",desc:"ONU, Procès, Soutenance, Commercial…",color:"#E03535"}] as const).map(c=>(
- <button key={c.id} onClick={()=>launch(c.id)} style={{padding:20,borderRadius:16,border:`1.5px solid ${c.color}30`,background:`${c.color}08`,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
- onMouseEnter={e=>e.currentTarget.style.background=`${c.color}15`} onMouseLeave={e=>e.currentTarget.style.background=`${c.color}08`}>
- <div style={{width:52,height:52,borderRadius:14,background:`${c.color}20`,border:`1px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+ <button key={c.id} onClick={()=>launch(c.id)} style={{padding:20,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
+ onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
+ <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
  <Ic n={c.icon} s={26} c={c.color}/>
  </div>
  <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{c.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{c.desc}</p></div>
@@ -4962,10 +4962,10 @@ RÈGLES ABSOLUES :
  {id:"tutorat",icon:"info",label:"Cours magistral",sub:"Enseigner un sujet",color:"#D97706"},
  ].map(sim=>(
  <button key={sim.id} onClick={()=>setMode(sim.id as typeof mode)} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,cursor:"pointer",textAlign:"left",transition:"all .2s",display:"flex",flexDirection:"column",gap:10}}
- onMouseEnter={e=>(e.currentTarget.style.border=`1px solid ${sim.color}40`)}
- onMouseLeave={e=>(e.currentTarget.style.border=`1px solid ${T.b1}`)}>
- <div style={{width:40,height:40,borderRadius:10,background:`${sim.color}15`,display:"flex",alignItems:"center",justifyContent:"center"}}>
- <Ic n={sim.icon} s={20} c={sim.color}/>
+ onMouseEnter={e=>(e.currentTarget.style.background=T.bg2)}
+ onMouseLeave={e=>(e.currentTarget.style.background=T.card)}>
+ <div style={{width:40,height:40,borderRadius:10,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+ <Ic n={sim.icon} s={20} c={T.text}/>
  </div>
  <div>
  <p style={{color:T.text,fontWeight:700,fontSize:13}}>{sim.label}</p>
@@ -5053,7 +5053,7 @@ RÈGLES ABSOLUES :
  return(
  <div key={s} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column",gap:12}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
- <div style={{width:36,height:36,borderRadius:10,background:`${cfg.color}15`,border:`1px solid ${cfg.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={cfg.icon} s={18} c={cfg.color}/></div>
+ <div style={{width:36,height:36,borderRadius:10,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={cfg.icon} s={18} c={T.text}/></div>
  <p style={{color:T.text,fontWeight:700,fontSize:14}}>{cfg.desc}</p>
  </div>
  <button onClick={()=>setMode(s)} style={{padding:13,borderRadius:12,border:"none",background:cfg.color,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Démarrer la simulation</button>
