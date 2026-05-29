@@ -1278,7 +1278,7 @@ function StudioScreen({T,onPremium}:{T:Theme;onPremium:()=>void}) {
   }
 
   return(
-    <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
+    <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16,height:"100%",overflowY:"auto",boxSizing:"border-box"}}>
       <div style={{paddingBottom:4}}>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Studio Audio</p>
         <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text,lineHeight:1.1}}>Débat en direct</h1>
@@ -4898,7 +4898,7 @@ RÈGLES ABSOLUES :
   }
 
   return(
-    <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
+    <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16,height:"100%",overflowY:"auto",boxSizing:"border-box"}}>
       <div>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Simulations IA</p>
         <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:28,fontWeight:800,color:T.text}}>Simulateur</h1>
