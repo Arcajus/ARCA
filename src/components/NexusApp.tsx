@@ -1073,26 +1073,45 @@ function StudioScreen({T}:{T:Theme}) {
 // ── LIVE NEWS ─────────────────────────────────────────────────
 const RSS_SOURCES = [
   // Presse française
-  {name:"Le Monde",       url:"https://www.lemonde.fr/rss/une.xml",                                           tag:"LE MONDE",        tagC:"#E03535"},
-  {name:"Le Figaro",      url:"https://www.lefigaro.fr/rss/figaro_actualites.xml",                            tag:"LE FIGARO",       tagC:"#C0392B"},
-  {name:"L'Express",      url:"https://www.lexpress.fr/rss/alaune.xml",                                       tag:"L'EXPRESS",       tagC:"#E67E22"},
-  {name:"Libération",     url:"https://www.liberation.fr/arc/outboundfeeds/rss/?outputType=xml",               tag:"LIBÉRATION",      tagC:"#8E44AD"},
-  {name:"20 Minutes",     url:"https://www.20minutes.fr/feeds/rss/actu",                                      tag:"20 MINUTES",      tagC:"#2980B9"},
-  {name:"Courrier Int.",  url:"https://www.courrierinternational.com/feed/all/rss.xml",                        tag:"COURRIER INT.",   tagC:"#16A085"},
+  {name:"Le Monde",        url:"https://www.lemonde.fr/rss/une.xml",                                                                    tag:"LE MONDE",       tagC:"#E03535"},
+  {name:"Le Figaro",       url:"https://www.lefigaro.fr/rss/figaro_actualites.xml",                                                     tag:"LE FIGARO",      tagC:"#C0392B"},
+  {name:"L'Express",       url:"https://www.lexpress.fr/rss/alaune.xml",                                                                tag:"L'EXPRESS",      tagC:"#E67E22"},
+  {name:"Libération",      url:"https://www.liberation.fr/arc/outboundfeeds/rss/?outputType=xml",                                       tag:"LIBÉRATION",     tagC:"#8E44AD"},
+  {name:"20 Minutes",      url:"https://www.20minutes.fr/feeds/rss/actu",                                                               tag:"20 MINUTES",     tagC:"#2980B9"},
+  {name:"Courrier Int.",   url:"https://www.courrierinternational.com/feed/all/rss.xml",                                                 tag:"COURRIER INT.",  tagC:"#16A085"},
+  {name:"Le Point",        url:"https://www.lepoint.fr/rss.xml",                                                                        tag:"LE POINT",       tagC:"#D4AC0D"},
+  {name:"L'Obs",           url:"https://www.nouvelobs.com/rss.xml",                                                                     tag:"L'OBS",          tagC:"#A93226"},
+  {name:"Les Échos",       url:"https://www.lesechos.fr/rss/rss_une.xml",                                                               tag:"LES ÉCHOS",      tagC:"#1A5276"},
   // Médias internationaux francophones
-  {name:"France 24",      url:"https://www.france24.com/fr/rss",                                              tag:"FRANCE 24",       tagC:"#2B78F5"},
-  {name:"RFI",            url:"https://www.rfi.fr/fr/podcasts/rss",                                           tag:"RFI",             tagC:"#27AE60"},
-  {name:"BBC Afrique",    url:"https://feeds.bbci.co.uk/afrique/rss.xml",                                     tag:"BBC",             tagC:"#7C3AED"},
-  {name:"TV5 Monde",      url:"https://information.tv5monde.com/rss",                                         tag:"TV5MONDE",        tagC:"#1ABC9C"},
-  {name:"Jeune Afrique",  url:"https://www.jeuneafrique.com/feed/",                                           tag:"JEUNE AFRIQUE",   tagC:"#F39C12"},
-  {name:"Africanews",     url:"https://www.africanews.com/feed/",                                             tag:"AFRICANEWS",      tagC:"#E74C3C"},
-  {name:"DW Français",    url:"https://rss.dw.com/rdf/rss-fr-tout",                                           tag:"DW",              tagC:"#2C3E50"},
-  // Flux Google News par thème
-  {name:"Actualités FR",  url:"https://news.google.com/rss?hl=fr&gl=FR&ceid=FR:fr",                           tag:"GOOGLE NEWS",     tagC:"#3498DB"},
-  {name:"Géopolitique",   url:"https://news.google.com/rss/search?q=géopolitique&hl=fr&gl=FR&ceid=FR:fr",     tag:"GÉOPOLITIQUE",    tagC:"#D35400"},
-  {name:"Afrique",        url:"https://news.google.com/rss/search?q=afrique+actualité&hl=fr&gl=FR&ceid=FR:fr",tag:"AFRIQUE",         tagC:"#F1C40F"},
-  {name:"Technologie",    url:"https://news.google.com/rss/search?q=technologie+innovation&hl=fr&gl=FR&ceid=FR:fr",tag:"TECH",        tagC:"#1ABC9C"},
-  {name:"Diplomatie",     url:"https://news.google.com/rss/search?q=diplomatie+relations+internationales&hl=fr&gl=FR&ceid=FR:fr",tag:"DIPLOMATIE",tagC:"#9B59B6"},
+  {name:"France 24",       url:"https://www.france24.com/fr/rss",                                                                       tag:"FRANCE 24",      tagC:"#2B78F5"},
+  {name:"RFI",             url:"https://www.rfi.fr/fr/rss",                                                                             tag:"RFI",            tagC:"#27AE60"},
+  {name:"BBC Afrique",     url:"https://feeds.bbci.co.uk/afrique/rss.xml",                                                              tag:"BBC",            tagC:"#7C3AED"},
+  {name:"TV5 Monde",       url:"https://information.tv5monde.com/rss",                                                                  tag:"TV5MONDE",       tagC:"#1ABC9C"},
+  {name:"Jeune Afrique",   url:"https://www.jeuneafrique.com/feed/",                                                                    tag:"JEUNE AFRIQUE",  tagC:"#F39C12"},
+  {name:"DW Français",     url:"https://rss.dw.com/rdf/rss-fr-tout",                                                                    tag:"DW",             tagC:"#2C3E50"},
+  {name:"Euronews",        url:"https://feeds.feedburner.com/euronews/fr/home",                                                         tag:"EURONEWS",       tagC:"#0A74DA"},
+  {name:"RTBF",            url:"https://www.rtbf.be/rss/info.xml",                                                                      tag:"RTBF",           tagC:"#D35400"},
+  // Google News thématiques — France & monde
+  {name:"France Actu",     url:"https://news.google.com/rss?hl=fr&gl=FR&ceid=FR:fr",                                                    tag:"FRANCE",         tagC:"#2980B9"},
+  {name:"Politique FR",    url:"https://news.google.com/rss/search?q=politique+france&hl=fr&gl=FR&ceid=FR:fr",                          tag:"POLITIQUE",      tagC:"#C0392B"},
+  {name:"Économie FR",     url:"https://news.google.com/rss/search?q=économie+france&hl=fr&gl=FR&ceid=FR:fr",                           tag:"ÉCONOMIE",       tagC:"#1A5276"},
+  {name:"ONU",             url:"https://news.google.com/rss/search?q=ONU+nations+unies&hl=fr&gl=FR&ceid=FR:fr",                         tag:"ONU",            tagC:"#0077B5"},
+  {name:"UNICEF",          url:"https://news.google.com/rss/search?q=UNICEF+enfants+humanitaire&hl=fr&gl=FR&ceid=FR:fr",               tag:"UNICEF",         tagC:"#00AEEF"},
+  {name:"Géopolitique",    url:"https://news.google.com/rss/search?q=géopolitique+relations+internationales&hl=fr&gl=FR&ceid=FR:fr",    tag:"GÉOPOLITIQUE",   tagC:"#D35400"},
+  {name:"Diplomatie",      url:"https://news.google.com/rss/search?q=diplomatie+ambassadeur+traité&hl=fr&gl=FR&ceid=FR:fr",             tag:"DIPLOMATIE",     tagC:"#9B59B6"},
+  {name:"Conflits",        url:"https://news.google.com/rss/search?q=conflit+guerre+paix&hl=fr&gl=FR&ceid=FR:fr",                       tag:"CONFLITS",       tagC:"#E74C3C"},
+  {name:"Ukraine",         url:"https://news.google.com/rss/search?q=ukraine+russie+guerre&hl=fr&gl=FR&ceid=FR:fr",                     tag:"UKRAINE",        tagC:"#F4D03F"},
+  {name:"Moyen-Orient",    url:"https://news.google.com/rss/search?q=moyen-orient+israel+gaza&hl=fr&gl=FR&ceid=FR:fr",                  tag:"MOYEN-ORIENT",   tagC:"#E67E22"},
+  {name:"Afrique",         url:"https://news.google.com/rss/search?q=afrique+actualité+politique&hl=fr&gl=FR&ceid=FR:fr",               tag:"AFRIQUE",        tagC:"#F39C12"},
+  {name:"Asie",            url:"https://news.google.com/rss/search?q=chine+japon+inde+asie&hl=fr&gl=FR&ceid=FR:fr",                     tag:"ASIE",           tagC:"#E74C3C"},
+  {name:"Europe",          url:"https://news.google.com/rss/search?q=union+européenne+parlement&hl=fr&gl=FR&ceid=FR:fr",                tag:"EUROPE",         tagC:"#2E86C1"},
+  {name:"Amérique",        url:"https://news.google.com/rss/search?q=états-unis+amérique+latine&hl=fr&gl=FR&ceid=FR:fr",                tag:"AMÉRIQUES",      tagC:"#1ABC9C"},
+  {name:"Droits Humains",  url:"https://news.google.com/rss/search?q=droits+humains+ONG+humanitaire&hl=fr&gl=FR&ceid=FR:fr",            tag:"DROITS",         tagC:"#A93226"},
+  {name:"Climat",          url:"https://news.google.com/rss/search?q=climat+COP+réchauffement+environnement&hl=fr&gl=FR&ceid=FR:fr",    tag:"CLIMAT",         tagC:"#27AE60"},
+  {name:"Science",         url:"https://news.google.com/rss/search?q=science+recherche+découverte&hl=fr&gl=FR&ceid=FR:fr",              tag:"SCIENCE",        tagC:"#8E44AD"},
+  {name:"Histoire",        url:"https://news.google.com/rss/search?q=histoire+patrimoine+mémoire&hl=fr&gl=FR&ceid=FR:fr",               tag:"HISTOIRE",       tagC:"#784212"},
+  {name:"Société FR",      url:"https://news.google.com/rss/search?q=société+france+social&hl=fr&gl=FR&ceid=FR:fr",                     tag:"SOCIÉTÉ",        tagC:"#2C3E50"},
+  {name:"Tech & IA",       url:"https://news.google.com/rss/search?q=intelligence+artificielle+technologie&hl=fr&gl=FR&ceid=FR:fr",     tag:"TECH & IA",      tagC:"#1ABC9C"},
 ];
 type LiveArticle = {id:string;title:string;src:string;tag:string;tagC:string;time:string;imgUrl:string|null;link:string;verif?:{label:string;color:string}};
 
@@ -1121,40 +1140,45 @@ function makeTimeStr(pubStr:string):string{
   return `${Math.floor(diff/86400000)}j`;
 }
 
-async function fetchLiveNews(): Promise<LiveArticle[]> {
-  const results: LiveArticle[] = [];
+async function fetchLiveNews(onChunk?:(articles:LiveArticle[])=>void): Promise<LiveArticle[]> {
+  const seen=new Set<string>();
+  const all: LiveArticle[] = [];
   const rssKey = typeof window!=="undefined"?localStorage.getItem("rss2json_key")||"":"";
-  await Promise.allSettled(RSS_SOURCES.map(async(src)=>{
+  const fetchOne=async(src:typeof RSS_SOURCES[0])=>{
     try{
-      let items:Array<{title:string;link:string;pubDate?:string;published?:string;guid?:string;thumbnail?:string|null;enclosure?:{link?:string}}> | null = null;
-      // Primary: rss2json (good JSON + images)
+      type RSSItem={title:string;link:string;pubDate?:string;published?:string;guid?:string;thumbnail?:string|null;enclosure?:{link?:string}};
+      let items:RSSItem[]|null=null;
       try{
         const apiParam=rssKey?`&api_key=${rssKey}`:"";
-        const r=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=8${apiParam}`,{signal:AbortSignal.timeout(7000)});
+        const r=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(src.url)}&count=10${apiParam}`,{signal:AbortSignal.timeout(5000)});
         if(r.ok){const d=await r.json();if(d.status==="ok"&&d.items?.length) items=d.items;}
-      }catch{/*try fallback*/}
-      // Fallback: corsproxy.io + DOMParser
+      }catch{/*fallback*/}
       if(!items){
         try{
-          const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(src.url)}`,{signal:AbortSignal.timeout(7000)});
+          const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(src.url)}`,{signal:AbortSignal.timeout(5000)});
           if(r.ok){const t=await r.text();const parsed=parseRawRSS(t);if(parsed.length) items=parsed;}
-        }catch{/*source unavailable*/}
+        }catch{/*unavailable*/}
       }
       if(!items) return;
-      for(const item of items.slice(0,8)){
+      const batch:LiveArticle[]=[];
+      for(const item of items.slice(0,10)){
         const title=(item.title||"").replace(/<[^>]+>/g,"").replace(/<!\[CDATA\[|\]\]>/g,"").trim().slice(0,160);
-        if(!title) continue;
-        results.push({
-          id:`${src.name}-${item.guid||item.link}`,
-          title,src:src.name,tag:src.tag,tagC:src.tagC,
+        const id=`${src.name}-${item.guid||item.link}`;
+        if(!title||seen.has(id)) continue;
+        seen.add(id);
+        const a:LiveArticle={id,title,src:src.name,tag:src.tag,tagC:src.tagC,
           time:makeTimeStr(item.pubDate||item.published||""),
-          imgUrl:item.thumbnail||item.enclosure?.link||null,
-          link:item.link||"",
-        });
+          imgUrl:item.thumbnail||item.enclosure?.link||null,link:item.link||""};
+        batch.push(a);all.push(a);
       }
-    }catch{/*source unavailable*/}
-  }));
-  return results.sort(()=>Math.random()-0.5);
+      if(batch.length&&onChunk) onChunk([...all]);
+    }catch{/*skip*/}
+  };
+  // Batch sources in groups of 6 for speed without overloading
+  const groups:typeof RSS_SOURCES[]=[];
+  for(let i=0;i<RSS_SOURCES.length;i+=6) groups.push(RSS_SOURCES.slice(i,i+6) as unknown as typeof RSS_SOURCES);
+  for(const group of groups) await Promise.allSettled((group as typeof RSS_SOURCES).map(fetchOne));
+  return all;
 }
 
 // ── FEED SCREEN ───────────────────────────────────────────────
@@ -1184,7 +1208,7 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
 
   const refresh = async(withGemini=false)=>{
     setLiveLoading(true);
-    const articles = await fetchLiveNews();
+    const articles = await fetchLiveNews((chunk)=>{ setLiveNews(chunk); setLiveLoading(false); });
     if(withGemini){
       const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
       if(key){
