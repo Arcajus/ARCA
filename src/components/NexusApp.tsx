@@ -1665,13 +1665,13 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
 }
 
 // ── OPPORTUNITIES DATA ────────────────────────────────────────
-type Opportunity={id:number;title:string;org:string;orgEmoji:string;type:"Stage"|"Alternance"|"Emploi"|"Bénévolat"|"JPO";domain:string;location:string;zone:"France"|"Europe"|"Monde";duration?:string;deadline?:string;link:string;desc:string;remote?:boolean};
+type Opportunity={id:number;title:string;org:string;orgEmoji:string;type:"Stage"|"Alternance"|"Emploi"|"Bénévolat"|"JPO";domain:string;location:string;zone:"France"|"Europe"|"Monde";duration?:string;deadline?:string;deadlineIso?:string;link:string;desc:string;remote?:boolean};
 const OPPORTUNITIES_DATA:Opportunity[]=[
   // ── ONU / UN ──
   {id:1,title:"Programme de stages — Nations Unies",org:"Nations Unies",orgEmoji:"🇺🇳",type:"Stage",domain:"Relations internationales",location:"New York / Genève / Vienne",zone:"Monde",duration:"3–6 mois",link:"https://careers.un.org/internship",desc:"Programme officiel de stages ONU dans toutes ses directions : politique, droits de l'homme, communication, économie."},
-  {id:2,title:"Programme Jeunes Professionnels (JPO) — ONU",org:"Nations Unies",orgEmoji:"🇺🇳",type:"JPO",domain:"Diplomatie / Développement",location:"New York / monde entier",zone:"Monde",duration:"2 ans renouvelables",link:"https://inspira.un.org",desc:"Contrat 2 ans financé par la France. Requis : Master, <32 ans, 2 ans d'expérience. Candidature via le MEAE."},
+  {id:2,title:"Programme Jeunes Professionnels (JPO) — ONU",org:"Nations Unies",orgEmoji:"🇺🇳",type:"JPO",domain:"Diplomatie / Développement",location:"New York / monde entier",zone:"Monde",duration:"2 ans renouvelables",deadline:"Candidatures : oct. 2026",deadlineIso:"2026-10-15",link:"https://inspira.un.org",desc:"Contrat 2 ans financé par la France. Requis : Master, <32 ans, 2 ans d'expérience. Candidature via le MEAE."},
   {id:3,title:"Volontaire des Nations Unies (UNV)",org:"ONU – Programme UNV",orgEmoji:"🇺🇳",type:"Bénévolat",domain:"Développement / Humanitaire",location:"150+ pays",zone:"Monde",duration:"1–2 ans",link:"https://www.unv.org",desc:"Volontariat ONU dans 150 pays. Indemnité de subsistance couverte. Master + 2–5 ans d'expérience selon poste."},
-  {id:4,title:"Délégué·e Jeunesse ONU — Forum politique",org:"Nations Unies – Jeunesse",orgEmoji:"🇺🇳",type:"Bénévolat",domain:"Jeunesse / RI",location:"New York",zone:"Monde",deadline:"Candidatures : septembre",link:"https://www.un.org/development/desa/youth/",desc:"Participer au Forum de haut niveau ou à des conférences ONU comme délégué jeune. Financement partiel disponible selon pays."},
+  {id:4,title:"Délégué·e Jeunesse ONU — Forum politique",org:"Nations Unies – Jeunesse",orgEmoji:"🇺🇳",type:"Bénévolat",domain:"Jeunesse / RI",location:"New York",zone:"Monde",deadline:"Candidatures : 30 sept. 2026",deadlineIso:"2026-09-30",link:"https://www.un.org/development/desa/youth/",desc:"Participer au Forum de haut niveau ou à des conférences ONU comme délégué jeune. Financement partiel disponible selon pays."},
   // ── UNICEF ──
   {id:5,title:"Stage UNICEF France — Communication & Plaidoyer",org:"UNICEF France",orgEmoji:"💙",type:"Stage",domain:"Communication / Droits de l'enfant",location:"Paris",zone:"France",duration:"4–6 mois",deadline:"Ouvert en continu",link:"https://www.unicef.fr/nous-rejoindre",desc:"Stage au siège UNICEF France. Campagnes de sensibilisation, contenu numérique, plaidoyer politique auprès des institutions."},
   {id:6,title:"Jeune Ambassadeur·rice UNICEF",org:"UNICEF France",orgEmoji:"💙",type:"Bénévolat",domain:"Sensibilisation / Jeunesse (15–25 ans)",location:"France entière",zone:"France",link:"https://www.unicef.fr/article/devenez-jeune-ambassadeur",desc:"Programme bénévole pour les 15–25 ans. Mobiliser son lycée/université autour des droits de l'enfant et des ODD. Formation assurée."},
@@ -1685,7 +1685,7 @@ const OPPORTUNITIES_DATA:Opportunity[]=[
   {id:12,title:"Stage FAO — Sécurité alimentaire mondiale",org:"FAO (ONU)",orgEmoji:"🌾",type:"Stage",domain:"Agriculture / Alimentation",location:"Rome, Italie",zone:"Europe",duration:"3–6 mois",link:"https://www.fao.org/employment/internship",desc:"Stage à l'Organisation de l'ONU pour l'alimentation. Politiques agricoles, urgences alimentaires, développement rural."},
   // ── OIT / ILO ──
   {id:13,title:"Stage OIT — Droit du travail international",org:"OIT (ILO)",orgEmoji:"⚖️",type:"Stage",domain:"Droit / Travail",location:"Genève, Suisse",zone:"Monde",duration:"3–6 mois",link:"https://www.ilo.org/employment/internship",desc:"Stage à l'Organisation internationale du travail. Normes du travail, lutte contre le travail des enfants, emploi décent."},
-  {id:14,title:"JPO OIT — Jeune expert professionnel",org:"OIT (ILO)",orgEmoji:"⚖️",type:"JPO",domain:"Droit / Travail / RI",location:"Genève / Terrain",zone:"Monde",duration:"2 ans",link:"https://www.ilo.org/employment/junior-professional-officers",desc:"Programme JPO financé par la France à l'OIT. Requis : Master, 2 ans d'expérience, <32 ans. Via MEAE."},
+  {id:14,title:"JPO OIT — Jeune expert professionnel",org:"OIT (ILO)",orgEmoji:"⚖️",type:"JPO",domain:"Droit / Travail / RI",location:"Genève / Terrain",zone:"Monde",duration:"2 ans",deadline:"Candidatures : oct. 2026",deadlineIso:"2026-10-15",link:"https://www.ilo.org/employment/junior-professional-officers",desc:"Programme JPO financé par la France à l'OIT. Requis : Master, 2 ans d'expérience, <32 ans. Via MEAE."},
   // ── OMS / WHO ──
   {id:15,title:"Stage OMS — Santé mondiale",org:"OMS (WHO)",orgEmoji:"🏥",type:"Stage",domain:"Santé publique",location:"Genève, Suisse",zone:"Monde",duration:"6 mois",link:"https://www.who.int/careers/internships",desc:"Programme de stages OMS. Épidémies, santé mentale, accès aux médicaments, politiques sanitaires."},
   // ── HCR / UNHCR ──
@@ -1702,9 +1702,9 @@ const OPPORTUNITIES_DATA:Opportunity[]=[
   {id:24,title:"Stage Tribunal de l'Union européenne",org:"Tribunal UE (CJUE)",orgEmoji:"⚖️",type:"Stage",domain:"Droit européen",location:"Luxembourg",zone:"Europe",duration:"5 mois",link:"https://curia.europa.eu/jcms/jcms/Jo2_7008/",desc:"Stage au Tribunal de l'UE (contentieux administratif). Assistance aux juges, rédaction de notes juridiques."},
   {id:25,title:"Stage Cour de Justice de l'UE",org:"CJUE",orgEmoji:"⚖️",type:"Stage",domain:"Droit européen",location:"Luxembourg",zone:"Europe",duration:"5 mois",link:"https://curia.europa.eu/jcms/jcms/Jo2_7008/",desc:"Stage au cabinet des juges ou avocats généraux de la CJUE. Excellent niveau en droit de l'UE requis."},
   // ── INSTITUTIONS EUROPÉENNES ──
-  {id:26,title:"Stage Robert Schuman — Parlement européen",org:"Parlement européen",orgEmoji:"🇪🇺",type:"Stage",domain:"Politique européenne",location:"Bruxelles / Strasbourg",zone:"Europe",duration:"5 mois",deadline:"Mars (sept.) / Oct. (fév.)",link:"https://www.europarl.europa.eu/traineeships",desc:"Programme phare du PE. Groupes politiques ou directions générales. Rémunéré 1350 €/mois."},
-  {id:27,title:"Stage Blue Book — Commission européenne",org:"Commission européenne",orgEmoji:"🇪🇺",type:"Stage",domain:"Toutes directions (RI, Commerce, Climat…)",location:"Bruxelles",zone:"Europe",duration:"5 mois",link:"https://traineeships.ec.europa.eu",desc:"Stage rémunéré (1430 €/mois) dans toutes les DG de la Commission. Relations extérieures, Commerce, Environnement, etc."},
-  {id:28,title:"Stage SEAE — Diplomatie européenne",org:"Service européen d'action extérieure",orgEmoji:"🇪🇺",type:"Stage",domain:"Diplomatie / RI",location:"Bruxelles / Délégations UE",zone:"Europe",duration:"5 mois",link:"https://www.eeas.europa.eu/eeas/traineeships_en",desc:"Stage dans le service diplomatique de l'UE. Travail dans les délégations mondiales ou au siège de Bruxelles."},
+  {id:26,title:"Stage Robert Schuman — Parlement européen (fév. 2027)",org:"Parlement européen",orgEmoji:"🇪🇺",type:"Stage",domain:"Politique européenne",location:"Bruxelles / Strasbourg",zone:"Europe",duration:"5 mois",deadline:"Clôture : 31 oct. 2026",deadlineIso:"2026-10-31",link:"https://www.europarl.europa.eu/traineeships",desc:"Programme phare du PE — session février 2027. Groupes politiques ou directions générales. Rémunéré 1350 €/mois."},
+  {id:27,title:"Stage Blue Book — Commission européenne (mars 2027)",org:"Commission européenne",orgEmoji:"🇪🇺",type:"Stage",domain:"Toutes directions (RI, Commerce, Climat…)",location:"Bruxelles",zone:"Europe",duration:"5 mois",deadline:"Clôture : 31 août 2026",deadlineIso:"2026-08-31",link:"https://traineeships.ec.europa.eu",desc:"Stage rémunéré (1430 €/mois) — session mars 2027. Toutes DG : Relations extérieures, Commerce, Environnement, etc."},
+  {id:28,title:"Stage SEAE — Diplomatie européenne (oct. 2026)",org:"Service européen d'action extérieure",orgEmoji:"🇪🇺",type:"Stage",domain:"Diplomatie / RI",location:"Bruxelles / Délégations UE",zone:"Europe",duration:"5 mois",deadline:"Clôture : 15 juil. 2026",deadlineIso:"2026-07-15",link:"https://www.eeas.europa.eu/eeas/traineeships_en",desc:"Stage dans le service diplomatique de l'UE — session octobre 2026. Délégations mondiales ou siège Bruxelles."},
   {id:29,title:"Stage Conseil de l'Europe",org:"Conseil de l'Europe",orgEmoji:"🏛️",type:"Stage",domain:"Droits de l'homme / Démocratie",location:"Strasbourg",zone:"Europe",duration:"3 mois",link:"https://www.coe.int/en/web/jobs/traineeships",desc:"500 stages/an au Conseil de l'Europe. Droits de l'homme, démocratie, état de droit."},
   {id:30,title:"Stage APCE — Assemblée parlementaire",org:"Conseil de l'Europe",orgEmoji:"🏛️",type:"Stage",domain:"Politique / Droit",location:"Strasbourg",zone:"Europe",duration:"3 mois",link:"https://www.coe.int/en/web/jobs/traineeships",desc:"Stage à l'Assemblée parlementaire du Conseil de l'Europe. Commissions thématiques, résolutions, rédaction de rapports."},
   {id:31,title:"Stage OTAN",org:"OTAN",orgEmoji:"🛡️",type:"Stage",domain:"Défense / RI / Cyber",location:"Bruxelles",zone:"Europe",duration:"3–6 mois",link:"https://www.nato.int/cps/en/natohq/85562.htm",desc:"Stages dans les divisions OTAN (opérations, communication, cyber). Pour ressortissants des pays membres."},
@@ -1748,25 +1748,123 @@ const OPPORTUNITIES_DATA:Opportunity[]=[
   {id:66,title:"Stage Banque Mondiale — Développement",org:"Banque Mondiale",orgEmoji:"🌐",type:"Stage",domain:"Finance internationale / Développement",location:"Washington DC",zone:"Monde",duration:"3–6 mois",link:"https://www.worldbank.org/en/about/careers/programs-and-internships",desc:"Junior Professional Associates. Développement économique, lutte contre la pauvreté, projets dans pays émergents."},
   {id:67,title:"Stage FMI — Économie internationale",org:"FMI",orgEmoji:"💱",type:"Stage",domain:"Économie / Finance",location:"Washington DC",zone:"Monde",duration:"6–12 mois",link:"https://www.imf.org/careers",desc:"Stage au FMI. Analyse macro-économique, surveillance des économies mondiales, programmes d'ajustement."},
   // ── ÉCOLES / ALTERNANCES SPÉCIALES ──
-  {id:68,title:"Alternance Sciences Po — Institutions partenaires",org:"Sciences Po Paris",orgEmoji:"🎓",type:"Alternance",domain:"RI / Politique publique",location:"Paris",zone:"France",duration:"1–2 ans",link:"https://www.sciencespo.fr/apprentissage",desc:"Alternance via Sciences Po avec ONG, institutions européennes, ministères. Master RI, PSIA, Gouvernance."},
-  {id:69,title:"Alternance Sciences Po Aix — RI & Sécurité",org:"Sciences Po Aix",orgEmoji:"🎓",type:"Alternance",domain:"RI / Sécurité",location:"Aix-en-Provence",zone:"France",duration:"1–2 ans",link:"https://www.sciencespo-aix.fr/formation/alternance/",desc:"Alternance avec collectivités, institutions européennes, ONG. Spécialités RI et sécurité internationale."},
+  {id:68,title:"Alternance Sciences Po — Institutions partenaires",org:"Sciences Po Paris",orgEmoji:"🎓",type:"Alternance",domain:"RI / Politique publique",location:"Paris",zone:"France",duration:"1–2 ans",deadline:"Candidatures : oct. 2026",deadlineIso:"2026-10-31",link:"https://www.sciencespo.fr/apprentissage",desc:"Alternance via Sciences Po avec ONG, institutions européennes, ministères. Master RI, PSIA, Gouvernance."},
+  {id:69,title:"Alternance Sciences Po Aix — RI & Sécurité",org:"Sciences Po Aix",orgEmoji:"🎓",type:"Alternance",domain:"RI / Sécurité",location:"Aix-en-Provence",zone:"France",duration:"1–2 ans",deadline:"Candidatures : oct. 2026",deadlineIso:"2026-10-31",link:"https://www.sciencespo-aix.fr/formation/alternance/",desc:"Alternance avec collectivités, institutions européennes, ONG. Spécialités RI et sécurité internationale."},
   {id:70,title:"Fondation Jean-Jaurès — Stage analyse politique",org:"Fondation Jean-Jaurès",orgEmoji:"📚",type:"Stage",domain:"Analyse politique / RI",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://jean-jaures.org/nous-rejoindre/",desc:"Stage au think tank progressiste français. Rédaction de notes, veille internationale, organisation de conférences."},
   {id:71,title:"Institut Montaigne — Stage analyse politique",org:"Institut Montaigne",orgEmoji:"📚",type:"Stage",domain:"Analyse politique / Économie",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.institutmontaigne.org/devenez-collaborateur",desc:"Stage dans le think tank centriste. Études politiques, économiques, géopolitiques. Rédaction de rapports d'analyse."},
   {id:72,title:"Stage IRIS — Institut de Relations Internationales",org:"IRIS",orgEmoji:"🔭",type:"Stage",domain:"Géopolitique / Recherche",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.iris-france.org/nous-rejoindre/",desc:"Stage au principal think tank français de RI. Recherche géopolitique, organisation d'événements, édition de la Revue internationale."},
   {id:73,title:"Stage IFRI — Affaires internationales",org:"IFRI",orgEmoji:"🔭",type:"Stage",domain:"Géopolitique / Recherche",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.ifri.org/fr/travailler-chez-lifri",desc:"Stage à l'Institut Français des Relations Internationales. Centres thématiques : Russie, Asie, Énergie, Sécurité. Renommé mondialement."},
   {id:74,title:"Stage Fondation Robert Schuman — Europe",org:"Fondation Robert Schuman",orgEmoji:"🇪🇺",type:"Stage",domain:"Europe / Politique",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.robert-schuman.eu/fr/stages",desc:"Stage dans le think tank pro-européen. Analyse des politiques de l'UE, rédaction de publications, organisation de colloques."},
   {id:75,title:"Stage UNESCO — Programme MAB Biosphère",org:"UNESCO",orgEmoji:"🎓",type:"Stage",domain:"Environnement / Sciences",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.unesco.org/en/careers/internships",desc:"Stage dans le programme Man and Biosphere de l'UNESCO. Conservation, biodiversité, développement durable."},
+  // ── EMPLOIS ONU / SYSTÈME ONUSIEN ──
+  {id:76,title:"Spécialiste des affaires politiques — ONU",org:"Nations Unies",orgEmoji:"🇺🇳",type:"Emploi",domain:"Affaires politiques / Paix",location:"New York / Missions terrain",zone:"Monde",link:"https://careers.un.org",desc:"Analyse de situation politique, rapports au Conseil de sécurité, appui aux missions de paix ONU. Master + 5 ans d'expérience."},
+  {id:77,title:"Officier·ère des droits de l'homme — ONU",org:"Nations Unies / HCDH",orgEmoji:"🇺🇳",type:"Emploi",domain:"Droits de l'homme",location:"Genève / Missions terrain",zone:"Monde",link:"https://careers.un.org",desc:"Enquête sur les violations des droits humains, rédaction de rapports pour les mécanismes onusiens. Anglais + 2e langue ONU."},
+  {id:78,title:"Économiste — ONU / CNUCED",org:"CNUCED (ONU)",orgEmoji:"🇺🇳",type:"Emploi",domain:"Économie internationale / Commerce",location:"Genève",zone:"Monde",link:"https://unctad.org/careers",desc:"Recherche économique sur le commerce, développement, dette souveraine, investissements. PhD ou Master + expérience."},
+  {id:79,title:"Chargé·e de communication — ONU Genève",org:"ONUG (ONU)",orgEmoji:"🇺🇳",type:"Emploi",domain:"Communication / Médias",location:"Genève",zone:"Monde",link:"https://careers.un.org",desc:"Production de contenu multimédia, relations médias, couverture des conférences intergouvernementales à Genève."},
+  {id:80,title:"Administrateur·rice de programme — PNUD",org:"PNUD (UNDP)",orgEmoji:"🌍",type:"Emploi",domain:"Développement / Gestion de projets",location:"Monde entier (170 pays)",zone:"Monde",link:"https://jobs.undp.org",desc:"Coordination de projets de développement dans les pays partenaires. Gestion budgétaire, suivi-évaluation, rapports aux bailleurs."},
+  {id:81,title:"Conseiller·ère technique — FAO",org:"FAO (ONU)",orgEmoji:"🌾",type:"Emploi",domain:"Agriculture / Alimentation",location:"Rome / Terrain Afrique & Asie",zone:"Monde",link:"https://www.fao.org/employment",desc:"Conseil aux gouvernements sur les politiques agricoles et de sécurité alimentaire. Expérience terrain exigée."},
+  {id:82,title:"Coordonnateur·rice urgences — OMS",org:"OMS (WHO)",orgEmoji:"🏥",type:"Emploi",domain:"Santé / Urgences humanitaires",location:"Genève / Terrain épidémies",zone:"Monde",link:"https://www.who.int/careers",desc:"Coordination des réponses aux urgences sanitaires mondiales (épidémies, catastrophes). Requis : Master santé publique + 7 ans."},
+  {id:83,title:"Protection Officer — HCR",org:"HCR (UNHCR)",orgEmoji:"🔵",type:"Emploi",domain:"Protection / Réfugiés",location:"Terrain mondial",zone:"Monde",link:"https://www.unhcr.org/careers",desc:"Protection juridique des réfugiés, demandeurs d'asile, apatrides. Gestion d'équipe locale, liaison avec gouvernements."},
+  {id:84,title:"Logisticien·ne / Supply Chain — UNICEF",org:"UNICEF",orgEmoji:"💙",type:"Emploi",domain:"Logistique humanitaire",location:"Monde entier",zone:"Monde",link:"https://www.unicef.org/careers",desc:"Gestion de la chaîne d'approvisionnement pour les programmes enfants (vaccins, nutrition, WASH). Missions terrain."},
+  {id:85,title:"Spécialiste éducation — UNESCO",org:"UNESCO",orgEmoji:"🎓",type:"Emploi",domain:"Éducation / Politique",location:"Paris / Délégations UNESCO",zone:"Monde",link:"https://careers.unesco.org",desc:"Développement de politiques éducatives mondiales, programmes d'alphabétisation, éducation inclusive. Master + 5 ans."},
+  {id:86,title:"Expert·e programme culture — UNESCO",org:"UNESCO",orgEmoji:"🎓",type:"Emploi",domain:"Culture / Patrimoine",location:"Paris / Terrain",zone:"Monde",link:"https://careers.unesco.org",desc:"Gestion des programmes patrimoine mondial, diversité culturelle, industries créatives. Expérience internationale requise."},
+  {id:87,title:"Chargé·e de plaidoyer — UNICEF France",org:"UNICEF France",orgEmoji:"💙",type:"Emploi",domain:"Plaidoyer / Droits de l'enfant",location:"Paris",zone:"France",link:"https://www.unicef.fr/nous-rejoindre",desc:"Plaidoyer auprès du gouvernement et du Parlement pour les droits de l'enfant. Relations institutionnelles, campagnes."},
+  // ── EMPLOIS INSTITUTIONS EUROPÉENNES ──
+  {id:88,title:"Administrateur·rice — Concours EPSO (EU)",org:"Institutions UE (EPSO)",orgEmoji:"🇪🇺",type:"Emploi",domain:"Administration / RI / Droit / Économie",location:"Bruxelles / Luxembourg / Strasbourg",zone:"Europe",link:"https://epso.europa.eu",desc:"Concours général d'entrée dans les institutions UE (Commission, PE, Conseil). AD5 ou AST. Ouvert tous profils : droit, éco, RI, sciences."},
+  {id:89,title:"Agent contractuel — Commission européenne",org:"Commission européenne",orgEmoji:"🇪🇺",type:"Emploi",domain:"Toutes directions",location:"Bruxelles",zone:"Europe",link:"https://epso.europa.eu/en/selection-procedures/cast",desc:"Contrat CAST (Contract Agent Selection Tool). Postes administratifs, juridiques, économiques, communication dans les DG."},
+  {id:90,title:"Traducteur·rice / Interprète — UE",org:"Institutions UE",orgEmoji:"🇪🇺",type:"Emploi",domain:"Langues / Traduction",location:"Bruxelles / Luxembourg",zone:"Europe",link:"https://epso.europa.eu",desc:"Postes de traducteurs et interprètes via concours EPSO. Toutes langues officielles. Parlement européen, Commission, CJUE."},
+  {id:91,title:"Analyste politique — Conseil de l'UE",org:"Conseil de l'Union européenne",orgEmoji:"🇪🇺",type:"Emploi",domain:"Politique européenne / RI",location:"Bruxelles",zone:"Europe",link:"https://www.consilium.europa.eu/fr/general-secretariat/jobs/",desc:"Analyse et coordination des positions des États membres. Préparation des Conseils européens, suivi des négociations."},
+  {id:92,title:"Juriste — Cour de Justice de l'UE",org:"CJUE",orgEmoji:"⚖️",type:"Emploi",domain:"Droit européen",location:"Luxembourg",zone:"Europe",link:"https://curia.europa.eu/jcms/jcms/Jo2_7231/",desc:"Poste de juriste-linguiste ou référendaire. Rédaction d'arrêts, de conclusions d'avocat général, recherche juridique."},
+  {id:93,title:"Chargé·e de mission — Parlement européen",org:"Parlement européen",orgEmoji:"🇪🇺",type:"Emploi",domain:"Politique / Législatif",location:"Bruxelles / Strasbourg",zone:"Europe",link:"https://www.europarl.europa.eu/about-parliament/fr/organisation-and-rules/organisation/secretariat/careers",desc:"Postes permanents au sein des directions générales du PE (DG Politiques internes, DG Communication, etc.)."},
+  {id:94,title:"Conseiller·ère politique — SEAE",org:"Service européen d'action extérieure",orgEmoji:"🇪🇺",type:"Emploi",domain:"Diplomatie / RI",location:"Bruxelles / Délégations",zone:"Europe",link:"https://www.eeas.europa.eu/eeas/careers_en",desc:"Postes de diplomates européens dans les délégations de l'UE. Analyse géopolitique, relations bilatérales, commerce extérieur."},
+  // ── EMPLOIS GOUVERNEMENT FRANÇAIS ──
+  {id:95,title:"Conseiller·ère des Affaires étrangères (CAE)",org:"MEAE (France)",orgEmoji:"🇫🇷",type:"Emploi",domain:"Diplomatie",location:"Paris / Ambassades monde",zone:"France",link:"https://www.diplomatie.gouv.fr/fr/le-ministere-et-son-reseau/recruter-au-ministere/concours/",desc:"Corps diplomatique français. Concours externe et interne. Cadres géographiques ou thématiques. ENA/INSP requis ou concours direct."},
+  {id:96,title:"Secrétaire des Affaires étrangères (SAE)",org:"MEAE (France)",orgEmoji:"🇫🇷",type:"Emploi",domain:"Diplomatie / Consulaire",location:"France / Postes consulaires",zone:"France",link:"https://www.diplomatie.gouv.fr/fr/le-ministere-et-son-reseau/recruter-au-ministere/concours/",desc:"Postes consulaires et administratifs dans les ambassades. Gestion des visas, affaires consulaires, appui aux Français à l'étranger."},
+  {id:97,title:"Chargé·e de mission AFD — Expert·e sectoriel",org:"AFD",orgEmoji:"🌿",type:"Emploi",domain:"Développement / Finance internationale",location:"Paris / Terrain Afrique, Asie",zone:"France",link:"https://www.afd.fr/fr/rejoindre-lafd",desc:"Gestion d'un portefeuille de projets (eau, énergie, éducation, agriculture) dans les pays partenaires. Ingénieur·e ou économiste."},
+  {id:98,title:"Administrateur·rice Civil·e — Concours ENA/INSP",org:"Gouvernement français",orgEmoji:"🇫🇷",type:"Emploi",domain:"Administration publique / RI",location:"Paris",zone:"France",link:"https://www.insp.gouv.fr/concours",desc:"Concours d'entrée à l'INSP (ex-ENA). Accès aux grands corps de l'État : Conseil d'État, Cour des comptes, Inspection générale."},
+  {id:99,title:"Rédacteur·rice — Assemblée Nationale",org:"Assemblée Nationale",orgEmoji:"🏛️",type:"Emploi",domain:"Politique / Administration",location:"Paris",zone:"France",link:"https://www.assemblee-nationale.fr/recrutement",desc:"Concours de fonctionnaire de l'AN. Postes de rédacteurs, administrateurs, documentalistes. Travail en commissions parlementaires."},
+  {id:100,title:"Administrateur·rice — Sénat",org:"Sénat",orgEmoji:"🏛️",type:"Emploi",domain:"Droit / Administration / RI",location:"Paris",zone:"France",link:"https://www.senat.fr/senatrecrutement.html",desc:"Concours d'administrateur du Sénat. Suivi législatif, recherche juridique, commissions (Affaires étrangères, Défense, Europe)."},
+  // ── EMPLOIS ONG & THINK TANKS ──
+  {id:101,title:"Chargé·e de programme — Amnesty International",org:"Amnesty International",orgEmoji:"🕯️",type:"Emploi",domain:"Droits de l'homme / Plaidoyer",location:"Paris / Londres",zone:"Europe",link:"https://www.amnesty.fr/rejoignez-nous",desc:"Gestion de campagnes sur des thématiques (torture, peine de mort, droits des femmes). Plaidoyer, relations médias, enquête."},
+  {id:102,title:"Chargé·e de projet humanitaire — ACTED",org:"ACTED",orgEmoji:"🌍",type:"Emploi",domain:"Gestion de projets / Humanitaire",location:"Terrain (40+ pays)",zone:"Monde",link:"https://www.acted.org/fr/rejoindre-acted/postes/",desc:"Coordination de projets terrain dans les zones de crise. Suivi-évaluation, rapports aux bailleurs (ECHO, USAID). Master + 2 ans."},
+  {id:103,title:"Chercheur·se — IFRI",org:"IFRI",orgEmoji:"🔭",type:"Emploi",domain:"Géopolitique / Recherche",location:"Paris",zone:"France",link:"https://www.ifri.org/fr/travailler-chez-lifri",desc:"Poste de chercheur dans un centre thématique IFRI (Russie/NEI, Asie, Énergie, Sécurité). PhD + publications requis."},
+  {id:104,title:"Analyste — Institut Montaigne",org:"Institut Montaigne",orgEmoji:"📚",type:"Emploi",domain:"Politiques publiques / Économie",location:"Paris",zone:"France",link:"https://www.institutmontaigne.org/devenez-collaborateur",desc:"Rédaction de rapports politiques, veille internationale, organisation de conférences. Profil Sciences Po / grandes écoles."},
+  {id:105,title:"Chargé·e de communication — Greenpeace France",org:"Greenpeace France",orgEmoji:"🌱",type:"Emploi",domain:"Communication / Environnement",location:"Paris",zone:"France",link:"https://www.greenpeace.fr/nous-rejoindre",desc:"Communication digitale et médias sur les campagnes environnementales. Rédaction, vidéo, community management."},
+  // ── EMPLOIS DROIT INTERNATIONAL ──
+  {id:106,title:"Greffier·ère adjoint·e — CPI",org:"Cour Pénale Internationale",orgEmoji:"⚖️",type:"Emploi",domain:"Droit pénal international",location:"La Haye, Pays-Bas",zone:"Europe",link:"https://www.icc-cpi.int/vacancies",desc:"Soutien administratif et juridique au Greffe de la CPI. Gestion des victimes, témoins, dossiers judiciaires. Master Droit."},
+  {id:107,title:"Conseiller·ère juridique — CICR",org:"CICR (ICRC)",orgEmoji:"🔴",type:"Emploi",domain:"Droit international humanitaire",location:"Genève / Délégations",zone:"Monde",link:"https://www.icrc.org/fr/jobs",desc:"Conseil juridique sur l'application du droit international humanitaire. Relations avec les forces armées et les gouvernements."},
+  {id:108,title:"Greffier·ère — CEDH",org:"CEDH / Conseil de l'Europe",orgEmoji:"🏛️",type:"Emploi",domain:"Droits de l'homme / Droit",location:"Strasbourg",zone:"Europe",link:"https://www.echr.coe.int/vacancies",desc:"Traitement des requêtes individuelles, rédaction de communications, assistance aux chambres de jugement. Master Droit requis."},
+  // ── EMPLOIS ORGANISATIONS RÉGIONALES ──
+  {id:109,title:"Analyste politique — OTAN",org:"OTAN",orgEmoji:"🛡️",type:"Emploi",domain:"Défense / Sécurité / RI",location:"Bruxelles",zone:"Europe",link:"https://www.nato.int/cps/en/natohq/85600.htm",desc:"Analyse des menaces, rédaction de documents politiques pour les ambassadeurs OTAN. Requis : Master + expérience sécurité."},
+  {id:110,title:"Officier·ère programme — OSCE",org:"OSCE",orgEmoji:"🔶",type:"Emploi",domain:"Sécurité / Démocratie",location:"Vienne / Missions terrain",zone:"Europe",link:"https://www.osce.org/employment",desc:"Gestion de programmes dans les missions OSCE (Ukraine, Balkans, Caucase). Élections, État de droit, droits humains."},
+  {id:111,title:"Expert·e — Conseil de l'Europe",org:"Conseil de l'Europe",orgEmoji:"🏛️",type:"Emploi",domain:"Droits de l'homme / Démocratie",location:"Strasbourg",zone:"Europe",link:"https://www.coe.int/en/web/jobs",desc:"Postes dans les directions Droits de l'homme, Démocratie, État de droit. Concours ou recrutement direct selon profil."},
+  // ── EMPLOIS FINANCES INTERNATIONALES ──
+  {id:112,title:"Économiste — Banque Mondiale",org:"Banque Mondiale",orgEmoji:"🌐",type:"Emploi",domain:"Économie / Développement",location:"Washington DC / Terrain",zone:"Monde",link:"https://www.worldbank.org/en/about/careers",desc:"Analyse économique, politiques de développement, gestion de projets dans les pays à revenu faible et intermédiaire. PhD requis."},
+  {id:113,title:"Économiste / Expert·e pays — FMI",org:"FMI",orgEmoji:"💱",type:"Emploi",domain:"Économie / Finance internationale",location:"Washington DC",zone:"Monde",link:"https://www.imf.org/careers",desc:"Surveillance des économies nationales, programmes de soutien financier, rapports Article IV. PhD économie + publications."},
+  {id:114,title:"Analyste — OCDE (P2–P4)",org:"OCDE",orgEmoji:"📊",type:"Emploi",domain:"Économie / Politiques publiques",location:"Paris",zone:"France",link:"https://www.oecd.org/careers",desc:"Postes permanents dans toutes les directions de l'OCDE. Analyses comparatives entre pays membres, recommandations politiques."},
+  // ── JUSTICE / DROIT ──
+  {id:115,title:"Greffier·ère — Tribunal judiciaire",org:"Ministère de la Justice (France)",orgEmoji:"⚖️",type:"Emploi",domain:"Justice / Administration judiciaire",location:"France entière",zone:"France",link:"https://www.metiers.justice.gouv.fr",desc:"Concours de greffier des services judiciaires. Travail dans les tribunaux : gestion des dossiers, audiences, état civil."},
+  {id:116,title:"Magistrat·e — École Nationale de la Magistrature",org:"ENM / Ministère Justice",orgEmoji:"⚖️",type:"Emploi",domain:"Justice / Droit",location:"France entière",zone:"France",link:"https://www.enm.justice.fr/concours",desc:"Concours d'entrée à l'ENM. Accès à la magistrature du siège (juge) ou du parquet (procureur). Bac+4 Droit requis."},
+  {id:117,title:"Juriste — Conseil d'État",org:"Conseil d'État (France)",orgEmoji:"⚖️",type:"Emploi",domain:"Droit administratif",location:"Paris",zone:"France",link:"https://www.conseil-etat.fr/le-conseil-d-etat/ressources-humaines",desc:"Concours du Conseil d'État (Auditeur). Accès via INSP ou concours externe. Juridiction suprême administrative française."},
+  {id:118,title:"Stage CJUE — Droit de l'environnement",org:"CJUE / Tribunal UE",orgEmoji:"⚖️",type:"Stage",domain:"Droit de l'environnement / UE",location:"Luxembourg",zone:"Europe",duration:"5 mois",link:"https://curia.europa.eu/jcms/jcms/Jo2_7008/",desc:"Stage spécialisé en droit de l'environnement, droit social ou droit de la concurrence à la Cour de Justice de l'UE."},
+  {id:119,title:"Avocat·e — barreau international (Paris)",org:"Barreau de Paris",orgEmoji:"⚖️",type:"Emploi",domain:"Droit / Arbitrage international",location:"Paris",zone:"France",link:"https://www.avocatparis.org",desc:"Exercer au barreau de Paris dans un cabinet d'arbitrage international, droit des affaires, droits de l'homme."},
+  // ── ÉCONOMIE / FINANCES ──
+  {id:120,title:"Analyste financier·ère — Trésor (France)",org:"Direction Générale du Trésor",orgEmoji:"🇫🇷",type:"Emploi",domain:"Économie / Finance publique",location:"Paris / Postes à l'étranger",zone:"France",link:"https://www.tresor.economie.gouv.fr/recrutement",desc:"Corps des administrateurs du Trésor. Concours INSP ou recrutement direct. Politique économique, relations financières internationales."},
+  {id:121,title:"Économiste — Banque de France",org:"Banque de France",orgEmoji:"🏦",type:"Emploi",domain:"Économie / Politique monétaire",location:"Paris",zone:"France",link:"https://www.banque-france.fr/fr/la-banque-de-france/carrieres",desc:"Recherche économique, supervision bancaire, politique monétaire Zone euro. Concours ou recrutement direct. Master/PhD économie."},
+  {id:122,title:"Analyste — Autorité des marchés financiers (AMF)",org:"AMF (France)",orgEmoji:"📈",type:"Emploi",domain:"Finance / Régulation",location:"Paris",zone:"France",link:"https://www.amf-france.org/fr/l-amf/l-amf-recrute",desc:"Surveillance des marchés financiers, protection des investisseurs, contrôle des acteurs financiers. Master finance ou droit."},
+  {id:123,title:"Stage Banque Centrale Européenne — Économie",org:"BCE (ECB)",orgEmoji:"🇪🇺",type:"Stage",domain:"Économie / Politique monétaire",location:"Francfort, Allemagne",zone:"Europe",duration:"3–6 mois",link:"https://www.ecb.europa.eu/careers/",desc:"Stage à la BCE. Économie quantitative, politique monétaire, stabilité financière. Master/PhD économie ou mathématiques."},
+  {id:124,title:"Économiste — BCE (poste permanent)",org:"BCE (ECB)",orgEmoji:"🇪🇺",type:"Emploi",domain:"Économie / Analyse quantitative",location:"Francfort, Allemagne",zone:"Europe",link:"https://www.ecb.europa.eu/careers/",desc:"Postes permanents à la Banque Centrale Européenne. Modélisation macro, politique monétaire, supervision bancaire. PhD requis."},
+  {id:125,title:"Chargé·e de mission — Caisse des Dépôts",org:"Caisse des Dépôts (France)",orgEmoji:"🏛️",type:"Emploi",domain:"Finance publique / Développement",location:"Paris",zone:"France",link:"https://www.caissedesdepots.fr/recrutement",desc:"Institution financière publique. Financement des collectivités, logement social, transition écologique. Alternances aussi disponibles."},
+  {id:126,title:"Analyste — Fonds Européen d'Investissement (FEI)",org:"FEI (BEI Group)",orgEmoji:"🇪🇺",type:"Emploi",domain:"Finance / Capital-risque",location:"Luxembourg",zone:"Europe",link:"https://www.eif.org/careers",desc:"Financement des PME européennes, capital-risque, garanties. Master finance + expérience financière requise."},
+  // ── POLITIQUE / COLLECTIVITÉS TERRITORIALES ──
+  {id:127,title:"Attaché·e territorial·e — Concours FPT",org:"Fonction Publique Territoriale",orgEmoji:"🏛️",type:"Emploi",domain:"Administration territoriale",location:"France entière",zone:"France",link:"https://www.cnfpt.fr/offre-de-formation",desc:"Concours d'attaché territorial de catégorie A. Travail dans les communes, départements, régions. Droit, finances locales, RI."},
+  {id:128,title:"Alternance — Région Île-de-France (RI & Coopération)",org:"Région Île-de-France",orgEmoji:"🏛️",type:"Alternance",domain:"RI / Coopération décentralisée",location:"Paris",zone:"France",duration:"1–2 ans",link:"https://www.iledefrance.fr/emploi-et-formation",desc:"Alternance dans la direction des Relations Internationales de la Région IDF. Coopération décentralisée, jumelages, Europe."},
+  {id:129,title:"Chargé·e de mission Europe — Collectivité",org:"Collectivités territoriales FR",orgEmoji:"🇫🇷",type:"Emploi",domain:"Europe / Fonds structurels",location:"France entière",zone:"France",link:"https://www.emploi-territorial.fr",desc:"Gestion des fonds européens (FEDER, FSE+), coopération transfrontalière, projets Interreg. Communes, métropoles, régions."},
+  {id:130,title:"Stage mairie / collectivité — Mission internationale",org:"Mairies & Métropoles",orgEmoji:"🏛️",type:"Stage",domain:"Coopération / Relations internationales",location:"France entière",zone:"France",duration:"3–6 mois",link:"https://www.emploi-territorial.fr",desc:"Stage dans les services RI des grandes villes françaises (Paris, Lyon, Marseille, Bordeaux). Coopération décentralisée, diplomatie des villes."},
+  // ── ENSEIGNEMENT / RECHERCHE ──
+  {id:131,title:"Enseignant·e-chercheur·se — Universités françaises",org:"Enseignement Supérieur (France)",orgEmoji:"🎓",type:"Emploi",domain:"RI / Science politique / Histoire",location:"France entière",zone:"France",link:"https://www.galaxie.enseignementsup-recherche.gouv.fr",desc:"Maître de conférences ou Professeur des universités. Concours CNU. Disciplines : science politique, droit international, histoire."},
+  {id:132,title:"Chercheur·se postdoctorant·e — CNRS",org:"CNRS",orgEmoji:"🔬",type:"Emploi",domain:"Sciences humaines / Géopolitique / Physique",location:"France entière",zone:"France",link:"https://emploi.cnrs.fr",desc:"Postes postdoctoraux et chercheurs permanents CNRS. Sciences humaines et sociales, physique fondamentale, sciences de l'environnement."},
+  {id:133,title:"Doctorant·e contractuel·le — Contrats ANR",org:"ANR (France)",orgEmoji:"🔬",type:"Stage",domain:"Recherche / Toutes disciplines",location:"France entière",zone:"France",duration:"3 ans",link:"https://anr.fr/fr/postuler-aux-appels/appels-a-projets/emplois/",desc:"Financement doctoral de l'ANR dans toutes les disciplines. Géopolitique, économie internationale, sciences physiques, philosophie."},
+  {id:134,title:"Assistant·e de langue — Programme TAPIF",org:"MEAE / Ministère Éducation",orgEmoji:"🇫🇷",type:"Emploi",domain:"Enseignement / Langues",location:"USA / Canada / Argentine / Allemagne…",zone:"Monde",duration:"7–9 mois",link:"https://www.frenchculture.org/education/tapif",desc:"Enseigner le français dans les écoles primaires ou secondaires à l'étranger. Pour les étudiants français 20–30 ans."},
+  {id:135,title:"Professeur·e — Lycées français à l'étranger (AEFE)",org:"AEFE / MEAE",orgEmoji:"🇫🇷",type:"Emploi",domain:"Enseignement",location:"Réseau mondial 560 établissements",zone:"Monde",link:"https://www.aefe.fr/personnels",desc:"Enseigner dans les lycées français à l'étranger (détachement). Toutes disciplines. AEFE gère 560 établissements dans 139 pays."},
+  {id:136,title:"Chercheur·se — Institut Pasteur",org:"Institut Pasteur",orgEmoji:"🧬",type:"Emploi",domain:"Sciences / Santé mondiale",location:"Paris / Réseau international",zone:"France",link:"https://www.pasteur.fr/fr/travailler-linstitut-pasteur",desc:"Postes scientifiques à l'Institut Pasteur. Recherche sur les maladies infectieuses, virologie, bactériologie. Réseau international."},
+  // ── PHILOSOPHIE / SCIENCES SOCIALES ──
+  {id:137,title:"Chargé·e de recherche — Maison des Sciences de l'Homme",org:"MSH / CNRS",orgEmoji:"📚",type:"Emploi",domain:"Sciences sociales / Philosophie",location:"Paris",zone:"France",link:"https://www.msh-paris.fr/emplois",desc:"Postes de recherche en sciences humaines et sociales. Philosophie politique, éthique des RI, sociologie internationale."},
+  {id:138,title:"Stage — Comité National d'Éthique (CCNE)",org:"CCNE (France)",orgEmoji:"🧠",type:"Stage",domain:"Éthique / Philosophie / Politique",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.ccne-ethique.fr",desc:"Stage au Comité consultatif national d'éthique. Avis sur les questions bioéthiques, intelligence artificielle, enjeux sociaux."},
+  {id:139,title:"Directeur·rice de programme — Sciences Po (PSIA)",org:"Sciences Po Paris",orgEmoji:"🎓",type:"Emploi",domain:"RI / Sciences politiques",location:"Paris",zone:"France",link:"https://www.sciencespo.fr/en/research/emplois/",desc:"Postes académiques à Sciences Po. Enseignement et recherche en RI, affaires internationales, développement, sécurité."},
+  // ── PHYSIQUE / SCIENCES ──
+  {id:140,title:"Chercheur·se — CERN (Organisation européenne)",org:"CERN",orgEmoji:"⚛️",type:"Emploi",domain:"Physique des particules / Sciences",location:"Genève, Suisse",zone:"Europe",link:"https://careers.cern.ch",desc:"Postes scientifiques et techniques au CERN (accélérateur LHC). Physique des hautes énergies, ingénierie, informatique quantique."},
+  {id:141,title:"Stage CERN — Physique & Ingénierie",org:"CERN",orgEmoji:"⚛️",type:"Stage",domain:"Physique / Informatique / Ingénierie",location:"Genève, Suisse",zone:"Europe",duration:"4–6 mois",link:"https://careers.cern.ch/students",desc:"Stage au CERN ouvert aux étudiants en physique, informatique, ingénierie. Participation aux expériences LHC (ATLAS, CMS, etc.)."},
+  {id:142,title:"Chercheur·se — Agence Spatiale Européenne (ESA)",org:"ESA",orgEmoji:"🚀",type:"Emploi",domain:"Sciences de l'espace / Ingénierie",location:"Paris / Darmstadt / Noordwijk",zone:"Europe",link:"https://www.esa.int/About_Us/Careers_at_ESA",desc:"Postes scientifiques et d'ingénierie à l'ESA. Astronomie, satellites, exploration spatiale, télédétection environnementale."},
+  {id:143,title:"Stage ESA — Young Graduate Trainee",org:"ESA",orgEmoji:"🚀",type:"Stage",domain:"Ingénierie / Sciences / Gestion",location:"Paris / Darmstadt / Noordwijk",zone:"Europe",duration:"1 an",deadlineIso:"2026-11-30",deadline:"Clôture : nov. 2026",link:"https://www.esa.int/About_Us/Careers_at_ESA/Young_Graduate_Trainee_YGT_Programme",desc:"Programme YGT de l'ESA pour jeunes diplômés Master. Ingénierie spatiale, sciences, gestion de projets, relations internationales."},
+  // ── MEDIA / COMMUNICATION INTERNATIONALE ──
+  {id:144,title:"Journaliste — France 24 / RFI",org:"France Médias Monde",orgEmoji:"📡",type:"Emploi",domain:"Journalisme international",location:"Paris",zone:"France",link:"https://www.francemediasmonde.com/emplois",desc:"Journalistes et rédacteurs pour France 24 et RFI. Correspondants à l'étranger, rédaction internationale, reportages. Toutes langues."},
+  {id:145,title:"Stage — France 24 / RFI",org:"France Médias Monde",orgEmoji:"📡",type:"Stage",domain:"Journalisme / Communication",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://www.francemediasmonde.com/emplois",desc:"Stage en rédaction internationale à France 24 ou RFI. Reportages, web, multimédia. Anglais ou arabe ou espagnol apprécié."},
+  {id:146,title:"Chargé·e de communication — OIT",org:"OIT (ILO)",orgEmoji:"⚖️",type:"Emploi",domain:"Communication internationale",location:"Genève",zone:"Monde",link:"https://www.ilo.org/employment",desc:"Communication institutionnelle, relations médias, production de contenus multilingues pour l'Organisation internationale du travail."},
 ];
+
 
 // ── OPPORTUNITIES SCREEN ──────────────────────────────────────
 function OpportunitiesScreen({T}:{T:Theme}) {
   const [typeFilter,setTypeFilter] = useState("Tout");
   const [zoneFilter,setZoneFilter] = useState("Tout");
   const [search,setSearch] = useState("");
+  const [showExpired,setShowExpired] = useState(false);
+  const [lastRefresh,setLastRefresh] = useState(()=>new Date());
   const [saved,setSaved] = useState<Set<number>>(()=>{
     if(typeof window==="undefined") return new Set();
     try{return new Set(JSON.parse(localStorage.getItem("nexus_saved_opps")||"[]"));}catch{return new Set();}
   });
+
+  // Auto-refresh every 24h to re-evaluate expirations
+  useEffect(()=>{
+    const t=setInterval(()=>setLastRefresh(new Date()),24*60*60*1000);
+    return()=>clearInterval(t);
+  },[]);
+
+  const today=lastRefresh.toISOString().slice(0,10);
+  const daysUntil=(iso:string)=>Math.round((new Date(iso).getTime()-new Date(today).getTime())/86400000);
+
   const toggleSave=(id:number)=>{
     setSaved(s=>{
       const ns=new Set(s);
@@ -1775,26 +1873,43 @@ function OpportunitiesScreen({T}:{T:Theme}) {
       return ns;
     });
   };
+
   const types=["Tout","Stage","Alternance","Emploi","Bénévolat","JPO"];
   const zones=["Tout","🇫🇷 France","🇪🇺 Europe","🌐 Monde"];
   const zoneMap:Record<string,string>={"🇫🇷 France":"France","🇪🇺 Europe":"Europe","🌐 Monde":"Monde"};
   const typeColors:Record<string,string>={Stage:T.blueB,Alternance:"#7C3AED",Emploi:"#16A34A",Bénévolat:"#D97706",JPO:"#E03535"};
+
   const q=search.toLowerCase();
-  const filtered=OPPORTUNITIES_DATA.filter(o=>{
+  const matchFilters=(o:Opportunity)=>{
     if(typeFilter!=="Tout"&&o.type!==typeFilter) return false;
     if(zoneFilter!=="Tout"&&o.zone!==zoneMap[zoneFilter]) return false;
     if(q&&!o.title.toLowerCase().includes(q)&&!o.org.toLowerCase().includes(q)&&!o.domain.toLowerCase().includes(q)) return false;
     return true;
-  });
-  const savedList=filtered.filter(o=>saved.has(o.id));
-  const unsavedList=filtered.filter(o=>!saved.has(o.id));
-  const display=[...savedList,...unsavedList];
+  };
+  const isExpired=(o:Opportunity)=>!!o.deadlineIso&&o.deadlineIso<today;
+
+  const allMatch=OPPORTUNITIES_DATA.filter(matchFilters);
+  const active=allMatch.filter(o=>!isExpired(o));
+  const expired=allMatch.filter(isExpired);
+
+  const savedActive=active.filter(o=>saved.has(o.id));
+  const unsavedActive=active.filter(o=>!saved.has(o.id));
+  const display=[...savedActive,...unsavedActive,...(showExpired?expired:[])];
+
+  const fmtDate=(iso:string)=>{const d=new Date(iso);return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"});};
+
   return(
     <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
-      <div>
-        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Carrières & Engagement</p>
-        <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:26,fontWeight:800,color:T.text,marginBottom:4}}>Opportunités</h1>
-        <p style={{color:T.textD,fontSize:12}}>Stages · Alternances · Emplois · Bénévolat — ONU, UE, ONG &amp; +</p>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+        <div>
+          <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Carrières & Engagement</p>
+          <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:26,fontWeight:800,color:T.text,marginBottom:4}}>Opportunités</h1>
+          <p style={{color:T.textD,fontSize:12}}>Stages · Alternances · Emplois · Bénévolat — ONU, UE, ONG &amp; +</p>
+        </div>
+        <div style={{textAlign:"right",flexShrink:0}}>
+          <p style={{color:T.muted,fontSize:10,fontWeight:600}}>Actualisé le</p>
+          <p style={{color:T.textD,fontSize:11,fontWeight:700}}>{lastRefresh.toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}</p>
+        </div>
       </div>
       <div style={{position:"relative"}}>
         <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",lineHeight:1,display:"flex"}}><Ic n="search" s={14} c={T.muted}/></span>
@@ -1810,14 +1925,25 @@ function OpportunitiesScreen({T}:{T:Theme}) {
           <button key={z} onClick={()=>setZoneFilter(z)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${zoneFilter===z?T.blueB:T.b1}`,background:zoneFilter===z?T.blueG:"transparent",color:zoneFilter===z?T.blueB:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{z}</button>
         ))}
       </div>
-      <p style={{color:T.muted,fontSize:11,fontWeight:600}}>{display.length} opportunité{display.length>1?"s":""} trouvée{display.length>1?"s":""}{saved.size>0?" · "+savedList.length+" sauvegardée"+(savedList.length>1?"s":""):""}</p>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}}>
+        <p style={{color:T.muted,fontSize:11,fontWeight:600}}>{active.length} offre{active.length>1?"s":""} active{active.length>1?"s":""}{saved.size>0?" · "+savedActive.length+" sauvegardée"+(savedActive.length>1?"s":""):""}</p>
+        {expired.length>0&&(
+          <button onClick={()=>setShowExpired(s=>!s)} style={{fontSize:11,fontWeight:700,color:T.muted,background:"none",border:`1px solid ${T.b1}`,borderRadius:6,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>
+            {showExpired?"Masquer":"Voir"} {expired.length} expirée{expired.length>1?"s":""}
+          </button>
+        )}
+      </div>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {display.length===0&&<div style={{textAlign:"center",padding:40}}><p style={{color:T.muted,fontSize:14}}>Aucune opportunité pour ces filtres</p></div>}
         {display.map(o=>{
           const col=typeColors[o.type]||T.blueB;
           const isSaved=saved.has(o.id);
+          const exp=isExpired(o);
+          const days=o.deadlineIso?daysUntil(o.deadlineIso):null;
+          const urgent=days!==null&&days>=0&&days<=30;
           return(
-            <div key={o.id} style={{background:T.card,border:`1px solid ${isSaved?col+"50":T.b1}`,borderRadius:14,padding:14,display:"flex",flexDirection:"column",gap:8,animation:"fadeUp .3s ease"}}>
+            <div key={o.id} style={{background:T.card,border:`1px solid ${exp?"#9CA3AF40":isSaved?col+"50":T.b1}`,borderRadius:14,padding:14,display:"flex",flexDirection:"column",gap:8,animation:"fadeUp .3s ease",opacity:exp?0.6:1}}>
+              {exp&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:8,background:"#9CA3AF15",border:"1px solid #9CA3AF30"}}><span style={{fontSize:11}}>🔒</span><span style={{color:T.muted,fontSize:11,fontWeight:700}}>Offre expirée — clôturée le {fmtDate(o.deadlineIso!)}</span></div>}
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
@@ -1828,7 +1954,7 @@ function OpportunitiesScreen({T}:{T:Theme}) {
                   </div>
                   <p style={{color:T.text,fontSize:13,fontWeight:700,lineHeight:1.4}}>{o.title}</p>
                 </div>
-                <button onClick={()=>toggleSave(o.id)} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,fontSize:16}}>
+                <button onClick={()=>toggleSave(o.id)} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,fontSize:16}} title={isSaved?"Retirer":"Sauvegarder"}>
                   {isSaved?"🔖":"🏷️"}
                 </button>
               </div>
@@ -1839,9 +1965,14 @@ function OpportunitiesScreen({T}:{T:Theme}) {
                 <span style={{color:T.muted,fontSize:11}}>🔬 {o.domain}</span>
                 {o.duration&&<><span style={{color:T.b1}}>·</span><span style={{color:T.muted,fontSize:11}}>⏱ {o.duration}</span></>}
               </div>
-              {o.deadline&&<div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:6,background:`${T.amber}15`,border:`1px solid ${T.amber}30`,alignSelf:"flex-start"}}><span style={{fontSize:10}}>⚠️</span><span style={{color:T.amber,fontSize:11,fontWeight:700}}>{o.deadline}</span></div>}
-              <a href={o.link} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"9px 14px",borderRadius:9,border:`1px solid ${col}`,background:`${col}10`,color:col,fontSize:12,fontWeight:800,textDecoration:"none",fontFamily:"inherit"}}>
-                Voir l&apos;offre →
+              {o.deadline&&!exp&&(
+                <div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:6,background:urgent?`${T.red}12`:`${T.amber}12`,border:`1px solid ${urgent?T.red+"40":T.amber+"40"}`,alignSelf:"flex-start"}}>
+                  <span style={{fontSize:10}}>{urgent?"🔥":"⏰"}</span>
+                  <span style={{color:urgent?T.red:T.amber,fontSize:11,fontWeight:700}}>{o.deadline}{days!==null&&days>=0?" — "+days+" jour"+(days>1?"s":"")+" restant"+(days>1?"s":""):""}</span>
+                </div>
+              )}
+              <a href={o.link} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"9px 14px",borderRadius:9,border:`1px solid ${exp?"#9CA3AF":col}`,background:exp?"#9CA3AF10":`${col}10`,color:exp?"#9CA3AF":col,fontSize:12,fontWeight:800,textDecoration:"none",fontFamily:"inherit"}}>
+                {exp?"Consulter l'offre (expirée)":"Voir l'offre →"}
               </a>
             </div>
           );
