@@ -1856,7 +1856,6 @@ function OpportunitiesScreen({T}:{T:Theme}) {
     try{return new Set(JSON.parse(localStorage.getItem("nexus_saved_opps")||"[]"));}catch{return new Set();}
   });
 
-  // Auto-refresh every 24h to re-evaluate expirations
   useEffect(()=>{
     const t=setInterval(()=>setLastRefresh(new Date()),24*60*60*1000);
     return()=>clearInterval(t);
@@ -1874,15 +1873,26 @@ function OpportunitiesScreen({T}:{T:Theme}) {
     });
   };
 
+  // Professional 2-letter org badge derived from name
+  const orgInitials=(org:string)=>{
+    const w=org.replace(/[()]/g,"").split(/[\s\/\-\.&]+/).filter(Boolean);
+    if(w.length>=2) return (w[0][0]+(w[1][0]||"")).toUpperCase();
+    return org.slice(0,2).toUpperCase();
+  };
+  const orgBadgeColor=(org:string)=>{
+    const palette=[T.blueB,"#7C3AED","#0891B2","#BE185D","#16A34A","#D97706","#64748B","#E03535"];
+    return palette[org.charCodeAt(0)%palette.length];
+  };
+
   const types=["Tout","Stage","Alternance","Emploi","Bénévolat","JPO"];
-  const zones=["Tout","🇫🇷 France","🇪🇺 Europe","🌐 Monde"];
-  const zoneMap:Record<string,string>={"🇫🇷 France":"France","🇪🇺 Europe":"Europe","🌐 Monde":"Monde"};
+  const zones=["Tout","France","Europe","Monde"];
   const typeColors:Record<string,string>={Stage:T.blueB,Alternance:"#7C3AED",Emploi:"#16A34A",Bénévolat:"#D97706",JPO:"#E03535"};
+  const zoneCode:Record<string,string>={France:"FR",Europe:"UE",Monde:"INT"};
 
   const q=search.toLowerCase();
   const matchFilters=(o:Opportunity)=>{
     if(typeFilter!=="Tout"&&o.type!==typeFilter) return false;
-    if(zoneFilter!=="Tout"&&o.zone!==zoneMap[zoneFilter]) return false;
+    if(zoneFilter!=="Tout"&&o.zone!==zoneFilter) return false;
     if(q&&!o.title.toLowerCase().includes(q)&&!o.org.toLowerCase().includes(q)&&!o.domain.toLowerCase().includes(q)) return false;
     return true;
   };
@@ -1891,7 +1901,6 @@ function OpportunitiesScreen({T}:{T:Theme}) {
   const allMatch=OPPORTUNITIES_DATA.filter(matchFilters);
   const active=allMatch.filter(o=>!isExpired(o));
   const expired=allMatch.filter(isExpired);
-
   const savedActive=active.filter(o=>saved.has(o.id));
   const unsavedActive=active.filter(o=>!saved.has(o.id));
   const display=[...savedActive,...unsavedActive,...(showExpired?expired:[])];
@@ -1900,39 +1909,55 @@ function OpportunitiesScreen({T}:{T:Theme}) {
 
   return(
     <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
+      {/* Header */}
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
         <div>
-          <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Carrières & Engagement</p>
-          <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:26,fontWeight:800,color:T.text,marginBottom:4}}>Opportunités</h1>
-          <p style={{color:T.textD,fontSize:12}}>Stages · Alternances · Emplois · Bénévolat — ONU, UE, ONG &amp; +</p>
+          <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Carrières &amp; Engagement</p>
+          <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text,marginBottom:4}}>Opportunités</h1>
+          <p style={{color:T.textD,fontSize:12}}>Stages · Alternances · Emplois · Bénévolat</p>
         </div>
         <div style={{textAlign:"right",flexShrink:0}}>
-          <p style={{color:T.muted,fontSize:10,fontWeight:600}}>Actualisé le</p>
+          <p style={{color:T.muted,fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Actualisé le</p>
           <p style={{color:T.textD,fontSize:11,fontWeight:700}}>{lastRefresh.toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}</p>
+          <p style={{color:T.muted,fontSize:10,marginTop:2}}>{active.length} offres actives</p>
         </div>
       </div>
+      {/* Search */}
       <div style={{position:"relative"}}>
-        <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",lineHeight:1,display:"flex"}}><Ic n="search" s={14} c={T.muted}/></span>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher un poste, organisation…" style={{width:"100%",padding:"9px 12px 9px 34px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",display:"flex"}}><Ic n="search" s={14} c={T.muted}/></span>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Poste, organisation, domaine…" style={{width:"100%",padding:"9px 12px 9px 34px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
       </div>
+      {/* Type filters */}
       <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
-        {types.map(t=>(
-          <button key={t} onClick={()=>setTypeFilter(t)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${typeFilter===t?(typeColors[t]||T.blueB):T.b1}`,background:typeFilter===t?(typeColors[t]||T.blueB):"transparent",color:typeFilter===t?"#fff":T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{t}</button>
-        ))}
+        {types.map(t=>{
+          const col=typeColors[t]||T.blueB;
+          const active2=typeFilter===t;
+          return <button key={t} onClick={()=>setTypeFilter(t)} style={{padding:"5px 13px",borderRadius:6,border:`1px solid ${active2?col:T.b1}`,background:active2?col:"transparent",color:active2?"#fff":T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .15s",letterSpacing:.3}}>{t}</button>;
+        })}
       </div>
+      {/* Zone filters */}
       <div style={{display:"flex",gap:6,overflowX:"auto"}}>
-        {zones.map(z=>(
-          <button key={z} onClick={()=>setZoneFilter(z)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${zoneFilter===z?T.blueB:T.b1}`,background:zoneFilter===z?T.blueG:"transparent",color:zoneFilter===z?T.blueB:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s"}}>{z}</button>
-        ))}
+        {zones.map(z=>{
+          const active2=zoneFilter===z;
+          return(
+            <button key={z} onClick={()=>setZoneFilter(z)} style={{padding:"4px 12px",borderRadius:6,border:`1px solid ${active2?T.blueB:T.b1}`,background:active2?T.blueG:"transparent",color:active2?T.blueB:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .15s",display:"flex",alignItems:"center",gap:5}}>
+              {z!=="Tout"&&<span style={{fontSize:9,fontWeight:800,padding:"1px 5px",borderRadius:3,background:active2?T.blueB+"22":T.b1,color:active2?T.blueB:T.muted,letterSpacing:.5}}>{zoneCode[z]}</span>}
+              {z}
+            </button>
+          );
+        })}
       </div>
+      {/* Count + expired toggle */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}}>
-        <p style={{color:T.muted,fontSize:11,fontWeight:600}}>{active.length} offre{active.length>1?"s":""} active{active.length>1?"s":""}{saved.size>0?" · "+savedActive.length+" sauvegardée"+(savedActive.length>1?"s":""):""}</p>
+        <p style={{color:T.muted,fontSize:11}}>{display.length} résultat{display.length>1?"s":""}{saved.size>0?<span style={{color:T.amber,fontWeight:700}}> · {savedActive.length} sauvegardé{savedActive.length>1?"s":""}</span>:""}</p>
         {expired.length>0&&(
-          <button onClick={()=>setShowExpired(s=>!s)} style={{fontSize:11,fontWeight:700,color:T.muted,background:"none",border:`1px solid ${T.b1}`,borderRadius:6,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>
+          <button onClick={()=>setShowExpired(s=>!s)} style={{fontSize:11,fontWeight:600,color:T.muted,background:"none",border:`1px solid ${T.b1}`,borderRadius:6,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+            <Ic n="lock" s={11} c={T.muted}/>
             {showExpired?"Masquer":"Voir"} {expired.length} expirée{expired.length>1?"s":""}
           </button>
         )}
       </div>
+      {/* Cards */}
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {display.length===0&&<div style={{textAlign:"center",padding:40}}><p style={{color:T.muted,fontSize:14}}>Aucune opportunité pour ces filtres</p></div>}
         {display.map(o=>{
@@ -1941,38 +1966,60 @@ function OpportunitiesScreen({T}:{T:Theme}) {
           const exp=isExpired(o);
           const days=o.deadlineIso?daysUntil(o.deadlineIso):null;
           const urgent=days!==null&&days>=0&&days<=30;
+          const badgeColor=orgBadgeColor(o.org);
           return(
-            <div key={o.id} style={{background:T.card,border:`1px solid ${exp?"#9CA3AF40":isSaved?col+"50":T.b1}`,borderRadius:14,padding:14,display:"flex",flexDirection:"column",gap:8,animation:"fadeUp .3s ease",opacity:exp?0.6:1}}>
-              {exp&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:8,background:"#9CA3AF15",border:"1px solid #9CA3AF30"}}><span style={{fontSize:11}}>🔒</span><span style={{color:T.muted,fontSize:11,fontWeight:700}}>Offre expirée — clôturée le {fmtDate(o.deadlineIso!)}</span></div>}
-              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
-                <div style={{flex:1}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-                    <span style={{fontSize:16}}>{o.orgEmoji}</span>
-                    <span style={{color:T.textD,fontSize:11,fontWeight:700}}>{o.org}</span>
-                    <span style={{fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:5,background:`${col}18`,color:col,border:`1px solid ${col}30`}}>{o.type}</span>
-                    <span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:T.bg2,color:T.muted,border:`1px solid ${T.b1}`}}>{o.zone==="France"?"🇫🇷":o.zone==="Europe"?"🇪🇺":"🌐"} {o.zone}</span>
-                  </div>
-                  <p style={{color:T.text,fontSize:13,fontWeight:700,lineHeight:1.4}}>{o.title}</p>
+            <div key={o.id} style={{background:T.card,border:`1px solid ${exp?T.b1:isSaved?col+"40":T.b1}`,borderLeft:`3px solid ${exp?"#9CA3AF":col}`,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8,opacity:exp?0.55:1}}>
+              {/* Expired notice */}
+              {exp&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 8px",borderRadius:5,background:T.bg2,border:`1px solid ${T.b1}`,alignSelf:"flex-start"}}><Ic n="lock" s={10} c={T.muted}/><span style={{color:T.muted,fontSize:10,fontWeight:700,letterSpacing:.3}}>CLÔTURÉ — {fmtDate(o.deadlineIso!)}</span></div>}
+              {/* Org + title row */}
+              <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                {/* Org initial badge */}
+                <div style={{width:36,height:36,borderRadius:8,background:`${badgeColor}18`,border:`1px solid ${badgeColor}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <span style={{fontSize:11,fontWeight:900,color:badgeColor,letterSpacing:.5}}>{orgInitials(o.org)}</span>
                 </div>
-                <button onClick={()=>toggleSave(o.id)} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,fontSize:16}} title={isSaved?"Retirer":"Sauvegarder"}>
-                  {isSaved?"🔖":"🏷️"}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:3,flexWrap:"wrap"}}>
+                    <span style={{color:T.textD,fontSize:11,fontWeight:600}}>{o.org}</span>
+                    <span style={{width:3,height:3,borderRadius:"50%",background:T.muted,display:"inline-block"}}/>
+                    <span style={{fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:3,background:`${col}15`,color:col,border:`1px solid ${col}25`,letterSpacing:.5,textTransform:"uppercase"}}>{o.type}</span>
+                    <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:3,background:T.bg2,color:T.muted,border:`1px solid ${T.b1}`,letterSpacing:.5}}>{zoneCode[o.zone]||o.zone}</span>
+                  </div>
+                  <p style={{color:T.text,fontSize:13,fontWeight:700,lineHeight:1.35,margin:0}}>{o.title}</p>
+                </div>
+                {/* Save button */}
+                <button onClick={()=>toggleSave(o.id)} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0,opacity:isSaved?1:0.4}} title={isSaved?"Retirer des favoris":"Sauvegarder"}>
+                  <Ic n="star" s={16} c={isSaved?T.amber:T.muted}/>
                 </button>
               </div>
-              <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{o.desc}</p>
-              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <div style={{display:"flex",alignItems:"center",gap:4}}><Ic n="map" s={11} c={T.muted}/><span style={{color:T.muted,fontSize:11}}>{o.location}</span></div>
-                <span style={{color:T.b1}}>·</span>
-                <span style={{color:T.muted,fontSize:11}}>🔬 {o.domain}</span>
-                {o.duration&&<><span style={{color:T.b1}}>·</span><span style={{color:T.muted,fontSize:11}}>⏱ {o.duration}</span></>}
+              {/* Description */}
+              <p style={{color:T.textD,fontSize:11,lineHeight:1.55,margin:0}}>{o.desc}</p>
+              {/* Meta row */}
+              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <Ic n="map" s={11} c={T.muted}/>
+                  <span style={{color:T.muted,fontSize:11}}>{o.location}</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <Ic n="brief" s={11} c={T.muted}/>
+                  <span style={{color:T.muted,fontSize:11}}>{o.domain}</span>
+                </div>
+                {o.duration&&<div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <Ic n="cal" s={11} c={T.muted}/>
+                  <span style={{color:T.muted,fontSize:11}}>{o.duration}</span>
+                </div>}
               </div>
+              {/* Deadline bar */}
               {o.deadline&&!exp&&(
-                <div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:6,background:urgent?`${T.red}12`:`${T.amber}12`,border:`1px solid ${urgent?T.red+"40":T.amber+"40"}`,alignSelf:"flex-start"}}>
-                  <span style={{fontSize:10}}>{urgent?"🔥":"⏰"}</span>
-                  <span style={{color:urgent?T.red:T.amber,fontSize:11,fontWeight:700}}>{o.deadline}{days!==null&&days>=0?" — "+days+" jour"+(days>1?"s":"")+" restant"+(days>1?"s":""):""}</span>
+                <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:6,background:urgent?`${T.red}08`:`${T.amber}08`,border:`1px solid ${urgent?T.red+"30":T.amber+"30"}`}}>
+                  <Ic n="bell" s={11} c={urgent?T.red:T.amber}/>
+                  <span style={{color:urgent?T.red:T.amber,fontSize:11,fontWeight:700}}>{o.deadline}</span>
+                  {days!==null&&days>=0&&<span style={{color:urgent?T.red:T.amber,fontSize:11,opacity:.8}}>— J-{days}</span>}
                 </div>
               )}
-              <a href={o.link} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"9px 14px",borderRadius:9,border:`1px solid ${exp?"#9CA3AF":col}`,background:exp?"#9CA3AF10":`${col}10`,color:exp?"#9CA3AF":col,fontSize:12,fontWeight:800,textDecoration:"none",fontFamily:"inherit"}}>
-                {exp?"Consulter l'offre (expirée)":"Voir l'offre →"}
+              {/* CTA */}
+              <a href={o.link} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"9px 14px",borderRadius:7,border:`1px solid ${exp?T.b1:col}`,background:exp?"transparent":`${col}08`,color:exp?T.muted:col,fontSize:12,fontWeight:700,textDecoration:"none",fontFamily:"inherit",letterSpacing:.3,transition:"all .15s"}}>
+                {exp?"Consulter (offre clôturée)":"Accéder à l'offre"}
+                {!exp&&<Ic n="chevR" s={13} c={col}/>}
               </a>
             </div>
           );
@@ -2052,7 +2099,7 @@ function EventsScreen({T}:{T:Theme}) {
   return(
     <div style={{display:"flex",flexDirection:"column",gap:0}}>
       <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`,background:T.card}}>
-        {([["events","📅 Agenda"],["opps","💼 Opportunités"]] as [string,string][]).map(([id,label])=>(
+        {([["events","Agenda"],["opps","Opportunités"]] as [string,string][]).map(([id,label])=>(
           <button key={id} onClick={()=>setSubTab(id as "events"|"opps")} style={{flex:1,padding:"13px 8px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700,color:subTab===id?T.blueB:T.textD,borderBottom:subTab===id?`2px solid ${T.blueB}`:"2px solid transparent",transition:"all .2s"}}>
             {label}
           </button>
