@@ -1251,7 +1251,7 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
   useEffect(()=>{
     refresh();
     // Auto-refresh every 30 minutes
-    refreshTimerRef.current=setInterval(()=>refresh(),5*60*1000);
+    refreshTimerRef.current=setInterval(()=>refresh(),60*1000);
     return()=>{if(refreshTimerRef.current)clearInterval(refreshTimerRef.current);};
   },[]);// eslint-disable-line
 
