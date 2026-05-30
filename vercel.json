@@ -1,4 +1,5 @@
 {
+  "name": "arca",
   "headers": [
     {
       "source": "/sw.js",

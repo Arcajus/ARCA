@@ -1,0 +1,72 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: ["claude/dreamy-rubin-GBcJB", "main"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel --prod --yes --token "$VERCEL_TOKEN"
+
+      - name: Configure GEMINI_API_KEY
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "GEMINI_API_KEY secret not set — skipping"
+            exit 0
+          fi
+
+          # Get project ID from the linked config created by vercel CLI
+          PROJECT_ID=$(python3 -c "import json; print(json.load(open('.vercel/project.json'))['projectId'])" 2>/dev/null || echo "")
+          if [ -z "$PROJECT_ID" ]; then
+            echo "Could not read project ID — skipping env var setup"
+            exit 0
+          fi
+
+          echo "Project ID: $PROJECT_ID"
+
+          # Check if env var already exists
+          ENV_ID=$(curl -sf "https://api.vercel.com/v9/projects/$PROJECT_ID/env" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" | \
+            python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+envs = data.get('envs', [])
+match = [e for e in envs if e['key'] == 'GEMINI_API_KEY']
+print(match[0]['id'] if match else '')
+" 2>/dev/null || echo "")
+
+          if [ -n "$ENV_ID" ]; then
+            # Update existing env var
+            curl -sf -X PATCH "https://api.vercel.com/v9/projects/$PROJECT_ID/env/$ENV_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"value\":\"$GEMINI_API_KEY\"}" > /dev/null
+            echo "GEMINI_API_KEY updated"
+          else
+            # Add new env var
+            curl -sf -X POST "https://api.vercel.com/v10/projects/$PROJECT_ID/env" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"key\":\"GEMINI_API_KEY\",\"value\":\"$GEMINI_API_KEY\",\"type\":\"encrypted\",\"target\":[\"production\",\"preview\"]}" > /dev/null
+            echo "GEMINI_API_KEY added — redeploying to apply"
+            npx vercel --prod --yes --token "$VERCEL_TOKEN"
+          fi
