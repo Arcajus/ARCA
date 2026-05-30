@@ -3751,7 +3751,7 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  const [corrLoading,setCorrLoading]=useState<string|null>(null);
 
  const genCorrection=async(e:{annee:number;matiere:string;sujet:string;type:string},key2:string)=>{
- const key=getKey();if(!key){setCorrTexts(p=>({...p,[key2]:" Clé Gemini requise dans les paramètres."}));return;}
+ const key=getKey();
  setCorrLoading(key2);
  const prompts:Record<string,string>={
  "Dissertation":`Tu es un professeur de classe préparatoire. Pour la dissertation : "${e.sujet}" (matière : ${e.matiere}, concours ${e.annee}), génère le PLAN DU RÉSULTAT en 3 parties : \n\nINTRODUCTION — Que doit contenir l'introduction ? (accroche, définition des termes, contextualisation, problématique, annonce du plan)\n\nCORPS DU DEVOIR — Quels arguments, exemples et idées clés mettre dans chaque partie ? (I → sous-parties A B C avec arguments précis, II → sous-parties A B C, III → sous-parties A B C)\n\nCONCLUSION — Que doit contenir la conclusion ? (bilan, réponse à la problématique, ouverture). Réponds en français, format clair et structuré.`,
@@ -3769,7 +3769,7 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  const getKey=()=>typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
 
  const genDiscours=async()=>{
- const key=getKey();if(!key){setGenResult(" Clé Gemini requise dans les paramètres.");return;}
+ const key=getKey();
  setGenLoading(true);setGenResult("");
  try{const r=await callGemini(`Tu es un expert en rhétorique. Génère un discours de 3 minutes (400 mots) sur : "${genSubject}". Structure : accroche percutante, problème, 3 arguments avec exemples concrets, conclusion mémorable. Utilise des figures de style (anaphore, métaphore).`,[{role:"user",parts:[{text:genSubject}]}],key,600);setGenResult(r);addXP(20);}
  catch(err){setGenResult("Erreur: "+(err instanceof Error?err.message:"inconnu"));}
@@ -3777,7 +3777,7 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  };
 
  const buildArgs=async()=>{
- const key=getKey();if(!key){setBuildResult(" Clé Gemini requise.");return;}
+ const key=getKey();
  setBuildLoading(true);setBuildResult("");
  try{const r=await callGemini(`Expert en argumentation. Pour la position : "${buildPos}", génère : 3 arguments POUR avec exemple et chiffre, 3 arguments CONTRE avec exemple et chiffre, 3 réfutations. Format clair et structuré.`,[{role:"user",parts:[{text:buildPos}]}],key,500);setBuildResult(r);addXP(15);}
  catch(err){setBuildResult("Erreur: "+(err instanceof Error?err.message:"inconnu"));}
@@ -4000,16 +4000,9 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
 
 function SimulationHub({T}:{T:Theme}) {
  const [view,setView] = useState<"hub"|"studio"|"sims"|"apprendre"|"carriere"|"sagesse">("hub");
- const [showKeySetup,setShowKeySetup] = useState(false);
- const [pendingView,setPendingView] = useState<"studio"|"sims"|null>(null);
  const [showPremiumHub,setShowPremiumHub] = useState(false);
 
- const launch=(id:"studio"|"sims")=>{
- haptic();
- const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
- if(!key){setPendingView(id);setShowKeySetup(true);return;}
- setView(id);
- };
+ const launch=(id:"studio"|"sims")=>{haptic();setView(id);};
 
  if(view==="studio") return <StudioScreen T={T} onPremium={()=>setShowPremiumHub(true)} onBack={()=>setView("hub")}/>;
  if(view==="sims") return <SimulationScreen T={T} onBack={()=>setView("hub")}/>;
@@ -4020,7 +4013,6 @@ function SimulationHub({T}:{T:Theme}) {
 
  return(
  <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:20,overflowY:"auto",height:"100%",boxSizing:"border-box"}}>
- {showKeySetup&&<ApiKeySetupModal T={T} onDone={()=>{setShowKeySetup(false);if(pendingView)setView(pendingView);setPendingView(null);}}/>}
  <div>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>NEXUS</p>
  <h1 style={{fontSize:26,fontWeight:800,color:T.text}}>Simulation</h1>
