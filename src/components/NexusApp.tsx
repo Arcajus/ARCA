@@ -738,7 +738,7 @@ function ScoreModal({topic,T,onClose}:{topic:string;T:Theme;onClose:()=>void}) {
  <div style={{background:T.surf,borderRadius:"24px 24px 0 0",padding:"28px 24px 48px",width:"100%",maxWidth:430,border:`1px solid ${T.b1}`,animation:"slideUp .4s ease"}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
  <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Analyse post-débat</p><h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:700,color:T.text}}>Score d&apos;éloquence</h2></div>
- <button onClick={onClose} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><Ic n="x" s={16} c={T.textD}/></button>
+ <button onClick={onClose} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><Ic n="x" s={16} c={T.blueB}/></button>
  </div>
  <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,padding:24,textAlign:"center",marginBottom:20}}>
  <div style={{position:"relative",width:110,height:110,margin:"0 auto 16px"}}>
@@ -1073,7 +1073,7 @@ Style authentique : ${opponent.style.split(".")[0]}`;
  <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.bg}}>
  {showScore&&<ScoreModal topic={topic} T={T} onClose={()=>{setShowScore(false);onBack();}}/>}
  <div style={{padding:"12px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
- <button onClick={()=>{recRef.current?.stop();stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ic n="chevL" s={22} c={T.textD}/></button>
+ <button onClick={()=>{recRef.current?.stop();stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ic n="chevL" s={22} c={T.blueB}/></button>
  <div style={{flex:1}}>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
  <div style={{width:8,height:8,borderRadius:"50%",background:T.red,animation:"pulse 1s infinite"}}/>
@@ -1734,7 +1734,7 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
  <div style={{width:40,height:4,borderRadius:2,background:T.b2,margin:"0 auto 8px"}}/>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
  <p style={{color:T.text,fontWeight:800,fontSize:16}}>Publier une analyse</p>
- <button onClick={()=>setShowCompose(false)} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="x" s={20} c={T.textD}/></button>
+ <button onClick={()=>setShowCompose(false)} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="x" s={20} c={T.blueB}/></button>
  </div>
  <textarea value={composed} onChange={e=>setComposed(e.target.value)} placeholder="Partagez votre analyse, opinion ou information…" rows={4} style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",color:T.text,fontSize:14,fontFamily:"inherit",outline:"none",resize:"none",lineHeight:1.6}}/>
  <input value={composeSrc} onChange={e=>setComposeSrc(e.target.value)} placeholder="Source (ex: Le Monde, Reuters…) — optionnel" style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"9px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
@@ -1930,10 +1930,10 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
  </div>
  <div style={{padding:"8px 14px 12px",display:"flex",alignItems:"center",borderTop:`1px solid ${T.b1}`}}>
  <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 8px 0 0"}}>
- <Ic n="heart" s={16} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>0</span>
+ <Ic n="heart" s={16} c={T.blueB}/><span style={{fontSize:12,fontWeight:600}}>0</span>
  </button>
  <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 8px"}}>
- <Ic n="comment" s={16} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>0</span>
+ <Ic n="comment" s={16} c={T.blueB}/><span style={{fontSize:12,fontWeight:600}}>0</span>
  </button>
  <div style={{marginLeft:"auto"}}>
  <button onClick={()=>{const next=userPosts.filter(x=>x.id!==p.id);setUserPosts(next);localStorage.setItem("nexus_posts",JSON.stringify(next));}} style={{background:`${T.red}15`,border:`1px solid ${T.red}30`,borderRadius:8,padding:"5px 10px",color:T.red,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Supprimer</button>
@@ -2017,13 +2017,13 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
  </div>
  <div style={{padding:"8px 16px 12px",display:"flex",alignItems:"center",borderTop:`1px solid ${T.b1}`,gap:4}}>
  <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"4px 8px"}}>
- <Ic n="heart" s={15} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>{p.likes}</span>
+ <Ic n="heart" s={15} c={T.blueB}/><span style={{fontSize:12,fontWeight:600}}>{p.likes}</span>
  </button>
  <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"4px 8px"}}>
- <Ic n="msg" s={15} c={T.textD}/><span style={{fontSize:12,fontWeight:600}}>{p.comments}</span>
+ <Ic n="msg" s={15} c={T.blueB}/><span style={{fontSize:12,fontWeight:600}}>{p.comments}</span>
  </button>
  <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"4px 8px"}}>
- <Ic n="share" s={15} c={T.textD}/>
+ <Ic n="share" s={15} c={T.blueB}/>
  </button>
  <button onClick={onDebate} style={{marginLeft:"auto",background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"5px 12px",color:T.blueB,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
  </div>
@@ -2079,10 +2079,10 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
  </a>
  <div style={{padding:"10px 16px 14px",display:"flex",alignItems:"center"}}>
  <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 14px 0 0"}}>
- <Ic n="heart" s={17} c={T.textD}/><span style={{fontSize:13,fontWeight:600}}>0</span>
+ <Ic n="heart" s={17} c={T.blueB}/><span style={{fontSize:13,fontWeight:600}}>0</span>
  </button>
  <button style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:T.textD,padding:"0 14px"}}>
- <Ic n="share" s={17} c={T.textD}/>
+ <Ic n="share" s={17} c={T.blueB}/>
  </button>
  <button onClick={onDebate} style={{marginLeft:"auto",background:T.blueG,border:`1px solid ${T.blueB}40`,borderRadius:8,padding:"6px 14px",color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Débattre</button>
  </div>
@@ -2772,13 +2772,13 @@ function MessagesScreen({T}:{T:Theme}) {
  return(
  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
  <div style={{padding:"12px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
- <button onClick={()=>setActive(null)} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.textD}/></button>
+ <button onClick={()=>setActive(null)} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
  <Avatar init={active.init} size={36} T={T}/>
  <div style={{flex:1}}>
  <p style={{color:T.text,fontWeight:700,fontSize:14}}>{active.name}</p>
  <p style={{color:T.green,fontSize:11}}>En ligne</p>
  </div>
- <Ic n="info" s={20} c={T.textD}/>
+ <Ic n="info" s={20} c={T.blueB}/>
  </div>
  <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}>
  {messages.map((m,i)=>(
@@ -2837,7 +2837,7 @@ function MessagesScreen({T}:{T:Theme}) {
  ))}
  </div>
  <button style={{width:"100%",marginTop:8,padding:"14px",borderRadius:12,border:`1.5px dashed ${T.b1}`,background:"transparent",color:T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
- <Ic n="plus" s={16} c={T.textD}/>{msgTab==="groupes"?"Nouveau groupe":"Nouveau message"}
+ <Ic n="plus" s={16} c={T.blueB}/>{msgTab==="groupes"?"Nouveau groupe":"Nouveau message"}
  </button>
  </div>
  </div>
@@ -3584,7 +3584,7 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
  {RHETORIC_DATA.map(r=>(
  <button key={r.id} onClick={()=>{if((r as any).premium){onPremium();}else{setSelLesson(r);}}} style={{padding:16,borderRadius:14,border:`1px solid ${(r as any).premium?T.amber+"40":T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",gap:14,alignItems:"center",opacity:(r as any).premium?.9:1}}>
- <div style={{width:44,height:44,borderRadius:12,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={r.icon} s={22} c={T.textD}/></div>
+ <div style={{width:44,height:44,borderRadius:12,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={r.icon} s={22} c={T.blueB}/></div>
  <div style={{flex:1}}>
  <p style={{color:T.text,fontWeight:800,fontSize:15}}>{r.title}</p>
  <p style={{color:T.textD,fontSize:12,marginTop:2}}>{r.desc}</p>
@@ -3639,7 +3639,7 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
  {FICHES_DATA.map(f=>(
  <button key={f.id} onClick={()=>{if((f as any).premium){onPremium();}else{setSelFiche(f);}}} style={{padding:16,borderRadius:14,border:`1px solid ${(f as any).premium?T.amber+"40":T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,opacity:(f as any).premium?.9:1}}>
- <div style={{width:44,height:44,borderRadius:12,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={f.icon} s={22} c={T.textD}/></div>
+ <div style={{width:44,height:44,borderRadius:12,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={f.icon} s={22} c={T.blueB}/></div>
  <div style={{flex:1}}>
  <p style={{color:T.text,fontWeight:800,fontSize:15}}>{f.title}</p>
  <p style={{color:T.textD,fontSize:12,marginTop:2}}>{f.items.length} points clés</p>
@@ -3672,7 +3672,7 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  {([{id:"discours",icon:"send",label:"Discours",desc:"Grands discours historiques analysés",color:"#2B78F5"},{id:"rhetori",icon:"award",label:"Rhétorique",desc:"Techniques d'argumentation",color:"#7C3AED"},{id:"dict",icon:"info",label:"Dictionnaire",desc:"Termes diplomatiques expliqués",color:"#16A34A"},{id:"fiches",icon:"check",label:"Fiches de révision",desc:"ONU · UE · OTAN · Géopolitique",color:"#D97706"}] as const).map(s=>(
  <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
- <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={T.textD}/></div>
+ <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={T.blueB}/></div>
  <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{s.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{s.desc}</p></div>
  <Ic n="chevR" s={18} c={T.muted}/>
  </button>
@@ -3973,7 +3973,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
  {([{id:"generateur",icon:"send",label:"Générateur de discours",desc:"Discours IA structuré sur n'importe quel sujet",color:"#2B78F5"},{id:"builder",icon:"info",label:"Builder d'arguments",desc:"Structure tes pour/contre instantanément",color:"#7C3AED"},{id:"concours",icon:"award",label:"Prépa concours",desc:"Sciences Po, ENS, Barreau, Fonction publique",color:"#D97706"}] as const).map(s=>(
  <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
- <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={T.textD}/></div>
+ <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={T.blueB}/></div>
  <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{s.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{s.desc}</p></div>
  <Ic n="chevR" s={18} c={T.muted}/>
  </button>
@@ -4018,7 +4018,7 @@ function SimulationHub({T}:{T:Theme}) {
  {([{id:"apprendre",icon:"info",label:"Apprendre",desc:"Discours · Rhétorique · Fiches · Dictionnaire",color:"#2B78F5"},{id:"carriere",icon:"brief",label:"Carrière & Concours",desc:"Générateur de discours · Arguments · Lettre",color:"#16A34A"},{id:"sagesse",icon:"star",label:"Citations & Sagesse",desc:"Proverbes · Philosophes · Auteurs",color:"#E03535"}] as const).map(c=>(
  <button key={c.id} onClick={()=>{haptic();setView(c.id);}} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
- <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={c.icon} s={26} c={T.textD}/></div>
+ <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={c.icon} s={26} c={T.blueB}/></div>
  <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{c.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{c.desc}</p></div>
  <Ic n="chevR" s={18} c={T.muted}/>
  </button>
@@ -4032,7 +4032,7 @@ function SimulationHub({T}:{T:Theme}) {
  <button key={c.id} onClick={()=>launch(c.id)} style={{padding:20,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
  <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
- <Ic n={c.icon} s={26} c={T.textD}/>
+ <Ic n={c.icon} s={26} c={T.blueB}/>
  </div>
  <div style={{flex:1}}><p style={{color:T.text,fontWeight:800,fontSize:16}}>{c.label}</p><p style={{color:T.textD,fontSize:12,marginTop:3}}>{c.desc}</p></div>
  <Ic n="chevR" s={18} c={T.muted}/>
@@ -4219,7 +4219,7 @@ RÈGLES ABSOLUES pour cette réponse :
  return(
  <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
  <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,display:"flex",alignItems:"center",gap:10,background:T.surf,flexShrink:0}}>
- <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.textD}/></button>
+ <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
  <div style={{width:32,height:32,borderRadius:8,background:`${color}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={icon} s={16} c={color}/></div>
  <p style={{color:T.text,fontWeight:800,fontSize:15,flex:1}}>{title}</p>
  <button onClick={toggleAudio} style={{background:audioOn?`${color}15`:"transparent",border:`1px solid ${audioOn?color:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
@@ -4424,7 +4424,7 @@ CHAQUE personnage doit citer ces mots EXACTS entre guillemets et y répondre dir
  return(
  <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
  <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,display:"flex",alignItems:"center",gap:10,background:T.surf,flexShrink:0}}>
- <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.textD}/></button>
+ <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
  <div style={{width:32,height:32,borderRadius:8,background:`${T.purple}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="scale" s={16} c={T.purple}/></div>
  <div style={{flex:1}}>
  <p style={{color:T.text,fontWeight:800,fontSize:14}}>{trialRole==="defense"?"Avocat de la Défense":"Procureur de la République"}</p>
@@ -4661,7 +4661,7 @@ STRUCTURE OBLIGATOIRE :
  <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
  <div style={{padding:"10px 16px",background:T.surf,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
- <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={20} c={T.textD}/></button>
+ <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={20} c={T.blueB}/></button>
  <div style={{width:32,height:32,borderRadius:8,background:`${T.blueB}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="globe" s={16} c={T.blueB}/></div>
  <div style={{flex:1}}>
  <p style={{color:T.text,fontSize:13,fontWeight:700}}>Conseil de Sécurité — ONU</p>
@@ -4909,7 +4909,7 @@ RÈGLES ABSOLUES :
  return(
  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
  <div style={{display:"flex",alignItems:"center",gap:12}}>
- <button onClick={()=>{setMode("home");setVoted(null);}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.textD}/></button>
+ <button onClick={()=>{setMode("home");setVoted(null);}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
  <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Simulation</p><h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:22,fontWeight:800,color:T.text}}>Élections virtuelles</h2></div>
  </div>
  <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,textAlign:"center"}}>
@@ -5085,7 +5085,7 @@ function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin
  </div>
  <div style={{position:"absolute",top:12,right:16}}>
  <button style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:8,padding:"6px 12px",color:T.textD,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
- <Ic n="settings" s={14} c={T.textD}/>Modifier
+ <Ic n="settings" s={14} c={T.blueB}/>Modifier
  </button>
  </div>
  </div>
@@ -5195,7 +5195,7 @@ function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
  return(
  <div style={{padding:"16px 20px 32px"}}>
  <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
- <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.textD}/></button>
+ <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
  <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Abonnement</p><h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>Choisir votre plan</h2></div>
  </div>
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -5247,7 +5247,7 @@ function InstallBanner({T,onDismiss}:{T:Theme;onDismiss:()=>void}) {
  : <p style={{color:T.textD,fontSize:11,marginTop:2}}>Menu navigateur → <span style={{color:T.blueB,fontWeight:700}}>Installer l&apos;application</span></p>
  }
  </div>
- <button onClick={onDismiss} style={{background:"none",border:"none",cursor:"pointer",padding:6,flexShrink:0,borderRadius:8}}><Ic n="x" s={16} c={T.textD}/></button>
+ <button onClick={onDismiss} style={{background:"none",border:"none",cursor:"pointer",padding:6,flexShrink:0,borderRadius:8}}><Ic n="x" s={16} c={T.blueB}/></button>
  </div>
  );
 }
@@ -5365,10 +5365,10 @@ export default function NexusApp() {
  </div>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
  <button onClick={()=>{haptic();setDark(d=>!d);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
- <Ic n={dark?"sun":"moon"} s={16} c={T.textD}/>
+ <Ic n={dark?"sun":"moon"} s={16} c={T.blueB}/>
  </button>
  <button onClick={()=>{haptic();setShowNotifPanel(p=>!p);setNotifRead(true);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative"}}>
- <Ic n="bell" s={16} c={T.textD}/>
+ <Ic n="bell" s={16} c={T.blueB}/>
  {!notifRead&&<div style={{position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:T.red,border:`2px solid ${T.surf}`,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#fff",fontSize:8,fontWeight:900,lineHeight:1}}>5</span></div>}
  </button>
  <div onClick={()=>{haptic();switchTab("profile");}} style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,cursor:"pointer",flexShrink:0}}>A</div>
