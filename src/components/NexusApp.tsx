@@ -3858,7 +3858,8 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
  <button key={a} onClick={()=>setConcoursAnnee(concoursAnnee===a?null:a)} style={{flexShrink:0,padding:"5px 12px",borderRadius:14,border:`1px solid ${concoursAnnee===a?meta.color:T.b1}`,background:concoursAnnee===a?`${meta.color}20`:"transparent",color:concoursAnnee===a?meta.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{a}</button>
  ))}
  </div>
- <div style={{flex:1,overflowY:"scroll",minHeight:0,padding:"12px 16px",display:"flex",flexDirection:"column",gap:10,WebkitOverflowScrolling:"touch",touchAction:"pan-y"}}>
+ <div style={{flex:1,overflowY:"scroll",minHeight:0,WebkitOverflowScrolling:"touch",touchAction:"pan-y"}}>
+ <div style={{display:"flex",flexDirection:"column",gap:10,padding:"12px 16px"}}>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>{filtered.length} épreuve{filtered.length>1?"s":""}</p>
  {filtered.map((e,i)=>{
  const tc=typeColor(e.type);
@@ -3898,10 +3899,12 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
  );
  })}
  </div>
+ </div>
  </>}
 
  {concoursTab==="stats"&&(
- <div style={{flex:1,overflowY:"scroll",minHeight:0,padding:"12px 16px",display:"flex",flexDirection:"column",gap:12,WebkitOverflowScrolling:"touch",touchAction:"pan-y"}}>
+ <div style={{flex:1,overflowY:"scroll",minHeight:0,WebkitOverflowScrolling:"touch",touchAction:"pan-y"}}>
+ <div style={{display:"flex",flexDirection:"column",gap:12,padding:"12px 16px"}}>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Statistiques d&apos;admission 2020-2024</p>
  {stats.map((s,i)=>(
  <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,padding:16}}>
@@ -3927,10 +3930,12 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
  </div>
  ))}
  </div>
+ </div>
  )}
 
  {concoursTab==="grilles"&&(
- <div style={{flex:1,overflowY:"scroll",minHeight:0,padding:"12px 16px",display:"flex",flexDirection:"column",gap:14,WebkitOverflowScrolling:"touch",touchAction:"pan-y"}}>
+ <div style={{flex:1,overflowY:"scroll",minHeight:0,WebkitOverflowScrolling:"touch",touchAction:"pan-y"}}>
+ <div style={{display:"flex",flexDirection:"column",gap:14,padding:"12px 16px"}}>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Grilles de notation officielles</p>
  {grilles.map((g,gi)=>(
  <div key={gi} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,overflow:"hidden"}}>
@@ -3962,6 +3967,7 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
  </div>
  </div>
  ))}
+ </div>
  </div>
  )}
  </div>
