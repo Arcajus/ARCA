@@ -5327,8 +5327,9 @@ export default function NexusApp() {
  ];
 
  return(
- <div style={{background:T.bg,maxWidth:430,margin:"0 auto",fontFamily:"'Inter',system-ui,sans-serif",display:"flex",flexDirection:"column",height:"100dvh",overflow:"hidden",position:"relative"}}>
+ <div style={{background:T.bg,maxWidth:430,margin:"0 auto",fontFamily:"'Inter',system-ui,sans-serif",display:"flex",flexDirection:"column",height:"100dvh",position:"relative"}}>
  <style>{`
+ html,body{overflow:hidden;height:100%;margin:0;padding:0;}
  input::placeholder,textarea::placeholder{color:${T.muted};}
  @keyframes slideInRight{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
