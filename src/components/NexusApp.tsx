@@ -3735,7 +3735,7 @@ function CitationsSagesseScreen({T,onBack}:{T:Theme;onBack:()=>void}){
 }
 
 // CARRIÈRE & CONCOURS SCREEN
-function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
+function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:()=>void}){
  const [sub,setSub]=useState<"menu"|"generateur"|"builder"|"concours">("menu");
  const [genSubject,setGenSubject]=useState("");
  const [genResult,setGenResult]=useState("");
@@ -3879,9 +3879,13 @@ function CarriereScreen({T,onBack}:{T:Theme;onBack:()=>void}){
  <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5,marginBottom:10}}>{e.sujet}</p>
  <button onClick={()=>{
  if(open){setCorrId(null);}
- else{setCorrId(cid);if(!corrText&&!loading)genCorrection(e,cid);}
- }} style={{width:"100%",padding:"8px",borderRadius:10,border:`1px solid ${meta.color}40`,background:open?`${meta.color}15`:`${meta.color}08`,color:meta.color,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
- {loading?"Génération en cours…":open&&corrText?" Masquer le plan":"Plan du résultat · +10 XP"}
+ else{
+ const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="1";
+ if(!hasPremium){onPremium();return;}
+ setCorrId(cid);if(!corrText&&!loading)genCorrection(e,cid);
+ }
+ }} style={{width:"100%",padding:"8px",borderRadius:10,border:`1px solid ${open?meta.color:T.amber}`,background:open?`${meta.color}15`:`${T.amber}10`,color:open?meta.color:T.amber,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+ {loading?<span>Génération en cours…</span>:open&&corrText?<span>Masquer le plan</span>:<><Ic n="lock" s={13} c={T.amber}/><span>Plan du résultat — Premium</span></>}
  </button>
  {open&&corrText&&(
  <div style={{marginTop:10,background:T.bg2,borderRadius:10,padding:14,borderLeft:`3px solid ${meta.color}`}}>
@@ -4010,7 +4014,7 @@ function SimulationHub({T}:{T:Theme}) {
  if(view==="studio") return <StudioScreen T={T} onPremium={()=>setShowPremiumHub(true)} onBack={()=>setView("hub")}/>;
  if(view==="sims") return <SimulationScreen T={T} onBack={()=>setView("hub")}/>;
  if(view==="apprendre") return <ApprendreScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
- if(view==="carriere") return <CarriereScreen T={T} onBack={()=>setView("hub")}/>;
+ if(view==="carriere") return <CarriereScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
  if(view==="sagesse") return <CitationsSagesseScreen T={T} onBack={()=>setView("hub")}/>;
  if(showPremiumHub) return <PremiumScreen T={T} onBack={()=>setShowPremiumHub(false)}/>;
 
