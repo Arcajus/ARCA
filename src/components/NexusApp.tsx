@@ -634,7 +634,84 @@ const WISDOM_STORIES: WisdomEntry[] = [
  {id:"ws35",name:"George Orwell",init:"GO",role:"Auteur · 1984",color:"#2B78F5",story:{type:"auteur",quote:"La guerre, c'est la paix. La liberté, c'est l'esclavage. L'ignorance, c'est la force.",attribution:"George Orwell",bg:"linear-gradient(135deg,#E03535,#16A34A)",imgUrl:"https://picsum.photos/seed/auteur11/430/760"}},
  {id:"ws36",name:"Voltaire",init:"VoC",role:"Auteur · Candide",color:"#2B78F5",story:{type:"auteur",quote:"Il faut cultiver notre jardin.",attribution:"Voltaire",bg:"linear-gradient(135deg,#D97706,#16A34A)",imgUrl:"https://picsum.photos/seed/auteur12/430/760"}},
 ];
-// DEMO PROFILES (30 fake users for prototype) 
+
+// ÉLOQUENCE
+interface EloquenceEntry {
+ id:string; title:string; author:string;
+ category:"discours"|"litterature"|"poesie"|"pratique";
+ level:"debutant"|"intermediaire"|"expert";
+ duration:string; text:string;
+}
+const ELOQUENCE_TEXTS:EloquenceEntry[]=[
+ // DISCOURS
+ {id:"eq1",title:"L'Appel du 18 Juin",author:"Charles de Gaulle",category:"discours",level:"intermediaire",duration:"~45s",text:"Les chefs qui, depuis de nombreuses années,\nont à leur tête les armées françaises,\nont formé un gouvernement.\n\nCe gouvernement, alléguant la défaite de nos armées,\ns'est mis en rapport avec l'ennemi\npour cesser le combat.\n\n\nMais ce dernier mot est-il dit ?\nL'espérance doit-elle disparaître ?\nLa défaite est-elle définitive ?\n\nNon !\n\n\nCar la France n'est pas seule.\nElle a un vaste empire derrière elle.\nElle peut faire bloc avec l'Empire britannique.\nElle peut, comme l'Angleterre, utiliser sans limite l'industrie des États-Unis.\n\nCette guerre n'est pas limitée au territoire malheureux de notre pays.\nCette guerre est une guerre mondiale."},
+ {id:"eq2",title:"Discours pour la défense de la loi IVG",author:"Simone Veil",category:"discours",level:"expert",duration:"~50s",text:"Je voudrais tout d'abord vous faire part d'une conviction de femme.\n\nJe m'excuse de le faire devant cette Assemblée\npresque exclusivement composée d'hommes.\n\n\nAucune femme ne recourt de gaieté de cœur à l'avortement.\nIl suffit d'écouter les femmes.\n\nC'est toujours un drame,\net cela restera toujours un drame.\n\n\nC'est pourquoi, si le projet qui vous est présenté\ntient compte de la nécessité,\nà laquelle nous ne pouvons nous soustraire,\nd'adapter notre législation…\n\nil a aussi pour ambition de faire en sorte\nque le nombre de ces drames diminue."},
+ {id:"eq3",title:"Discours d'inauguration",author:"Nelson Mandela",category:"discours",level:"intermediaire",duration:"~40s",text:"Nous sommes enfin libres.\n\nNous avons réussi à réaliser notre émancipation politique.\n\n\nNous nous engageons à bâtir une société\noù tous les Sud-Africains, noirs et blancs,\npourront marcher la tête haute,\nassurés de leur droit inaliénable à la dignité humaine.\n\n\nLe soleil ne se couchera jamais\nsur une réalisation aussi glorieuse.\n\nQue la liberté règne."},
+ {id:"eq4",title:"Discours pour la paix",author:"Jean Jaurès",category:"discours",level:"expert",duration:"~50s",text:"La guerre, c'est notre défaite à tous,\nla défaite de la civilisation.\n\n\nQuel que soit l'événement,\nles hommes qui auront résisté\nautant qu'il était humainement possible\n\nauront la consolation de n'avoir pas abandonné\nle noble et nécessaire combat\npour la paix du monde.\n\n\nNous ne voulons pas que les fils de nos fils\nsoient condamnés à mourir\npour des querelles que nous n'aurons pas su résoudre."},
+ {id:"eq5",title:"Déclaration des droits de la femme",author:"Olympe de Gouges",category:"discours",level:"intermediaire",duration:"~40s",text:"La femme naît libre\net demeure égale à l'homme en droits.\n\n\nToute société dans laquelle\nla garantie des droits n'est pas assurée\nn'a point de Constitution.\n\n\nLa femme a le droit de monter sur l'échafaud.\nElle doit avoir également le droit de monter à la Tribune.\n\nNul corps, nul individu,\nnulle autorité\nne peut exercer d'autorité\nqui n'en émane expressément."},
+ {id:"eq6",title:"Proclamation de l'indépendance",author:"Patrice Lumumba",category:"discours",level:"intermediaire",duration:"~45s",text:"Congolais et Congolaises,\n\nJe vous salue au nom du gouvernement congolais.\n\n\nA tous, ma voix porte un message d'amour.\nNous sommes désormais libres sur notre propre terre.\n\n\nNous allons montrer au monde\nce que peut faire l'homme noir\nquand il travaille en liberté.\n\nNous allons faire du Congo\nle centre de rayonnement de l'Afrique tout entière.\n\n\nVive le Congo indépendant et souverain !"},
+ {id:"eq7",title:"Liberté ou la mort",author:"Toussaint Louverture",category:"discours",level:"intermediaire",duration:"~35s",text:"En me renversant,\non n'a abattu à Saint-Domingue\nque le tronc de l'arbre de la liberté des noirs.\n\n\nMais il repoussera\npar ses racines,\ncar elles sont profondes\net nombreuses.\n\n\nQu'ils sachent que si le premier peuple noir\nde l'histoire s'est libéré,\nnul au monde ne peut le ré-asservir."},
+ {id:"eq8",title:"Discours sur le Front populaire",author:"Léon Blum",category:"discours",level:"expert",duration:"~45s",text:"Nous gouvernons dans l'intérêt du peuple tout entier.\n\n\nNous avons reçu une mission,\nnon pas seulement de gouverner,\nmais de transformer.\n\nNous avons le devoir de prouver\nque la démocratie n'est pas impuissante.\n\n\nL'heure est venue d'agir,\nnon pas d'attendre.\nL'heure est venue de tenir nos promesses\nenvers ceux qui nous ont fait confiance."},
+ {id:"eq9",title:"Discours sur la misère",author:"Victor Hugo",category:"discours",level:"intermediaire",duration:"~40s",text:"Je suis de ceux qui pensent et affirment\nqu'on peut détruire la misère.\n\n\nNotez bien ces mots :\nDétruire la misère.\nOui, détruire.\n\n\nLes hommes souffrent de la misère\nnon parce qu'elle est inévitable,\nmais parce qu'on n'a pas voulu y remédier.\n\nLa question est simple :\nel suffisant pour tous\nest-il produit par la terre ?\n\n\nOui."},
+ {id:"eq10",title:"Discours modèle — Sciences Po",author:"Exercice d'éloquence",category:"discours",level:"debutant",duration:"~35s",text:"Mesdames, Messieurs,\n\nNous vivons une époque de transformations profondes.\n\n\nLes crises que nous traversons\nnous imposent un choix fondamental :\n\nsubir le changement,\nou le conduire.\n\n\nJe vous propose ce soir\nde choisir ensemble de le conduire.\n\nParce que la volonté collective\nest plus puissante que n'importe quelle fatalité."},
+ {id:"eq11",title:"Plaidoirie — Défense des droits",author:"Exercice de barreau",category:"discours",level:"intermediaire",duration:"~45s",text:"Monsieur le Président,\nMesdames et Messieurs les jurés,\n\n\nIl n'est pas question ici de technique juridique.\nIl est question de justice.\n\n\nMon client est un homme comme vous et moi.\nUn homme qui a commis une erreur,\nc'est vrai.\nMais pas celle dont on l'accuse.\n\n\nLes preuves que je vais vous soumettre\nvous le diront mieux que moi.\nÉcoutez-les.\nÉcoutez les faits.\nLaissez-les parler."},
+ {id:"eq12",title:"Discours sur l'Europe",author:"Discours modèle",category:"discours",level:"intermediaire",duration:"~40s",text:"L'Europe n'est pas une abstraction.\n\nL'Europe, c'est la paix.\nC'est soixante-dix ans sans guerre\nentre des peuples qui se sont déchirés pendant des siècles.\n\n\nMais l'Europe, ce n'est pas que cela.\nC'est aussi un projet.\nUn projet inachevé.\nUn projet que nous devons compléter ensemble.\n\n\nPour nos enfants.\nPour leur avenir.\nPour la place de notre continent dans le monde."},
+ {id:"eq13",title:"Discours sur l'environnement",author:"Discours modèle",category:"discours",level:"debutant",duration:"~35s",text:"La planète ne nous appartient pas.\nNous l'empruntons à nos enfants.\n\n\nChaque degré de plus,\nc'est des millions de vies brisées.\nDes côtes englouties.\nDes récoltes perdues.\n\n\nNous n'avons pas le droit de regarder ailleurs.\nNous n'avons pas le droit de dire :\nc'est trop compliqué.\n\n\nParce que la seule chose trop compliquée,\nc'est d'expliquer à nos enfants\npourquoi nous n'avons rien fait."},
+ {id:"eq14",title:"Discours de remise de diplôme",author:"Discours modèle",category:"discours",level:"debutant",duration:"~35s",text:"Vous voilà diplômés.\nFélicitations.\n\n\nMais ne vous y trompez pas.\nVotre formation ne fait que commencer.\n\nLes diplômes ouvrent des portes.\nCe que vous ferez derrière ces portes,\nc'est votre affaire.\n\n\nLe monde vous attend.\nIl a besoin de vous.\nIl a besoin de votre intelligence,\nde votre engagement,\net de votre courage.\n\nAllez-y."},
+ {id:"eq15",title:"Discours de leadership",author:"Discours modèle",category:"discours",level:"debutant",duration:"~30s",text:"Un leader n'est pas quelqu'un\nqui dit aux autres quoi faire.\n\n\nUn leader est quelqu'un\nqui inspire les autres\nà vouloir faire.\n\n\nLa différence est immense.\nElle sépare la peur\nde l'adhésion.\n\nElle sépare le commandement\nde la confiance.\n\n\nSoyez des leaders qui inspirent.\nPas des chefs qui ordonnent."},
+ // LITTÉRATURE
+ {id:"eq16",title:"La Peste — Préface",author:"Albert Camus",category:"litterature",level:"intermediaire",duration:"~40s",text:"Il y a autant de pestes que de guerres dans le monde.\nPourtant les pestes et les guerres prennent les gens à l'improviste.\n\n\nLes hommes de la cité\nn'étaient pas plus coupables que d'autres\nquand ils se mirent à mourir.\n\nIls continuaient à faire des affaires,\nils préparaient des voyages\net ils avaient des opinions.\n\n\nComment auraient-ils pensé à la peste\nqui supprime l'avenir,\nles déplacements,\nles discussions ?"},
+ {id:"eq17",title:"Les Misérables — Jean Valjean",author:"Victor Hugo",category:"litterature",level:"intermediaire",duration:"~45s",text:"Il y a un spectacle plus grand que la mer,\nc'est le ciel.\n\nIl y a un spectacle plus grand que le ciel,\nc'est l'intérieur de l'âme.\n\n\nFaire le poème de la conscience humaine,\nne fût-ce qu'à propos d'un seul homme,\nne fût-ce qu'à propos du plus infime des hommes,\nce serait fondre toutes les épopées dans une épopée supérieure et définitive.\n\n\nLa conscience,\nc'est le chaos des chimères,\ndes convoitises et des tentatives,\nla fournaise des rêves,\nla caverne des idées qui nous font honte."},
+ {id:"eq18",title:"À la recherche du temps perdu — Incipit",author:"Marcel Proust",category:"litterature",level:"expert",duration:"~40s",text:"Longtemps, je me suis couché de bonne heure.\n\nParfois, à peine ma bougie éteinte,\nmes yeux se fermaient si vite\nque je n'avais pas le temps de me dire :\n« Je m'endors. »\n\n\nEt, une demi-heure après,\nla pensée qu'il était temps de chercher le sommeil\nm'éveillait.\n\nJe voulais poser le volume\nque je croyais avoir encore dans les mains\net souffler ma lumière ;\nje n'avais pas cessé pendant mon sommeil\nde faire des réflexions sur ce que je venais de lire."},
+ {id:"eq19",title:"Le Petit Prince — Le renard",author:"Antoine de Saint-Exupéry",category:"litterature",level:"debutant",duration:"~40s",text:"C'est le temps que tu as perdu pour ta rose\nqui fait ta rose si importante.\n\n\nLes hommes ont oublié cette vérité,\ndit le renard.\nMais tu ne dois pas l'oublier.\n\nTu deviens responsable pour toujours\nde ce que tu as apprivoisé.\n\n\nTu es responsable de ta rose.\n\n— Je suis responsable de ma rose,\nrepéta le petit prince\nafin de se souvenir."},
+ {id:"eq20",title:"Germinal — La mine",author:"Émile Zola",category:"litterature",level:"expert",duration:"~45s",text:"Dans la plaine rase,\nsous la nuit sans étoiles,\nd'une obscurité et d'une épaisseur d'encre,\nun homme suivait seul la grande route de Marchiennes à Montsou.\n\n\nIl ne voyait même pas le sol noir devant lui,\net n'avait la sensation de l'immense horizon plat\nque par les souffles du vent de mars,\ndes rafales larges comme sur une mer,\nglacées d'avoir balayé des lieues de marais et de terres nues."},
+ {id:"eq21",title:"Huis Clos — L'enfer",author:"Jean-Paul Sartre",category:"litterature",level:"intermediaire",duration:"~35s",text:"Alors, voilà.\n\nÇa c'est ce qu'il y a dans cette pièce,\nces deux femmes\net moi.\n\n\nJe pensais que j'aurais la paix.\nMais non.\nL'enfer c'est les autres.\n\n\nJe sais maintenant\nqu'il n'y a pas de solitude complète,\nde repos complet,\nquand on vit en société.\n\nL'enfer, c'est les autres."},
+ {id:"eq22",title:"L'Étranger — Incipit",author:"Albert Camus",category:"litterature",level:"debutant",duration:"~30s",text:"Aujourd'hui, maman est morte.\n\nOu peut-être hier, je ne sais pas.\n\n\nJ'ai reçu un télégramme de l'asile :\n« Mère décédée. Enterrement demain.\nSentiments distingués. »\n\n\nCela ne veut rien dire.\nC'était peut-être hier."},
+ {id:"eq23",title:"Le Comte de Monte-Cristo",author:"Alexandre Dumas",category:"litterature",level:"intermediaire",duration:"~40s",text:"Attendre et espérer.\n\nCes deux mots renferment toute la sagesse humaine.\n\n\nL'homme n'est pas fait\npour supporter les douleurs de la vie\nsans une foi qui le soutient.\n\nCette foi s'appelle l'espérance.\n\n\nTant que l'espérance n'est pas morte,\nl'homme peut tout endurer.\nTant qu'il espère,\nil n'est pas vaincu."},
+ {id:"eq24",title:"Candide — Conclusion",author:"Voltaire",category:"litterature",level:"debutant",duration:"~35s",text:"Tout cela est bien dit,\nrépondit Candide,\nmais il faut cultiver notre jardin.\n\n\nQuand l'homme fut mis dans le jardin d'Éden,\nil y fut mis pour qu'il travaillât.\n\nCe qui prouve que l'homme n'est pas né pour le repos.\n\n\nTravaillons sans raisonner,\ndit Martin,\nc'est le seul moyen de rendre la vie supportable."},
+ {id:"eq25",title:"Madame Bovary — Les rêves d'Emma",author:"Gustave Flaubert",category:"litterature",level:"expert",duration:"~45s",text:"Elle voulait mourir.\n\nMais elle voulait aussi vivre à Paris.\n\n\nElle rêvait à la vie de Paris,\nà la grande ville,\naux lumières,\naux soirées de théâtre.\n\nElle rêvait à des robes de velours,\nà des gants parfumés,\nà des hommes brillants.\n\n\nMais la réalité était là :\nla boue des rues normandes,\nle tic-tac de l'horloge,\net Charles qui mangeait."},
+ {id:"eq26",title:"Le Rouge et le Noir — L'ambition",author:"Stendhal",category:"litterature",level:"intermediaire",duration:"~40s",text:"Julien résolut que le premier soir\noù l'on serait en voiture,\nil saisirait la main de Madame de Rênal.\n\n\nIl avait l'âme d'un général.\nMais il était né au mauvais siècle.\nOu dans le mauvais milieu.\n\n\nL'hypocrisie,\nc'est le seul lien entre les hommes dans ce siècle.\nIl faut être hypocrite\npour réussir.\n\nEt cela lui répugnait."},
+ {id:"eq27",title:"Le Père Goriot — Vautrin",author:"Honoré de Balzac",category:"litterature",level:"expert",duration:"~45s",text:"Il y a deux morales.\nLa morale des honnêtes gens\net la morale des filous.\n\n\nEntre ces deux morales,\nil y a la loi.\n\nMais la loi n'empêche rien.\nElle constate seulement.\n\n\nDans la société telle qu'elle est faite,\npour arriver,\nil faut avoir la volonté de tout.\n\nLes scrupules,\nc'est bon pour ceux qui n'ont pas de talent."},
+ {id:"eq28",title:"Phèdre — L'aveu",author:"Jean Racine",category:"litterature",level:"expert",duration:"~40s",text:"C'est toi qui l'as nommé.\n\nNon. Je n'ose.\n\n\nPhèdre mourante\nne veux pas cacher\nla honte de ses feux.\n\n\nMon mal vient de plus loin.\nÀ peine au fils d'Égée\nsous les lois de l'hymen je m'étais engagée,\n\nmon repos, mon bonheur semblait être affermi ;\nAthènes me montra mon superbe ennemi.\n\n\nJe le vis, je rougis,\nje pâlis à sa vue.\nUn trouble s'éleva dans mon âme éperdue."},
+ {id:"eq29",title:"Le Misanthrope — Alceste",author:"Molière",category:"litterature",level:"intermediaire",duration:"~40s",text:"Je veux qu'on soit sincère,\net qu'en homme d'honneur,\non ne lâche aucun mot\nqui ne parte du cœur.\n\n\nQuoi ! la sincérité trouble-t-elle le monde ?\nDoit-on cacher ce qu'on pense ?\n\n\nTout flatteur vit aux dépens\nde celui qui l'écoute.\n\nCette leçon vaut bien un fromage,\ndit-on.\nEt que fait-on ?\nOn mange le fromage.\nEt on flatte encore."},
+ {id:"eq30",title:"Le Cid — Monologue de Rodrigue",author:"Pierre Corneille",category:"litterature",level:"expert",duration:"~45s",text:"Percé jusques au fond du cœur\nd'une atteinte imprévue aussi bien que mortelle,\n\n\nMiserable vengeur d'une juste querelle,\net malheureux objet d'une injuste rigueur,\n\n\nJe demeure immobile,\net mon âme abattue\ncède au coup qui me tue.\n\n\nSi près de voir mon feu récompensé,\nÔ Dieu, l'étrange peine !\nEn cet affront mon père est l'offensé,\net l'offenseur le père de Chimène !"},
+ // POÉSIE
+ {id:"eq31",title:"L'Albatros",author:"Charles Baudelaire",category:"poesie",level:"intermediaire",duration:"~45s",text:"Souvent, pour s'amuser, les hommes d'équipage\nPrennent des albatros, vastes oiseaux des mers,\n\n\nCe voyageur ailé, comme il est gauche et veule !\nLui, naguère si beau, qu'il est comique et laid !\n\n\nLe Poète est semblable au prince des nuées\nQui hante la tempête et se rit de l'archer ;\n\nExilé sur le sol au milieu des huées,\nSes ailes de géant l'empêchent de marcher."},
+ {id:"eq32",title:"Il pleure dans mon cœur",author:"Paul Verlaine",category:"poesie",level:"debutant",duration:"~35s",text:"Il pleure dans mon cœur\nComme il pleut sur la ville.\nQuelle est cette langueur\nQui pénètre mon cœur ?\n\n\nÔ bruit doux de la pluie\nPar terre et sur les toits !\nPour un cœur qui s'ennuie,\nÔ le chant de la pluie !\n\n\nIl pleure sans raison\nDans ce cœur qui s'écœure.\nQuoi ! nulle trahison ?\nCe deuil est sans raison."},
+ {id:"eq33",title:"Demain, dès l'aube",author:"Victor Hugo",category:"poesie",level:"debutant",duration:"~40s",text:"Demain, dès l'aube, à l'heure où blanchit la campagne,\nJe partirai. Vois-tu, je sais que tu m'attends.\n\n\nJ'irai par la forêt, j'irai par la montagne.\nJe ne puis demeurer loin de toi plus longtemps.\n\n\nJe marcherai les yeux fixés sur mes pensées,\nSans rien voir au dehors, sans entendre aucun bruit,\nSeul, inconnu, le dos courbé, les mains croisées,\nTriste, et le jour pour moi sera comme la nuit."},
+ {id:"eq34",title:"Le Pont Mirabeau",author:"Guillaume Apollinaire",category:"poesie",level:"intermediaire",duration:"~45s",text:"Sous le pont Mirabeau coule la Seine\nEt nos amours\nFaut-il qu'il m'en souvienne\nLa joie venait toujours après la peine\n\n\nVienne la nuit sonne l'heure\nLes jours s'en vont je demeure\n\n\nL'amour s'en va comme cette eau courante\nL'amour s'en va\nComme la vie est lente\nEt comme l'Espérance est violente"},
+ {id:"eq35",title:"Barbara",author:"Jacques Prévert",category:"poesie",level:"debutant",duration:"~50s",text:"Rappelle-toi Barbara\nIl pleuvait sans cesse sur Brest ce jour-là\n\n\nEt tu marchais souriante\nÉpanouie ravie ruisselante\nSous la pluie\n\n\nRappelle-toi Barbara\nIl pleuvait sans cesse sur Brest\nEt je t'ai croisée rue de Siam\n\n\nTu souriais\nEt moi je souriais de même\n\nRappelle-toi Barbara\nToi que je ne connaissais pas\nToi qui ne me connaissais pas"},
+ {id:"eq36",title:"Liberté",author:"Paul Éluard",category:"poesie",level:"debutant",duration:"~40s",text:"Sur mes cahiers d'écolier\nSur mon pupitre et les arbres\nSur le sable sur la neige\nJ'écris ton nom\n\n\nSur toutes les pages lues\nSur toutes les pages blanches\nPierre sang papier ou cendre\nJ'écris ton nom\n\n\nEt par le pouvoir d'un mot\nJe recommence ma vie\nJe suis né pour te connaître\nPour te nommer\n\nLiberté."},
+ {id:"eq37",title:"Ma Bohème",author:"Arthur Rimbaud",category:"poesie",level:"debutant",duration:"~40s",text:"Je m'en allais, les poings dans mes poches crevées ;\nMon paletot aussi devenait idéal ;\nJ'allais sous le ciel, Muse ! et j'étais ton féal ;\nOh ! là là ! que d'amours splendides j'ai rêvées !\n\n\nMon unique culotte avait un large trou.\n— Petit Poucet rêveur, j'égrenais dans ma course\nDes rimes. Mon auberge était à la Grande-Ourse.\n— Mes étoiles au ciel avaient un doux frou-frou"},
+ {id:"eq38",title:"Le Lac",author:"Alphonse de Lamartine",category:"poesie",level:"intermediaire",duration:"~45s",text:"Ainsi, toujours poussés vers de nouveaux rivages,\nDans la nuit éternelle emportés sans retour,\n\n\nNe pourrons-nous jamais sur l'océan des âges\nJeter l'ancre un seul jour ?\n\n\nÔ lac ! l'année à peine a fini sa carrière,\nEt près des flots chéris qu'elle devait revoir,\nRegarde ! je viens seul m'asseoir sur cette pierre\nOù tu la vis s'asseoir !"},
+ {id:"eq39",title:"Brise Marine",author:"Stéphane Mallarmé",category:"poesie",level:"expert",duration:"~40s",text:"La chair est triste, hélas ! et j'ai lu tous les livres.\nFuir ! là-bas fuir ! Je sens que des oiseaux sont ivres\n\n\nD'être parmi l'écume inconnue et les cieux !\nRien, ni les vieux jardins reflétés par les yeux\n\nNe retiendra ce cœur qui dans la mer se trempe\nÔ nuits ! ni la clarté déserte de ma lampe\n\n\nSur le vide papier que la blancheur défend\nEt ni la jeune femme allaitant son enfant."},
+ {id:"eq40",title:"Femme noire",author:"Léopold Sédar Senghor",category:"poesie",level:"intermediaire",duration:"~45s",text:"Femme nue, femme noire\nVêtue de ta couleur qui est vie,\nde ta forme qui est beauté !\n\n\nJ'ai grandi à ton ombre ;\nla douceur de tes mains bandait mes yeux.\n\n\nEt voilà qu'au cœur de l'Été et de Midi,\nje te découvre, Terre promise,\ndu haut d'un haut col calciné\n\nEt ta beauté me foudroie en plein cœur,\ncomme l'éclair d'un aigle."},
+ {id:"eq41",title:"Mot",author:"Aimé Césaire",category:"poesie",level:"expert",duration:"~40s",text:"Parmi moi\nde moi-même\nà moi-même\n\n\nhors toute constellation\nen mes mains serré seulement\nle rare hoquet d'un ultime spasme délirant\n\n\nvibre\nvibre\nessence même de l'obscurité\n\nvibre\n\nla torche de mes réclamations\nest dressée\nde son bond\n\nla torche poignardée le soir\ndans la poitrine sonore."},
+ {id:"eq42",title:"La Rose et le Réséda",author:"Louis Aragon",category:"poesie",level:"intermediaire",duration:"~45s",text:"Celui qui croyait au ciel\nCelui qui n'y croyait pas\nTous deux adoraient la belle\nPrisonnière des soldats\n\n\nCelui qui croyait au ciel\nCelui qui n'y croyait pas\nQu'importe comment s'appelle\nCette clarté sur leur pas\n\n\nLovés dans la même guerre\nFraternels et mal aimés\nÀ la crête douloureuse\nDu commun amour semés"},
+ {id:"eq43",title:"Chanson d'Automne",author:"Paul Verlaine",category:"poesie",level:"debutant",duration:"~30s",text:"Les sanglots longs\nDes violons\nDe l'automne\n\n\nBlessent mon cœur\nD'une langueur\nMonotone.\n\n\nTout suffocant\nEt blême, quand\nSonne l'heure,\n\nJe me souviens\nDes jours anciens\nEt je pleure."},
+ {id:"eq44",title:"Le Dormeur du val",author:"Arthur Rimbaud",category:"poesie",level:"debutant",duration:"~40s",text:"C'est un trou de verdure où chante une rivière,\nAccrochant follement aux herbes des haillons\nD'argent ; où le soleil, de la montagne fière,\nLuit : c'est un petit val qui mousse de rayons.\n\n\nUn soldat jeune, bouche ouverte, tête nue,\nEt la nuque baignant dans le frais cresson bleu,\nDort ; il est étendu dans l'herbe, sous la nue,\nPâle dans son lit vert où la lumière pleut.\n\n\nLes pieds dans les glaïeuls, il dort. Souriant comme\nSourirait un enfant malade, il fait un somme :\nNature, berce-le chaudement : il a froid.\n\nLes parfums ne font pas frissonner sa narine ;\nIl dort dans le soleil, la main sur sa poitrine,\nTransquille. Il a deux trous rouges au côté droit."},
+ {id:"eq45",title:"Nuit de Mai",author:"Alfred de Musset",category:"poesie",level:"expert",duration:"~40s",text:"Poète, prends ton luth et me donne un baiser ;\nLa fleur de l'églantier sent ses bourgeons éclore.\n\n\nLe printemps naît ce soir ; les vents vont s'embraser ;\nEt la bergeronnette,\nEn cherchant les joncs verts,\nPromenait sa tête\nSur les cailloux lavés dans les courants amers.\n\n\nPoète, prends ton luth ; la nuit, sur la pelouse,\nBalance le zéphir dans son voile odorant."},
+ // PRATIQUE
+ {id:"eq46",title:"Virelangues I — Les sibilantes",author:"Exercice de diction",category:"pratique",level:"debutant",duration:"~30s",text:"Les chaussettes de l'archiduchesse\nsont-elles sèches ?\nArchi-sèches ?\n\n\nSi six scies scient six cigares,\nsix cent scies scient\nsix cent cigares.\n\n\nReprenez.\nPlus lentement.\nChaque syllabe.\nChaque consonne.\n\n\nPuis accélérez.\nProgressivement.\nSans jamais perdre la clarté."},
+ {id:"eq47",title:"Virelangues II — Les labiales",author:"Exercice de diction",category:"pratique",level:"debutant",duration:"~30s",text:"Un pâtissier qui pâtissait\nchez un pâtissier\npâtissait.\n\n\nPapa, le petit Pierre Dupont\npique des pois dans le potager\nde Papa Pierre.\n\n\nBouton, boutonner, déboutonner.\nBiberon, bibelot, bibliothèque.\n\n\nSentez vos lèvres travailler.\nChaque B, chaque P, chaque M.\nC'est votre puissance vocale."},
+ {id:"eq48",title:"Virelangues III — Les liquides",author:"Exercice de diction",category:"pratique",level:"debutant",duration:"~30s",text:"Le loup mange le mouton.\nLe mouton mange le loup ?\n\n\nNon. Le loup lèche le lait.\nLa lune luit la nuit.\n\n\nRoberta Robert rit avec Roland.\nRépétez rapidement :\nRoberta, Roland, Robert.\n\n\nLe R roule.\nLe L glisse.\nL'un n'est pas l'autre.\nSentez la différence."},
+ {id:"eq49",title:"Articulation — Les consonnes explosives",author:"Exercice technique",category:"pratique",level:"debutant",duration:"~30s",text:"K, G, T, D, P, B.\n\nSix consonnes explosives.\nSix petites explosions\ndans votre bouche.\n\n\nDites :\nKata — Gaga — Tata — Dada.\nPapa — Baba.\n\n\nMaintenant combinées :\nKatapulte. Diplomatique. Bataillon.\n\n\nChaque consonne est une précision.\nPas une approximation.\nPrécision."},
+ {id:"eq50",title:"Travail des voyelles",author:"Exercice technique",category:"pratique",level:"debutant",duration:"~30s",text:"A — E — I — O — U.\n\nOuvrez la bouche pour le A.\nSouriez pour le I.\nArrondissez pour le O.\nAvancez les lèvres pour le U.\n\n\nMaintenant en mots :\nÂme — Être — Île — Ombre — Usure.\n\n\nLes voyelles sont votre mélodie.\nLes consonnes sont votre rythme.\nEnsemble : la musique du discours."},
+ {id:"eq51",title:"Rythme binaire — Deux temps",author:"Exercice de rythme",category:"pratique",level:"intermediaire",duration:"~35s",text:"Je parle. Je pause.\nJe reprends. Je pause.\n\n\nLe rythme binaire est le plus naturel.\nUne idée. Un temps de respiration.\nUne idée. Un temps de respiration.\n\n\nEssayez avec ces phrases :\n« La liberté n'est pas gratuite. »\nPause.\n« Elle se conquiert chaque jour. »\nPause.\n\n\nSentez votre interlocuteur absorber\nchaque idée\navant la suivante."},
+ {id:"eq52",title:"Rythme ternaire — Trois temps",author:"Exercice de rythme",category:"pratique",level:"intermediaire",duration:"~35s",text:"Liberté. Égalité. Fraternité.\n\n\nTrois mots. Une devise. Un peuple.\n\nTrois temps. C'est le rythme de l'éloquence.\n\n\nEssayez :\n« Il faut agir, résister, construire. »\n\nOu encore :\n« Aujourd'hui, demain, toujours. »\n\n\nLe rythme ternaire donne de la force.\nIl donne du mouvement.\nIl donne de la conviction."},
+ {id:"eq53",title:"La projection vocale",author:"Exercice technique",category:"pratique",level:"intermediaire",duration:"~35s",text:"Votre voix est un instrument.\nComme un violon. Comme une trompette.\n\n\nElle doit porter jusqu'au fond de la salle.\nSans crier.\nSans forcer.\n\n\nLa projection, c'est diriger votre voix.\nComme un rayon laser.\nVers votre public.\n\n\nRespiration basse.\nDiaphragme actif.\nVoix projetée vers l'avant.\n\nEssayez maintenant."},
+ {id:"eq54",title:"Le souffle et la pause",author:"Exercice de respiration",category:"pratique",level:"debutant",duration:"~30s",text:"Inspirez profondément.\n\nRempli de souffle,\nvous avez de l'énergie pour parler.\n\n\nLa pause n'est pas un vide.\nLa pause est une présence.\n\n\nQuand vous vous taisez,\nle public attend.\nSa tension monte.\nVotre prochain mot aura plus de poids.\n\n\nLa pause est votre alliée.\nUtilisez-la."},
+ {id:"eq55",title:"Narration dramatique",author:"Exercice de narration",category:"pratique",level:"intermediaire",duration:"~45s",text:"Il était une fois un homme.\n\nUn homme ordinaire.\nUn homme comme vous et moi.\n\n\nUn matin, il se réveilla.\nEt tout avait changé.\n\n\nSa ville était différente.\nSa famille était différente.\nLui-même n'était plus le même.\n\n\nIl avait deux choix.\nFuir.\nOu comprendre.\n\n\nIl choisit de comprendre.\nEt c'est cette décision\nqui changea tout."},
+ {id:"eq56",title:"Discours de présentation",author:"Exercice oral",category:"pratique",level:"debutant",duration:"~35s",text:"Je m'appelle…\nJe suis…\n\n\nMais ce que je suis vraiment,\nce n'est pas ce que je fais.\n\nC'est ce en quoi je crois.\n\n\nJe crois que la parole change le monde.\nJe crois que les idées ont du pouvoir.\nJe crois que vous méritez le meilleur de moi-même.\n\n\nC'est pourquoi je suis ici.\nEt c'est pourquoi je vous parle."},
+ {id:"eq57",title:"Argumenter en 3 points",author:"Exercice de rhétorique",category:"pratique",level:"intermediaire",duration:"~40s",text:"Ma position est simple.\nElle repose sur trois arguments.\n\n\nPremièrement.\nLes faits me donnent raison.\n\nDeuxièmement.\nLa logique confirme cette position.\n\nTroisièmement.\nL'expérience la valide.\n\n\nJe pourrais m'arrêter là.\nMais je vais vous dire quelque chose de plus.\n\nAu-delà des arguments,\nil y a une conviction.\nEt cette conviction est profonde."},
+ {id:"eq58",title:"La concession rhétorique",author:"Exercice de débat",category:"pratique",level:"expert",duration:"~40s",text:"Je comprends votre point de vue.\n\nIl est défendable.\nIl a même une certaine logique.\n\n\nMais.\n\n\nCe petit mot, « mais »,\nchange tout.\n\nParce que si votre raisonnement est cohérent,\nil ignore un élément essentiel.\n\n\nCet élément,\nle voici.\n\nEt c'est lui\nqui invalide votre conclusion."},
+ {id:"eq59",title:"L'analogie persuasive",author:"Exercice de rhétorique",category:"pratique",level:"intermediaire",duration:"~35s",text:"Permettez-moi une comparaison.\n\nUn bateau sans gouvernail\npart à la dérive.\nQuelle que soit la puissance de son moteur.\n\n\nNotre institution est ce bateau.\nNos valeurs sont ce gouvernail.\n\n\nSans valeurs claires,\ntoute la puissance du monde\nne nous mènera nulle part.\n\nC'est pourquoi les valeurs\nne sont pas un luxe.\nElles sont une nécessité."},
+ {id:"eq60",title:"Le discours de clôture",author:"Exercice final",category:"pratique",level:"intermediaire",duration:"~45s",text:"Nous voici au terme de cette rencontre.\n\n\nCe que nous avons partagé ici\nne s'arrête pas quand nous sortons de cette salle.\n\n\nLes idées continuent de vivre.\nLes convictions que nous avons renforcées\nse traduiront en actes.\n\n\nPartez avec cette certitude.\nChaque parole compte.\nChaque engagement compte.\nChaque acte compte.\n\n\nMerci.\nEt à très bientôt."},
+ {id:"eq61",title:"Monologue intérieur",author:"Exercice introspectif",category:"pratique",level:"expert",duration:"~40s",text:"Qu'est-ce que je veux vraiment dire ?\n\nPas ce que j'ai préparé.\nPas ce qu'on attend de moi.\n\n\nCe que je veux dire du fond du cœur.\n\n\nEssayez.\nFermez les yeux une seconde.\nPensez à votre vérité profonde.\n\nElle est là.\nElle a toujours été là.\n\n\nMaintenant ouvrez les yeux.\nEt dites-la."},
+ {id:"eq62",title:"Le grand discours — Exercice complet",author:"Exercice de synthèse",category:"pratique",level:"expert",duration:"~60s",text:"Mesdames, Messieurs,\n\n\nIl y a des moments dans l'histoire\noù les mots ne suffisent plus.\n\nOù il faut agir.\n\n\nNous sommes à l'un de ces moments.\n\nLe monde attend notre réponse.\nNos concitoyens attendent notre réponse.\nL'histoire attend notre réponse.\n\n\nJe n'ai pas toutes les solutions.\nPersonne ne les a toutes.\n\nMais j'ai une conviction.\nEt cette conviction,\nc'est que ensemble,\nnous pouvons trouver le chemin.\n\n\nEnsemble.\nToujours ensemble.\n\n\nMerci."},
+];
+
+// DEMO PROFILES (30 fake users for prototype)
 const DEMO_PROFILES = [
  {id:"dp1",name:"Amira Konaté",init:"AK",role:"Doctorante en droit international",location:"Paris",verified:true,color:"#2B78F5",followers:1420,bio:"Spécialiste droit humanitaire · CIJ · ONU",story:{type:"photo",caption:"À La Haye pour la présentation de ma thèse sur les avis consultatifs de la CIJ ",bg:"linear-gradient(135deg,#2B78F5,#7C3AED)"}},
  {id:"dp2",name:"Baptiste Renard",init:"BR",role:"Journaliste géopolitique",location:"Bruxelles",verified:true,color:"#16A34A",followers:3280,bio:"Correspondant UE · Le Monde diplomatique",story:{type:"video",caption:"Live depuis le Parlement européen — session extraordinaire sur la défense commune ",bg:"linear-gradient(135deg,#16A34A,#0891B2)"}},
@@ -3687,51 +3764,264 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  );
 }
 
-// CITATIONS & SAGESSE SCREEN
-function CitationsSagesseScreen({T,onBack}:{T:Theme;onBack:()=>void}){
-  const [cat,setCat]=useState<"proverbe"|"philosophe"|"auteur">("proverbe");
-  const catDefs:{id:"proverbe"|"philosophe"|"auteur";label:string;color:string}[]=[
-    {id:"proverbe",label:"Proverbes",color:"#D97706"},
-    {id:"philosophe",label:"Philosophes",color:"#7C3AED"},
-    {id:"auteur",label:"Auteurs",color:"#2B78F5"},
-  ];
-  const entries=WISDOM_STORIES.filter(w=>w.story.type===cat);
-  const activeCat=catDefs.find(c=>c.id===cat)!;
-  return(
-    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
-        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
-        <div>
-          <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Citations &amp; Sagesse</h2>
-          <p style={{color:T.muted,fontSize:11}}>Proverbes · Philosophes · Auteurs</p>
-        </div>
-      </div>
-      <div style={{display:"flex",gap:8,padding:"12px 20px",borderBottom:`1px solid ${T.b1}`,flexShrink:0,overflowX:"auto"}}>
-        {catDefs.map(c=>(
-          <button key={c.id} onClick={()=>setCat(c.id)}
-            style={{padding:"7px 18px",borderRadius:20,border:`1.5px solid ${cat===c.id?c.color:T.b1}`,background:cat===c.id?c.color:T.card,color:cat===c.id?"#fff":T.muted,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",transition:"all .15s"}}>
-            {c.label}
-          </button>
-        ))}
-      </div>
-      <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
-        {entries.map((w,i)=>(
-          <div key={w.id} style={{background:T.card,border:`1.5px solid ${activeCat.color}20`,borderLeft:`4px solid ${activeCat.color}`,borderRadius:12,padding:"16px 18px"}}>
-            <p style={{color:T.text,fontSize:15,fontStyle:"italic",lineHeight:1.7,fontWeight:500,marginBottom:10}}>
-              &ldquo;{w.story.quote}&rdquo;
-            </p>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div>
-                <p style={{color:activeCat.color,fontWeight:800,fontSize:13}}>{w.story.attribution||w.name}</p>
-                <p style={{color:T.muted,fontSize:11,marginTop:2}}>{w.role}</p>
-              </div>
-              <span style={{background:`${activeCat.color}15`,color:activeCat.color,fontSize:10,fontWeight:800,padding:"4px 10px",borderRadius:20,letterSpacing:0.5}}>{String(i+1).padStart(2,"0")}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+// ÉLOQUENCE PRACTICE
+function EloquencePractice({T,entry,onBack,onPremium}:{T:Theme;entry:EloquenceEntry;onBack:()=>void;onPremium:()=>void}){
+ const [phase,setPhase]=useState<"read"|"recording"|"analyzing"|"result">("read");
+ const [transcript,setTranscript]=useState("");
+ const [feedback,setFeedback]=useState("");
+ const [score,setScore]=useState(0);
+ const recRef=useRef<any>(null);
+
+ const segments=(()=>{
+  const norm=entry.text.replace(/\n{3,}/g,"[P2]").replace(/\n\n/g,"[P1]");
+  return norm.split(/(\[P[12]\])/);
+ })();
+
+ const startRec=()=>{
+  const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="1";
+  if(!hasPremium){onPremium();return;}
+  const SR=(typeof window!=="undefined")&&((window as any).SpeechRecognition||(window as any).webkitSpeechRecognition);
+  if(!SR){alert("Reconnaissance vocale non disponible sur ce navigateur.");return;}
+  const rec=new SR();
+  rec.lang="fr-FR";rec.continuous=true;rec.interimResults=false;
+  let buf="";
+  rec.onresult=(e:any)=>{for(let i=e.resultIndex;i<e.results.length;i++)buf+=e.results[i][0].transcript+" ";setTranscript(buf);};
+  rec.start();recRef.current=rec;setPhase("recording");haptic();
+ };
+
+ const stopRec=async()=>{
+  if(recRef.current){recRef.current.stop();recRef.current=null;}
+  setPhase("analyzing");
+  const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+  const orig=entry.text.replace(/\n+/g," ").trim();
+  const sys="Tu es un coach expert en éloquence et art oratoire. Analyse la lecture à voix haute et donne une correction bienveillante mais précise.";
+  const hist:GHist=[{role:"user",parts:[{text:`TEXTE — "${entry.title}" par ${entry.author} :\n${orig}\n\nLECTURE TRANSCRITE :\n${transcript||("|silence|")}\n\nDonne :\n1. Score /10\n2. Mots manqués ou déformés\n3. Rythme et fluidité\n4. Respect des pauses\n5. 3 conseils pour progresser\n\nMax 260 mots. Format structuré, motivant.`}]}];
+  try{
+   const res=await callGemini(sys,hist,key,380);
+   setFeedback(res);
+   const m=res.match(/(\d+)\s*\/\s*10/);
+   const sc=m?parseInt(m[1]):6;setScore(sc);
+   const hist2=JSON.parse((typeof window!=="undefined"&&localStorage.getItem("nexus_eq_history"))||"[]");
+   hist2.unshift({id:Date.now().toString(),textId:entry.id,textTitle:entry.title,author:entry.author,date:new Date().toLocaleDateString("fr-FR"),score:sc,feedback:res.slice(0,400)});
+   if(typeof window!=="undefined")localStorage.setItem("nexus_eq_history",JSON.stringify(hist2.slice(0,50)));
+  }catch{setFeedback("Erreur lors de l'analyse. Vérifie ta connexion.");}
+  setPhase("result");
+ };
+
+ const catColor={discours:"#2B78F5",litterature:"#7C3AED",poesie:"#E03535",pratique:"#D97706"}[entry.category]||"#2B78F5";
+
+ return(
+  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+   <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+    <div style={{flex:1,minWidth:0}}>
+     <h2 style={{color:T.text,fontWeight:800,fontSize:17,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{entry.title}</h2>
+     <p style={{color:T.muted,fontSize:11}}>{entry.author} · {entry.duration}</p>
     </div>
-  );
+    <span style={{background:`${catColor}20`,color:catColor,fontSize:10,fontWeight:800,padding:"4px 10px",borderRadius:20,whiteSpace:"nowrap"}}>{entry.level}</span>
+   </div>
+   <div style={{flex:1,overflowY:"scroll",WebkitOverflowScrolling:"touch" as any}}>
+    <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:4}}>
+     {/* Text with pause markers */}
+     {segments.map((seg,i)=>
+      seg==="[P1]"?(
+       <div key={i} style={{display:"flex",alignItems:"center",gap:8,margin:"10px 0"}}>
+        <div style={{flex:1,height:1,background:T.b1}}/>
+        <span style={{background:`${T.blueB}18`,color:T.blueB,fontSize:10,fontWeight:800,padding:"3px 10px",borderRadius:20,letterSpacing:0.5}}>⏸ 1s</span>
+        <div style={{flex:1,height:1,background:T.b1}}/>
+       </div>
+      ):seg==="[P2]"?(
+       <div key={i} style={{display:"flex",alignItems:"center",gap:8,margin:"14px 0"}}>
+        <div style={{flex:1,height:1,background:T.amber}}/>
+        <span style={{background:`${T.amber}20`,color:T.amber,fontSize:10,fontWeight:800,padding:"3px 10px",borderRadius:20,letterSpacing:0.5}}>⏸ 2s</span>
+        <div style={{flex:1,height:1,background:T.amber}}/>
+       </div>
+      ):(
+       <div key={i}>
+        {seg.split("\n").filter(l=>l.trim()).map((line,j)=>(
+         <p key={j} style={{color:T.text,fontSize:17,lineHeight:1.9,fontWeight:500,letterSpacing:0.2}}>{line}</p>
+        ))}
+       </div>
+      )
+     )}
+
+     {/* Premium recording section */}
+     <div style={{marginTop:28,borderTop:`1px solid ${T.b1}`,paddingTop:20}}>
+      {phase==="read"&&(
+       <button onClick={startRec} style={{width:"100%",padding:"14px 20px",borderRadius:14,border:`1.5px solid ${T.blueB}`,background:`${T.blueB}15`,color:T.blueB,fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+        <Ic n="mic" s={18} c={T.blueB}/><span>Écoute NEXUS — Premium</span><Ic n="lock" s={14} c={T.blueB}/>
+       </button>
+      )}
+      {phase==="recording"&&(
+       <div style={{display:"flex",flexDirection:"column",gap:12,alignItems:"center"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,color:T.green,fontWeight:800,fontSize:14}}>
+         <span style={{width:10,height:10,borderRadius:"50%",background:T.green,animation:"pulse 1s infinite"}}/>
+         Enregistrement en cours…
+        </div>
+        <p style={{color:T.muted,fontSize:12,textAlign:"center"}}>Lisez le texte à voix haute</p>
+        <button onClick={stopRec} style={{padding:"12px 28px",borderRadius:12,border:`1.5px solid ${T.amber}`,background:`${T.amber}15`,color:T.amber,fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+         Terminer la lecture
+        </button>
+       </div>
+      )}
+      {phase==="analyzing"&&(
+       <div style={{textAlign:"center",color:T.muted,fontSize:14,padding:"20px 0"}}>
+        <p style={{fontWeight:800,color:T.blueB,marginBottom:6}}>Analyse NEXUS en cours…</p>
+        <p>Patiente quelques secondes</p>
+       </div>
+      )}
+      {phase==="result"&&feedback&&(
+       <div style={{background:T.card,border:`1.5px solid ${T.blueB}30`,borderRadius:16,padding:18}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+         <p style={{color:T.blueB,fontWeight:800,fontSize:15}}>Correction NEXUS</p>
+         <div style={{background:`${score>=7?T.green:score>=5?T.amber:"#E03535"}20`,color:score>=7?T.green:score>=5?T.amber:"#E03535",fontWeight:900,fontSize:18,padding:"6px 14px",borderRadius:12}}>
+          {score}/10
+         </div>
+        </div>
+        <p style={{color:T.textD,fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{feedback}</p>
+        <button onClick={()=>{setPhase("read");setTranscript("");setFeedback("");}} style={{marginTop:14,width:"100%",padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+         Recommencer
+        </button>
+       </div>
+      )}
+     </div>
+    </div>
+   </div>
+  </div>
+ );
+}
+
+// ÉLOQUENCE SCREEN
+function EloquenceScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:()=>void}){
+ const [tab,setTab]=useState<"textes"|"progres">("textes");
+ const [cat,setCat]=useState<"all"|"discours"|"litterature"|"poesie"|"pratique">("all");
+ const [level,setLevel]=useState<"all"|"debutant"|"intermediaire"|"expert">("all");
+ const [practice,setPractice]=useState<EloquenceEntry|null>(null);
+ const [history,setHistory]=useState<any[]>([]);
+
+ useEffect(()=>{
+  if(tab==="progres"){
+   const h=JSON.parse((typeof window!=="undefined"&&localStorage.getItem("nexus_eq_history"))||"[]");
+   setHistory(h);
+  }
+ },[tab]);
+
+ if(practice) return <EloquencePractice T={T} entry={practice} onBack={()=>setPractice(null)} onPremium={onPremium}/>;
+
+ const catDefs=[
+  {id:"all",label:"Tout",color:T.blueB},
+  {id:"discours",label:"Discours",color:"#2B78F5"},
+  {id:"litterature",label:"Littérature",color:"#7C3AED"},
+  {id:"poesie",label:"Poésie",color:"#E03535"},
+  {id:"pratique",label:"Pratique",color:"#D97706"},
+ ] as const;
+ const levelDefs=[
+  {id:"all",label:"Tous"},
+  {id:"debutant",label:"Débutant"},
+  {id:"intermediaire",label:"Intermédiaire"},
+  {id:"expert",label:"Expert"},
+ ] as const;
+ const catColor:{[k:string]:string}={discours:"#2B78F5",litterature:"#7C3AED",poesie:"#E03535",pratique:"#D97706"};
+ const filtered=ELOQUENCE_TEXTS.filter(t=>(cat==="all"||t.category===cat)&&(level==="all"||t.level===level));
+ const isPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="1";
+
+ return(
+  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+   <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+    <div style={{flex:1}}>
+     <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Éloquence</h2>
+     <p style={{color:T.muted,fontSize:11}}>Discours · Littérature · Poésie · Pratique</p>
+    </div>
+    <span style={{background:`${T.blueB}15`,color:T.blueB,fontSize:10,fontWeight:800,padding:"4px 10px",borderRadius:20}}>{ELOQUENCE_TEXTS.length} textes</span>
+   </div>
+
+   {/* Tabs */}
+   <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    {(["textes","progres"] as const).map(t=>(
+     <button key={t} onClick={()=>{haptic();setTab(t);}} style={{flex:1,padding:"12px 0",background:"none",border:"none",cursor:"pointer",color:tab===t?T.blueB:T.muted,fontWeight:tab===t?800:600,fontSize:13,fontFamily:"inherit",borderBottom:`2px solid ${tab===t?T.blueB:"transparent"}`,transition:"all .15s"}}>
+      {t==="textes"?"Textes":"Mes progrès"}
+     </button>
+    ))}
+   </div>
+
+   {tab==="textes"?(
+    <>
+     {/* Category filter */}
+     <div style={{display:"flex",gap:8,padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,overflowX:"auto",flexShrink:0}}>
+      {catDefs.map(c=>(
+       <button key={c.id} onClick={()=>{haptic();setCat(c.id as any);}} style={{padding:"6px 16px",borderRadius:20,border:`1.5px solid ${cat===c.id?c.color:T.b1}`,background:cat===c.id?c.color:T.card,color:cat===c.id?"#fff":T.muted,fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
+        {c.label}
+       </button>
+      ))}
+     </div>
+     {/* Level filter */}
+     <div style={{display:"flex",gap:6,padding:"8px 16px",borderBottom:`1px solid ${T.b1}`,overflowX:"auto",flexShrink:0}}>
+      {levelDefs.map(l=>(
+       <button key={l.id} onClick={()=>{haptic();setLevel(l.id as any);}} style={{padding:"4px 12px",borderRadius:20,border:`1px solid ${level===l.id?T.blueB:T.b1}`,background:level===l.id?`${T.blueB}15`:T.card,color:level===l.id?T.blueB:T.muted,fontSize:11,fontWeight:level===l.id?800:600,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
+        {l.label}
+       </button>
+      ))}
+     </div>
+     {/* Text list */}
+     <div style={{flex:1,overflowY:"scroll",WebkitOverflowScrolling:"touch" as any}}>
+      <div style={{display:"flex",flexDirection:"column",gap:0,padding:"8px 16px 20px"}}>
+       {filtered.map(entry=>{
+        const cc=catColor[entry.category]||T.blueB;
+        return(
+         <button key={entry.id} onClick={()=>{haptic();setPractice(entry);}} style={{padding:"14px 16px",borderRadius:14,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginTop:8,transition:"all .15s"}}
+          onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
+          <div style={{width:44,height:44,borderRadius:12,background:`${cc}18`,border:`1.5px solid ${cc}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+           <Ic n={entry.category==="discours"?"mic":entry.category==="poesie"?"star":entry.category==="pratique"?"zap":"feed"} s={20} c={cc}/>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+           <p style={{color:T.text,fontWeight:700,fontSize:14,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{entry.title}</p>
+           <p style={{color:T.muted,fontSize:11,marginTop:2}}>{entry.author} · {entry.duration}</p>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
+           <span style={{background:`${cc}15`,color:cc,fontSize:9,fontWeight:800,padding:"3px 8px",borderRadius:20,textTransform:"uppercase",letterSpacing:0.5}}>{entry.category}</span>
+           <span style={{background:T.bg2,color:T.muted,fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:20}}>{entry.level}</span>
+          </div>
+         </button>
+        );
+       })}
+      </div>
+     </div>
+    </>
+   ):(
+    /* Progrès tab */
+    <div style={{flex:1,overflowY:"scroll",WebkitOverflowScrolling:"touch" as any}}>
+     <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
+      {!isPremium?(
+       <div style={{background:T.card,border:`1.5px solid ${T.amber}30`,borderRadius:16,padding:20,textAlign:"center"}}>
+        <Ic n="lock" s={28} c={T.amber}/>
+        <p style={{color:T.text,fontWeight:800,fontSize:15,marginTop:10}}>Suivi disponible en Premium</p>
+        <p style={{color:T.muted,fontSize:12,marginTop:6,marginBottom:14}}>Active Premium pour enregistrer tes lectures et suivre ta progression.</p>
+        <button onClick={onPremium} style={{padding:"10px 24px",borderRadius:10,border:"none",background:T.amber,color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Activer Premium</button>
+       </div>
+      ):history.length===0?(
+       <div style={{textAlign:"center",padding:"40px 20px"}}>
+        <Ic n="mic" s={32} c={T.muted}/>
+        <p style={{color:T.muted,fontSize:14,marginTop:12}}>Aucune lecture enregistrée.</p>
+        <p style={{color:T.muted,fontSize:12,marginTop:4}}>Lis un texte et utilise l&apos;écoute NEXUS.</p>
+       </div>
+      ):history.map((h:any)=>(
+       <div key={h.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+         <div>
+          <p style={{color:T.text,fontWeight:700,fontSize:14}}>{h.textTitle}</p>
+          <p style={{color:T.muted,fontSize:11,marginTop:2}}>{h.author} · {h.date}</p>
+         </div>
+         <div style={{background:`${h.score>=7?T.green:h.score>=5?T.amber:"#E03535"}20`,color:h.score>=7?T.green:h.score>=5?T.amber:"#E03535",fontWeight:900,fontSize:16,padding:"6px 12px",borderRadius:10}}>{h.score}/10</div>
+        </div>
+        <p style={{color:T.textD,fontSize:12,lineHeight:1.6}}>{h.feedback.slice(0,160)}…</p>
+       </div>
+      ))}
+     </div>
+    </div>
+   )}
+  </div>
+ );
 }
 
 // CARRIÈRE & CONCOURS SCREEN
@@ -3999,7 +4289,7 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
 }
 
 function SimulationHub({T}:{T:Theme}) {
- const [view,setView] = useState<"hub"|"studio"|"sims"|"apprendre"|"carriere"|"sagesse">("hub");
+ const [view,setView] = useState<"hub"|"studio"|"sims"|"apprendre"|"carriere"|"eloquence">("hub");
  const [showPremiumHub,setShowPremiumHub] = useState(false);
 
  const launch=(id:"studio"|"sims")=>{haptic();setView(id);};
@@ -4008,7 +4298,7 @@ function SimulationHub({T}:{T:Theme}) {
  if(view==="sims") return <SimulationScreen T={T} onBack={()=>setView("hub")}/>;
  if(view==="apprendre") return <ApprendreScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
  if(view==="carriere") return <CarriereScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
- if(view==="sagesse") return <CitationsSagesseScreen T={T} onBack={()=>setView("hub")}/>;
+ if(view==="eloquence") return <EloquenceScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
  if(showPremiumHub) return <PremiumScreen T={T} onBack={()=>setShowPremiumHub(false)}/>;
 
  return(
@@ -4022,7 +4312,7 @@ function SimulationHub({T}:{T:Theme}) {
  {/* APPRENDRE & CARRIÈRE — en haut */}
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase"}}>RESSOURCES</p>
- {([{id:"apprendre",icon:"info",label:"Apprendre",desc:"Discours · Rhétorique · Fiches · Dictionnaire",color:"#2B78F5"},{id:"carriere",icon:"brief",label:"Carrière & Concours",desc:"Générateur de discours · Arguments · Lettre",color:"#16A34A"},{id:"sagesse",icon:"star",label:"Citations & Sagesse",desc:"Proverbes · Philosophes · Auteurs",color:"#E03535"}] as const).map(c=>(
+ {([{id:"apprendre",icon:"info",label:"Apprendre",desc:"Discours · Rhétorique · Fiches · Dictionnaire",color:"#2B78F5"},{id:"carriere",icon:"brief",label:"Carrière & Concours",desc:"Générateur de discours · Arguments · Lettre",color:"#16A34A"},{id:"eloquence",icon:"mic",label:"Éloquence",desc:"Discours · Littérature · Poésie · Pratique",color:"#7C3AED"}] as const).map(c=>(
  <button key={c.id} onClick={()=>{haptic();setView(c.id);}} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
  <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={c.icon} s={26} c={T.blueB}/></div>
