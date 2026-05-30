@@ -260,8 +260,13 @@ const ANTI_REP="\n\nRÈGLE ABSOLUE : Chaque réponse est unique — angle inédi
 async function callGemini(sys:string, hist:GHist, key:string, maxTokens=400):Promise<string> {
  const clean=sanitizeHist(hist);
  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
- const res=await fetch(GEMINI_URL(key),{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({system_instruction:{parts:[{text:sys+ANTI_REP}]},contents:clean,generationConfig:{...GEMINI_CFG,maxOutputTokens:maxTokens}})});
+ // Route through server proxy when no personal key — key stays server-side
+ const useProxy=!key;
+ const url=useProxy?"/api/gemini":GEMINI_URL(key);
+ const body=useProxy
+  ?JSON.stringify({sys,hist:clean,maxTokens,stream:false})
+  :JSON.stringify({system_instruction:{parts:[{text:sys+ANTI_REP}]},contents:clean,generationConfig:{...GEMINI_CFG,maxOutputTokens:maxTokens}});
+ const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body});
  if(!res.ok){const e=await res.text().catch(()=>"");throw new Error(`HTTP_${res.status}: ${e.slice(0,120)}`);}
  const d=await res.json();
  if(d.error) throw new Error(d.error.message||"gemini_error");
@@ -274,8 +279,13 @@ async function callGemini(sys:string, hist:GHist, key:string, maxTokens=400):Pro
 async function streamGemini(sys:string, hist:GHist, key:string, maxTokens:number, onChunk:(full:string)=>void):Promise<string> {
  const clean=sanitizeHist(hist);
  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
- const res=await fetch(GEMINI_URL(key,true),{method:"POST",headers:{"Content-Type":"application/json"},
- body:JSON.stringify({system_instruction:{parts:[{text:sys+ANTI_REP}]},contents:clean,generationConfig:{...GEMINI_CFG,maxOutputTokens:maxTokens}})});
+ // Route through server proxy when no personal key
+ const useProxy=!key;
+ const url=useProxy?"/api/gemini":GEMINI_URL(key,true);
+ const body=useProxy
+  ?JSON.stringify({sys,hist:clean,maxTokens,stream:true})
+  :JSON.stringify({system_instruction:{parts:[{text:sys+ANTI_REP}]},contents:clean,generationConfig:{...GEMINI_CFG,maxOutputTokens:maxTokens}});
+ const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body});
  if(!res.ok){const e=await res.text().catch(()=>"");throw new Error(`HTTP_${res.status}: ${e.slice(0,120)}`);}
  const reader=res.body!.getReader();
  const dec=new TextDecoder();
@@ -1738,11 +1748,6 @@ VÉRIFIÉ (80-100): faits exacts et vérifiables. PROBABLE (60-79): cohérent ma
  </div>
  <textarea value={composed} onChange={e=>setComposed(e.target.value)} placeholder="Partagez votre analyse, opinion ou information…" rows={4} style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",color:T.text,fontSize:14,fontFamily:"inherit",outline:"none",resize:"none",lineHeight:1.6}}/>
  <input value={composeSrc} onChange={e=>setComposeSrc(e.target.value)} placeholder="Source (ex: Le Monde, Reuters…) — optionnel" style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"9px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
- {typeof window!=="undefined"&&!localStorage.getItem("gemini_key")&&(
- <div style={{background:`${T.amber}15`,border:`1px solid ${T.amber}30`,borderRadius:8,padding:"8px 12px"}}>
- <p style={{color:T.amber,fontSize:11,fontWeight:600}}>Configurez votre clé Gemini dans Profil → Réglages pour activer la vérification IA automatique</p>
- </div>
- )}
  <button onClick={publishPost} disabled={!composed.trim()||verifying} style={{padding:15,borderRadius:12,border:"none",background:composed.trim()&&!verifying?T.blueB:T.b1,color:composed.trim()&&!verifying?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:composed.trim()&&!verifying?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
  {verifying?"Vérification IA en cours…":"Publier"}
  </button>
@@ -2861,16 +2866,16 @@ function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
  <p style={{color:T.textD,fontSize:13,marginTop:4}}>Une seule clé suffit — voix et IA incluses</p>
  </div>
  {/* Gemini */}
- <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
+ <div style={{background:T.card,border:`1px solid ${T.green}`,borderRadius:12,padding:14}}>
  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
- <div style={{width:28,height:28,borderRadius:7,background:"#E8854020",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="zap" s={14} c="#E88540"/></div>
- <div>
- <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé Gemini (Google) — GRATUIT</p>
- <p style={{color:T.muted,fontSize:10}}>aistudio.google.com → Get API key</p>
+ <div style={{width:28,height:28,borderRadius:7,background:`${T.green}20`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="zap" s={14} c={T.green}/></div>
+ <div style={{flex:1}}>
+ <p style={{color:T.text,fontSize:13,fontWeight:800}}>IA Gemini — <span style={{color:T.green}}>déjà configurée</span></p>
+ <p style={{color:T.muted,fontSize:10}}>Clé personnelle optionnelle — aistudio.google.com</p>
  </div>
- {ck&&<div style={{marginLeft:"auto",width:8,height:8,borderRadius:"50%",background:T.green}}/>}
+ <div style={{width:8,height:8,borderRadius:"50%",background:T.green,flexShrink:0}}/>
  </div>
- <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border .2s"}}/>
+ <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza… (optionnel)" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border .2s"}}/>
  </div>
  <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -4053,10 +4058,13 @@ function ApiKeySettings({T}:{T:Theme}) {
  const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
  return(
  <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
- <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
- <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Clé Gemini AI (GRATUIT)</p>
- <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
- <p style={{color:T.muted,fontSize:11,marginTop:5}}>aistudio.google.com → Get API key · Nécessaire pour les simulations IA</p>
+ <div style={{background:T.card,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
+ <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+  <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",flex:1}}>Clé Gemini personnelle</p>
+  <span style={{background:`${T.green}20`,color:T.green,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20}}>IA configurée</span>
+ </div>
+ <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza… (optionnel)" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+ <p style={{color:T.muted,fontSize:11,marginTop:5}}>L&apos;IA fonctionne sans clé. Ajoute la tienne pour utiliser ton propre quota Gemini.</p>
  </div>
  <div style={{background:T.card,border:`1px solid ${azk?"#0078d4":T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
  <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}> Azure TTS <span style={{color:"#16A34A",fontWeight:700,textTransform:"none",letterSpacing:0}}>(recommandé — DeniseNeural)</span></p>
@@ -5275,10 +5283,6 @@ export default function NexusApp() {
 
  useEffect(()=>{
  if(typeof window==="undefined") return;
- const envG = process.env.NEXT_PUBLIC_GEMINI_KEY;
- const envE = process.env.NEXT_PUBLIC_EL_KEY;
- if(envG && !localStorage.getItem("gemini_key")) localStorage.setItem("gemini_key",envG);
- if(envE && !localStorage.getItem("el_key")) localStorage.setItem("el_key",envE);
  setStreak(updateStreak());
  },[]);
 
