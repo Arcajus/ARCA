@@ -364,6 +364,7 @@ function Ic({n,s=22,c="currentColor",w=1.6}:{n:string;s?:number;c?:string;w?:num
  video:<svg style={st} viewBox="0 0 24 24"><polygon {...p} points="23 7 16 12 23 17 23 7"/><rect {...p} x="1" y="5" width="15" height="14" rx="2"/></svg>,
  info:<svg style={st} viewBox="0 0 24 24"><circle {...p} cx="12" cy="12" r="10"/><line {...p} x1="12" y1="16" x2="12" y2="12"/><line {...p} x1="12" y1="8" x2="12.01" y2="8"/></svg>,
  flag:<svg style={st} viewBox="0 0 24 24"><path {...p} d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line {...p} x1="4" y1="22" x2="4" y2="15"/></svg>,
+ menu:<svg style={st} viewBox="0 0 24 24"><line {...p} x1="3" y1="6" x2="21" y2="6"/><line {...p} x1="3" y1="12" x2="21" y2="12"/><line {...p} x1="3" y1="18" x2="21" y2="18"/></svg>,
  };
  return <>{icons[n] ?? <svg style={st} viewBox="0 0 24 24"><circle {...p} cx="12" cy="12" r="10"/></svg>}</>;
 }
@@ -5821,14 +5822,112 @@ function ProgressScreen({T,onBack}:{T:Theme;onBack:()=>void}){
  );
 }
 
+// ── RÉELS SCREEN ──────────────────────────────────────────────────────────────
+const REELS_DATA = [
+ {id:"r1",gradient:["#1a1a2e","#16213e"],accent:"#E94560",cat:"GÉOPOLITIQUE",duration:"45s",title:"Pourquoi la Russie a envahi l'Ukraine ?",sub:"L'histoire en 45 secondes",creator:"NEXUS Géo",init:"NG",likes:4820,comments:312,shares:891,body:"Depuis 2014, la tension monte.\nL'OTAN s'étend vers l'Est.\nMoscou voit une menace à sa porte.\n\nLe 24 février 2022 : offensive totale.\nObjectif déclaré : « dénazification ».\nObjectif réel : stopper l'expansion atlantiste\net maintenir une zone tampon.\n\nRésultat : la plus grande guerre terrestre\nen Europe depuis 1945."},
+ {id:"r2",gradient:["#0d2137","#1a3a5c"],accent:"#2B78F5",cat:"DISCOURS",duration:"1 min",title:"Churchill — « Nous nous battrons sur les plages »",sub:"Analyse rhétorique",creator:"NEXUS Éloquence",init:"NE",likes:6340,comments:287,shares:1240,body:"Londres, 4 juin 1940.\nDunkerque vient de tomber.\n300 000 soldats sauvés — mais la défaite est là.\n\nChurchill choisit de ne pas mentir.\nIl énumère les retraites possibles :\nles plages, les champs, les rues, les collines.\n\nPuis : « Nous ne nous rendrons jamais. »\n\nL'anaphore comme armure.\nLe désastre transformé en résistance."},
+ {id:"r3",gradient:["#1a2e1a","#2d4a1e"],accent:"#22C55E",cat:"DIPLOMATIE",duration:"50s",title:"Le Conseil de Sécurité : pourquoi le veto bloque tout",sub:"ONU décryptée",creator:"NEXUS Droit",init:"ND",likes:3190,comments:445,shares:672,body:"5 membres permanents.\n5 droits de veto absolus.\n\nRussie bloque sur l'Ukraine.\nUSA bloque sur Gaza.\nChine bloque sur Taïwan.\n\nRésultat : l'ONU paralysée\nsur chaque conflit majeur.\n\nLa paix mondiale dépend\ndu consensus des plus puissants.\nEst-ce un système qui tient encore ?"},
+ {id:"r4",gradient:["#2e1a0a","#4a2e0d"],accent:"#F59E0B",cat:"ÉLOQUENCE",duration:"35s",title:"La règle des 3 — Pourquoi tout grand discours l'utilise",sub:"Technique oratoire",creator:"NEXUS Pratique",init:"NP",likes:8920,comments:634,shares:2140,body:"Veni, vidi, vici.\nLiberté, Égalité, Fraternité.\nSang, labeur, larmes et sueur.\n\nLe cerveau mémorise par 3.\nDeux : trop court, semble incomplet.\nQuatre : trop long, saturé.\n\nTrois : l'équilibre parfait.\nMouvement, structure, conclusion.\n\nTestez : chaque argument\nmérite exactement 3 preuves."},
+ {id:"r5",gradient:["#1a0a2e","#2e1a4a"],accent:"#A855F7",cat:"HISTOIRE",duration:"55s",title:"Discours de Lumumba à l'indépendance du Congo",sub:"30 juin 1960",creator:"NEXUS Histoire",init:"NH",likes:5670,comments:892,shares:1830,body:"Kinshasa, 30 juin 1960.\nLe roi des Belges vient de parler\nd'une indépendance « octroyée ».\n\nLumumba n'a pas de discours préparé.\nIl improvise.\n\n« Nous ne sommes plus vos singes. »\n\nLes diplomates belges se figent.\nLe monde retient son souffle.\n\nCe discours lui coûtera la vie.\nIl sera assassiné 7 mois plus tard."},
+ {id:"r6",gradient:["#0a1a2e","#0d2640"],accent:"#06B6D4",cat:"GÉOPOLITIQUE",duration:"40s",title:"Taïwan : pourquoi ça peut déclencher une guerre mondiale",sub:"Le point de rupture",creator:"NEXUS Géo",init:"NG",likes:12400,comments:1820,shares:4200,body:"90% des puces avancées mondiales.\nFabriquées par TSMC — à Taïwan.\n\nSi Pékin prend Taïwan :\nplus de smartphones, plus d'IA,\nplus d'armement de précision.\n\nC'est pourquoi les USA garantissent\nla défense de l'île — officieusement.\n\nC'est pourquoi la Chine attend.\nSurveille. Prépare.\n\nTaïwan n'est pas un choix géographique.\nC'est la clé de l'économie mondiale."},
+ {id:"r7",gradient:["#1a1a0a","#2e2e0d"],accent:"#EAB308",cat:"DROIT",duration:"1 min",title:"La plaidoirie — l'art de parler pour sauver une vie",sub:"Technique judiciaire",creator:"NEXUS Barreau",init:"NB",likes:7340,comments:523,shares:1640,body:"L'avocat entre dans la salle.\nTout le monde est contre son client.\nLes preuves. Les témoins. Le parquet.\n\nIl n'a qu'une arme : la parole.\n\nLa plaidoirie ne prouve pas l'innocence.\nElle crée le doute raisonnable.\n\nTechnique : commencer par l'humain,\nnon par les faits.\nUn jury ne juge pas un dossier.\nIl juge une histoire."},
+ {id:"r8",gradient:["#2e0a0a","#4a1010"],accent:"#EF4444",cat:"SCIENCES PO",duration:"45s",title:"Grand oral Sciences Po — les 3 erreurs qui éliminent",sub:"Préparation concours",creator:"NEXUS ScPo",init:"NS",likes:15600,comments:2340,shares:5800,body:"1. Répondre à côté de la question.\nLe jury ne cherche pas vos connaissances.\nIl teste votre capacité à les mobiliser.\n\n2. Ne pas écouter la contre-question.\nC'est là que se joue l'admission.\nUne réponse courte et précise vaut mieux\nqu'un développement hors sujet.\n\n3. Manquer de conviction.\nVous pouvez dire 'je ne sais pas'.\nVous ne pouvez pas sembler indifférent."},
+];
+
+function ReelsScreen({T}:{T:Theme}) {
+ const [liked,setLiked] = useState<Set<string>>(new Set());
+ const [current,setCurrent] = useState(0);
+ const containerRef = useRef<HTMLDivElement>(null);
+
+ const toggleLike=(id:string)=>{
+  haptic();
+  setLiked(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
+ };
+
+ const fmtN=(n:number)=>n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
+
+ const onScroll=()=>{
+  if(!containerRef.current) return;
+  const el=containerRef.current;
+  const idx=Math.round(el.scrollTop/el.clientHeight);
+  setCurrent(idx);
+ };
+
+ return(
+  <div style={{height:"100%",position:"relative",background:"#000",overflow:"hidden"}}>
+   {/* Cards container — snap scroll */}
+   <div ref={containerRef} onScroll={onScroll} style={{height:"100%",overflowY:"scroll",scrollSnapType:"y mandatory",scrollBehavior:"smooth",WebkitOverflowScrolling:"touch"} as React.CSSProperties}>
+    {REELS_DATA.map((r,i)=>{
+     const isLiked=liked.has(r.id);
+     return(
+      <div key={r.id} style={{height:"100%",flexShrink:0,scrollSnapAlign:"start",position:"relative",background:`linear-gradient(160deg,${r.gradient[0]},${r.gradient[1]})`,display:"flex",flexDirection:"column",justifyContent:"flex-end"} as React.CSSProperties}>
+       {/* Category pill top */}
+       <div style={{position:"absolute",top:16,left:16,display:"flex",alignItems:"center",gap:8}}>
+        <span style={{background:r.accent,color:"#fff",fontSize:10,fontWeight:900,padding:"4px 10px",borderRadius:20,letterSpacing:1}}>{r.cat}</span>
+        <span style={{background:"rgba(0,0,0,.5)",color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:700,padding:"4px 8px",borderRadius:20}}>{r.duration}</span>
+       </div>
+       {/* Body text */}
+       <div style={{position:"absolute",top:"50%",left:0,right:60,transform:"translateY(-50%)",padding:"0 20px"}}>
+        <p style={{color:"rgba(255,255,255,.9)",fontSize:15,lineHeight:1.7,fontWeight:500,whiteSpace:"pre-line"}}>{r.body}</p>
+       </div>
+       {/* Right actions */}
+       <div style={{position:"absolute",right:12,bottom:120,display:"flex",flexDirection:"column",alignItems:"center",gap:20}}>
+        {/* Creator avatar */}
+        <div style={{width:44,height:44,borderRadius:"50%",background:r.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:"#fff",border:"2px solid #fff",marginBottom:4}}>{r.init}</div>
+        {/* Like */}
+        <button onClick={()=>toggleLike(r.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+         <div style={{color:isLiked?"#ff4d6d":"#fff",transition:"transform .15s",transform:isLiked?"scale(1.25)":"scale(1)"}}>
+          <Ic n="heart" s={28} c={isLiked?"#ff4d6d":"#fff"} w={isLiked?0:2}/>
+         </div>
+         <span style={{color:"#fff",fontSize:11,fontWeight:700}}>{fmtN(r.likes+(isLiked?1:0))}</span>
+        </button>
+        {/* Comment */}
+        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+         <Ic n="msg" s={26} c="#fff" w={2}/>
+         <span style={{color:"#fff",fontSize:11,fontWeight:700}}>{fmtN(r.comments)}</span>
+        </button>
+        {/* Share */}
+        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+         <Ic n="share" s={24} c="#fff" w={2}/>
+         <span style={{color:"#fff",fontSize:11,fontWeight:700}}>{fmtN(r.shares)}</span>
+        </button>
+        {/* Practice */}
+        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+         <div style={{width:36,height:36,borderRadius:"50%",background:r.accent,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <Ic n="mic" s={16} c="#fff" w={2}/>
+         </div>
+         <span style={{color:"#fff",fontSize:10,fontWeight:700}}>Pratiquer</span>
+        </button>
+       </div>
+       {/* Bottom info */}
+       <div style={{padding:"16px 70px 20px 16px",background:"linear-gradient(transparent,rgba(0,0,0,.85))"}}>
+        <p style={{color:"rgba(255,255,255,.6)",fontSize:11,fontWeight:700,marginBottom:4}}>@{r.creator.toLowerCase().replace(/ /g,"_")}</p>
+        <p style={{color:"#fff",fontSize:15,fontWeight:800,lineHeight:1.3,marginBottom:4}}>{r.title}</p>
+        <p style={{color:"rgba(255,255,255,.7)",fontSize:12}}>{r.sub}</p>
+       </div>
+      </div>
+     );
+    })}
+   </div>
+   {/* Progress dots */}
+   <div style={{position:"absolute",right:4,top:"50%",transform:"translateY(-50%)",display:"flex",flexDirection:"column",gap:4}}>
+    {REELS_DATA.map((_,i)=>(
+     <div key={i} style={{width:3,height:i===current?20:6,borderRadius:2,background:i===current?"#fff":"rgba(255,255,255,.3)",transition:"all .2s"}}/>
+    ))}
+   </div>
+  </div>
+ );
+}
+
 // ROOT APP
 export default function NexusApp() {
  const [dark,setDark] = useState(false);
  const T = dark ? DARK : LIGHT;
- const [tab,setTab] = useState<"feed"|"simulation"|"messages"|"events"|"profile">("feed");
+ const [tab,setTab] = useState<"feed"|"simulation"|"messages"|"reels"|"profile">("feed");
  const [showPremium,setShowPremium] = useState(false);
  const [showOnboarding,setShowOnboarding] = useState(false);
  const [showProgress,setShowProgress] = useState(false);
+ const [showMenu,setShowMenu] = useState(false);
  const [showInstall,setShowInstall] = useState(false);
  const [tabAnim,setTabAnim] = useState("fadeIn");
  const [feedUnread,setFeedUnread] = useState(()=>{
@@ -5888,7 +5987,7 @@ export default function NexusApp() {
  {id:"feed",icon:"feed",label:"ACTU"},
  {id:"simulation",icon:"zap",label:"SIMUL."},
  {id:"messages",icon:"msg",label:"MSG"},
- {id:"events",icon:"cal",label:"AGENDA"},
+ {id:"reels",icon:"play",label:"RÉELS"},
  {id:"profile",icon:"user",label:"PROFIL"},
  ];
 
@@ -5917,6 +6016,21 @@ export default function NexusApp() {
  {showProgress&&(
   <div style={{position:"absolute",inset:0,zIndex:500,background:T.bg,overflow:"hidden"}}>
    <ProgressScreen T={T} onBack={()=>setShowProgress(false)}/>
+  </div>
+ )}
+
+ {/* Menu overlay — Agenda & extras */}
+ {showMenu&&(
+  <div style={{position:"absolute",inset:0,zIndex:400,display:"flex"}} onClick={()=>setShowMenu(false)}>
+   <div style={{position:"absolute",right:0,top:0,bottom:0,width:"88%",maxWidth:360,background:T.bg,boxShadow:"-8px 0 40px rgba(0,0,0,.3)",display:"flex",flexDirection:"column",animation:"slideInRight .22s ease"}} onClick={e=>e.stopPropagation()}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 16px 8px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+     <span style={{color:T.text,fontSize:16,fontWeight:800}}>Menu</span>
+     <button onClick={()=>setShowMenu(false)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ic n="x" s={20} c={T.muted}/></button>
+    </div>
+    <div style={{flex:1,overflowY:"auto"}}>
+     <EventsScreen T={T}/>
+    </div>
+   </div>
   </div>
  )}
 
@@ -5953,6 +6067,9 @@ export default function NexusApp() {
  <button onClick={()=>{haptic();setShowNotifPanel(p=>!p);setNotifRead(true);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative"}}>
  <Ic n="bell" s={16} c={T.blueB}/>
  {!notifRead&&<div style={{position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:T.red,border:`2px solid ${T.surf}`,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#fff",fontSize:8,fontWeight:900,lineHeight:1}}>5</span></div>}
+ </button>
+ <button onClick={()=>{haptic();setShowMenu(m=>!m);}} style={{background:showMenu?T.blueG:T.card,border:`1px solid ${showMenu?T.blueB:T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+ <Ic n="menu" s={16} c={showMenu?T.blueB:T.text}/>
  </button>
  <div onClick={()=>{haptic();switchTab("profile");}} style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,cursor:"pointer",flexShrink:0}}>A</div>
  </div>
@@ -5993,7 +6110,7 @@ export default function NexusApp() {
  {tab==="feed"&&<FeedScreen key={feedKey} T={T} onDebate={()=>switchTab("simulation")} onNewPosts={handleNewPosts}/>}
  {tab==="simulation"&&<SimulationHub T={T}/>}
  {tab==="messages"&&<MessagesScreen T={T}/>}
- {tab==="events"&&<EventsScreen T={T}/>}
+ {tab==="reels"&&<ReelsScreen T={T}/>}
  {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)} isAdmin={isAdmin} streak={streak} onProgress={()=>setShowProgress(true)}/>}
  </div>
  )}
