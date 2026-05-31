@@ -3047,6 +3047,30 @@ function levelInfo(xp:number){
  const tiers=[{l:1,t:"Apprenti",max:150},{l:2,t:"Orateur",max:400},{l:3,t:"Débatteur",max:800},{l:4,t:"Diplomate",max:1400},{l:5,t:"Expert",max:2200},{l:6,t:"Maître",max:99999}];
  return tiers.find((_,i)=>xp<tiers[i].max)||tiers[tiers.length-1];
 }
+function analyzeFillers(txt:string):{words:{word:string;count:number}[];total:number;wcount:number;score:number}{
+ const FL=["euh","bah","ben","bon","voilà","genre","en fait","du coup","quoi","hein","bref","enfin","mmh","ouais","ok","genre de","c'est-à-dire","je veux dire"];
+ const t=txt.toLowerCase();
+ const wcount=Math.max(1,t.split(/\s+/).filter(w=>w.length>1).length);
+ const found:Record<string,number>={};
+ for(const f of FL){const m=t.match(new RegExp(`\\b${f}\\b`,"g"));if(m)found[f]=(found[f]||0)+m.length;}
+ const words=Object.entries(found).map(([word,count])=>({word,count})).sort((a,b)=>b.count-a.count);
+ const total=words.reduce((s,w)=>s+w.count,0);
+ const rate=(total/wcount)*100;
+ const score=Math.max(1,Math.min(10,Math.round(10-rate*0.55)));
+ return{words,total,wcount,score};
+}
+function getSkills():{[k:string]:number}{
+ if(typeof window==="undefined")return{diction:0,rythme:0,fluidite:0,conviction:0,structure:0};
+ return JSON.parse(localStorage.getItem("nx_skills")||'{"diction":0,"rythme":0,"fluidite":0,"conviction":0,"structure":0}');
+}
+function saveSkills(s:{[k:string]:number}){if(typeof window==="undefined")return;localStorage.setItem("nx_skills",JSON.stringify(s));}
+function getGoal(){if(typeof window==="undefined")return"";return localStorage.getItem("nexus_goal")||"";}
+function recordSession(type:string,score:number){
+ if(typeof window==="undefined")return;
+ const sessions=JSON.parse(localStorage.getItem("nx_sessions")||"[]");
+ sessions.unshift({date:new Date().toLocaleDateString("fr-FR"),type,score,ts:Date.now()});
+ localStorage.setItem("nx_sessions",JSON.stringify(sessions.slice(0,100)));
+}
 
 // APPRENDRE — DATA 
 const DISCOURS_DATA=[
@@ -3784,6 +3808,7 @@ function EloquencePractice({T,entry,onBack,onPremium}:{T:Theme;entry:EloquenceEn
  const [transcript,setTranscript]=useState("");
  const [feedback,setFeedback]=useState("");
  const [score,setScore]=useState(0);
+ const [fillerAna,setFillerAna]=useState<{words:{word:string;count:number}[];total:number;wcount:number;score:number}|null>(null);
  const recRef=useRef<any>(null);
 
  const segments=(()=>{
@@ -3807,14 +3832,30 @@ function EloquencePractice({T,entry,onBack,onPremium}:{T:Theme;entry:EloquenceEn
   if(recRef.current){recRef.current.stop();recRef.current=null;}
   setPhase("analyzing");
   const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+  const fa=analyzeFillers(transcript||"");
+  setFillerAna(fa);
   const orig=entry.text.replace(/\n+/g," ").trim();
-  const sys="Tu es un coach expert en éloquence et art oratoire. Analyse la lecture à voix haute et donne une correction bienveillante mais précise.";
-  const hist:GHist=[{role:"user",parts:[{text:`TEXTE — "${entry.title}" par ${entry.author} :\n${orig}\n\nLECTURE TRANSCRITE :\n${transcript||("|silence|")}\n\nDonne :\n1. Score /10\n2. Mots manqués ou déformés\n3. Rythme et fluidité\n4. Respect des pauses\n5. 3 conseils pour progresser\n\nMax 260 mots. Format structuré, motivant.`}]}];
+  const fillerNote=fa.total>0
+   ?`\n[Détection auto : ${fa.total} mots de remplissage — ${fa.words.slice(0,4).map(w=>`"${w.word}"×${w.count}`).join(", ")} — Score fluidité: ${fa.score}/10]`
+   :"\n[Détection auto : aucun mot de remplissage. Fluidité parfaite 10/10]";
+  const sys="Tu es un coach expert en éloquence et art oratoire. Analyse la lecture à voix haute et donne une correction bienveillante mais précise. Utilise les données de détection automatique si disponibles.";
+  const hist:GHist=[{role:"user",parts:[{text:`TEXTE — "${entry.title}" par ${entry.author} :\n${orig}\n\nLECTURE TRANSCRITE :\n${transcript||("|silence|")}${fillerNote}\n\nDonne :\n1. Score global /10\n2. Mots manqués ou déformés\n3. Rythme, fluidité et mots de remplissage\n4. Respect des pauses\n5. 3 conseils précis pour progresser\n\nMax 280 mots. Format structuré, motivant.`}]}];
   try{
-   const res=await callGemini(sys,hist,key,380);
+   const res=await callGemini(sys,hist,key,400);
    setFeedback(res);
    const m=res.match(/(\d+)\s*\/\s*10/);
    const sc=m?parseInt(m[1]):6;setScore(sc);
+   // Update skills
+   const sk=getSkills();
+   sk.diction=Math.round((sk.diction||0)*0.7+fa.score*0.3);
+   sk.rythme=Math.round((sk.rythme||0)*0.7+sc*0.3);
+   sk.fluidite=Math.round((sk.fluidite||0)*0.7+fa.score*0.3);
+   sk.conviction=Math.round((sk.conviction||0)*0.7+Math.min(10,sc+1)*0.3);
+   sk.structure=Math.round((sk.structure||0)*0.7+sc*0.3);
+   saveSkills(sk);
+   addXP(10+sc*2);
+   updateStreak();
+   recordSession("eloquence",sc);
    const hist2=JSON.parse((typeof window!=="undefined"&&localStorage.getItem("nexus_eq_history"))||"[]");
    hist2.unshift({id:Date.now().toString(),textId:entry.id,textTitle:entry.title,author:entry.author,date:new Date().toLocaleDateString("fr-FR"),score:sc,feedback:res.slice(0,400)});
    if(typeof window!=="undefined")localStorage.setItem("nexus_eq_history",JSON.stringify(hist2.slice(0,50)));
@@ -3885,17 +3926,43 @@ function EloquencePractice({T,entry,onBack,onPremium}:{T:Theme;entry:EloquenceEn
        </div>
       )}
       {phase==="result"&&feedback&&(
-       <div style={{background:T.card,border:`1.5px solid ${T.blueB}30`,borderRadius:16,padding:18}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-         <p style={{color:T.blueB,fontWeight:800,fontSize:15}}>Correction NEXUS</p>
-         <div style={{background:`${score>=7?T.green:score>=5?T.amber:"#E03535"}20`,color:score>=7?T.green:score>=5?T.amber:"#E03535",fontWeight:900,fontSize:18,padding:"6px 14px",borderRadius:12}}>
-          {score}/10
+       <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {/* Filler words card */}
+        {fillerAna&&(
+         <div style={{background:T.card,border:`1.5px solid ${fillerAna.score>=8?T.green:fillerAna.score>=5?T.amber:"#E03535"}30`,borderRadius:14,padding:16}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+           <p style={{color:T.text,fontWeight:800,fontSize:13}}>Mots de remplissage</p>
+           <span style={{background:`${fillerAna.score>=8?T.green:fillerAna.score>=5?T.amber:"#E03535"}20`,color:fillerAna.score>=8?T.green:fillerAna.score>=5?T.amber:"#E03535",fontWeight:900,fontSize:13,padding:"3px 10px",borderRadius:20}}>{fillerAna.score}/10</span>
+          </div>
+          {fillerAna.total===0?(
+           <p style={{color:T.green,fontSize:13,fontWeight:600}}>✓ Aucun mot de remplissage détecté. Fluidité parfaite !</p>
+          ):(
+           <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            <p style={{color:T.muted,fontSize:12}}>{fillerAna.total} occurrence{fillerAna.total>1?"s":""} sur ~{fillerAna.wcount} mots</p>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+             {fillerAna.words.map(w=>(
+              <span key={w.word} style={{background:`${T.amber}15`,color:T.amber,fontSize:11,fontWeight:800,padding:"3px 9px",borderRadius:20}}>
+               &ldquo;{w.word}&rdquo; ×{w.count}
+              </span>
+             ))}
+            </div>
+           </div>
+          )}
          </div>
+        )}
+        {/* Main feedback card */}
+        <div style={{background:T.card,border:`1.5px solid ${T.blueB}30`,borderRadius:16,padding:18}}>
+         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+          <p style={{color:T.blueB,fontWeight:800,fontSize:15}}>Correction NEXUS</p>
+          <div style={{background:`${score>=7?T.green:score>=5?T.amber:"#E03535"}20`,color:score>=7?T.green:score>=5?T.amber:"#E03535",fontWeight:900,fontSize:18,padding:"6px 14px",borderRadius:12}}>
+           {score}/10
+          </div>
+         </div>
+         <p style={{color:T.textD,fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{feedback}</p>
+         <button onClick={()=>{setPhase("read");setTranscript("");setFeedback("");setFillerAna(null);}} style={{marginTop:14,width:"100%",padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          Recommencer
+         </button>
         </div>
-        <p style={{color:T.textD,fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{feedback}</p>
-        <button onClick={()=>{setPhase("read");setTranscript("");setFeedback("");}} style={{marginTop:14,width:"100%",padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-         Recommencer
-        </button>
        </div>
       )}
      </div>
@@ -5566,12 +5633,196 @@ function InstallBanner({T,onDismiss}:{T:Theme;onDismiss:()=>void}) {
  );
 }
 
-// ROOT APP 
+// ONBOARDING
+function OnboardingScreen({T,onDone}:{T:Theme;onDone:(goal:string)=>void}){
+ const [step,setStep]=useState(1);
+ const [goal,setGoal]=useState("");
+
+ const goals=[
+  {id:"sciencespo",icon:"shield",label:"Sciences Po / IEP",desc:"Grand oral, entretien, concours"},
+  {id:"barreau",icon:"scale",label:"Barreau & Droit",desc:"Plaidoirie, concours oratoires"},
+  {id:"entreprise",icon:"brief",label:"Entreprise",desc:"Présentations, réunions, pitchs"},
+  {id:"eloquence",icon:"mic",label:"Éloquence générale",desc:"Prise de parole, confiance en soi"},
+  {id:"concours",icon:"award",label:"Compétitions oratoires",desc:"Débats, joutes, championnats"},
+ ];
+ const levels=[
+  {id:"debutant",label:"Débutant",desc:"Je débute l'entraînement oral"},
+  {id:"intermediaire",label:"Intermédiaire",desc:"J'ai déjà de l'expérience"},
+  {id:"avance",label:"Avancé",desc:"Je prépare un concours précis"},
+ ];
+ const goalRecs:Record<string,string>={sciencespo:"Grand oral Sciences Po",barreau:"Plaidoirie — Exercice de barreau",entreprise:"Discours de présentation",eloquence:"Le Pont Mirabeau",concours:"Argumenter en 3 points"};
+
+ const finish=(lvl:string)=>{
+  if(typeof window!=="undefined"){localStorage.setItem("nexus_goal",goal);localStorage.setItem("nexus_level",lvl);localStorage.setItem("nexus_onboarded","1");}
+  onDone(goal);
+ };
+
+ if(step===1) return(
+  <div style={{display:"flex",flexDirection:"column",height:"100%",padding:"40px 24px 24px",background:T.bg,animation:"fadeIn .3s ease"}}>
+   <div style={{marginBottom:32}}>
+    <p style={{color:T.blueB,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>NEXUS · Bienvenue</p>
+    <h1 style={{color:T.text,fontSize:26,fontWeight:900,lineHeight:1.2,marginBottom:8}}>Quel est ton objectif ?</h1>
+    <p style={{color:T.muted,fontSize:14}}>On va personnaliser ton parcours.</p>
+   </div>
+   <div style={{display:"flex",flexDirection:"column",gap:10,flex:1,overflowY:"auto"}}>
+    {goals.map(g=>(
+     <button key={g.id} onClick={()=>{haptic();setGoal(g.id);setStep(2);}} style={{padding:"16px 18px",borderRadius:16,border:`1.5px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,transition:"all .15s"}}
+      onMouseEnter={e=>e.currentTarget.style.borderColor=T.blueB} onMouseLeave={e=>e.currentTarget.style.borderColor=T.b1}>
+      <div style={{width:46,height:46,borderRadius:12,background:`${T.blueB}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={g.icon} s={22} c={T.blueB}/></div>
+      <div><p style={{color:T.text,fontWeight:700,fontSize:15}}>{g.label}</p><p style={{color:T.muted,fontSize:12,marginTop:2}}>{g.desc}</p></div>
+      <Ic n="chevR" s={18} c={T.muted}/>
+     </button>
+    ))}
+   </div>
+  </div>
+ );
+
+ if(step===2) return(
+  <div style={{display:"flex",flexDirection:"column",height:"100%",padding:"40px 24px 24px",background:T.bg,animation:"fadeIn .3s ease"}}>
+   <button onClick={()=>setStep(1)} style={{background:"none",border:"none",cursor:"pointer",padding:0,marginBottom:24,alignSelf:"flex-start"}}><Ic n="chevL" s={22} c={T.text}/></button>
+   <div style={{marginBottom:32}}>
+    <p style={{color:T.blueB,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>ÉTAPE 2 / 2</p>
+    <h1 style={{color:T.text,fontSize:26,fontWeight:900,lineHeight:1.2,marginBottom:8}}>Ton niveau actuel ?</h1>
+    <p style={{color:T.muted,fontSize:14}}>Pour calibrer tes premiers exercices.</p>
+   </div>
+   <div style={{display:"flex",flexDirection:"column",gap:12}}>
+    {levels.map(l=>(
+     <button key={l.id} onClick={()=>{haptic();finish(l.id);}} style={{padding:"20px 20px",borderRadius:16,border:`1.5px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all .15s"}}
+      onMouseEnter={e=>e.currentTarget.style.borderColor=T.blueB} onMouseLeave={e=>e.currentTarget.style.borderColor=T.b1}>
+      <div><p style={{color:T.text,fontWeight:800,fontSize:16}}>{l.label}</p><p style={{color:T.muted,fontSize:12,marginTop:3}}>{l.desc}</p></div>
+      <Ic n="chevR" s={18} c={T.muted}/>
+     </button>
+    ))}
+   </div>
+   <div style={{marginTop:"auto",paddingTop:24,background:`${T.blueB}10`,border:`1px solid ${T.blueB}20`,borderRadius:14,padding:"14px 16px"}}>
+    <p style={{color:T.blueB,fontWeight:700,fontSize:13}}>Premier exercice recommandé</p>
+    <p style={{color:T.text,fontWeight:800,fontSize:14,marginTop:4}}>{goalRecs[goal]||"Discours de présentation"}</p>
+    <p style={{color:T.muted,fontSize:11,marginTop:2}}>Éloquence → Pratique</p>
+   </div>
+  </div>
+ );
+
+ return null;
+}
+
+// PROGRESS DASHBOARD
+function ProgressScreen({T,onBack}:{T:Theme;onBack:()=>void}){
+ const streak=getStreak();
+ const xp=getXP();
+ const lvl=levelInfo(xp);
+ const nextLvl=levelInfo(xp+1);
+ const prevMax=xp<150?0:xp<400?150:xp<800?400:xp<1400?800:xp<2200?1400:2200;
+ const progress=lvl.max<99999?Math.min(100,Math.round((xp-prevMax)/(lvl.max-prevMax)*100)):100;
+ const skills=getSkills();
+ const goal=getGoal();
+ const history=JSON.parse((typeof window!=="undefined"&&localStorage.getItem("nexus_eq_history"))||"[]");
+
+ const goalLabels:Record<string,string>={sciencespo:"Sciences Po / IEP",barreau:"Barreau & Droit",entreprise:"Entreprise",eloquence:"Éloquence générale",concours:"Compétitions oratoires"};
+ const skillDefs=[
+  {k:"diction",label:"Diction",color:"#2B78F5"},
+  {k:"rythme",label:"Rythme",color:"#16A34A"},
+  {k:"fluidite",label:"Fluidité",color:"#7C3AED"},
+  {k:"conviction",label:"Conviction",color:"#D97706"},
+  {k:"structure",label:"Structure",color:"#E03535"},
+ ];
+
+ return(
+  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+   <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+    <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Ma progression</h2></div>
+   </div>
+   <div style={{flex:1,overflowY:"scroll",WebkitOverflowScrolling:"touch" as any}}>
+    <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:16}}>
+
+     {/* Streak + Level card */}
+     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:18,padding:20,display:"flex",alignItems:"center",gap:16}}>
+      <div style={{width:64,height:64,borderRadius:18,background:`${T.amber}18`,border:`2px solid ${T.amber}30`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+       <span style={{fontSize:22}}>🔥</span>
+       <span style={{color:T.amber,fontWeight:900,fontSize:18,lineHeight:1}}>{streak}</span>
+      </div>
+      <div style={{flex:1}}>
+       <p style={{color:T.text,fontWeight:900,fontSize:17}}>Niveau {lvl.l} — {lvl.t}</p>
+       <p style={{color:T.muted,fontSize:12,marginTop:2}}>{xp} XP · {streak} jour{streak>1?"s":""} de suite</p>
+       <div style={{marginTop:10,background:T.bg2,borderRadius:8,height:8,overflow:"hidden"}}>
+        <div style={{height:"100%",width:`${progress}%`,background:`linear-gradient(90deg,${T.blueB},#7C3AED)`,borderRadius:8,transition:"width .4s ease"}}/>
+       </div>
+       <p style={{color:T.muted,fontSize:10,marginTop:4}}>{lvl.max<99999?`${lvl.max-xp} XP avant ${nextLvl.t}`:"Niveau maximum atteint"}</p>
+      </div>
+     </div>
+
+     {/* Objective */}
+     {goal&&(
+      <div style={{background:`${T.blueB}10`,border:`1px solid ${T.blueB}20`,borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+       <Ic n="flag" s={18} c={T.blueB}/>
+       <div><p style={{color:T.muted,fontSize:11,fontWeight:700,letterSpacing:1}}>OBJECTIF</p><p style={{color:T.text,fontWeight:800,fontSize:14,marginTop:2}}>{goalLabels[goal]||goal}</p></div>
+      </div>
+     )}
+
+     {/* Skills */}
+     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,padding:18}}>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>COMPÉTENCES</p>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+       {skillDefs.map(s=>{
+        const val=skills[s.k]||0;
+        return(
+         <div key={s.k}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+           <span style={{color:T.text,fontSize:13,fontWeight:700}}>{s.label}</span>
+           <span style={{color:s.color,fontSize:12,fontWeight:800}}>{val}/10</span>
+          </div>
+          <div style={{background:T.bg2,borderRadius:6,height:7,overflow:"hidden"}}>
+           <div style={{height:"100%",width:`${val*10}%`,background:s.color,borderRadius:6,transition:"width .5s ease",opacity:0.85}}/>
+          </div>
+         </div>
+        );
+       })}
+      </div>
+      {Object.values(skills).every(v=>v===0)&&(
+       <p style={{color:T.muted,fontSize:12,textAlign:"center",marginTop:12}}>Tes compétences se construisent après chaque session Éloquence (Premium).</p>
+      )}
+     </div>
+
+     {/* Recent sessions */}
+     {history.length>0&&(
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,padding:18}}>
+       <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>SESSIONS RÉCENTES</p>
+       <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {history.slice(0,8).map((h:any)=>(
+         <div key={h.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:`1px solid ${T.b1}`}}>
+          <div style={{width:36,height:36,borderRadius:10,background:`${h.score>=7?T.green:h.score>=5?T.amber:"#E03535"}18`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+           <span style={{color:h.score>=7?T.green:h.score>=5?T.amber:"#E03535",fontWeight:900,fontSize:13}}>{h.score}</span>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+           <p style={{color:T.text,fontWeight:700,fontSize:13,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.textTitle}</p>
+           <p style={{color:T.muted,fontSize:11,marginTop:1}}>{h.author} · {h.date}</p>
+          </div>
+         </div>
+        ))}
+       </div>
+      </div>
+     )}
+     {history.length===0&&(
+      <div style={{textAlign:"center",padding:"20px 0"}}>
+       <Ic n="mic" s={28} c={T.muted}/>
+       <p style={{color:T.muted,fontSize:13,marginTop:10}}>Aucune session enregistrée.</p>
+       <p style={{color:T.muted,fontSize:12,marginTop:4}}>Utilise l&apos;Écoute NEXUS dans Éloquence.</p>
+      </div>
+     )}
+    </div>
+   </div>
+  </div>
+ );
+}
+
+// ROOT APP
 export default function NexusApp() {
  const [dark,setDark] = useState(false);
  const T = dark ? DARK : LIGHT;
  const [tab,setTab] = useState<"feed"|"simulation"|"messages"|"events"|"profile">("feed");
  const [showPremium,setShowPremium] = useState(false);
+ const [showOnboarding,setShowOnboarding] = useState(()=>typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1");
+ const [showProgress,setShowProgress] = useState(false);
  const [showInstall,setShowInstall] = useState(false);
  const [tabAnim,setTabAnim] = useState("fadeIn");
  const [feedUnread,setFeedUnread] = useState(()=>{
@@ -5647,6 +5898,18 @@ export default function NexusApp() {
  `}</style>
 
  {showAdminPin&&<AdminPinModal T={T} onClose={()=>setShowAdminPin(false)} onSuccess={()=>{setIsAdmin(true);setShowAdminPin(false);if(typeof window!=="undefined")localStorage.setItem("nexus_admin","1");}}/>}
+ {/* Onboarding overlay */}
+ {showOnboarding&&(
+  <div style={{position:"absolute",inset:0,zIndex:999,background:T.bg,overflow:"hidden"}}>
+   <OnboardingScreen T={T} onDone={()=>{setShowOnboarding(false);setStreak(updateStreak());}}/>
+  </div>
+ )}
+ {/* Progress overlay */}
+ {showProgress&&(
+  <div style={{position:"absolute",inset:0,zIndex:500,background:T.bg,overflow:"hidden"}}>
+   <ProgressScreen T={T} onBack={()=>setShowProgress(false)}/>
+  </div>
+ )}
 
  {/* Install banner */}
  {showInstall&&!showPremium&&(
@@ -5675,6 +5938,12 @@ export default function NexusApp() {
  <span style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text,letterSpacing:0.5}}>NEXUS</span>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
+ {streak>0&&(
+  <button onClick={()=>{haptic();setShowProgress(true);}} style={{display:"flex",alignItems:"center",gap:4,background:`${T.amber}15`,border:`1px solid ${T.amber}30`,borderRadius:20,padding:"5px 10px",cursor:"pointer"}}>
+   <span style={{fontSize:14}}>🔥</span>
+   <span style={{color:T.amber,fontWeight:800,fontSize:12}}>{streak}</span>
+  </button>
+ )}
  <button onClick={()=>{haptic();setDark(d=>!d);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
  <Ic n={dark?"sun":"moon"} s={16} c={T.blueB}/>
  </button>
