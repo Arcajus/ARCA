@@ -5821,7 +5821,7 @@ export default function NexusApp() {
  const T = dark ? DARK : LIGHT;
  const [tab,setTab] = useState<"feed"|"simulation"|"messages"|"events"|"profile">("feed");
  const [showPremium,setShowPremium] = useState(false);
- const [showOnboarding,setShowOnboarding] = useState(()=>typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1");
+ const [showOnboarding,setShowOnboarding] = useState(false);
  const [showProgress,setShowProgress] = useState(false);
  const [showInstall,setShowInstall] = useState(false);
  const [tabAnim,setTabAnim] = useState("fadeIn");
@@ -5859,6 +5859,9 @@ export default function NexusApp() {
  const switchTab = (id: typeof tab) => {
  haptic();
  setTabAnim("slideInRight");
+ if(id==="simulation"&&typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1"){
+  setShowOnboarding(true);
+ }
  setTab(id);
  if(id==="feed"){
  setFeedUnread(0);
