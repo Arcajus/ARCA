@@ -5446,7 +5446,7 @@ RÈGLES ABSOLUES :
 }
 
 // PROFILE SCREEN 
-function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin:boolean}) {
+function ProfileScreen({T,onPremium,isAdmin,streak,onProgress}:{T:Theme;onPremium:()=>void;isAdmin:boolean;streak:number;onProgress:()=>void}) {
  const [activeTab,setActiveTab] = useState<"posts"|"score"|"badges">("posts");
  const scores:{[k:string]:number} = {"Géopolitique":82,"Droit":68,"Diplomatie":75,"Histoire":88,"Institutions":61};
  type UserPost = {id:number;text:string;time:string;src:string;verif:{label:string;color:string;comment:string}|null};
@@ -5481,13 +5481,19 @@ function ProfileScreen({T,onPremium,isAdmin}:{T:Theme;onPremium:()=>void;isAdmin
  <p style={{color:T.textD,fontSize:13,marginTop:6,lineHeight:1.5}}>Citoyen du monde · Passionné de géopolitique et diplomatie · Fondateur NEXUS</p>
  </div>
  </div>
- <div style={{display:"flex",gap:20,marginTop:16}}>
+ <div style={{display:"flex",gap:20,marginTop:16,flexWrap:"wrap"}}>
  {[["284","Abonnés"],["1,2k","Followers"],[String(47+postCount),"Débats"],["82","Score"]].map(([v,l])=>(
  <div key={l} style={{textAlign:"center"}}>
  <p style={{color:T.text,fontWeight:800,fontSize:16}}>{v}</p>
  <p style={{color:T.muted,fontSize:11}}>{l}</p>
  </div>
  ))}
+ {streak>0&&(
+ <div onClick={()=>onProgress()} style={{textAlign:"center",cursor:"pointer"}}>
+ <p style={{color:T.amber,fontWeight:800,fontSize:16}}>🔥 {streak}</p>
+ <p style={{color:T.muted,fontSize:11}}>Série</p>
+ </div>
+ )}
  </div>
  {isAdmin&&<ApiKeySettings T={T}/>}
  <button onClick={onPremium} style={{width:"100%",marginTop:12,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
@@ -5941,12 +5947,6 @@ export default function NexusApp() {
  <span style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text,letterSpacing:0.5}}>NEXUS</span>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
- {streak>0&&(
-  <button onClick={()=>{haptic();setShowProgress(true);}} style={{display:"flex",alignItems:"center",gap:4,background:`${T.amber}15`,border:`1px solid ${T.amber}30`,borderRadius:20,padding:"5px 10px",cursor:"pointer"}}>
-   <span style={{fontSize:14}}>🔥</span>
-   <span style={{color:T.amber,fontWeight:800,fontSize:12}}>{streak}</span>
-  </button>
- )}
  <button onClick={()=>{haptic();setDark(d=>!d);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
  <Ic n={dark?"sun":"moon"} s={16} c={T.blueB}/>
  </button>
@@ -5994,7 +5994,7 @@ export default function NexusApp() {
  {tab==="simulation"&&<SimulationHub T={T}/>}
  {tab==="messages"&&<MessagesScreen T={T}/>}
  {tab==="events"&&<EventsScreen T={T}/>}
- {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)} isAdmin={isAdmin}/>}
+ {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)} isAdmin={isAdmin} streak={streak} onProgress={()=>setShowProgress(true)}/>}
  </div>
  )}
  </div>
