@@ -4370,7 +4370,7 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  );
 }
 
-function SimulationHub({T}:{T:Theme}) {
+function SimulationHub({T,onPremium}:{T:Theme;onPremium?:()=>void}) {
  const [view,setView] = useState<"hub"|"studio"|"sims"|"apprendre"|"carriere"|"eloquence">("hub");
  const [showPremiumHub,setShowPremiumHub] = useState(false);
 
@@ -5919,11 +5919,117 @@ function ReelsScreen({T}:{T:Theme}) {
  );
 }
 
+// ── SEARCH SCREEN ─────────────────────────────────────────────────────────────
+const SEARCH_SUGGESTIONS = [
+ {q:"Ukraine guerre 2022",cat:"Géopolitique"},
+ {q:"Grand oral Sciences Po",cat:"Concours"},
+ {q:"Discours De Gaulle",cat:"Éloquence"},
+ {q:"ONU Conseil de Sécurité",cat:"Institutions"},
+ {q:"Technique plaidoirie",cat:"Barreau"},
+ {q:"BRICS 2024",cat:"Géopolitique"},
+];
+
+function SearchScreen({T,onSimulation}:{T:Theme;onSimulation:()=>void}) {
+ const [query,setQuery] = useState("");
+ const filtered = query.trim().length>1
+  ? ELOQUENCE_TEXTS.filter(t=>t.title.toLowerCase().includes(query.toLowerCase())||t.author.toLowerCase().includes(query.toLowerCase()))
+  : [];
+
+ return(
+  <div style={{padding:"0 0 20px"}}>
+   {/* Search bar */}
+   <div style={{padding:"14px 16px 0"}}>
+    <div style={{display:"flex",alignItems:"center",gap:10,background:T.card,border:`1.5px solid ${query?T.blueB:T.b1}`,borderRadius:14,padding:"11px 14px",transition:"border-color .2s"}}>
+     <Ic n="search" s={18} c={T.muted}/>
+     <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Discours, pays, technique…" autoFocus style={{flex:1,background:"none",border:"none",outline:"none",color:T.text,fontSize:15,fontFamily:"inherit"}}/>
+     {query&&<button onClick={()=>setQuery("")} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="x" s={14} c={T.muted}/></button>}
+    </div>
+   </div>
+
+   {/* Results */}
+   {filtered.length>0?(
+    <div style={{padding:"12px 16px 0",display:"flex",flexDirection:"column",gap:8}}>
+     <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>{filtered.length} résultat{filtered.length>1?"s":""}</p>
+     {filtered.slice(0,15).map(e=>{
+      const cc:{[k:string]:string}={discours:T.blueB,litterature:"#7C3AED",poesie:"#EC4899",pratique:"#F59E0B"};
+      const c=cc[e.category]||T.blueB;
+      return(
+       <div key={e.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,background:T.card,border:`1px solid ${T.b1}`}}>
+        <div style={{width:40,height:40,borderRadius:10,background:`${c}18`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+         <Ic n={e.category==="discours"?"mic":e.category==="poesie"?"star":"zap"} s={18} c={c}/>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+         <p style={{color:T.text,fontWeight:700,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.title}</p>
+         <p style={{color:T.muted,fontSize:11,marginTop:2}}>{e.author} · {e.duration}</p>
+        </div>
+        <span style={{background:`${c}15`,color:c,fontSize:9,fontWeight:800,padding:"3px 8px",borderRadius:20,textTransform:"uppercase",flexShrink:0}}>{e.category}</span>
+       </div>
+      );
+     })}
+    </div>
+   ):(
+    <div style={{padding:"16px"}}>
+     {/* Quick access */}
+     <div style={{marginBottom:20}}>
+      <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Accès rapide</p>
+      <button onClick={onSimulation} style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:14,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left"}}>
+       <div style={{width:42,height:42,borderRadius:12,background:`${T.blueB}15`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <Ic n="zap" s={20} c={T.blueB}/>
+       </div>
+       <div>
+        <p style={{color:T.text,fontWeight:700,fontSize:14}}>Simulation</p>
+        <p style={{color:T.muted,fontSize:12}}>Débat, Éloquence, Discours…</p>
+       </div>
+       <Ic n="chevR" s={16} c={T.muted}/>
+      </button>
+     </div>
+     {/* Suggestions */}
+     <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Suggestions</p>
+     <div style={{display:"flex",flexDirection:"column",gap:6}}>
+      {SEARCH_SUGGESTIONS.map(s=>(
+       <button key={s.q} onClick={()=>setQuery(s.q)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:10,border:`1px solid ${T.b1}`,background:"transparent",cursor:"pointer",textAlign:"left"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+         <Ic n="search" s={14} c={T.muted}/>
+         <span style={{color:T.text,fontSize:13}}>{s.q}</span>
+        </div>
+        <span style={{color:T.muted,fontSize:11,fontWeight:600}}>{s.cat}</span>
+       </button>
+      ))}
+     </div>
+    </div>
+   )}
+  </div>
+ );
+}
+
+// ── MENU DRAWER ────────────────────────────────────────────────────────────────
+function MenuDrawer({T,onClose,onPremium}:{T:Theme;onClose:()=>void;onPremium:()=>void}) {
+ const [section,setSection] = useState<"simulation"|"agenda">("simulation");
+ return(
+  <div style={{position:"absolute",right:0,top:0,bottom:0,width:"92%",maxWidth:380,background:T.bg,boxShadow:"-8px 0 40px rgba(0,0,0,.3)",display:"flex",flexDirection:"column",animation:"slideInRight .22s ease"}} onClick={e=>e.stopPropagation()}>
+   {/* Header */}
+   <div style={{display:"flex",alignItems:"center",gap:0,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    {(["simulation","agenda"] as const).map(s=>(
+     <button key={s} onClick={()=>setSection(s)} style={{flex:1,padding:"14px 8px",background:"none",border:"none",borderBottom:`2.5px solid ${section===s?T.blueB:"transparent"}`,color:section===s?T.blueB:T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+      <Ic n={s==="simulation"?"zap":"cal"} s={14} c={section===s?T.blueB:T.muted}/>
+      {s==="simulation"?"Simulation":"Agenda"}
+     </button>
+    ))}
+    <button onClick={onClose} style={{padding:"14px 16px",background:"none",border:"none",cursor:"pointer",flexShrink:0}}><Ic n="x" s={18} c={T.muted}/></button>
+   </div>
+   {/* Content */}
+   <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch"} as React.CSSProperties}>
+    {section==="simulation"?<SimulationHub T={T} onPremium={onPremium}/>:<EventsScreen T={T}/>}
+   </div>
+  </div>
+ );
+}
+
 // ROOT APP
 export default function NexusApp() {
  const [dark,setDark] = useState(false);
  const T = dark ? DARK : LIGHT;
- const [tab,setTab] = useState<"feed"|"simulation"|"messages"|"reels"|"profile">("feed");
+ const [tab,setTab] = useState<"feed"|"search"|"messages"|"reels"|"profile">("feed");
  const [showPremium,setShowPremium] = useState(false);
  const [showOnboarding,setShowOnboarding] = useState(false);
  const [showProgress,setShowProgress] = useState(false);
@@ -5961,12 +6067,17 @@ export default function NexusApp() {
  if(n>=5){setAdminTaps(0);setShowAdminPin(true);}
  };
 
+ const openSimulation = () => {
+  haptic();
+  if(typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1"){
+   setShowOnboarding(true);
+  }
+  setShowMenu(true);
+ };
+
  const switchTab = (id: typeof tab) => {
  haptic();
  setTabAnim("slideInRight");
- if(id==="simulation"&&typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1"){
-  setShowOnboarding(true);
- }
  setTab(id);
  if(id==="feed"){
  setFeedUnread(0);
@@ -5985,7 +6096,7 @@ export default function NexusApp() {
 
  const NAV = [
  {id:"feed",icon:"feed",label:"ACTU"},
- {id:"simulation",icon:"zap",label:"SIMUL."},
+ {id:"search",icon:"search",label:"RECHERCHE"},
  {id:"messages",icon:"msg",label:"MSG"},
  {id:"reels",icon:"play",label:"RÉELS"},
  {id:"profile",icon:"user",label:"PROFIL"},
@@ -6022,15 +6133,7 @@ export default function NexusApp() {
  {/* Menu overlay — Agenda & extras */}
  {showMenu&&(
   <div style={{position:"absolute",inset:0,zIndex:400,display:"flex"}} onClick={()=>setShowMenu(false)}>
-   <div style={{position:"absolute",right:0,top:0,bottom:0,width:"88%",maxWidth:360,background:T.bg,boxShadow:"-8px 0 40px rgba(0,0,0,.3)",display:"flex",flexDirection:"column",animation:"slideInRight .22s ease"}} onClick={e=>e.stopPropagation()}>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 16px 8px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
-     <span style={{color:T.text,fontSize:16,fontWeight:800}}>Menu</span>
-     <button onClick={()=>setShowMenu(false)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ic n="x" s={20} c={T.muted}/></button>
-    </div>
-    <div style={{flex:1,overflowY:"auto"}}>
-     <EventsScreen T={T}/>
-    </div>
-   </div>
+   <MenuDrawer T={T} onClose={()=>setShowMenu(false)} onPremium={()=>{setShowMenu(false);setShowPremium(true);}}/>
   </div>
  )}
 
@@ -6102,13 +6205,13 @@ export default function NexusApp() {
  )}
 
  {/* Content */}
- <div ref={scrollRef} style={{flex:1,overflowY:tab==="simulation"?"hidden":"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
+ <div ref={scrollRef} style={{flex:1,overflowY:tab==="reels"?"hidden":"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
  {showPremium ? (
  <PremiumScreen T={T} onBack={()=>setShowPremium(false)}/>
  ) : (
  <div key={tab} style={{animation:`${tabAnim} .25s ease`,height:"100%"}}>
- {tab==="feed"&&<FeedScreen key={feedKey} T={T} onDebate={()=>switchTab("simulation")} onNewPosts={handleNewPosts}/>}
- {tab==="simulation"&&<SimulationHub T={T}/>}
+ {tab==="feed"&&<FeedScreen key={feedKey} T={T} onDebate={()=>{setShowMenu(true);}} onNewPosts={handleNewPosts}/>}
+ {tab==="search"&&<SearchScreen T={T} onSimulation={openSimulation}/>}
  {tab==="messages"&&<MessagesScreen T={T}/>}
  {tab==="reels"&&<ReelsScreen T={T}/>}
  {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)} isAdmin={isAdmin} streak={streak} onProgress={()=>setShowProgress(true)}/>}
