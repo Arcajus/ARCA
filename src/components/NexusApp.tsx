@@ -6003,23 +6003,46 @@ function SearchScreen({T,onSimulation}:{T:Theme;onSimulation:()=>void}) {
 }
 
 // ── MENU DRAWER ────────────────────────────────────────────────────────────────
-function MenuDrawer({T,onClose,onPremium}:{T:Theme;onClose:()=>void;onPremium:()=>void}) {
- const [section,setSection] = useState<"simulation"|"agenda">("simulation");
+function MenuDrawer({T,dark,onToggleDark,onClose,onSimulation,onAgenda,onPremium}:{T:Theme;dark:boolean;onToggleDark:()=>void;onClose:()=>void;onSimulation:()=>void;onAgenda:()=>void;onPremium:()=>void}) {
+ const items = [
+  {icon:"zap" as const,label:"Simulation",sub:"Débat · Éloquence · Discours · ONU",onTap:onSimulation},
+  {icon:"cal" as const,label:"Agenda",sub:"Événements · Concours · Forums",onTap:onAgenda},
+  {icon:"award" as const,label:"NEXUS+",sub:"Débats illimités · Fonctions premium",onTap:onPremium},
+ ];
  return(
-  <div style={{position:"absolute",right:0,top:0,bottom:0,width:"92%",maxWidth:380,background:T.bg,boxShadow:"-8px 0 40px rgba(0,0,0,.3)",display:"flex",flexDirection:"column",animation:"slideInRight .22s ease"}} onClick={e=>e.stopPropagation()}>
+  <div style={{position:"absolute",right:0,top:0,bottom:0,width:"80%",maxWidth:320,background:T.bg,boxShadow:"-8px 0 40px rgba(0,0,0,.25)",display:"flex",flexDirection:"column",animation:"slideInRight .22s ease"}} onClick={e=>e.stopPropagation()}>
    {/* Header */}
-   <div style={{display:"flex",alignItems:"center",gap:0,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
-    {(["simulation","agenda"] as const).map(s=>(
-     <button key={s} onClick={()=>setSection(s)} style={{flex:1,padding:"14px 8px",background:"none",border:"none",borderBottom:`2.5px solid ${section===s?T.blueB:"transparent"}`,color:section===s?T.blueB:T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-      <Ic n={s==="simulation"?"zap":"cal"} s={14} c={section===s?T.blueB:T.muted}/>
-      {s==="simulation"?"Simulation":"Agenda"}
+   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 16px 14px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    <span style={{color:T.text,fontSize:17,fontWeight:800,letterSpacing:-.3}}>Menu</span>
+    <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="x" s={20} c={T.muted}/></button>
+   </div>
+   {/* Items */}
+   <div style={{flex:1,overflowY:"auto"}}>
+    {items.map(item=>(
+     <button key={item.label} onClick={()=>{item.onTap();onClose();}} style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 18px",background:"none",border:"none",borderBottom:`1px solid ${T.b1}`,cursor:"pointer",textAlign:"left"}}>
+      <div style={{width:40,height:40,borderRadius:12,background:`${T.blueB}12`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+       <Ic n={item.icon} s={19} c={T.blueB}/>
+      </div>
+      <div style={{flex:1}}>
+       <p style={{color:T.text,fontSize:15,fontWeight:700,lineHeight:1.2}}>{item.label}</p>
+       <p style={{color:T.muted,fontSize:12,marginTop:2}}>{item.sub}</p>
+      </div>
+      <Ic n="chevR" s={16} c={T.muted}/>
      </button>
     ))}
-    <button onClick={onClose} style={{padding:"14px 16px",background:"none",border:"none",cursor:"pointer",flexShrink:0}}><Ic n="x" s={18} c={T.muted}/></button>
-   </div>
-   {/* Content */}
-   <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch"} as React.CSSProperties}>
-    {section==="simulation"?<SimulationHub T={T} onPremium={onPremium}/>:<EventsScreen T={T}/>}
+    {/* Dark mode toggle */}
+    <button onClick={onToggleDark} style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 18px",background:"none",border:"none",borderBottom:`1px solid ${T.b1}`,cursor:"pointer",textAlign:"left"}}>
+     <div style={{width:40,height:40,borderRadius:12,background:`${T.muted}12`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+      <Ic n={dark?"sun":"moon"} s={19} c={T.text}/>
+     </div>
+     <div style={{flex:1}}>
+      <p style={{color:T.text,fontSize:15,fontWeight:700}}>Mode {dark?"jour":"nuit"}</p>
+      <p style={{color:T.muted,fontSize:12,marginTop:2}}>Actuellement : mode {dark?"sombre":"clair"}</p>
+     </div>
+     <div style={{width:42,height:24,borderRadius:12,background:dark?T.blueB:T.b1,position:"relative",transition:"background .2s",flexShrink:0}}>
+      <div style={{position:"absolute",top:3,left:dark?20:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
+     </div>
+    </button>
    </div>
   </div>
  );
@@ -6034,6 +6057,8 @@ export default function NexusApp() {
  const [showOnboarding,setShowOnboarding] = useState(false);
  const [showProgress,setShowProgress] = useState(false);
  const [showMenu,setShowMenu] = useState(false);
+ const [showSimulation,setShowSimulation] = useState(false);
+ const [showAgenda,setShowAgenda] = useState(false);
  const [showInstall,setShowInstall] = useState(false);
  const [tabAnim,setTabAnim] = useState("fadeIn");
  const [feedUnread,setFeedUnread] = useState(()=>{
@@ -6069,10 +6094,8 @@ export default function NexusApp() {
 
  const openSimulation = () => {
   haptic();
-  if(typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1"){
-   setShowOnboarding(true);
-  }
-  setShowMenu(true);
+  if(typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1") setShowOnboarding(true);
+  setShowSimulation(true);
  };
 
  const switchTab = (id: typeof tab) => {
@@ -6130,10 +6153,34 @@ export default function NexusApp() {
   </div>
  )}
 
- {/* Menu overlay — Agenda & extras */}
+ {/* Simulation full-screen overlay */}
+ {showSimulation&&(
+  <div style={{position:"absolute",inset:0,zIndex:600,background:T.bg,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+   <div style={{display:"flex",alignItems:"center",gap:10,padding:"13px 16px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    <button onClick={()=>setShowSimulation(false)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
+    <span style={{color:T.text,fontSize:16,fontWeight:800}}>Simulation</span>
+   </div>
+   <div style={{flex:1,overflowY:"auto"}}>
+    <SimulationHub T={T} onPremium={()=>{setShowSimulation(false);setShowPremium(true);}}/>
+   </div>
+  </div>
+ )}
+ {/* Agenda full-screen overlay */}
+ {showAgenda&&(
+  <div style={{position:"absolute",inset:0,zIndex:600,background:T.bg,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+   <div style={{display:"flex",alignItems:"center",gap:10,padding:"13px 16px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    <button onClick={()=>setShowAgenda(false)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
+    <span style={{color:T.text,fontSize:16,fontWeight:800}}>Agenda</span>
+   </div>
+   <div style={{flex:1,overflowY:"auto"}}>
+    <EventsScreen T={T}/>
+   </div>
+  </div>
+ )}
+ {/* Menu overlay */}
  {showMenu&&(
-  <div style={{position:"absolute",inset:0,zIndex:400,display:"flex"}} onClick={()=>setShowMenu(false)}>
-   <MenuDrawer T={T} onClose={()=>setShowMenu(false)} onPremium={()=>{setShowMenu(false);setShowPremium(true);}}/>
+  <div style={{position:"absolute",inset:0,zIndex:400,display:"flex",justifyContent:"flex-end"}} onClick={()=>setShowMenu(false)}>
+   <MenuDrawer T={T} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}} onClose={()=>setShowMenu(false)} onSimulation={()=>{setShowSimulation(true);if(typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1")setShowOnboarding(true);}} onAgenda={()=>setShowAgenda(true)} onPremium={()=>setShowPremium(true)}/>
   </div>
  )}
 
@@ -6164,9 +6211,6 @@ export default function NexusApp() {
  <span style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text,letterSpacing:0.5}}>NEXUS</span>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
- <button onClick={()=>{haptic();setDark(d=>!d);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
- <Ic n={dark?"sun":"moon"} s={16} c={T.blueB}/>
- </button>
  <button onClick={()=>{haptic();setShowNotifPanel(p=>!p);setNotifRead(true);}} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative"}}>
  <Ic n="bell" s={16} c={T.blueB}/>
  {!notifRead&&<div style={{position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:T.red,border:`2px solid ${T.surf}`,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#fff",fontSize:8,fontWeight:900,lineHeight:1}}>5</span></div>}
@@ -6210,7 +6254,7 @@ export default function NexusApp() {
  <PremiumScreen T={T} onBack={()=>setShowPremium(false)}/>
  ) : (
  <div key={tab} style={{animation:`${tabAnim} .25s ease`,height:"100%"}}>
- {tab==="feed"&&<FeedScreen key={feedKey} T={T} onDebate={()=>{setShowMenu(true);}} onNewPosts={handleNewPosts}/>}
+ {tab==="feed"&&<FeedScreen key={feedKey} T={T} onDebate={openSimulation} onNewPosts={handleNewPosts}/>}
  {tab==="search"&&<SearchScreen T={T} onSimulation={openSimulation}/>}
  {tab==="messages"&&<MessagesScreen T={T}/>}
  {tab==="reels"&&<ReelsScreen T={T}/>}
