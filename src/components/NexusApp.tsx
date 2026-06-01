@@ -4627,11 +4627,18 @@ RÈGLES ABSOLUES pour cette réponse :
  const w=window as any;
  const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
  if(!SR){alert("Utilisez Chrome pour la reconnaissance vocale.");return;}
- const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
+ const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=true;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- rec.onresult=(e:any)=>{send(e.results[0][0].transcript);setListening(false);};
+ rec.onresult=(e:any)=>{
+   let interim="",final="";
+   for(let i=0;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript+" ";else interim+=e.results[i][0].transcript;}
+   const txt=(final||interim).trim();if(txt)setInput(txt);
+   if(final.trim()){setListening(false);setTimeout(()=>{if(mountedRef.current&&final.trim())send(final.trim());},300);}
+ };
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ rec.onerror=(e:any)=>{setListening(false);if(e.error==="not-allowed")alert("Microphone bloqué — autorisez l'accès dans les paramètres du navigateur.");};
  rec.onend=()=>setListening(false);
- rec.start();recRef.current=rec;setListening(true);
+ try{rec.start();recRef.current=rec;setListening(true);}catch{alert("Impossible de démarrer le micro.");}
  };
 
  const toggleAudio=()=>{
@@ -4919,11 +4926,19 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  if(listening){recRef.current?.stop();setListening(false);return;}
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const w=window as any;const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR){alert("Utilisez Chrome.");return;}
- const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
+ if(!SR){alert("Reconnaissance vocale non disponible. Tapez votre texte ou utilisez Chrome.");return;}
+ const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=true;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
- rec.onend=()=>setListening(false);rec.start();recRef.current=rec;setListening(true);
+ rec.onresult=(e:any)=>{
+   let interim="",final="";
+   for(let i=0;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript+" ";else interim+=e.results[i][0].transcript;}
+   const txt=(final||interim).trim();if(txt)setInput(txt);
+   if(final.trim()){setListening(false);setTimeout(()=>{if(mountedRef.current&&final.trim())handleSpeechRef.current(final.trim());},300);}
+ };
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ rec.onerror=(e:any)=>{setListening(false);if(e.error==="not-allowed")alert("Microphone bloqué — autorisez l'accès dans les paramètres du navigateur.");};
+ rec.onend=()=>setListening(false);
+ try{rec.start();recRef.current=rec;setListening(true);}catch{alert("Impossible de démarrer le micro.");}
  };
 
  const phaseMeta:{[k in TPhase]:{label:string;color:string}}={
@@ -5206,11 +5221,19 @@ Ne commence JAMAIS par répéter ce que ${unRole.country} a dit mot pour mot.`;
  if(listening){recRef.current?.stop();setListening(false);return;}
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const w=window as any;const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR){alert("Utilisez Chrome.");return;}
- const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
+ if(!SR){alert("Reconnaissance vocale non disponible. Tapez votre texte ou utilisez Chrome.");return;}
+ const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=true;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
- rec.onend=()=>setListening(false);rec.start();recRef.current=rec;setListening(true);
+ rec.onresult=(e:any)=>{
+   let interim="",final="";
+   for(let i=0;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript+" ";else interim+=e.results[i][0].transcript;}
+   const txt=(final||interim).trim();if(txt)setInput(txt);
+   if(final.trim()){setListening(false);setTimeout(()=>{if(mountedRef.current&&final.trim())handleSpeechRef.current(final.trim());},300);}
+ };
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ rec.onerror=(e:any)=>{setListening(false);if(e.error==="not-allowed")alert("Microphone bloqué — autorisez l'accès dans les paramètres du navigateur.");};
+ rec.onend=()=>setListening(false);
+ try{rec.start();recRef.current=rec;setListening(true);}catch{alert("Impossible de démarrer le micro.");}
  };
 
  const phaseLabelUN:{[k in UNPhase]:string}={ouverture:"OUVERTURE",debat:"DÉBAT GÉNÉRAL",consultation:"CONSULTATION INFORMELLE",vote:"VOTE",cloture:"SÉANCE LEVÉE"};
