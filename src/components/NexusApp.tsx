@@ -1216,19 +1216,18 @@ LE JOURNALISTE A RÉPONDU :
 ANGLE OBLIGATOIRE pour cette réplique (n°${oppExchangeN}) : ${oppAngle}
 — Construis ta réfutation autour de cet angle précis — exploite les ouvertures que l'adversaire t'a données.
 
-STRUCTURE EN 5 TEMPS (5 à 7 phrases fermes) :
-① ACCROCHE : cite les mots EXACTS "${userAnchor}…" et montre immédiatement la faille — entre dans le vif sans introduction
-② CONTRE-ARGUMENT : développe avec 2 données sourcées réelles selon ton profil (INSEE, OCDE, GIEC, Sénat, rapports officiels)
-③ CONSÉQUENCE : pousse la logique de l'adversaire jusqu'à son aboutissement absurde ou dangereux
-④ ANCRAGE : précédent historique OU comparaison internationale OU témoignage citoyen concret lié au sujet
-⑤ QUESTION RHÉTORIQUE : conclus par une question qui met l'adversaire en difficulté sur "${topic}" spécifiquement
+RÉPONDS NATURELLEMENT — comme dans un vrai débat télévisé :
+• Réagis à l'argument spécifique que l'invité vient de faire — pas à un argument imaginaire
+• Contre-argumente avec 1-2 données réelles (INSEE, OCDE, Sénat, rapports officiels)
+• Pousse leur logique jusqu'à sa conséquence concrète
+• Conclus par une question qui les met en difficulté sur "${topic}"
 
-RÈGLES ABSOLUES :
-• Commence DIRECTEMENT par la réfutation — jamais "En effet", "C'est vrai que", "Tout à fait", "Je suis d'accord"
-• JAMAIS deux fois la même structure ou les mêmes mots dans ce débat — regarde l'historique ci-dessus
-• Style : ${opponent.style.split(".")[0]} — authentique, reconnaissable, irrépressible
-• FOCUS sur "${topic}" — ne dérive pas sur des généralités
-• 5 phrases minimum, développées, avec faits précis`;
+RÈGLES :
+• JAMAIS "En effet", "C'est vrai que", "Tout à fait" — rentre dans le vif directement
+• JAMAIS répéter mot pour mot ce que l'invité vient de dire au début de ta réponse
+• JAMAIS la même structure que les tours précédents — regarde l'historique
+• Style : ${opponent.style.split(".")[0]} — authentique, irrépressible
+• 5-6 phrases. Reste sur "${topic}".`;
  oppReply=await callGemini(oppSys,[...oppHistClean,{role:"user" as const,parts:[{text:`Vous avez entendu l'invité dire : "${text.slice(0,200)}" — répondez maintenant sur "${topic}".`}]}],"",550);
  }catch{/*use fallback*/}
  if(!mountedRef.current) return;
@@ -4840,37 +4839,23 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  speakQ.push({text:ord,gender:"M"});
  }
  const isFinal=n>=MAX_SIM_EXCHANGES;
- const ctx=msgs.slice(-6).filter(m=>m.role!=="event").map(m=>`[${m.charName}]: ${m.text.slice(0,120)}`).join("\n")||"Début d'audience.";
- const mainSys=`Tu incarnes DEUX PERSONNAGES dans un procès correctionnel parisien. RÈGLE N°1 ABSOLUE : chaque personnage DOIT citer les mots EXACTS de l'utilisateur et y répondre directement. Toute réponse générique ou hors sujet est INTERDITE.
+ const ctx=msgs.slice(-6).filter(m=>m.role!=="event").map(m=>`[${m.charName}]: ${m.text.slice(0,130)}`).join("\n")||"Début d'audience.";
+ const mainSys=`Tu joues deux personnages dans un vrai procès. Réponds de façon NATURELLE à ce que l'avocat/procureur vient de dire — comme dans une vraie audience, pas comme un robot.
 
-AFFAIRE : "${trialTopic}" — Tour ${n}/${MAX_SIM_EXCHANGES}
-${USER_CHAR.name} VIENT DE DIRE EXACTEMENT :
-"${text}"
+AFFAIRE : "${trialTopic}" — Échange n°${n}
+${USER_CHAR.name} dit : "${text}"
 
-DERNIERS ÉCHANGES (contexte) :
+HISTORIQUE :
 ${ctx}
 
-━━━ PERSONNAGE 1 ━━━
-[PRÉSIDENT] ${PRES.name}
-→ Commence OBLIGATOIREMENT par reprendre 4-6 mots exacts entre guillemets : ex. "Quand vous dites «[mots exacts]»…"
-→ Réagis à CET argument précis : est-ce juridiquement solide ? Pointe une faille ou une force
-→ Peut interpeller la partie adverse directement ("Maître Renaud, qu'avez-vous à répondre à cela ?")
-→ 1 référence juridique précise (CPP, CP, CEDH, DDHC)
-→ 3 phrases — ton solennel et acéré${isFinal?" → Déclare ensuite : « La Cour invite les parties à leurs plaidoiries finales. »":""}
+[PRÉSIDENT] ${PRES.name} — réagit naturellement à l'argument : le valide, le challenge, pose une question précise à la partie adverse, ou soulève une contradiction. Ton solennel. 1 référence juridique. 3 phrases.${isFinal?" Annonce les plaidoiries finales à la fin.":""}
 
-━━━ PERSONNAGE 2 ━━━
-[${trialRole==="defense"?"PROCUREUR":"AVOCAT"}] ${OPP.name}
-→ "Votre Honneur," puis CONTREDIT DIRECTEMENT l'argument cité ci-dessus
-→ Donne un fait concret opposé : témoignage, expertise ADN, relevé téléphonique, vidéosurveillance, comptable, etc.
-→ Ton combatif — peut être agacé, ironique ou en colère face à un argument faible
-→ 3-4 phrases — structure différente des tours précédents — JAMAIS de généralités
+[${trialRole==="defense"?"PROCUREUR":"AVOCAT"}] ${OPP.name} — répond avec un contre-argument, un fait nouveau, une preuve opposée. Ton vif, direct, parfois acéré. "Votre Honneur," en ouverture. 3-4 phrases. Ne répète jamais la même chose qu'un tour précédent.
 
-FORMAT EXACT (respecte ces titres) :
+Ne commence JAMAIS par répéter ce que l'utilisateur a dit. Réponds directement, naturellement.
+
 [PRÉSIDENT]
-…texte…
-
-[${trialRole==="defense"?"PROCUREUR":"AVOCAT"}]
-…texte…`;
+[${trialRole==="defense"?"PROCUREUR":"AVOCAT"}]`;
  const reply=await callGemini(mainSys,hist,"",900);
  if(!mountedRef.current){setLoading(false);return;}
  const oppTag=trialRole==="defense"?"PROCUREUR":"AVOCAT";
@@ -5149,20 +5134,16 @@ Tiens compte des positions habituelles : Russie et Chine opposées aux intervent
  addMsg({role:"event",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:ord});
  speakQ.push({text:ord,gender:G[PRES_DEL.id]||"M"});
  }
- // Parallel country responses — second argues with first, both respond to user directly
- const makePrompt=(del:typeof UN_DEL[0],isSecond:boolean)=>`Tu es ${del.flag} ${del.country} au Conseil de Sécurité de l'ONU.
-DOCTRINE DE TON PAYS : ${del.doctrine.slice(0,220)}
+ // Parallel country responses — second argues with first, both react naturally to user
+ const makePrompt=(del:typeof UN_DEL[0],isSecond:boolean)=>`Tu es ${del.flag} ${del.country} au Conseil de Sécurité de l'ONU. Réponds naturellement à ce que ${unRole.country} vient de dire.
 
-${unRole.country.toUpperCase()} VIENT DE DIRE EXACTEMENT (échange n°${n}) :
-"${text}"
+DOCTRINE : ${del.doctrine.slice(0,200)}
+${unRole.country} a dit : "${text}"
+${isSecond&&prevR1?`${respondents[0]?.country} vient de déclarer : "${prevR1.slice(0,100)}" — si tu n'es pas d'accord, réponds-leur directement en 1 phrase.`:""}
+Angle ce tour : ${angle}
 
-${isSecond&&prevR1?`⚠️ ${respondents[0]?.country} vient de déclarer : "${prevR1.slice(0,120)}" — si tu es en désaccord avec eux, cite-les nommément et réponds-leur en 1 phrase directe.`:""}
-
-ANGLE OBLIGATOIRE CE TOUR : ${angle}
-
-RÈGLE ABSOLUE : Ta réponse DOIT contenir 3-4 mots EXACTS de ${unRole.country} cités entre guillemets. Réponds DIRECTEMENT à leur argument spécifique — pas de discours générique. Si leur argument est faible, montre-le. Si tu es d'accord sur un point précis, dis-le.
-
-Format : Ouvre par "Monsieur le Président," ou "Madame la Présidente,". Vocabulaire onusien : "ma délégation", "nous prenons acte", "nous appelons à". Cite 1 article de la Charte ou résolution réelle (ex: S/RES/1973). 4-5 phrases denses.`;
+Réponds comme un vrai diplomate dans un débat : réagis à l'argument de ${unRole.country}, soutiens ou conteste avec un fait précis, propose ou critique une action. Vocabulaire onusien naturel. Cite 1 article de la Charte ou résolution réelle. 4-5 phrases. Commence par "Monsieur le Président," ou "Madame la Présidente,".
+Ne commence JAMAIS par répéter ce que ${unRole.country} a dit mot pour mot.`;
  const [res1,res2]=await Promise.allSettled(respondents.map((del,idx)=>callGemini(makePrompt(del,idx===1),[...hist,{role:"user" as const,parts:[{text:`La délégation de ${del.country} a la parole.`}]}],"",480)));
  if(!mountedRef.current){setLoading(false);return;}
  respondents.forEach((del,idx)=>{
