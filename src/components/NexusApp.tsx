@@ -902,8 +902,9 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
  return opts[Math.floor(Math.random()*opts.length)];
  });
 
+ const initTime = (config.speechTime as number) || 120;
  const [phase,setPhase] = useState<"intro"|"speaking"|"listening"|"waiting"|"cut"|"ended">("intro");
- const [timer,setTimer] = useState(90);
+ const [timer,setTimer] = useState(initTime);
  const [timerOn,setTimerOn] = useState(false);
  const [transcript,setTranscript] = useState<{role:string;name:string;text:string;time:string}[]>([]);
  const [showTx,setShowTx] = useState(false);
@@ -1038,14 +1039,14 @@ Style : ${opponent.style.split(".")[0]}`,
  if(!mountedRef.current) return;
  const handover=`Et vous — comment répondez-vous à ça ?`;
  addLine("journalist",j?.name||"Journaliste",handover);
- speakTimed(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current){setAutoMic(true);setTimer(90);setTimerOn(true);}}, 200);
+ speakTimed(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current){setAutoMic(true);setTimer(initTime);setTimerOn(true);}}, 200);
  }, 300);
  });
  } else {
  const introText=`Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle. `:""}À vous la parole.`;
  addLine("journalist",j?.name||"Journaliste",introText);
  setPhase("speaking");
- speakTimed(introText,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current){setAutoMic(true);setTimer(90);setTimerOn(true);}});
+ speakTimed(introText,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current){setAutoMic(true);setTimer(initTime);setTimerOn(true);}});
  }
  },600);
  },[]);// eslint-disable-line
@@ -1132,7 +1133,7 @@ RÈGLES ABSOLUES :
  if(!mountedRef.current){return;}
  addLine("journalist",j?.name||"Journaliste",reply);
  if(reply.toLowerCase().includes("je vous coupe")){setPhase("cut");}
- else{setTimer(90);setTimerOn(true);setPhase("speaking");}
+ else{setTimer(initTime);setTimerOn(true);setPhase("speaking");}
 
  if(isDuel){
  speakTimed(reply,(j?.gender||"F") as "M"|"F", async()=>{
@@ -1178,7 +1179,7 @@ Style authentique : ${opponent.style.split(".")[0]}`;
  if(!mountedRef.current){setLoading(false);return;}
  addLine("journalist",j?.name||"Journaliste",reply);
  speakTimed(reply,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);});
- if(reply.includes("coupe")){setPhase("cut");}else{setTimer(90);setTimerOn(true);setPhase("speaking");}
+ if(reply.includes("coupe")){setPhase("cut");}else{setTimer(initTime);setTimerOn(true);setPhase("speaking");}
  }
  if(mountedRef.current)setLoading(false);
  };
@@ -1186,7 +1187,7 @@ Style authentique : ${opponent.style.split(".")[0]}`;
  // Keep ref pointing to latest handleUserSpeech (avoids stale closures in auto-mic callbacks)
  handleSpeechRef.current = handleUserSpeech;
 
- const timerPct=timer/90;
+ const timerPct=timer/initTime;
  const timerCol=timer<=15?T.red:timer<=30?T.amber:T.green;
  const r=40; const circ=2*Math.PI*r;
 
@@ -1279,7 +1280,7 @@ Style authentique : ${opponent.style.split(".")[0]}`;
  <button onClick={()=>{setPhase("ended");setShowScore(true);}} style={{flex:1,padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.card,color:T.textD,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Terminer</button>
  </div>
  {phase==="cut"?(
- <button onClick={()=>{setPhase("speaking");setTimer(90);setTimerOn(true);addLine("journalist",j?.name||"Journaliste","Je vous redonne la parole.");speakTimed("Je vous redonne la parole.",(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));}} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Reprendre la parole</button>
+ <button onClick={()=>{setPhase("speaking");setTimer(initTime);setTimerOn(true);addLine("journalist",j?.name||"Journaliste","Je vous redonne la parole.");speakTimed("Je vous redonne la parole.",(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));}} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Reprendre la parole</button>
  ):phase==="listening"?(
  <button onClick={stopMic} style={{width:"100%",padding:14,borderRadius:12,border:`2px solid ${T.red}`,background:`${T.red}15`,color:T.red,fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,animation:"ripple 1.5s infinite"}}>
  <Ic n="micOff" s={18} c={T.red}/>Couper le micro
@@ -1374,10 +1375,11 @@ function StudioScreen({T,onPremium,onBack}:{T:Theme;onPremium:()=>void;onBack?:(
  const [topic,setTopic] = useState("");
  const [publicSide,setPublicSide] = useState<typeof PUBLICS[0]|null>(null);
  const [subMode,setSubMode] = useState<"solo"|"duel-ia"|"duel-ami"|null>(null);
+ const [speechTime,setSpeechTime] = useState(120);
  const [inviteCode,setInviteCode] = useState("");
 
  if(step==="stage"&&journalist&&level&&topic){
- return <AudioStage config={{journalist,level,topic,publicSide,subMode}} T={T} onBack={()=>setStep("home")}/>;
+ return <AudioStage config={{journalist,level,topic,publicSide,subMode,speechTime}} T={T} onBack={()=>setStep("home")}/>;
  }
  if(step==="brief"&&topic){
  return <BriefingScreen topic={topic} T={T} onStart={()=>setStep("stage")} onSkip={()=>setStep("stage")}/>;
@@ -1401,6 +1403,18 @@ function StudioScreen({T,onPremium,onBack}:{T:Theme;onPremium:()=>void;onBack?:(
  <p style={{color:T.muted,fontSize:10,marginTop:2}}>{m.sub}</p>
  </button>
  ))}
+ </div>
+ {/* Durée par tour */}
+ <div>
+ <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Durée par tour de parole</p>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+ {([{v:120,label:"2 min",sub:"Débutant"},{v:300,label:"5 min",sub:"Confirmé"},{v:600,label:"10 min",sub:"Expert"}] as const).map(opt=>(
+ <button key={opt.v} onClick={()=>setSpeechTime(opt.v)} style={{padding:"12px 8px",borderRadius:12,border:`1.5px solid ${speechTime===opt.v?T.blueB:T.b1}`,background:speechTime===opt.v?T.blueG:T.card,cursor:"pointer",textAlign:"center",transition:"all .2s"}}>
+ <p style={{color:speechTime===opt.v?T.blueB:T.text,fontSize:13,fontWeight:800}}>{opt.label}</p>
+ <p style={{color:T.muted,fontSize:10,marginTop:2}}>{opt.sub}</p>
+ </button>
+ ))}
+ </div>
  </div>
  {subMode==="duel-ami"&&(
  <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:16}}>
@@ -4411,6 +4425,7 @@ function ApiKeySettings({T}:{T:Theme}) {
 
 // GENERIC SIMULATION SCREEN 
 function GenericSimScreen({title,icon,color,systemPrompt,welcome,voiceGender,T,onBack}:{title:string;icon:string;color:string;systemPrompt:string;welcome:string;voiceGender:"M"|"F";T:Theme;onBack:()=>void}) {
+ const MAX_SIM_EXCHANGES = 15;
  const [msgs,setMsgs] = useState<{role:"user"|"ai";text:string}[]>([]);
  const [input,setInput] = useState("");
  const [loading,setLoading] = useState(false);
@@ -4469,7 +4484,7 @@ function GenericSimScreen({title,icon,color,systemPrompt,welcome,voiceGender,T,o
  },[]);// eslint-disable-line
 
  const send = async(text:string)=>{
- if(!text.trim()||loading)return;
+ if(!text.trim()||loading||exchangeN>=MAX_SIM_EXCHANGES)return;
  unlockAudio();
  setInput("");
  const userMsg={role:"user" as const,text};
@@ -4521,6 +4536,7 @@ RÈGLES ABSOLUES pour cette réponse :
  }
  };
  handleSpeechRef.current = send;
+ const simEnded = exchangeN >= MAX_SIM_EXCHANGES;
 
  const toggleMic=()=>{
  unlockAudio();
@@ -4548,6 +4564,7 @@ RÈGLES ABSOLUES pour cette réponse :
  <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
  <div style={{width:32,height:32,borderRadius:8,background:`${color}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={icon} s={16} c={color}/></div>
  <p style={{color:T.text,fontWeight:800,fontSize:15,flex:1}}>{title}</p>
+ <span style={{fontSize:11,fontWeight:700,color:exchangeN>=MAX_SIM_EXCHANGES?T.red:T.muted,background:T.bg2,padding:"3px 8px",borderRadius:6,flexShrink:0}}>{exchangeN}/{MAX_SIM_EXCHANGES}</span>
  <button onClick={toggleAudio} style={{background:audioOn?`${color}15`:"transparent",border:`1px solid ${audioOn?color:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
  <Ic n="mic" s={14} c={audioOn?color:T.textD}/>
  <span style={{color:audioOn?color:T.textD,fontSize:11,fontWeight:700}}>{audioOn?"AUDIO":"TEXTE"}</span>
@@ -4594,6 +4611,8 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  const [audioOn,setAudioOn] = useState(true);
  const [listening,setListening] = useState(false);
  const [autoMic,setAutoMic] = useState(false);
+ const [exchangeN,setExchangeN] = useState(0);
+ const MAX_SIM_EXCHANGES = 15;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const recRef = useRef<any>(null);
  const chatRef = useRef<HTMLDivElement>(null);
@@ -4661,9 +4680,10 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  const addMsg = (m:TMsg)=>{ setMsgs(prev=>[...prev,m]); setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100); };
 
  const send = async(text:string)=>{
- if(!text.trim()||loading) return;
+ if(!text.trim()||loading||exchangeN>=MAX_SIM_EXCHANGES) return;
  unlockAudio();
  setInput("");
+ setExchangeN(n=>n+1);
  const userMsg:TMsg = {role:"user",charName:trialRole==="defense"?"Maître (Défense)":"Procureur",charInit:trialRole==="defense"?"MD":"MP",charColor:"#2B78F5",gender:"M",text};
  const newMsgs = [...msgs, userMsg];
  setMsgs(newMsgs);
@@ -4757,6 +4777,7 @@ CHAQUE personnage doit citer ces mots EXACTS entre guillemets et y répondre dir
  <div key={c.init} style={{width:26,height:26,borderRadius:"50%",background:`${c.color}15`,border:`1.5px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:c.color}}>{c.init}</div>
  ))}
  </div>
+ <span style={{background:`${T.amber}15`,color:T.amber,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700}}>{exchangeN}/{MAX_SIM_EXCHANGES}</span>
  <button onClick={()=>{const n=!audioOn;setAudioOn(n);if(!n)stopSpeech();}} style={{background:audioOn?`${T.purple}15`:"transparent",border:`1px solid ${audioOn?T.purple:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
  <Ic n="mic" s={14} c={audioOn?T.purple:T.textD}/><span style={{color:audioOn?T.purple:T.textD,fontSize:11,fontWeight:700}}>{audioOn?"AUDIO":"TEXTE"}</span>
  </button>
@@ -4792,10 +4813,12 @@ CHAQUE personnage doit citer ces mots EXACTS entre guillemets et y répondre dir
  <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
  <Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/>
  </button>
- <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send(input)} placeholder={trialRole==="defense"?"Votre plaidoirie, Maître…":"Votre réquisitoire, Monsieur le Procureur…"} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
+ {exchangeN>=MAX_SIM_EXCHANGES
+ ? <p style={{flex:1,color:T.amber,fontSize:12,fontWeight:600,textAlign:"center"}}>Limite de {MAX_SIM_EXCHANGES} échanges atteinte — séance levée</p>
+ : <><input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send(input)} placeholder={trialRole==="defense"?"Votre plaidoirie, Maître…":"Votre réquisitoire, Monsieur le Procureur…"} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
  <button onClick={()=>send(input)} disabled={!input.trim()||loading} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!loading?T.purple:T.b1,display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0,transition:"background .2s"}}>
  <Ic n="send" s={18} c={input.trim()&&!loading?"#fff":T.muted}/>
- </button>
+ </button></>}
  </div>
  </div>
  );
@@ -4814,6 +4837,7 @@ function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:
  const [listening,setListening] = useState(false);
  const [autoMic,setAutoMic] = useState(false);
  const [exchangeN,setExchangeN] = useState(0);
+ const MAX_SIM_EXCHANGES = 15;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const recRef = useRef<any>(null);
  const chatRef = useRef<HTMLDivElement>(null);
@@ -4869,7 +4893,7 @@ function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:
  const addMsg=(m:UNMsg)=>{setMsgs(p=>[...p,m]);setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);};
 
  const send=async(text:string)=>{
- if(!text.trim()||loading) return;
+ if(!text.trim()||loading||exchangeN>=MAX_SIM_EXCHANGES) return;
  unlockAudio();
  setInput("");
  const n=exchangeN+1; setExchangeN(n);
@@ -4988,7 +5012,7 @@ STRUCTURE OBLIGATOIRE :
  <div style={{marginTop:8,display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
  {UN_DEL.map(d=><span key={d.id} style={{fontSize:15,opacity:d.id===unRole.id?1:0.4,cursor:"default"}}>{d.flag}</span>)}
  <span style={{background:T.blueG,color:T.blueB,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700,marginLeft:4}}>Vous : {unRole.flag} {unRole.country}</span>
- {exchangeN>0&&<span style={{background:`${T.amber}15`,color:T.amber,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700}}>Tour {exchangeN}</span>}
+ {exchangeN>0&&<span style={{background:`${T.amber}15`,color:T.amber,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700}}>Tour {exchangeN}/{MAX_SIM_EXCHANGES}</span>}
  </div>
  </div>
  <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
@@ -5007,8 +5031,10 @@ STRUCTURE OBLIGATOIRE :
  <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
  <Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/>
  </button>
- <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send(input)} placeholder={`Déclaration de ${unRole.country}…`} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
- <button onClick={()=>send(input)} disabled={loading||!input.trim()} style={{width:44,height:44,borderRadius:12,background:input.trim()&&!loading?T.blueB:T.b1,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0}}><Ic n="send" s={16} c={input.trim()&&!loading?"#fff":T.muted}/></button>
+ {exchangeN>=MAX_SIM_EXCHANGES
+ ? <p style={{flex:1,color:T.amber,fontSize:12,fontWeight:600,textAlign:"center"}}>Limite de {MAX_SIM_EXCHANGES} tours atteinte — séance levée</p>
+ : <><input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send(input)} placeholder={`Déclaration de ${unRole.country}…`} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
+ <button onClick={()=>send(input)} disabled={loading||!input.trim()} style={{width:44,height:44,borderRadius:12,background:input.trim()&&!loading?T.blueB:T.b1,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0}}><Ic n="send" s={16} c={input.trim()&&!loading?"#fff":T.muted}/></button></>}
  </div>
  </div>
  );
