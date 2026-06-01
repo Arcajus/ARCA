@@ -5909,7 +5909,7 @@ function ReelsScreen({T}:{T:Theme}) {
         <p style={{color:"#fff",fontSize:15,fontWeight:800,lineHeight:1.3,marginBottom:3}}>{r.title}</p>
         <p style={{color:"rgba(255,255,255,.7)",fontSize:12,marginBottom:0}}>{r.sub}</p>
         {!isExpanded&&(
-         <p style={{color:r.accent,fontSize:11,fontWeight:700,marginTop:6}}>Voir l'analyse →</p>
+         <p style={{color:r.accent,fontSize:11,fontWeight:700,marginTop:6}}>voir plus</p>
         )}
        </div>
        {/* Analysis panel — slides up on tap */}
