@@ -255,20 +255,23 @@ function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
  const w = typeof window !== "undefined";
  const elKey = w ? localStorage.getItem("el_key") : null;
  const azureKey = w ? localStorage.getItem("azure_tts_key") : null;
+ const chain = (ok: boolean) => {
+  if (ok) return;
+  speakGoogleTTS(text, gender, onEnd)
+   .then(ok2 => { if (!ok2) speakWeb(text, gender, onEnd); })
+   .catch(() => speakWeb(text, gender, onEnd));
+ };
  if (elKey) {
   speakEL(cleanForSpeech(text), gender, elKey, onEnd)
    .then(ok => ok || speakEdgeCached(text, gender, onEnd))
-   .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
-   .catch(() => speakWeb(text, gender, onEnd));
+   .then(chain).catch(() => chain(false));
  } else if (azureKey) {
   speakAzure(text, gender, onEnd)
    .then(ok => ok || speakEdgeCached(text, gender, onEnd))
-   .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
-   .catch(() => speakWeb(text, gender, onEnd));
+   .then(chain).catch(() => chain(false));
  } else {
   speakEdgeCached(text, gender, onEnd)
-   .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
-   .catch(() => speakWeb(text, gender, onEnd));
+   .then(chain).catch(() => chain(false));
  }
 }
 function stopSpeech() {
@@ -4738,21 +4741,10 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  },delay);
  }
 
- useEffect(()=>{
- if(!autoMic)return;
- setAutoMic(false);
- if(typeof window==="undefined")return;
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const w=window as any;
- const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR)return;
- const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
- rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
- rec.onend=()=>setListening(false);
- try{rec.start();}catch{return;}
- recRef.current=rec;setListening(true);
- },[autoMic]);// eslint-disable-line
+ // autoMic replaced by "Votre tour" visual prompt — rec.start() from useEffect
+ // is blocked on iOS/Android (requires user gesture). User presses mic manually.
+ const [yourTurn,setYourTurn]=useState(false);
+ useEffect(()=>{if(autoMic){setAutoMic(false);setYourTurn(true);}},[autoMic]);
 
  // Opening ceremony — GREFFIER → PRÉSIDENT → OPP opening → PRÉSIDENT invites
  useEffect(()=>{
@@ -4987,8 +4979,12 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  <p style={{color:T.purple,fontWeight:800,fontSize:12,letterSpacing:.8}}>⚖ VERDICT RENDU</p>
  <button onClick={()=>{stopSpeech();onBack();}} style={{marginTop:8,padding:"8px 20px",borderRadius:10,border:`1px solid ${T.purple}`,background:`${T.purple}15`,color:T.purple,fontWeight:700,fontSize:12,cursor:"pointer"}}>Retour</button>
  </div>}
+ {["audience","plaidoirie_finale"].includes(phase)&&!loading&&yourTurn&&<div onClick={()=>{setYourTurn(false);toggleMic();}} style={{padding:"8px 16px",background:`${T.purple}12`,borderTop:`1px solid ${T.purple}30`,flexShrink:0,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+ <div style={{width:28,height:28,borderRadius:"50%",background:`${T.purple}20`,display:"flex",alignItems:"center",justifyContent:"center",animation:"pulse 1.2s infinite"}}><Ic n="mic" s={14} c={T.purple}/></div>
+ <span style={{color:T.purple,fontSize:12,fontWeight:700}}>C'est votre tour — appuyez pour parler</span>
+ </div>}
  {["audience","plaidoirie_finale"].includes(phase)&&<div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:8,alignItems:"center"}}>
- <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/></button>
+ <button onClick={()=>{setYourTurn(false);toggleMic();}} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:yourTurn?T.purple:T.b1}`,background:listening?`${T.red}15`:yourTurn?`${T.purple}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:yourTurn?T.purple:T.textD}/></button>
  <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&handleSpeechRef.current(input)} placeholder={phase==="plaidoirie_finale"?(trialRole==="defense"?"Plaidoirie finale, Maître…":"Réquisitoire final…"):(trialRole==="defense"?"Votre plaidoirie, Maître…":"Votre réquisitoire…")} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
  <button onClick={()=>handleSpeechRef.current(input)} disabled={!input.trim()||loading} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!loading?T.purple:T.b1,display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0}}><Ic n="send" s={18} c={input.trim()&&!loading?"#fff":T.muted}/></button>
  </div>}
@@ -5037,22 +5033,8 @@ function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:
  },idx===0?0:400);
  }
 
- useEffect(()=>{
- if(!autoMic)return;
- setAutoMic(false);
- if(typeof window==="undefined")return;
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const w=window as any;
- const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR)return;
- const rec=new SR();
- rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
- rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
- rec.onend=()=>setListening(false);
- try{rec.start();}catch{return;}
- recRef.current=rec;setListening(true);
- },[autoMic]);// eslint-disable-line
+ const [yourTurn,setYourTurn]=useState(false);
+ useEffect(()=>{if(autoMic){setAutoMic(false);setYourTurn(true);}},[autoMic]);
 
  const addMsg=(m:UNMsg)=>{setMsgs(p=>[...p,m]);setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);};
 
@@ -5285,8 +5267,12 @@ Ne commence JAMAIS par répéter ce que ${unRole.country} a dit mot pour mot.`;
  <p style={{color:T.blueB,fontWeight:800,fontSize:12,letterSpacing:.8}}>🌐 SÉANCE LEVÉE</p>
  <button onClick={()=>{stopSpeech();onBack();}} style={{marginTop:8,padding:"8px 20px",borderRadius:10,border:`1px solid ${T.blueB}`,background:`${T.blueB}15`,color:T.blueB,fontWeight:700,fontSize:12,cursor:"pointer"}}>Retour</button>
  </div>}
+ {(phase==="debat"||(phase==="consultation"&&!!consultPartner))&&!loading&&yourTurn&&<div onClick={()=>{setYourTurn(false);toggleMic();}} style={{padding:"8px 16px",background:`${T.blueB}10`,borderTop:`1px solid ${T.blueB}30`,flexShrink:0,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+ <div style={{width:28,height:28,borderRadius:"50%",background:`${T.blueB}20`,display:"flex",alignItems:"center",justifyContent:"center",animation:"pulse 1.2s infinite"}}><Ic n="mic" s={14} c={T.blueB}/></div>
+ <span style={{color:T.blueB,fontSize:12,fontWeight:700}}>C'est votre tour — appuyez pour parler</span>
+ </div>}
  {(phase==="debat"||(phase==="consultation"&&!!consultPartner))&&<div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,display:"flex",gap:8,flexShrink:0}}>
- <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/></button>
+ <button onClick={()=>{setYourTurn(false);toggleMic();}} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:yourTurn?T.blueB:T.b1}`,background:listening?`${T.red}15`:yourTurn?`${T.blueB}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:yourTurn?T.blueB:T.textD}/></button>
  <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSpeechRef.current(input)} placeholder={phase==="consultation"&&consultPartner?`Discussion privée avec ${consultPartner.country}…`:`Déclaration de ${unRole.country}…`} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
  <button onClick={()=>handleSpeechRef.current(input)} disabled={loading||!input.trim()} style={{width:44,height:44,borderRadius:12,background:input.trim()&&!loading?T.blueB:T.b1,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0}}><Ic n="send" s={16} c={input.trim()&&!loading?"#fff":T.muted}/></button>
  </div>}
