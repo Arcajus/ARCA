@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 
+export const maxDuration = 30; // Vercel: 30s max pour le plan pro, 10s hobby
+
 // Rate limiter: 60 req/min per IP
 const rl = new Map<string, { n: number; reset: number }>();
 function allow(ip: string): boolean {
@@ -30,23 +32,30 @@ function escapeSSML(t: string) {
 
 async function azureTTS(text: string, voice: string, key: string, region: string): Promise<Buffer> {
   const ssml = `<speak version='1.0' xml:lang='fr-FR'><voice name='${voice}'>${escapeSSML(text)}</voice></speak>`;
-  const res = await fetch(
-    `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
-    {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": key,
-        "Content-Type": "application/ssml+xml",
-        "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
-        "User-Agent": "NexusApp",
-      },
-      body: ssml,
-    }
-  );
-  if (!res.ok) throw new Error(`Azure TTS HTTP ${res.status}`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length < 100) throw new Error("empty audio");
-  return buf;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(
+      `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
+      {
+        method: "POST",
+        headers: {
+          "Ocp-Apim-Subscription-Key": key,
+          "Content-Type": "application/ssml+xml",
+          "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
+          "User-Agent": "NexusApp",
+        },
+        body: ssml,
+        signal: controller.signal,
+      }
+    );
+    if (!res.ok) throw new Error(`Azure TTS HTTP ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 100) throw new Error("empty audio");
+    return buf;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function openaiTTS(text: string, voice: string, key: string): Promise<Buffer> {
