@@ -18,12 +18,47 @@ const ALLOWED_VOICES = new Set([
   "fr-FR-EloiseNeural",
 ]);
 
-// Map to OpenAI voice names
 const OPENAI_VOICE: Record<string, string> = {
   "fr-FR-DeniseNeural": "nova",
   "fr-FR-HenriNeural": "onyx",
   "fr-FR-EloiseNeural": "shimmer",
 };
+
+function escapeSSML(t: string) {
+  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+async function azureTTS(text: string, voice: string, key: string, region: string): Promise<Buffer> {
+  const ssml = `<speak version='1.0' xml:lang='fr-FR'><voice name='${voice}'>${escapeSSML(text)}</voice></speak>`;
+  const res = await fetch(
+    `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
+    {
+      method: "POST",
+      headers: {
+        "Ocp-Apim-Subscription-Key": key,
+        "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
+        "User-Agent": "NexusApp",
+      },
+      body: ssml,
+    }
+  );
+  if (!res.ok) throw new Error(`Azure TTS HTTP ${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length < 100) throw new Error("empty audio");
+  return buf;
+}
+
+async function openaiTTS(text: string, voice: string, key: string): Promise<Buffer> {
+  const oaVoice = OPENAI_VOICE[voice] ?? "nova";
+  const res = await fetch("https://api.openai.com/v1/audio/speech", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "tts-1", input: text, voice: oaVoice, response_format: "mp3" }),
+  });
+  if (!res.ok) throw new Error(`OpenAI TTS HTTP ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
 
 async function edgeTTS(text: string, voice: string): Promise<Buffer> {
   const tts = new MsEdgeTTS();
@@ -38,20 +73,6 @@ async function edgeTTS(text: string, voice: string): Promise<Buffer> {
   const buf = Buffer.concat(chunks);
   if (buf.length < 100) throw new Error("empty audio");
   return buf;
-}
-
-async function openaiTTS(text: string, voice: string, key: string): Promise<Buffer> {
-  const oaVoice = OPENAI_VOICE[voice] ?? "nova";
-  const res = await fetch("https://api.openai.com/v1/audio/speech", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model: "tts-1", input: text, voice: oaVoice, response_format: "mp3" }),
-  });
-  if (!res.ok) throw new Error(`OpenAI TTS HTTP ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
 }
 
 export async function POST(req: NextRequest) {
@@ -73,17 +94,30 @@ export async function POST(req: NextRequest) {
 
   let audio: Buffer | null = null;
 
-  // 1. Try OpenAI TTS if key is configured (best quality, guaranteed)
-  const oaKey = process.env.OPENAI_API_KEY;
-  if (oaKey) {
+  // 1. Azure TTS — meilleure qualité française, clé serveur
+  const azKey = process.env.AZURE_TTS_KEY;
+  const azRegion = process.env.AZURE_TTS_REGION || "francecentral";
+  if (azKey) {
     try {
-      audio = await openaiTTS(text, voice, oaKey);
+      audio = await azureTTS(text, voice, azKey, azRegion);
     } catch (e) {
-      console.error("[tts/openai]", e);
+      console.error("[tts/azure]", e);
     }
   }
 
-  // 2. Try Edge TTS (free Microsoft neural voices, no key needed)
+  // 2. OpenAI TTS — fallback si Azure absent
+  if (!audio) {
+    const oaKey = process.env.OPENAI_API_KEY;
+    if (oaKey) {
+      try {
+        audio = await openaiTTS(text, voice, oaKey);
+      } catch (e) {
+        console.error("[tts/openai]", e);
+      }
+    }
+  }
+
+  // 3. Edge TTS — gratuit, pas de clé requise
   if (!audio) {
     try {
       audio = await edgeTTS(text, voice);
