@@ -982,7 +982,7 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
  if(!mountedRef.current) return;
  let oppOpen = "";
  try{
- const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+ const oppKey=typeof window!=="undefined"?"":"";
  if(oppKey){
  const oppOpenSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
 TON PROFIL RHÉTORIQUE COMPLET : ${opponent.style}
@@ -1094,9 +1094,7 @@ RÈGLES ABSOLUES :
 • JAMAIS deux fois la même structure de phrase dans tout le débat
 • Chaque intervention doit faire avancer réellement le débat : une contradiction, une ouverture, une mise en perspective historique ou internationale`;
 
- const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
- if(!key) throw new Error("no_key");
- const reply=await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],key,700);
+ const reply=await callGemini(sysPrompt,[...hist,{role:"user",parts:[{text}]}],"",700);
  if(!mountedRef.current){return;}
  addLine("journalist",j?.name||"Journaliste",reply);
  if(reply.toLowerCase().includes("je vous coupe")){setPhase("cut");}
@@ -1107,7 +1105,7 @@ RÈGLES ABSOLUES :
  if(!mountedRef.current) return;
  let oppReply = "";
  try{
- const oppKey=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+ const oppKey=typeof window!=="undefined"?"":"";
  if(oppKey){
  const oppSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
 TON PROFIL RHÉTORIQUE COMPLET : ${opponent.style}
@@ -1742,7 +1740,7 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
  setLiveLoading(false);
  });
  if(withGemini){
- const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+ const key = typeof window!=="undefined"?"":"";
  if(key){
  await Promise.allSettled(articles.slice(0,6).map(async(a)=>{
  try{
@@ -1788,7 +1786,7 @@ function FeedScreen({T,onDebate,onNewPosts}:{T:Theme;onDebate:()=>void;onNewPost
 
  const publishPost = async()=>{
  if(!composed.trim()) return;
- const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+ const key = typeof window!=="undefined"?"":"";
  let verif: {label:string;color:string;comment:string}|null = null;
  if(key){
  setVerifying(true);
@@ -3762,7 +3760,7 @@ function EloquencePractice({T,entry,onBack,onPremium}:{T:Theme;entry:EloquenceEn
  const stopRec=async()=>{
   if(recRef.current){recRef.current.stop();recRef.current=null;}
   setPhase("analyzing");
-  const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+  const key=typeof window!=="undefined"?"":"";
   const fa=analyzeFillers(transcript||"");
   setFillerAna(fa);
   const orig=entry.text.replace(/\n+/g," ").trim();
@@ -3772,7 +3770,7 @@ function EloquencePractice({T,entry,onBack,onPremium}:{T:Theme;entry:EloquenceEn
   const sys="Tu es un coach expert en éloquence et art oratoire. Analyse la lecture à voix haute et donne une correction bienveillante mais précise. Utilise les données de détection automatique si disponibles.";
   const hist:GHist=[{role:"user",parts:[{text:`TEXTE — "${entry.title}" par ${entry.author} :\n${orig}\n\nLECTURE TRANSCRITE :\n${transcript||("|silence|")}${fillerNote}\n\nDonne :\n1. Score global /10\n2. Mots manqués ou déformés\n3. Rythme, fluidité et mots de remplissage\n4. Respect des pauses\n5. 3 conseils précis pour progresser\n\nMax 280 mots. Format structuré, motivant.`}]}];
   try{
-   const res=await callGemini(sys,hist,key,400);
+   const res=await callGemini(sys,hist,"",400);
    setFeedback(res);
    const m=res.match(/(\d+)\s*\/\s*10/);
    const sc=m?parseInt(m[1]):6;setScore(sc);
@@ -4063,17 +4061,17 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  };
  const prompt=prompts[e.type]||prompts["Dissertation"];
  try{
- const r=await callGemini(prompt,[{role:"user",parts:[{text:e.sujet}]}],key,800);
+ const r=await callGemini(prompt,[{role:"user",parts:[{text:e.sujet}]}],"",800);
  setCorrTexts(p=>({...p,[key2]:r}));addXP(10);
  }catch(err){setCorrTexts(p=>({...p,[key2]:"Erreur: "+(err instanceof Error?err.message:"inconnu")+". Vérifie ta clé Gemini dans Profil > Paramètres."}));}
  setCorrLoading(null);
  };
- const getKey=()=>typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
+ const getKey=()=>typeof window!=="undefined"?"":"";
 
  const genDiscours=async()=>{
  const key=getKey();
  setGenLoading(true);setGenResult("");
- try{const r=await callGemini(`Tu es un expert en rhétorique. Génère un discours de 3 minutes (400 mots) sur : "${genSubject}". Structure : accroche percutante, problème, 3 arguments avec exemples concrets, conclusion mémorable. Utilise des figures de style (anaphore, métaphore).`,[{role:"user",parts:[{text:genSubject}]}],key,600);setGenResult(r);addXP(20);}
+ try{const r=await callGemini(`Tu es un expert en rhétorique. Génère un discours de 3 minutes (400 mots) sur : "${genSubject}". Structure : accroche percutante, problème, 3 arguments avec exemples concrets, conclusion mémorable. Utilise des figures de style (anaphore, métaphore).`,[{role:"user",parts:[{text:genSubject}]}],"",600);setGenResult(r);addXP(20);}
  catch(err){setGenResult("Erreur: "+(err instanceof Error?err.message:"inconnu"));}
  setGenLoading(false);
  };
@@ -4081,7 +4079,7 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  const buildArgs=async()=>{
  const key=getKey();
  setBuildLoading(true);setBuildResult("");
- try{const r=await callGemini(`Expert en argumentation. Pour la position : "${buildPos}", génère : 3 arguments POUR avec exemple et chiffre, 3 arguments CONTRE avec exemple et chiffre, 3 réfutations. Format clair et structuré.`,[{role:"user",parts:[{text:buildPos}]}],key,500);setBuildResult(r);addXP(15);}
+ try{const r=await callGemini(`Expert en argumentation. Pour la position : "${buildPos}", génère : 3 arguments POUR avec exemple et chiffre, 3 arguments CONTRE avec exemple et chiffre, 3 réfutations. Format clair et structuré.`,[{role:"user",parts:[{text:buildPos}]}],"",500);setBuildResult(r);addXP(15);}
  catch(err){setBuildResult("Erreur: "+(err instanceof Error?err.message:"inconnu"));}
  setBuildLoading(false);
  };
@@ -4452,8 +4450,6 @@ function GenericSimScreen({title,icon,color,systemPrompt,welcome,voiceGender,T,o
  const rawHist=newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:m.text}]}));
  const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
  const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
- const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
- if(!key) throw new Error("no_key");
  const n=exchangeN+1; setExchangeN(n);
  const dynSys=`${systemPrompt}
 
@@ -4467,7 +4463,7 @@ RÈGLES ABSOLUES pour cette réponse :
 4. Développe avec 5 à 7 phrases, des faits réels, des chiffres si pertinents`;
  let firstChunk=true;
  let fullReply="";
- await streamGemini(dynSys,hist,key,700,(full)=>{
+ await streamGemini(dynSys,hist,"",700,(full)=>{
  if(!mountedRef.current) return;
  fullReply=full;
  if(firstChunk){firstChunk=false;setLoading(false);setMsgs(m=>[...m,{role:"ai" as const,text:full}]);}
@@ -4478,10 +4474,7 @@ RÈGLES ABSOLUES pour cette réponse :
  }catch(err){
  if(!mountedRef.current) return;
  setLoading(false);
- const isNoKey=err instanceof Error&&err.message==="no_key";
- if(isNoKey){
- setMsgs(m=>[...m,{role:"ai" as const,text:"Clé Gemini API manquante — allez dans Profil → Réglages pour la configurer."}]);
- } else {
+ {
  const words=text.split(" ").filter(Boolean).slice(0,5).join(" ");
  const fallbacks=[
  `Vous dites "${words}" — développez en profondeur. Quels faits concrets soutiennent votre position ? Citez des chiffres précis, des exemples réels, des sources vérifiables. Un argument sans preuve reste une affirmation.`,
@@ -4645,7 +4638,6 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  setMsgs(newMsgs);
  setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
  setLoading(true);
- const key = typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
  const trialSys = `Tu gères l'audience du Tribunal correctionnel de Paris. L'affaire : "${trialTopic}". L'utilisateur est ${trialRole==="defense"?"Maître de la Défense":"Monsieur le Procureur"}.
 
 CADRE JURIDIQUE RÉEL QUE TU MAÎTRISES PARFAITEMENT :
@@ -4673,13 +4665,12 @@ RÈGLES ABSOLUES :
  const rawHist=newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.charName}] ${m.text}`}]}));
  const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
  const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
- if(!key) throw new Error("no_key");
  const dynTrialSys = `${trialSys}
 
  PLAIDOIRIE DE CE TOUR 
 L'avocat/procureur vient de dire : "${text}"
 CHAQUE personnage doit citer ces mots EXACTS entre guillemets et y répondre directement.`;
- const reply = await callGemini(dynTrialSys, hist, key, 900);
+ const reply = await callGemini(dynTrialSys, hist, "", 900);
  if(!mountedRef.current){setLoading(false);return;}
  const presMatch = reply.match(/\[PRÉSIDENT\]\s*([\s\S]*?)(?=\[PROCUREUR\]|$)/);
  const procMatch = reply.match(/\[PROCUREUR\]\s*([\s\S]*?)(?=\[PRÉSIDENT\]|$)/);
@@ -4693,8 +4684,6 @@ CHAQUE personnage doit citer ces mots EXACTS entre guillemets et y répondre dir
  }catch(err){
  if(!mountedRef.current){setLoading(false);return;}
  setLoading(false);
- const isNoKey=err instanceof Error&&err.message==="no_key";
- if(isNoKey){addMsg({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:"Clé Gemini API manquante — allez dans Profil → Réglages."});return;}
  const presFb=["Maître, votre argumentation nécessite d'être précisée. Sur quel fondement juridique exact repose ce moyen de défense ? La Cour a besoin d'une référence textuelle ou jurisprudentielle précise avant de pouvoir statuer sur cette demande.","L'objection est notée au procès-verbal. Cependant, les éléments présentés ne semblent pas constitutifs d'une nullité au sens de l'article 170 du Code de procédure pénale. La Cour demande une reformulation plus précise de votre demande.","La Cour prend note de cet argument. Avant de se prononcer, elle souhaite entendre la partie adverse sur ce point précis. Le débat contradictoire est une exigence fondamentale de notre procédure."];
  const procFb = trialRole==="defense"
  ? ["Votre Honneur, la défense tente de détourner l'attention des faits établis par le dossier d'instruction. Les preuves matérielles réunies par le parquet — expertises forensiques, témoignages concordants, relevés bancaires — sont incontestables. Nous maintenons l'ensemble de nos réquisitions.","La réponse de la défense est habile mais insuffisante en droit. L'article 427 du Code de procédure pénale est clair : les juges apprécient les preuves selon leur intime conviction. Nous avons fourni suffisamment d'éléments pour emporter cette conviction."]
@@ -4858,8 +4847,6 @@ function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:
  setMsgs(newMsgs);
  setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
  setLoading(true);
- const key=typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"";
-
  // Rotate through 4 pairs of responders to ensure variety across turns
  const others=UN_DEL.filter(d=>d.id!==unRole.id);
  const pairs:([number,number])[]= [[0,1],[1,2],[2,3],[0,3],[1,3],[0,2]];
@@ -4882,8 +4869,6 @@ function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:
  const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
 
  try{
- if(!key) throw new Error("no_key");
-
  // Parallel Gemini calls for both responding delegations
  const makePrompt=(del:typeof UN_DEL[0])=>`Tu es ${del.flag} la délégation de ${del.country} au Conseil de Sécurité des Nations Unies.
 
@@ -4911,7 +4896,7 @@ STRUCTURE OBLIGATOIRE :
 
 5 à 6 phrases minimum. Développe vraiment. Vocabulaire onusien formel.`;
 
- const [r1,r2]=await Promise.allSettled(respondents.map(del=>callGemini(makePrompt(del),[...hist,{role:"user" as const,parts:[{text:`La délégation de ${del.country}, vous avez la parole.`}]}],key,550)));
+ const [r1,r2]=await Promise.allSettled(respondents.map(del=>callGemini(makePrompt(del),[...hist,{role:"user" as const,parts:[{text:`La délégation de ${del.country}, vous avez la parole.`}]}],"",550)));
  if(!mountedRef.current){setLoading(false);return;}
 
  const speakItems:{text:string;gender:"M"|"F"}[]=[];
@@ -4929,10 +4914,6 @@ STRUCTURE OBLIGATOIRE :
  }catch(err){
  if(!mountedRef.current){setLoading(false);return;}
  setLoading(false);
- if(err instanceof Error&&err.message==="no_key"){
- addMsg({role:"ai",flag:"",country:"Secrétariat",gender:"F",text:"Clé Gemini API manquante — allez dans Profil → Réglages pour la configurer."});
- return;
- }
  const fb1=respondents[0]||others[0];
  const fb2=respondents[1]||others[1];
  const fallbacks:UNMsg[]=[
