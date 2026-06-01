@@ -215,11 +215,19 @@ async function speakEdge(text: string, gender: "M"|"F", onEnd?: ()=>void): Promi
  if (typeof window === "undefined") return false;
  const voice = gender === "F" ? "fr-FR-DeniseNeural" : "fr-FR-HenriNeural";
  try {
-  const res = await fetch("/api/tts", {
-   method: "POST",
-   headers: { "Content-Type": "application/json" },
-   body: JSON.stringify({ text: cleanForSpeech(text).slice(0, 3000), voice }),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  let res: Response;
+  try {
+   res = await fetch("/api/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: cleanForSpeech(text).slice(0, 3000), voice }),
+    signal: controller.signal,
+   });
+  } finally {
+   clearTimeout(timer);
+  }
   if (!res.ok) return false;
   const blob = await res.blob();
   if (blob.size < 100) return false;

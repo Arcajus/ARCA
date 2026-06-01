@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 
-export const maxDuration = 30; // Vercel: 30s max pour le plan pro, 10s hobby
+export const maxDuration = 15;
 
-// Rate limiter: 60 req/min per IP
 const rl = new Map<string, { n: number; reset: number }>();
 function allow(ip: string): boolean {
   const now = Date.now();
@@ -30,10 +28,17 @@ function escapeSSML(t: string) {
   return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+}
+
 async function azureTTS(text: string, voice: string, key: string, region: string): Promise<Buffer> {
   const ssml = `<speak version='1.0' xml:lang='fr-FR'><voice name='${voice}'>${escapeSSML(text)}</voice></speak>`;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
+  const timer = setTimeout(() => controller.abort(), 9000);
   try {
     const res = await fetch(
       `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
@@ -60,28 +65,20 @@ async function azureTTS(text: string, voice: string, key: string, region: string
 
 async function openaiTTS(text: string, voice: string, key: string): Promise<Buffer> {
   const oaVoice = OPENAI_VOICE[voice] ?? "nova";
-  const res = await fetch("https://api.openai.com/v1/audio/speech", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "tts-1", input: text, voice: oaVoice, response_format: "mp3" }),
-  });
-  if (!res.ok) throw new Error(`OpenAI TTS HTTP ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
-}
-
-async function edgeTTS(text: string, voice: string): Promise<Buffer> {
-  const tts = new MsEdgeTTS();
-  await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
-  const { audioStream } = tts.toStream(text);
-  const chunks: Buffer[] = [];
-  await new Promise<void>((resolve, reject) => {
-    audioStream.on("data", (c: Buffer) => chunks.push(c));
-    audioStream.on("end", resolve);
-    audioStream.on("error", reject);
-  });
-  const buf = Buffer.concat(chunks);
-  if (buf.length < 100) throw new Error("empty audio");
-  return buf;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 9000);
+  try {
+    const res = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "tts-1", input: text, voice: oaVoice, response_format: "mp3" }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`OpenAI TTS HTTP ${res.status}`);
+    return Buffer.from(await res.arrayBuffer());
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -103,35 +100,26 @@ export async function POST(req: NextRequest) {
 
   let audio: Buffer | null = null;
 
-  // 1. Azure TTS — meilleure qualité française, clé serveur
+  // 1. Azure TTS
   const azKey = process.env.AZURE_TTS_KEY;
   const azRegion = process.env.AZURE_TTS_REGION || "francecentral";
   if (azKey) {
     try {
-      audio = await azureTTS(text, voice, azKey, azRegion);
+      audio = await withTimeout(azureTTS(text, voice, azKey, azRegion), 10000);
     } catch (e) {
       console.error("[tts/azure]", e);
     }
   }
 
-  // 2. OpenAI TTS — fallback si Azure absent
+  // 2. OpenAI TTS fallback
   if (!audio) {
     const oaKey = process.env.OPENAI_API_KEY;
     if (oaKey) {
       try {
-        audio = await openaiTTS(text, voice, oaKey);
+        audio = await withTimeout(openaiTTS(text, voice, oaKey), 10000);
       } catch (e) {
         console.error("[tts/openai]", e);
       }
-    }
-  }
-
-  // 3. Edge TTS — gratuit, pas de clé requise
-  if (!audio) {
-    try {
-      audio = await edgeTTS(text, voice);
-    } catch (e) {
-      console.error("[tts/edge]", e);
     }
   }
 
