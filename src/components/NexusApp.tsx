@@ -4840,26 +4840,42 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  speakQ.push({text:ord,gender:"M"});
  }
  const isFinal=n>=MAX_SIM_EXCHANGES;
- const ctx=msgs.slice(-4).filter(m=>m.role!=="event").map(m=>`[${m.charName}]: ${m.text.slice(0,100)}`).join("\n")||"Début d'audience.";
- const mainSys=`Tu gères l'audience du Tribunal correctionnel de Paris. Affaire : "${trialTopic}". Utilisateur : ${trialRole==="defense"?"Maître de la Défense":"Monsieur le Procureur"} (tour n°${n}).
+ const ctx=msgs.slice(-6).filter(m=>m.role!=="event").map(m=>`[${m.charName}]: ${m.text.slice(0,120)}`).join("\n")||"Début d'audience.";
+ const mainSys=`Tu incarnes DEUX PERSONNAGES dans un procès correctionnel parisien. RÈGLE N°1 ABSOLUE : chaque personnage DOIT citer les mots EXACTS de l'utilisateur et y répondre directement. Toute réponse générique ou hors sujet est INTERDITE.
 
-CONTEXTE RÉCENT :
-${ctx}
-
-CE QUE VIENT DE DIRE L'AVOCAT/PROCUREUR (verbatim) :
+AFFAIRE : "${trialTopic}" — Tour ${n}/${MAX_SIM_EXCHANGES}
+${USER_CHAR.name} VIENT DE DIRE EXACTEMENT :
 "${text}"
 
-RÉFÉRENCES : CPP art. 427, 353, 170 — DDHC art. 9 — CEDH art. 6 — CP art. 313-1, 432-11, 311-1, 221-1, 441-1.${isFinal?" — C'est le DERNIER ÉCHANGE. Le Président annonce les plaidoiries finales.":""}
+DERNIERS ÉCHANGES (contexte) :
+${ctx}
 
-FORMAT OBLIGATOIRE — 2 personnages :
+━━━ PERSONNAGE 1 ━━━
+[PRÉSIDENT] ${PRES.name}
+→ Commence OBLIGATOIREMENT par reprendre 4-6 mots exacts entre guillemets : ex. "Quand vous dites «[mots exacts]»…"
+→ Réagis à CET argument précis : est-ce juridiquement solide ? Pointe une faille ou une force
+→ Peut interpeller la partie adverse directement ("Maître Renaud, qu'avez-vous à répondre à cela ?")
+→ 1 référence juridique précise (CPP, CP, CEDH, DDHC)
+→ 3 phrases — ton solennel et acéré${isFinal?" → Déclare ensuite : « La Cour invite les parties à leurs plaidoiries finales. »":""}
 
-[PRÉSIDENT] Cite EXACTEMENT les mots de l'avocat/procureur, puis valide ou conteste avec référence juridique précise OU soulève une contradiction OU interpelle une partie. 4-5 phrases solennelles. Vocabulaire : "la juridiction", "le contradictoire", "les pièces versées au dossier".${isFinal?" Annonce l'ouverture des plaidoiries finales.":""}
+━━━ PERSONNAGE 2 ━━━
+[${trialRole==="defense"?"PROCUREUR":"AVOCAT"}] ${OPP.name}
+→ "Votre Honneur," puis CONTREDIT DIRECTEMENT l'argument cité ci-dessus
+→ Donne un fait concret opposé : témoignage, expertise ADN, relevé téléphonique, vidéosurveillance, comptable, etc.
+→ Ton combatif — peut être agacé, ironique ou en colère face à un argument faible
+→ 3-4 phrases — structure différente des tours précédents — JAMAIS de généralités
 
-[PROCUREUR] ${trialRole==="defense"?"Procureur Renaud (contre la défense)":"Maître Leclerc, avocat de la défense (contre le procureur)"} : contre-argumente avec faits précis, expertises, témoignages ou qualification pénale exacte. Commence par "Votre Honneur,". 4-5 phrases. Jamais la même structure que les tours précédents.`;
+FORMAT EXACT (respecte ces titres) :
+[PRÉSIDENT]
+…texte…
+
+[${trialRole==="defense"?"PROCUREUR":"AVOCAT"}]
+…texte…`;
  const reply=await callGemini(mainSys,hist,"",900);
  if(!mountedRef.current){setLoading(false);return;}
- const pm=reply.match(/\[PRÉSIDENT\]\s*([\s\S]*?)(?=\[PROCUREUR\]|$)/);
- const om=reply.match(/\[PROCUREUR\]\s*([\s\S]*?)(?=\[PRÉSIDENT\]|$)/);
+ const oppTag=trialRole==="defense"?"PROCUREUR":"AVOCAT";
+ const pm=reply.match(/\[PRÉSIDENT\]\s*([\s\S]*?)(?=\[(?:PROCUREUR|AVOCAT)\]|$)/);
+ const om=reply.match(new RegExp(`\\[${oppTag}\\]\\s*([\\s\\S]*?)(?=\\[PRÉSIDENT\\]|$)`));
  const cMsgs:TMsg[]=[];
  if(pm?.[1]?.trim())cMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:pm[1].trim()});
  if(om?.[1]?.trim())cMsgs.push({role:"ai",charName:OPP.name,charInit:OPP.init,charColor:OPP.color,gender:OPP.gender,text:om[1].trim()});
@@ -5133,14 +5149,20 @@ Tiens compte des positions habituelles : Russie et Chine opposées aux intervent
  addMsg({role:"event",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:ord});
  speakQ.push({text:ord,gender:G[PRES_DEL.id]||"M"});
  }
- // Parallel country responses — second one can argue with first
- const makePrompt=(del:typeof UN_DEL[0],isSecond:boolean)=>`Tu es ${del.flag} la délégation de ${del.country} au Conseil de Sécurité des Nations Unies.
-DOCTRINE : ${del.doctrine}
-DÉCLARATION DE ${unRole.country.toUpperCase()} (échange n°${n}) : "${text}"
-${isSecond&&prevR1?`${respondents[0]?.country} vient de dire dans ce débat : "${prevR1}" — si tu es en désaccord, cite-la directement et réponds-lui en 1 phrase.`:""}
-ANGLE OBLIGATOIRE : ${angle}
-PROCÉDURE ONUSIENNE : Ouvre par "Monsieur le Président," ou "Madame la Présidente,". Cite les mots EXACTS de ${unRole.country} entre guillemets. Vocabulaire diplomatique : "ma délégation", "nous prenons acte", "nous appelons à". Cite 1 article de la Charte ou résolution réelle.
-5 à 6 phrases. Développe vraiment. Vocabulaire onusien formel.`;
+ // Parallel country responses — second argues with first, both respond to user directly
+ const makePrompt=(del:typeof UN_DEL[0],isSecond:boolean)=>`Tu es ${del.flag} ${del.country} au Conseil de Sécurité de l'ONU.
+DOCTRINE DE TON PAYS : ${del.doctrine.slice(0,220)}
+
+${unRole.country.toUpperCase()} VIENT DE DIRE EXACTEMENT (échange n°${n}) :
+"${text}"
+
+${isSecond&&prevR1?`⚠️ ${respondents[0]?.country} vient de déclarer : "${prevR1.slice(0,120)}" — si tu es en désaccord avec eux, cite-les nommément et réponds-leur en 1 phrase directe.`:""}
+
+ANGLE OBLIGATOIRE CE TOUR : ${angle}
+
+RÈGLE ABSOLUE : Ta réponse DOIT contenir 3-4 mots EXACTS de ${unRole.country} cités entre guillemets. Réponds DIRECTEMENT à leur argument spécifique — pas de discours générique. Si leur argument est faible, montre-le. Si tu es d'accord sur un point précis, dis-le.
+
+Format : Ouvre par "Monsieur le Président," ou "Madame la Présidente,". Vocabulaire onusien : "ma délégation", "nous prenons acte", "nous appelons à". Cite 1 article de la Charte ou résolution réelle (ex: S/RES/1973). 4-5 phrases denses.`;
  const [res1,res2]=await Promise.allSettled(respondents.map((del,idx)=>callGemini(makePrompt(del,idx===1),[...hist,{role:"user" as const,parts:[{text:`La délégation de ${del.country} a la parole.`}]}],"",480)));
  if(!mountedRef.current){setLoading(false);return;}
  respondents.forEach((del,idx)=>{
