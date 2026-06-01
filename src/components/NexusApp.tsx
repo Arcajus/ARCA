@@ -5826,35 +5826,37 @@ function ProgressScreen({T,onBack}:{T:Theme;onBack:()=>void}){
 // YouTube video IDs — real historical speeches, freely embeddable
 const REELS_DATA = [
  {id:"r1",gradient:["#0d0d1a","#1a1a2e"],accent:"#E94560",cat:"DISCOURS",duration:"17 min",title:"De Gaulle — Appel du 18 juin 1940",sub:"La résistance commence ici",creator:"INA Histoire",init:"DG",likes:48200,comments:3120,shares:8910,
-  ytId:"9vBsMDJNHJk",
+  videoUrl:"https://videos.pexels.com/video-files/6952113/6952113-hd_1920_1080_25fps.mp4",
   body:"Paris vient de tomber.\nLe gouvernement capitule.\nTout semble perdu.\n\nDe Gaulle prend le micro à Londres.\nSans autorisation officielle.\nSans armée derrière lui.\n\nIl parle 4 minutes.\nIl change l'histoire de France.\n\n« La France a perdu une bataille.\nMais la France n'a pas perdu la guerre. »"},
  {id:"r2",gradient:["#1a0d00","#2e1a00"],accent:"#F59E0B",cat:"DISCOURS",duration:"16 min",title:"MLK — I Have a Dream (1963)",sub:"Le discours qui a changé l'Amérique",creator:"History Channel",init:"MLK",likes:124000,comments:18200,shares:42000,
-  ytId:"smEqnnklfYs",
+  videoUrl:"https://videos.pexels.com/video-files/4553801/4553801-hd_1920_1080_25fps.mp4",
   body:"Washington D.C., 28 août 1963.\n250 000 personnes devant lui.\n\nMartin Luther King improvise\nla fin de son discours.\n\n« I have a dream… »\n\nLa répétition comme marteau.\nChaque phrase frappe plus fort.\n\nL'anaphore la plus célèbre\nde l'histoire oratoire mondiale."},
  {id:"r3",gradient:["#001a0d","#001f10"],accent:"#22C55E",cat:"DISCOURS",duration:"26 min",title:"Simone Veil — Discours sur l'IVG (1974)",sub:"Plaidoirie devant l'Assemblée nationale",creator:"INA Politique",init:"SV",likes:67300,comments:8940,shares:19600,
-  ytId:"n3bQ5TBP8yg",
+  videoUrl:"https://videos.pexels.com/video-files/8264022/8264022-hd_1920_1080_25fps.mp4",
   body:"Paris, 26 novembre 1974.\nSimone Veil face à 480 hommes.\nElle défend le droit des femmes.\n\nInsultes depuis les bancs.\nSifflets. Hostilité ouverte.\n\nElle ne tremble pas.\nElle continue.\n\n« Je le dis avec toute ma conviction :\nl'avortement est toujours un drame. »\n\nL'éthos comme armure."},
  {id:"r4",gradient:["#0a001a","#150028"],accent:"#A855F7",cat:"SCIENCES PO",duration:"18 min",title:"Sciences Po — Grand oral : exemple réel",sub:"Techniques décryptées en direct",creator:"Sciences Po Paris",init:"SP",likes:89200,comments:6340,shares:21400,
-  ytId:"bnHwwwEBNFo",
+  videoUrl:"https://videos.pexels.com/video-files/8198511/8198511-hd_1920_1080_25fps.mp4",
   body:"Le grand oral c'est 30 minutes.\nDont 5 minutes de présentation seul.\nPuis 25 minutes face au jury.\n\nCe que le jury cherche :\n→ La capacité à structurer sous pression\n→ L'aptitude à nuancer\n→ La réaction aux contre-arguments\n\nCe qui élimine :\nRépondre sans écouter la question."},
  {id:"r5",gradient:["#001020","#001830"],accent:"#06B6D4",cat:"GÉOPOLITIQUE",duration:"12 min",title:"ONU — Discours de Macron (Assemblée générale)",sub:"Analyse rhétorique",creator:"NEXUS Géo",init:"NG",likes:34100,comments:4820,shares:9800,
-  ytId:"WXKPuMkFoF8",
+  videoUrl:"https://videos.pexels.com/video-files/5286281/5286281-hd_1920_1080_25fps.mp4",
   body:"New York, Assemblée générale ONU.\nChaque chef d'État a 15 minutes.\n15 minutes pour convaincre le monde.\n\nMacron utilise trois registres :\n→ Éthos : l'histoire française\n→ Logos : les chiffres climatiques\n→ Pathos : la destinée commune\n\nAnalyse : comment parler à 193 nations\nen une seule voix."},
  {id:"r6",gradient:["#1a1000","#2a1800"],accent:"#EAB308",cat:"DROIT",duration:"8 min",title:"Robert Badinter — Abolition de la peine de mort",sub:"17 septembre 1981 — Assemblée nationale",creator:"INA Justice",init:"RB",likes:56700,comments:8920,shares:18300,
-  ytId:"VuGgVDc7-_I",
+  videoUrl:"https://videos.pexels.com/video-files/6101343/6101343-hd_1920_1080_25fps.mp4",
   body:"17 septembre 1981.\nRobert Badinter monte à la tribune.\nIl sait que c'est historique.\n\n« Je veux abolir la peine de mort. »\n\nPas d'hésitation.\nPas de nuance sur le fond.\nJuste une conviction absolue.\n\nLa clarté comme argument suprême.\nQuand on croit, ça se voit."},
  {id:"r7",gradient:["#1a0000","#2e0000"],accent:"#EF4444",cat:"HISTOIRE",duration:"6 min",title:"Churchill — We Shall Fight on the Beaches",sub:"4 juin 1940 — Chambre des Communes",creator:"History Archive",init:"WSC",likes:98400,comments:12800,shares:38000,
-  ytId:"MkTw3_PmKtc",
+  videoUrl:"https://videos.pexels.com/video-files/12734644/12734644-hd_1920_1080_25fps.mp4",
   body:"Londres, juin 1940.\nL'armée britannique vient d'être\névacuée de Dunkerque.\n\nChurchill refuse de capitaliser\nla défaite en rhétorique.\n\nIl énumère. Il répète.\nLes plages. Les champs.\nLes rues. Les collines.\n\n« We shall never surrender. »\n\nL'épuisement des options\ncomme démonstration de la volonté."},
  {id:"r8",gradient:["#001018","#002030"],accent:"#2B78F5",cat:"DIPLOMATIE",duration:"14 min",title:"Lumumba — Discours de l'indépendance du Congo",sub:"30 juin 1960 — Kinshasa",creator:"Archive Coloniale",init:"PL",likes:45600,comments:7890,shares:16400,
-  ytId:"7AtCMnJnBh4",
+  videoUrl:"https://videos.pexels.com/video-files/8098523/8098523-hd_1920_1080_25fps.mp4",
   body:"Kinshasa, 30 juin 1960.\nLe roi Baudouin vient de parler\nd'une indépendance « octroyée ».\n\nLumumba improvise.\nSans notes. Sans autorisation.\nContre le protocole.\n\n« Nous ne sommes plus vos singes. »\n\nLes diplomates belges se lèvent.\nIl continue.\n\n7 mois plus tard, il sera assassiné."},
 ];
 
 function ReelsScreen({T}:{T:Theme}) {
  const [liked,setLiked] = useState<Set<string>>(new Set());
  const [current,setCurrent] = useState(0);
+ const [muted,setMuted] = useState(true);
  const containerRef = useRef<HTMLDivElement>(null);
+ const videoRefs = useRef<(HTMLVideoElement|null)[]>([]);
 
  const toggleLike=(id:string)=>{haptic();setLiked(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});};
  const fmtN=(n:number)=>n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
@@ -5863,7 +5865,12 @@ function ReelsScreen({T}:{T:Theme}) {
   if(!containerRef.current) return;
   const el=containerRef.current;
   const idx=Math.round(el.scrollTop/el.clientHeight);
-  if(idx!==current) setCurrent(idx);
+  if(idx!==current){
+   videoRefs.current[current]?.pause();
+   setCurrent(idx);
+   const v=videoRefs.current[idx];
+   if(v){v.currentTime=0;v.play().catch(()=>{});}
+  }
  };
 
  return(
@@ -5872,22 +5879,29 @@ function ReelsScreen({T}:{T:Theme}) {
     {REELS_DATA.map((r,i)=>{
      const isLiked=liked.has(r.id);
      return(
-      <div key={r.id} style={{height:"100%",flexShrink:0,scrollSnapAlign:"start",position:"relative",background:`linear-gradient(160deg,${r.gradient[0]},${r.gradient[1]})`,display:"flex",flexDirection:"column",overflow:"hidden"} as React.CSSProperties}>
-       {/* Thumbnail background + gradient scrim */}
-       <img src={`https://img.youtube.com/vi/${r.ytId}/maxresdefault.jpg`} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:.45}}/>
-       <div style={{position:"absolute",inset:0,background:`linear-gradient(160deg,${r.gradient[0]}cc,${r.gradient[1]}dd)`}}/>
-       <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom,rgba(0,0,0,.25) 0%,transparent 35%,transparent 50%,rgba(0,0,0,.75) 100%)"}}/>
+      <div key={r.id} style={{height:"100%",flexShrink:0,scrollSnapAlign:"start",position:"relative",background:`linear-gradient(160deg,${r.gradient[0]},${r.gradient[1]})`,overflow:"hidden"} as React.CSSProperties}>
+       {/* Video background — gradient shows if video fails to load */}
+       <video
+        ref={el=>{videoRefs.current[i]=el;}}
+        src={r.videoUrl}
+        autoPlay={i===0}
+        muted={muted}
+        loop
+        playsInline
+        style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:.5}}
+       />
+       <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom,rgba(0,0,0,.3) 0%,transparent 35%,transparent 50%,rgba(0,0,0,.82) 100%)"}}/>
        {/* Category pill */}
        <div style={{position:"absolute",top:16,left:16,display:"flex",alignItems:"center",gap:8,zIndex:2}}>
         <span style={{background:r.accent,color:"#fff",fontSize:10,fontWeight:900,padding:"4px 10px",borderRadius:20,letterSpacing:1}}>{r.cat}</span>
         <span style={{background:"rgba(0,0,0,.5)",color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:700,padding:"4px 8px",borderRadius:20}}>{r.duration}</span>
        </div>
-       {/* Play button — opens video externally */}
-       <a href={`https://www.youtube.com/watch?v=${r.ytId}`} target="_blank" rel="noopener noreferrer" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-70%)",zIndex:2,width:56,height:56,borderRadius:"50%",background:"rgba(255,255,255,.18)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(255,255,255,.5)",textDecoration:"none"}}>
-        <Ic n="play" s={24} c="#fff" w={0}/>
-       </a>
+       {/* Mute toggle */}
+       <button onClick={()=>{haptic();setMuted(m=>!m);}} style={{position:"absolute",top:16,right:16,zIndex:2,background:"rgba(0,0,0,.45)",border:"none",borderRadius:"50%",width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+        <span style={{color:"#fff",fontSize:16}}>{muted?"🔇":"🔊"}</span>
+       </button>
        {/* Body text */}
-       <div style={{position:"absolute",bottom:0,left:0,right:64,padding:"0 18px 18px",zIndex:2}}>
+       <div style={{position:"absolute",bottom:0,left:0,right:64,padding:"0 18px 20px",zIndex:2}}>
         <p style={{color:"rgba(255,255,255,.55)",fontSize:10,fontWeight:700,marginBottom:3}}>@{r.creator.toLowerCase().replace(/ /g,"_")}</p>
         <p style={{color:"#fff",fontSize:15,fontWeight:800,lineHeight:1.3,marginBottom:3}}>{r.title}</p>
         <p style={{color:"rgba(255,255,255,.7)",fontSize:12,marginBottom:10}}>{r.sub}</p>
