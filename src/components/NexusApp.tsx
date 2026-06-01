@@ -5924,12 +5924,6 @@ function ReelsScreen({T}:{T:Theme}) {
          <Ic n="share" s={22} c="#fff" w={2}/>
          <span style={{color:"#fff",fontSize:10,fontWeight:700}}>{fmtN(r.shares)}</span>
         </button>
-        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-         <div style={{width:32,height:32,borderRadius:"50%",background:r.accent,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <Ic n="mic" s={14} c="#fff" w={2}/>
-         </div>
-         <span style={{color:"#fff",fontSize:9,fontWeight:700}}>Pratiquer</span>
-        </button>
        </div>
       </div>
      );
