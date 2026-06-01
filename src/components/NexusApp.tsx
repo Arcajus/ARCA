@@ -90,7 +90,7 @@ async function speakGoogleTTS(text: string, gender: "M"|"F", onEnd?: ()=>void): 
  `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(t)}&tl=fr&client=tw-ob&ttsspeed=1`;
  let idx = 0;
  const playNext = () => {
- if (!_ttsActive || idx >= chunks.length) { if (_ttsActive) onEnd?.(); return; }
+ if (!_ttsActive || idx >= chunks.length) { onEnd?.(); return; }
  const a = new Audio(url(chunks[idx++]));
  a.playbackRate = gender === "M" ? 0.88 : 1.0;
  a.onended = playNext;
@@ -142,7 +142,7 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
  }, 10000);
  const done = () => {
  if (_keepAlive) { clearInterval(_keepAlive); _keepAlive = null; }
- if (_ttsActive) onEnd?.();
+ onEnd?.();
  };
  const next=()=>{
  if(!_ttsActive||i>=sentences.length){done();return;}
@@ -152,8 +152,14 @@ function speakWeb(text: string, gender: "M"|"F", onEnd?: ()=>void) {
  u.pitch = gender==="F" ? 1.0 : 0.95;
  u.volume = 1.0;
  if(fr) u.voice=fr;
- u.onend=next; u.onerror=()=>{if(_ttsActive)next();};
+ // Per-utterance safety timer — iOS Safari often doesn't fire onend for the last utterance
+ let uFired=false;
+ const uNext=()=>{if(uFired)return;uFired=true;next();};
+ u.onend=uNext;
+ u.onerror=uNext;
  window.speechSynthesis.speak(u);
+ const uMs=Math.max(2000,u.text.split(/\s+/).length*420+600);
+ setTimeout(uNext,uMs);
  };
  next();
  };
@@ -234,7 +240,7 @@ async function speakEdge(text: string, gender: "M"|"F", onEnd?: ()=>void): Promi
   const url = URL.createObjectURL(blob);
   if (_edgeAudio) { _edgeAudio.pause(); _edgeAudio.onended = null; }
   _edgeAudio = new Audio(url);
-  _edgeAudio.onended = () => { URL.revokeObjectURL(url); if (_ttsActive) onEnd?.(); };
+  _edgeAudio.onended = () => { URL.revokeObjectURL(url); onEnd?.(); };
   _edgeAudio.onerror = () => { URL.revokeObjectURL(url); onEnd?.(); };
   await _edgeAudio.play();
   return true;
@@ -957,6 +963,7 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
  const [liveText,setLiveText] = useState("");
  const [showScore,setShowScore] = useState(false);
  const [autoMic,setAutoMic] = useState(false);
+ const [yourTurnAudio,setYourTurnAudio] = useState(false);
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const recRef = useRef<any>(null);
  const chatRef = useRef<HTMLDivElement>(null);
@@ -980,30 +987,8 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
  };
  },[]);
 
- // Auto-start mic after TTS ends — triggered by setAutoMic(true) from onEnd callbacks
- useEffect(()=>{
- if(!autoMic) return;
- setAutoMic(false);
- if(typeof window==="undefined") return;
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const w=window as any;
- const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR) return;
- const rec=new SR();
- rec.lang="fr-FR"; rec.continuous=false; rec.interimResults=true;
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
- rec.onresult=(e:any)=>{
- let interim="",final="";
- for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}
- setLiveText(interim);
- if(final){setLiveText("");handleSpeechRef.current(final.trim());}
- };
- rec.onend=()=>setPhase(p=>p==="listening"?"speaking":p);
- try{rec.start();}catch{return;}
- recRef.current=rec;
- setPhase("listening");
- setTimerOn(false);
- },[autoMic]);// eslint-disable-line
+ // autoMic → yourTurnAudio: rec.start() from useEffect is blocked on iOS (not a user gesture)
+ useEffect(()=>{if(autoMic){setAutoMic(false);setYourTurnAudio(true);}},[autoMic]);// eslint-disable-line
 
  // Strip any "Name : " prefix the model might output despite instructions
  const stripOppPrefix = (t: string) => t.replace(new RegExp(`^${opponent.name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}\\s*:\\s*`,"i"),"");
@@ -1371,8 +1356,8 @@ RÈGLES :
  <Ic n="micOff" s={18} c={T.red}/>Couper le micro
  </button>
  ):(
- <button onClick={startMic} disabled={phase==="waiting"||loading} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:phase==="waiting"||loading?T.muted:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:phase==="waiting"||loading?"not-allowed":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?0.7:1}}>
- <Ic n="mic" s={18} c="#fff"/>{loading?"En attente…":"Prendre la parole"}
+ <button onClick={()=>{setYourTurnAudio(false);startMic();}} disabled={phase==="waiting"||loading} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:phase==="waiting"||loading?T.muted:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:phase==="waiting"||loading?"not-allowed":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?0.7:1,animation:yourTurnAudio&&!loading?"ripple 1.5s infinite":undefined}}>
+ <Ic n="mic" s={18} c="#fff"/>{loading?"En attente…":yourTurnAudio?"C'est votre tour — appuyez !":"Prendre la parole"}
  </button>
  )}
  </div>
@@ -4517,6 +4502,7 @@ function GenericSimScreen({title,icon,color,systemPrompt,welcome,voiceGender,T,o
  const [audioOn,setAudioOn] = useState(true);
  const [listening,setListening] = useState(false);
  const [autoMic,setAutoMic] = useState(false);
+ const [yourTurn,setYourTurn] = useState(false);
  const [exchangeN,setExchangeN] = useState(0);
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const recRef = useRef<any>(null);
@@ -4524,6 +4510,8 @@ function GenericSimScreen({title,icon,color,systemPrompt,welcome,voiceGender,T,o
  const mountedRef = useRef(true);
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const handleSpeechRef = useRef<(t:string)=>void>((_t:string)=>{});
+ const audioOnRef = useRef(audioOn);
+ useEffect(()=>{audioOnRef.current=audioOn;},[audioOn]);
 
  useEffect(()=>{
  mountedRef.current=true;
@@ -4542,30 +4530,14 @@ function GenericSimScreen({title,icon,color,systemPrompt,welcome,voiceGender,T,o
  }, delayMs);
  }
 
- // Auto-open mic after AI finishes speaking
- useEffect(()=>{
- if(!autoMic) return;
- setAutoMic(false);
- if(typeof window==="undefined") return;
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const w=window as any;
- const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR) return;
- const rec=new SR();
- rec.lang="fr-FR"; rec.continuous=false; rec.interimResults=false;
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
- rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
- rec.onend=()=>setListening(false);
- try{rec.start();}catch{return;}
- recRef.current=rec;
- setListening(true);
- },[autoMic]);// eslint-disable-line
+ // autoMic → yourTurn: rec.start() from useEffect is blocked on iOS (not a user gesture)
+ useEffect(()=>{if(autoMic){setAutoMic(false);setYourTurn(true);}},[autoMic]);// eslint-disable-line
 
  useEffect(()=>{
  const w = {role:"ai" as const, text:welcome};
  setMsgs([w]);
  setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),200);
- if(audioOn) speakTimed(welcome,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);},400);
+ if(audioOnRef.current) speakTimed(welcome,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);},400);
  },[]);// eslint-disable-line
 
  const send = async(text:string)=>{
@@ -4588,10 +4560,10 @@ function GenericSimScreen({title,icon,color,systemPrompt,welcome,voiceGender,T,o
 L'interlocuteur vient de dire exactement : "${text}"
 
 RÈGLES ABSOLUES pour cette réponse :
-1. Cite MOT POUR MOT une partie de ce qu'il a dit (entre guillemets)
-2. Réponds DIRECTEMENT à cet argument — aucune réponse générique
-3. Apporte un ANGLE NOUVEAU pas encore utilisé dans cette conversation
-4. Développe avec 5 à 7 phrases, des faits réels, des chiffres si pertinents`;
+1. Réponds DIRECTEMENT à cet argument — jamais de réponse générique
+2. Apporte un ANGLE NOUVEAU pas encore utilisé dans cette conversation
+3. Développe avec 5 à 7 phrases, des faits réels, des chiffres si pertinents
+4. Ne commence JAMAIS par répéter ce que l'interlocuteur vient de dire`;
  let firstChunk=true;
  let fullReply="";
  await streamGemini(dynSys,hist,"",700,(full)=>{
@@ -4601,7 +4573,7 @@ RÈGLES ABSOLUES pour cette réponse :
  else setMsgs(m=>{const u=[...m];u[u.length-1]={role:"ai" as const,text:full};return u;});
  setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),30);
  });
- if(mountedRef.current&&audioOn) speakTimed(fullReply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
+ if(mountedRef.current&&audioOnRef.current) speakTimed(fullReply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
  }catch(err){
  if(!mountedRef.current) return;
  setLoading(false);
@@ -4616,7 +4588,7 @@ RÈGLES ABSOLUES pour cette réponse :
  ];
  const reply=fallbacks[Math.floor(Math.random()*fallbacks.length)];
  setMsgs(m=>[...m,{role:"ai" as const,text:reply}]);
- if(audioOn) speakTimed(reply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
+ if(audioOnRef.current) speakTimed(reply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
  }
  }
  };
@@ -4680,9 +4652,13 @@ RÈGLES ABSOLUES pour cette réponse :
  </div>
  )}
  </div>
+ {!loading&&yourTurn&&<div onClick={()=>{setYourTurn(false);toggleMic();}} style={{padding:"8px 16px",background:`${color}12`,borderTop:`1px solid ${color}30`,flexShrink:0,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+ <div style={{animation:"pulse 1.2s infinite"}}><Ic n="mic" s={18} c={color}/></div>
+ <span style={{color,fontSize:12,fontWeight:700}}>C'est votre tour — appuyez pour parler</span>
+ </div>}
  <div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:8,alignItems:"center"}}>
- <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
- <Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/>
+ <button onClick={()=>{setYourTurn(false);toggleMic();}} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:yourTurn?color:T.b1}`,background:listening?`${T.red}15`:yourTurn?`${color}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+ <Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:yourTurn?color:T.textD}/>
  </button>
  <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send(input)} placeholder="Votre réponse…" style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
  <button onClick={()=>send(input)} disabled={!input.trim()||loading} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!loading?color:T.b1,display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0,transition:"background .2s"}}>
