@@ -257,16 +257,11 @@ const GEMINI_CFG={temperature:1.0,topP:0.95};
 const ANTI_REP="\n\nRÈGLE ABSOLUE : Chaque réponse est unique — angle inédit, formulation nouvelle, jamais répétée dans cette conversation.";
 
 // Non-streaming — used when full text is needed before acting (audio TTS)
-async function callGemini(sys:string, hist:GHist, key:string, maxTokens=400):Promise<string> {
+async function callGemini(sys:string, hist:GHist, _key:string, maxTokens=400):Promise<string> {
  const clean=sanitizeHist(hist);
  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
- // Route through server proxy when no personal key — key stays server-side
- const useProxy=!key;
- const url=useProxy?"/api/gemini":GEMINI_URL(key);
- const body=useProxy
-  ?JSON.stringify({sys,hist:clean,maxTokens,stream:false})
-  :JSON.stringify({system_instruction:{parts:[{text:sys+ANTI_REP}]},contents:clean,generationConfig:{...GEMINI_CFG,maxOutputTokens:maxTokens}});
- const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body});
+ const body=JSON.stringify({sys,hist:clean,maxTokens,stream:false});
+ const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body});
  if(!res.ok){const e=await res.text().catch(()=>"");throw new Error(`HTTP_${res.status}: ${e.slice(0,120)}`);}
  const d=await res.json();
  if(d.error) throw new Error(d.error.message||"gemini_error");
@@ -276,16 +271,11 @@ async function callGemini(sys:string, hist:GHist, key:string, maxTokens=400):Pro
 }
 
 // Streaming — text appears word by word as Gemini generates it
-async function streamGemini(sys:string, hist:GHist, key:string, maxTokens:number, onChunk:(full:string)=>void):Promise<string> {
+async function streamGemini(sys:string, hist:GHist, _key:string, maxTokens:number, onChunk:(full:string)=>void):Promise<string> {
  const clean=sanitizeHist(hist);
  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
- // Route through server proxy when no personal key
- const useProxy=!key;
- const url=useProxy?"/api/gemini":GEMINI_URL(key,true);
- const body=useProxy
-  ?JSON.stringify({sys,hist:clean,maxTokens,stream:true})
-  :JSON.stringify({system_instruction:{parts:[{text:sys+ANTI_REP}]},contents:clean,generationConfig:{...GEMINI_CFG,maxOutputTokens:maxTokens}});
- const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body});
+ const body=JSON.stringify({sys,hist:clean,maxTokens,stream:true});
+ const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body});
  if(!res.ok){const e=await res.text().catch(()=>"");throw new Error(`HTTP_${res.status}: ${e.slice(0,120)}`);}
  const reader=res.body!.getReader();
  const dec=new TextDecoder();
@@ -2941,67 +2931,7 @@ function MessagesScreen({T}:{T:Theme}) {
  );
 }
 
-// SIMULATION HUB 
-// API KEY SETUP MODAL 
-function ApiKeySetupModal({T,onDone}:{T:Theme;onDone:()=>void}) {
- const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
- const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
- const [azk,setAzk] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_key")||"":"");
- const [azr,setAzr] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_region")||"eastus":"");
- const save=(k:string,v:string)=>{if(typeof window!=="undefined")localStorage.setItem(k,v);};
- return(
- <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .2s"}}>
- <div style={{background:T.surf,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:430,padding:"20px 20px 36px",display:"flex",flexDirection:"column",gap:16,animation:"slideUp .3s ease",maxHeight:"90vh",overflowY:"auto"}}>
- <div style={{width:40,height:4,borderRadius:2,background:T.b2,margin:"0 auto 4px"}}/>
- <div>
- <h2 style={{color:T.text,fontWeight:800,fontSize:20}}>Configurer la clé API</h2>
- <p style={{color:T.textD,fontSize:13,marginTop:4}}>Une seule clé suffit — voix et IA incluses</p>
- </div>
- {/* Gemini */}
- <div style={{background:T.card,border:`1px solid ${T.green}`,borderRadius:12,padding:14}}>
- <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
- <div style={{width:28,height:28,borderRadius:7,background:`${T.green}20`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="zap" s={14} c={T.green}/></div>
- <div style={{flex:1}}>
- <p style={{color:T.text,fontSize:13,fontWeight:800}}>IA Gemini — <span style={{color:T.green}}>déjà configurée</span></p>
- <p style={{color:T.muted,fontSize:10}}>Clé personnelle optionnelle — aistudio.google.com</p>
- </div>
- <div style={{width:8,height:8,borderRadius:"50%",background:T.green,flexShrink:0}}/>
- </div>
- <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza… (optionnel)" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",transition:"border .2s"}}/>
- </div>
- <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
- <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
- <div style={{width:28,height:28,borderRadius:7,background:"#7C3AED20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="mic" s={14} c="#7C3AED"/></div>
- <div style={{flex:1}}>
- <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé ElevenLabs <span style={{color:T.muted,fontSize:10,fontWeight:400}}>(optionnel — voix premium)</span></p>
- <p style={{color:T.muted,fontSize:10}}>elevenlabs.io → Profile → API Keys · 10 000 chars/mois gratuit</p>
- </div>
- {ek&&<div style={{width:8,height:8,borderRadius:"50%",background:T.green,flexShrink:0}}/>}
- </div>
- <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
- <p style={{color:T.muted,fontSize:10,marginTop:6}}>Sans clé : voix navigateur. Avec clé : voix naturelles ElevenLabs.</p>
- </div>
- {/* Azure TTS */}
- <div style={{background:T.bg2,borderRadius:12,padding:14}}>
- <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
- <div style={{width:28,height:28,borderRadius:7,background:"#0078d420",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:14}}></span></div>
- <div style={{flex:1}}>
- <p style={{color:T.text,fontSize:13,fontWeight:800}}>Clé Azure TTS <span style={{color:T.green,fontSize:10,fontWeight:700}}>(recommandé — voix DeniseNeural)</span></p>
- <p style={{color:T.muted,fontSize:10}}>portal.azure.com → Speech → F0 gratuit · 500 000 chars/mois</p>
- </div>
- {azk&&<div style={{width:8,height:8,borderRadius:"50%",background:T.green,flexShrink:0}}/>}
- </div>
- <input type="password" value={azk} onChange={e=>{setAzk(e.target.value);save("azure_tts_key",e.target.value);}} placeholder="Clé Azure Speech…" style={{width:"100%",background:T.surf,border:`1px solid ${azk?T.green:T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:6}}/>
- <input type="text" value={azr} onChange={e=>{setAzr(e.target.value);save("azure_tts_region",e.target.value);}} placeholder="Région (ex: eastus, westeurope…)" style={{width:"100%",background:T.surf,border:`1px solid ${T.b1}`,borderRadius:8,padding:"10px 12px",color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
- </div>
- <button onClick={()=>{if(ck)onDone();}} disabled={!ck} style={{padding:15,borderRadius:14,border:"none",background:ck?T.blueB:T.b1,color:ck?"#fff":T.muted,fontSize:15,fontWeight:800,cursor:ck?"pointer":"not-allowed",fontFamily:"inherit",transition:"background .2s"}}>
- {ck?"Démarrer la simulation →":"Entrez votre clé Gemini pour continuer"}
- </button>
- <p style={{color:T.muted,fontSize:11,textAlign:"center",lineHeight:1.5}}>Vos clés restent sur votre téléphone uniquement — elles ne sont jamais envoyées à NEXUS.</p>
- </div>
- </div>
- );
-}
+// SIMULATION HUB
 
 function AdminPinModal({T,onClose,onSuccess}:{T:Theme;onClose:()=>void;onSuccess:()=>void}) {
  const [pin,setPin] = useState("");
@@ -4422,39 +4352,29 @@ function SimulationHub({T,onPremium}:{T:Theme;onPremium?:()=>void}) {
  );
 }
 
-// API KEY SETTINGS 
+// API KEY SETTINGS
 function ApiKeySettings({T}:{T:Theme}) {
- const [ck,setCk] = useState(typeof window!=="undefined"?localStorage.getItem("gemini_key")||"":"");
  const [ek,setEk] = useState(typeof window!=="undefined"?localStorage.getItem("el_key")||"":"");
  const [azk,setAzk] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_key")||"":"");
  const [azr,setAzr] = useState(typeof window!=="undefined"?localStorage.getItem("azure_tts_region")||"eastus":"");
- const [hfk,setHfk] = useState(typeof window!=="undefined"?localStorage.getItem("hf_token")||"":"");
  const save = (key:string,val:string)=>{ if(typeof window!=="undefined") localStorage.setItem(key,val); };
  return(
  <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:10}}>
- <div style={{background:T.card,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
- <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-  <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",flex:1}}>Clé Gemini personnelle</p>
-  <span style={{background:`${T.green}20`,color:T.green,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20}}>IA configurée</span>
- </div>
- <input type="password" value={ck} onChange={e=>{setCk(e.target.value);save("gemini_key",e.target.value);}} placeholder="AIza… (optionnel)" style={{width:"100%",background:T.bg2,border:`1px solid ${ck?T.green:T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
- <p style={{color:T.muted,fontSize:11,marginTop:5}}>L&apos;IA fonctionne sans clé. Ajoute la tienne pour utiliser ton propre quota Gemini.</p>
+ <div style={{background:`${T.green}12`,border:`1px solid ${T.green}`,borderRadius:12,padding:14,display:"flex",alignItems:"center",gap:10}}>
+  <div style={{width:32,height:32,borderRadius:8,background:`${T.green}20`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="zap" s={16} c={T.green}/></div>
+  <div>
+   <p style={{color:T.text,fontSize:13,fontWeight:800}}>IA NEXUS — opérationnelle ✓</p>
+   <p style={{color:T.muted,fontSize:11,marginTop:2}}>L'intelligence artificielle est gérée par NEXUS. Aucune configuration requise.</p>
+  </div>
  </div>
  <div style={{background:T.card,border:`1px solid ${azk?"#0078d4":T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
- <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}> Azure TTS <span style={{color:"#16A34A",fontWeight:700,textTransform:"none",letterSpacing:0}}>(recommandé — DeniseNeural)</span></p>
+ <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Azure TTS <span style={{color:"#16A34A",fontWeight:700,textTransform:"none",letterSpacing:0}}>(voix premium optionnelle)</span></p>
  <input type="password" value={azk} onChange={e=>{setAzk(e.target.value);save("azure_tts_key",e.target.value);}} placeholder="Clé Azure Speech…" style={{width:"100%",background:T.bg2,border:`1px solid ${azk?"#0078d4":T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:6}}/>
  <input type="text" value={azr} onChange={e=>{setAzr(e.target.value);save("azure_tts_region",e.target.value);}} placeholder="Région Azure (ex: eastus)" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
- <p style={{color:T.muted,fontSize:11,marginTop:5}}>portal.azure.com → Speech → F0 gratuit · 500 000 chars/mois · Voix française naturelle</p>
- </div>
- <div style={{background:T.card,border:`1px solid ${hfk?"#FF6B00":T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
- <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>HuggingFace TTS <span style={{color:T.green,fontWeight:700,textTransform:"none",letterSpacing:0}}>(gratuit — sans carte bancaire)</span></p>
- <input type="password" value={hfk} onChange={e=>{setHfk(e.target.value);save("hf_token",e.target.value);}} placeholder="hf_…" style={{width:"100%",background:T.bg2,border:`1px solid ${hfk?"#FF6B00":T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
- <p style={{color:T.muted,fontSize:11,marginTop:5}}>huggingface.co → Settings → Access Tokens → New token (Read) · Gratuit sans carte</p>
  </div>
  <div style={{background:T.card,border:`1px solid ${ek?T.purple:T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
- <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>ElevenLabs <span style={{color:T.muted,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optionnel)</span></p>
+ <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>ElevenLabs <span style={{color:T.muted,fontWeight:400,textTransform:"none",letterSpacing:0}}>(voix naturelles optionnelle)</span></p>
  <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
- <p style={{color:T.muted,fontSize:11,marginTop:5}}>elevenlabs.io → Profile → API Keys · 10 000 chars/mois gratuit</p>
  </div>
  </div>
  );
