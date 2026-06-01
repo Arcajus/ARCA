@@ -5286,6 +5286,9 @@ RÈGLES ABSOLUES :
  if(mode==="trial"&&trialRole&&trialTopic){
  return <TrialSimScreen key="trial" trialRole={trialRole} trialTopic={trialTopic} T={T} onBack={()=>setMode("home")}/>;
  }
+ if(mode==="un"&&unRole&&unTopic){
+ return <UNSimScreen key="un" unRole={unRole} unTopic={unTopic} T={T} onBack={()=>setMode("home")}/>;
+ }
  if(mode in SIM_CONFIGS && mode!=="elections" && !(mode==="un"&&(!unRole||!unTopic))){
  const cfg=SIM_CONFIGS[mode];
  return <GenericSimScreen key={mode} title={cfg.title} icon={cfg.icon} color={cfg.color} systemPrompt={cfg.systemPrompt} welcome={cfg.welcome} voiceGender={cfg.voiceGender} T={T} onBack={()=>setMode("home")}/>;
