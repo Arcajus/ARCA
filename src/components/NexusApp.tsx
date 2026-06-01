@@ -18,8 +18,9 @@ const LIGHT = {
 };
 type Theme = typeof DARK;
 
-// TTS 
+// TTS
 let _hfAudio: HTMLAudioElement | null = null;
+let _edgeAudio: HTMLAudioElement | null = null;
 let _ttsActive = false;
 let _keepAlive: ReturnType<typeof setInterval> | null = null;
 
@@ -210,35 +211,54 @@ async function speakAzure(text:string,gender:"M"|"F",onEnd?:()=>void):Promise<bo
  return true;
  }catch{return false;}
 }
+async function speakEdge(text: string, gender: "M"|"F", onEnd?: ()=>void): Promise<boolean> {
+ if (typeof window === "undefined") return false;
+ const voice = gender === "F" ? "fr-FR-DeniseNeural" : "fr-FR-HenriNeural";
+ try {
+  const res = await fetch("/api/tts", {
+   method: "POST",
+   headers: { "Content-Type": "application/json" },
+   body: JSON.stringify({ text: cleanForSpeech(text).slice(0, 3000), voice }),
+  });
+  if (!res.ok) return false;
+  const blob = await res.blob();
+  if (blob.size < 100) return false;
+  const url = URL.createObjectURL(blob);
+  if (_edgeAudio) { _edgeAudio.pause(); _edgeAudio.onended = null; }
+  _edgeAudio = new Audio(url);
+  _edgeAudio.onended = () => { URL.revokeObjectURL(url); if (_ttsActive) onEnd?.(); };
+  _edgeAudio.onerror = () => { URL.revokeObjectURL(url); };
+  await _edgeAudio.play();
+  return true;
+ } catch { return false; }
+}
+
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
  _ttsActive = true;
- const w=typeof window!=="undefined";
+ const w = typeof window !== "undefined";
  const elKey = w ? localStorage.getItem("el_key") : null;
  const azureKey = w ? localStorage.getItem("azure_tts_key") : null;
- const hfKey = w ? localStorage.getItem("hf_token") : null;
  if (elKey) {
- speakEL(cleanForSpeech(text), gender, elKey, onEnd)
- .then(ok => ok || speakAzure(text, gender, onEnd))
- .then(ok => ok || speakHF(text, onEnd))
- .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
- .catch(() => speakWeb(text, gender, onEnd));
- } else if(azureKey) {
- speakAzure(text, gender, onEnd)
- .then(ok => ok || speakHF(text, onEnd))
- .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
- .catch(() => speakWeb(text, gender, onEnd));
- } else if(hfKey) {
- speakHF(text, onEnd)
- .then(ok => { if(!ok) speakWeb(text, gender, onEnd); })
- .catch(() => speakWeb(text, gender, onEnd));
+  speakEL(cleanForSpeech(text), gender, elKey, onEnd)
+   .then(ok => ok || speakEdge(text, gender, onEnd))
+   .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+   .catch(() => speakWeb(text, gender, onEnd));
+ } else if (azureKey) {
+  speakAzure(text, gender, onEnd)
+   .then(ok => ok || speakEdge(text, gender, onEnd))
+   .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+   .catch(() => speakWeb(text, gender, onEnd));
  } else {
- speakWeb(text, gender, onEnd);
+  speakEdge(text, gender, onEnd)
+   .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
+   .catch(() => speakWeb(text, gender, onEnd));
  }
 }
 function stopSpeech() {
  _ttsActive = false;
  if (_keepAlive) { clearInterval(_keepAlive); _keepAlive = null; }
  if (_hfAudio) { _hfAudio.pause(); _hfAudio.onended = null; }
+ if (_edgeAudio) { _edgeAudio.pause(); _edgeAudio.onended = null; }
  if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
 }
 type GHist = {role:"user"|"model";parts:{text:string}[]}[];
