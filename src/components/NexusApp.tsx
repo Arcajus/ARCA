@@ -992,46 +992,60 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
  }, delayMs);
  }
 
- // Intro — in duel mode, opponent speaks first before user's mic opens
+ // Intro — duel mode: journalist generates a real TV-style opening question, opponent responds, then user speaks
  useEffect(()=>{
- const introText = isDuel
- ? `Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle. `:""}Ce soir vous affrontez ${opponent.name}, ${opponent.role}. Je lui donne d'abord la parole.`
- : `Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle. `:""}À vous la parole.`;
  setTimeout(async()=>{
- addLine("journalist",j?.name||"Journaliste",introText);
- setPhase("speaking"); setTimerOn(true);
+ if(!mountedRef.current) return;
  if(isDuel){
+ // Generate TV-quality journalist intro with a pointed opening question
+ let introText = "";
+ const introFallback = `${topic} — voilà un sujet qui cristallise les tensions. ${opponent.name}, vous défendez une position très tranchée là-dessus. Dites-nous pourquoi c'est, selon vous, une question fondamentale — et surtout ce que votre camp propose concrètement.`;
+ try{
+ const introSys=`Tu es ${j?.name||"Élise Moreau"}, ${j?.role||"journaliste"}, spécialiste en ${j?.spec||"politique"}. Tu animes un grand débat TV sur NEXUS TV. Public ce soir : ${publicSide?.label||"mixte"}.
+
+MISSION : Génère l'INTRO du débat (4 phrases maximum, pas une de plus) :
+1. 1 phrase qui plante les enjeux réels du sujet avec un chiffre ou fait d'actualité — pas de "bonsoir", pas de "je suis"
+2. 1 phrase qui présente ${opponent.name} (${opponent.role}) et sa position connue sur ce sujet
+3. 1 question DIRECTE, pointue, et déstabilisante adressée à ${opponent.name} pour lancer le débat — commence par "${opponent.name},"
+Ton : incisif, TV, Elkabbach/Salamé. Phrases courtes. Zéro protocole.`;
+ introText=await callGemini(introSys,[{role:"user" as const,parts:[{text:`Lance le débat sur : "${topic}".`}]}],"",180);
+ }catch{introText=introFallback;}
+ if(!mountedRef.current) return;
+ addLine("journalist",j?.name||"Journaliste",introText);
+ setPhase("speaking");
+ // Start opponent Gemini call in parallel while journalist speaks
+ const oppOpenPromise = callGemini(
+ `Tu es ${opponent.name}, ${opponent.role}, sur le plateau de NEXUS TV.
+TON PROFIL : ${opponent.style}
+Sujet : "${topic}".
+Le journaliste vient de te poser cette question : "${introText}"
+
+RÈGLES ABSOLUES :
+— Ne commence PAS par ton nom (il est déjà affiché)
+— Réponds directement à la question du journaliste
+— 3 à 5 phrases, pas plus — style TV, percutant
+— 1 donnée chiffrée réelle (source : INSEE, OCDE, GIEC ou rapport officiel selon ton profil)
+— Termine par une question rhétorique qui défie l'invité principal
+Style : ${opponent.style.split(".")[0]}`,
+ [{role:"user" as const,parts:[{text:`Réponds à la question du journaliste sur : "${topic}".`}]}],"",300
+ ).catch(()=>"");
  speakAny(introText,(j?.gender||"F") as "M"|"F", async()=>{
  if(!mountedRef.current) return;
- let oppOpen = "";
- try{
- const oppOpenSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
-TON PROFIL RHÉTORIQUE COMPLET : ${opponent.style}
-Sujet du débat : "${topic}".
-
-MISSION : Tu prends la parole EN PREMIER pour exposer ta position d'ouverture sur ce sujet précis. Développe vraiment — 5 à 7 phrases minimum.
-1. Ne commence PAS par ton nom (il est affiché automatiquement) — entre directement dans le vif du sujet "${topic}"
-2. Expose ton angle idéologique avec conviction — pourquoi cette position est la seule défendable
-3. Cite 2-3 données réelles précises (statistiques, rapports officiels, faits historiques, chiffres sourcés)
-4. Développe le raisonnement jusqu'à sa conclusion logique — montre où mène l'argument adverse
-5. Termine par une provocation rhétorique percutante qui défie directement ton adversaire
-
-Style authentique : ${opponent.style.split(".")[0]}`;
- oppOpen=await callGemini(oppOpenSys,[{role:"user" as const,parts:[{text:`Ouvrez le débat et défendez votre position sur : "${topic}".`}]}],"",450);
- }catch{/*use fallback*/}
- if(!mountedRef.current) return;
- // Always speak — use Gemini reply or fallback
- const textToSpeak = oppOpen ? stripOppPrefix(oppOpen) : oppFallbackOpen;
+ const oppOpen = await oppOpenPromise;
+ const textToSpeak = oppOpen ? stripOppPrefix(oppOpen as string) : oppFallbackOpen;
  addLine("opponent",opponent.name,textToSpeak);
  speakTimed(textToSpeak, opponent.gender as "M"|"F", ()=>{
  if(!mountedRef.current) return;
- const handover=`Merci ${opponent.name}. À vous de répondre.`;
+ const handover=`Et vous — comment répondez-vous à ça ?`;
  addLine("journalist",j?.name||"Journaliste",handover);
- speakTimed(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current)setAutoMic(true);}, 200);
+ speakTimed(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current){setAutoMic(true);setTimer(90);setTimerOn(true);}}, 200);
  }, 300);
  });
  } else {
- speakTimed(introText,(j?.gender||"F") as "M"|"F",()=>setAutoMic(true));
+ const introText=`Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle. `:""}À vous la parole.`;
+ addLine("journalist",j?.name||"Journaliste",introText);
+ setPhase("speaking");
+ speakTimed(introText,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current){setAutoMic(true);setTimer(90);setTimerOn(true);}});
  }
  },600);
  },[]);// eslint-disable-line
