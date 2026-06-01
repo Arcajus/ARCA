@@ -235,10 +235,19 @@ async function speakEdge(text: string, gender: "M"|"F", onEnd?: ()=>void): Promi
   if (_edgeAudio) { _edgeAudio.pause(); _edgeAudio.onended = null; }
   _edgeAudio = new Audio(url);
   _edgeAudio.onended = () => { URL.revokeObjectURL(url); if (_ttsActive) onEnd?.(); };
-  _edgeAudio.onerror = () => { URL.revokeObjectURL(url); };
+  _edgeAudio.onerror = () => { URL.revokeObjectURL(url); onEnd?.(); };
   await _edgeAudio.play();
   return true;
  } catch { return false; }
+}
+
+// Skip /api/tts once we know it's unavailable (no keys on server)
+let _edgeTtsUnavailable = false;
+async function speakEdgeCached(text: string, gender: "M"|"F", onEnd?: ()=>void): Promise<boolean> {
+ if (_edgeTtsUnavailable) return false;
+ const ok = await speakEdge(text, gender, onEnd);
+ if (!ok) _edgeTtsUnavailable = true;
+ return ok;
 }
 
 function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
@@ -248,16 +257,16 @@ function speakAny(text: string, gender: "M"|"F" = "F", onEnd?: ()=>void) {
  const azureKey = w ? localStorage.getItem("azure_tts_key") : null;
  if (elKey) {
   speakEL(cleanForSpeech(text), gender, elKey, onEnd)
-   .then(ok => ok || speakEdge(text, gender, onEnd))
+   .then(ok => ok || speakEdgeCached(text, gender, onEnd))
    .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
    .catch(() => speakWeb(text, gender, onEnd));
  } else if (azureKey) {
   speakAzure(text, gender, onEnd)
-   .then(ok => ok || speakEdge(text, gender, onEnd))
+   .then(ok => ok || speakEdgeCached(text, gender, onEnd))
    .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
    .catch(() => speakWeb(text, gender, onEnd));
  } else {
-  speakEdge(text, gender, onEnd)
+  speakEdgeCached(text, gender, onEnd)
    .then(ok => { if (!ok) speakWeb(text, gender, onEnd); })
    .catch(() => speakWeb(text, gender, onEnd));
  }
@@ -4711,10 +4720,10 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  function speakChain(items:{text:string;gender:"M"|"F"}[],idx:number,onDone:()=>void){
  if(!mountedRef.current||idx>=items.length){onDone();return;}
  if(!audioOnRef.current){onDone();return;}
- const delay=idx===0?0:500;
+ const delay=idx===0?0:400;
  setTimeout(()=>{
  if(!mountedRef.current){onDone();return;}
- const ms=Math.max(3000,items[idx].text.split(/\s+/).length*420+1000);
+ const ms=Math.max(3500,items[idx].text.split(/\s+/).length*450+1500);
  let f=false;
  const next=()=>{if(f||!mountedRef.current)return;f=true;speakChain(items,idx+1,onDone);};
  speakAny(items[idx].text,items[idx].gender,next);
@@ -4840,31 +4849,19 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  }
  const isFinal=n>=MAX_SIM_EXCHANGES;
  const ctx=msgs.slice(-6).filter(m=>m.role!=="event").map(m=>`[${m.charName}]: ${m.text.slice(0,130)}`).join("\n")||"Début d'audience.";
- const mainSys=`Tu joues deux personnages dans un vrai procès. Réponds de façon NATURELLE à ce que l'avocat/procureur vient de dire — comme dans une vraie audience, pas comme un robot.
-
-AFFAIRE : "${trialTopic}" — Échange n°${n}
-${USER_CHAR.name} dit : "${text}"
-
-HISTORIQUE :
-${ctx}
-
-[PRÉSIDENT] ${PRES.name} — réagit naturellement à l'argument : le valide, le challenge, pose une question précise à la partie adverse, ou soulève une contradiction. Ton solennel. 1 référence juridique. 3 phrases.${isFinal?" Annonce les plaidoiries finales à la fin.":""}
-
-[${trialRole==="defense"?"PROCUREUR":"AVOCAT"}] ${OPP.name} — répond avec un contre-argument, un fait nouveau, une preuve opposée. Ton vif, direct, parfois acéré. "Votre Honneur," en ouverture. 3-4 phrases. Ne répète jamais la même chose qu'un tour précédent.
-
-Ne commence JAMAIS par répéter ce que l'utilisateur a dit. Réponds directement, naturellement.
-
-[PRÉSIDENT]
-[${trialRole==="defense"?"PROCUREUR":"AVOCAT"}]`;
- const reply=await callGemini(mainSys,hist,"",900);
+ // Two parallel focused calls — each character reacts independently to the user's argument
+ const prevCtxShort=ctx.slice(-400);
+ const presSys=`Tu es ${PRES.name}, procès "${trialTopic}", échange n°${n}. ${USER_CHAR.name} vient de dire : "${text.slice(0,300)}". Contexte : ${prevCtxShort}. Réagis en 2-3 phrases solennelles : valide ou challenge cet argument, pose une question précise à ${OPP.name}, cite 1 article de loi.${isFinal?" Annonce les plaidoiries finales.":""}`;
+ const oppSysT=`Tu es ${OPP.name}, procès "${trialTopic}". ${USER_CHAR.name} vient de dire : "${text.slice(0,300)}". Contexte : ${prevCtxShort}. Réponds directement à cet argument en 3-4 phrases. Apporte un fait concret qui contredit ou soutient. Commence par "Votre Honneur,". Jamais la même structure qu'un tour précédent.`;
+ const [presR,oppR]=await Promise.allSettled([
+ callGemini(presSys,[{role:"user",parts:[{text}]}],"",280),
+ callGemini(oppSysT,[...hist,{role:"user" as const,parts:[{text}]}],"",320),
+ ]);
  if(!mountedRef.current){setLoading(false);return;}
- const oppTag=trialRole==="defense"?"PROCUREUR":"AVOCAT";
- const pm=reply.match(/\[PRÉSIDENT\]\s*([\s\S]*?)(?=\[(?:PROCUREUR|AVOCAT)\]|$)/);
- const om=reply.match(new RegExp(`\\[${oppTag}\\]\\s*([\\s\\S]*?)(?=\\[PRÉSIDENT\\]|$)`));
  const cMsgs:TMsg[]=[];
- if(pm?.[1]?.trim())cMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:pm[1].trim()});
- if(om?.[1]?.trim())cMsgs.push({role:"ai",charName:OPP.name,charInit:OPP.init,charColor:OPP.color,gender:OPP.gender,text:om[1].trim()});
- if(cMsgs.length===0)cMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:reply});
+ if(presR.status==="fulfilled"&&presR.value)cMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:presR.value});
+ if(oppR.status==="fulfilled"&&oppR.value)cMsgs.push({role:"ai",charName:OPP.name,charInit:OPP.init,charColor:OPP.color,gender:OPP.gender,text:oppR.value});
+ if(cMsgs.length===0)cMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:`La Cour a pris note de votre argument sur "${trialTopic}". La parole est à ${OPP.name}.`});
  cMsgs.forEach(m=>{addMsg(m);speakQ.push({text:m.text,gender:m.gender});});
  // PAUSE OFFER (turn 6, one time)
  if(n===6&&!pauseOffered){
@@ -5018,11 +5015,11 @@ function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:
  if(!audioOnRef.current){onDone();return;}
  setTimeout(()=>{
  if(!mountedRef.current){onDone();return;}
- const ms=Math.max(3000,items[idx].text.split(/\s+/).length*420+1000);
+ const ms=Math.max(3500,items[idx].text.split(/\s+/).length*450+1500);
  let f=false;
  const next=()=>{if(f||!mountedRef.current)return;f=true;speakChainUN(items,idx+1,onDone);};
  speakAny(items[idx].text,items[idx].gender,next);setTimeout(next,ms);
- },idx===0?0:700);
+ },idx===0?0:400);
  }
 
  useEffect(()=>{
