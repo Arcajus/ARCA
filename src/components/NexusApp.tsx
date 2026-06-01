@@ -5823,15 +5823,32 @@ function ProgressScreen({T,onBack}:{T:Theme;onBack:()=>void}){
 }
 
 // ── RÉELS SCREEN ──────────────────────────────────────────────────────────────
+// YouTube video IDs — real historical speeches, freely embeddable
 const REELS_DATA = [
- {id:"r1",gradient:["#1a1a2e","#16213e"],accent:"#E94560",cat:"GÉOPOLITIQUE",duration:"45s",title:"Pourquoi la Russie a envahi l'Ukraine ?",sub:"L'histoire en 45 secondes",creator:"NEXUS Géo",init:"NG",likes:4820,comments:312,shares:891,body:"Depuis 2014, la tension monte.\nL'OTAN s'étend vers l'Est.\nMoscou voit une menace à sa porte.\n\nLe 24 février 2022 : offensive totale.\nObjectif déclaré : « dénazification ».\nObjectif réel : stopper l'expansion atlantiste\net maintenir une zone tampon.\n\nRésultat : la plus grande guerre terrestre\nen Europe depuis 1945."},
- {id:"r2",gradient:["#0d2137","#1a3a5c"],accent:"#2B78F5",cat:"DISCOURS",duration:"1 min",title:"Churchill — « Nous nous battrons sur les plages »",sub:"Analyse rhétorique",creator:"NEXUS Éloquence",init:"NE",likes:6340,comments:287,shares:1240,body:"Londres, 4 juin 1940.\nDunkerque vient de tomber.\n300 000 soldats sauvés — mais la défaite est là.\n\nChurchill choisit de ne pas mentir.\nIl énumère les retraites possibles :\nles plages, les champs, les rues, les collines.\n\nPuis : « Nous ne nous rendrons jamais. »\n\nL'anaphore comme armure.\nLe désastre transformé en résistance."},
- {id:"r3",gradient:["#1a2e1a","#2d4a1e"],accent:"#22C55E",cat:"DIPLOMATIE",duration:"50s",title:"Le Conseil de Sécurité : pourquoi le veto bloque tout",sub:"ONU décryptée",creator:"NEXUS Droit",init:"ND",likes:3190,comments:445,shares:672,body:"5 membres permanents.\n5 droits de veto absolus.\n\nRussie bloque sur l'Ukraine.\nUSA bloque sur Gaza.\nChine bloque sur Taïwan.\n\nRésultat : l'ONU paralysée\nsur chaque conflit majeur.\n\nLa paix mondiale dépend\ndu consensus des plus puissants.\nEst-ce un système qui tient encore ?"},
- {id:"r4",gradient:["#2e1a0a","#4a2e0d"],accent:"#F59E0B",cat:"ÉLOQUENCE",duration:"35s",title:"La règle des 3 — Pourquoi tout grand discours l'utilise",sub:"Technique oratoire",creator:"NEXUS Pratique",init:"NP",likes:8920,comments:634,shares:2140,body:"Veni, vidi, vici.\nLiberté, Égalité, Fraternité.\nSang, labeur, larmes et sueur.\n\nLe cerveau mémorise par 3.\nDeux : trop court, semble incomplet.\nQuatre : trop long, saturé.\n\nTrois : l'équilibre parfait.\nMouvement, structure, conclusion.\n\nTestez : chaque argument\nmérite exactement 3 preuves."},
- {id:"r5",gradient:["#1a0a2e","#2e1a4a"],accent:"#A855F7",cat:"HISTOIRE",duration:"55s",title:"Discours de Lumumba à l'indépendance du Congo",sub:"30 juin 1960",creator:"NEXUS Histoire",init:"NH",likes:5670,comments:892,shares:1830,body:"Kinshasa, 30 juin 1960.\nLe roi des Belges vient de parler\nd'une indépendance « octroyée ».\n\nLumumba n'a pas de discours préparé.\nIl improvise.\n\n« Nous ne sommes plus vos singes. »\n\nLes diplomates belges se figent.\nLe monde retient son souffle.\n\nCe discours lui coûtera la vie.\nIl sera assassiné 7 mois plus tard."},
- {id:"r6",gradient:["#0a1a2e","#0d2640"],accent:"#06B6D4",cat:"GÉOPOLITIQUE",duration:"40s",title:"Taïwan : pourquoi ça peut déclencher une guerre mondiale",sub:"Le point de rupture",creator:"NEXUS Géo",init:"NG",likes:12400,comments:1820,shares:4200,body:"90% des puces avancées mondiales.\nFabriquées par TSMC — à Taïwan.\n\nSi Pékin prend Taïwan :\nplus de smartphones, plus d'IA,\nplus d'armement de précision.\n\nC'est pourquoi les USA garantissent\nla défense de l'île — officieusement.\n\nC'est pourquoi la Chine attend.\nSurveille. Prépare.\n\nTaïwan n'est pas un choix géographique.\nC'est la clé de l'économie mondiale."},
- {id:"r7",gradient:["#1a1a0a","#2e2e0d"],accent:"#EAB308",cat:"DROIT",duration:"1 min",title:"La plaidoirie — l'art de parler pour sauver une vie",sub:"Technique judiciaire",creator:"NEXUS Barreau",init:"NB",likes:7340,comments:523,shares:1640,body:"L'avocat entre dans la salle.\nTout le monde est contre son client.\nLes preuves. Les témoins. Le parquet.\n\nIl n'a qu'une arme : la parole.\n\nLa plaidoirie ne prouve pas l'innocence.\nElle crée le doute raisonnable.\n\nTechnique : commencer par l'humain,\nnon par les faits.\nUn jury ne juge pas un dossier.\nIl juge une histoire."},
- {id:"r8",gradient:["#2e0a0a","#4a1010"],accent:"#EF4444",cat:"SCIENCES PO",duration:"45s",title:"Grand oral Sciences Po — les 3 erreurs qui éliminent",sub:"Préparation concours",creator:"NEXUS ScPo",init:"NS",likes:15600,comments:2340,shares:5800,body:"1. Répondre à côté de la question.\nLe jury ne cherche pas vos connaissances.\nIl teste votre capacité à les mobiliser.\n\n2. Ne pas écouter la contre-question.\nC'est là que se joue l'admission.\nUne réponse courte et précise vaut mieux\nqu'un développement hors sujet.\n\n3. Manquer de conviction.\nVous pouvez dire 'je ne sais pas'.\nVous ne pouvez pas sembler indifférent."},
+ {id:"r1",gradient:["#0d0d1a","#1a1a2e"],accent:"#E94560",cat:"DISCOURS",duration:"17 min",title:"De Gaulle — Appel du 18 juin 1940",sub:"La résistance commence ici",creator:"INA Histoire",init:"DG",likes:48200,comments:3120,shares:8910,
+  ytId:"9vBsMDJNHJk",
+  body:"Paris vient de tomber.\nLe gouvernement capitule.\nTout semble perdu.\n\nDe Gaulle prend le micro à Londres.\nSans autorisation officielle.\nSans armée derrière lui.\n\nIl parle 4 minutes.\nIl change l'histoire de France.\n\n« La France a perdu une bataille.\nMais la France n'a pas perdu la guerre. »"},
+ {id:"r2",gradient:["#1a0d00","#2e1a00"],accent:"#F59E0B",cat:"DISCOURS",duration:"16 min",title:"MLK — I Have a Dream (1963)",sub:"Le discours qui a changé l'Amérique",creator:"History Channel",init:"MLK",likes:124000,comments:18200,shares:42000,
+  ytId:"smEqnnklfYs",
+  body:"Washington D.C., 28 août 1963.\n250 000 personnes devant lui.\n\nMartin Luther King improvise\nla fin de son discours.\n\n« I have a dream… »\n\nLa répétition comme marteau.\nChaque phrase frappe plus fort.\n\nL'anaphore la plus célèbre\nde l'histoire oratoire mondiale."},
+ {id:"r3",gradient:["#001a0d","#001f10"],accent:"#22C55E",cat:"DISCOURS",duration:"26 min",title:"Simone Veil — Discours sur l'IVG (1974)",sub:"Plaidoirie devant l'Assemblée nationale",creator:"INA Politique",init:"SV",likes:67300,comments:8940,shares:19600,
+  ytId:"n3bQ5TBP8yg",
+  body:"Paris, 26 novembre 1974.\nSimone Veil face à 480 hommes.\nElle défend le droit des femmes.\n\nInsultes depuis les bancs.\nSifflets. Hostilité ouverte.\n\nElle ne tremble pas.\nElle continue.\n\n« Je le dis avec toute ma conviction :\nl'avortement est toujours un drame. »\n\nL'éthos comme armure."},
+ {id:"r4",gradient:["#0a001a","#150028"],accent:"#A855F7",cat:"SCIENCES PO",duration:"18 min",title:"Sciences Po — Grand oral : exemple réel",sub:"Techniques décryptées en direct",creator:"Sciences Po Paris",init:"SP",likes:89200,comments:6340,shares:21400,
+  ytId:"bnHwwwEBNFo",
+  body:"Le grand oral c'est 30 minutes.\nDont 5 minutes de présentation seul.\nPuis 25 minutes face au jury.\n\nCe que le jury cherche :\n→ La capacité à structurer sous pression\n→ L'aptitude à nuancer\n→ La réaction aux contre-arguments\n\nCe qui élimine :\nRépondre sans écouter la question."},
+ {id:"r5",gradient:["#001020","#001830"],accent:"#06B6D4",cat:"GÉOPOLITIQUE",duration:"12 min",title:"ONU — Discours de Macron (Assemblée générale)",sub:"Analyse rhétorique",creator:"NEXUS Géo",init:"NG",likes:34100,comments:4820,shares:9800,
+  ytId:"WXKPuMkFoF8",
+  body:"New York, Assemblée générale ONU.\nChaque chef d'État a 15 minutes.\n15 minutes pour convaincre le monde.\n\nMacron utilise trois registres :\n→ Éthos : l'histoire française\n→ Logos : les chiffres climatiques\n→ Pathos : la destinée commune\n\nAnalyse : comment parler à 193 nations\nen une seule voix."},
+ {id:"r6",gradient:["#1a1000","#2a1800"],accent:"#EAB308",cat:"DROIT",duration:"8 min",title:"Robert Badinter — Abolition de la peine de mort",sub:"17 septembre 1981 — Assemblée nationale",creator:"INA Justice",init:"RB",likes:56700,comments:8920,shares:18300,
+  ytId:"VuGgVDc7-_I",
+  body:"17 septembre 1981.\nRobert Badinter monte à la tribune.\nIl sait que c'est historique.\n\n« Je veux abolir la peine de mort. »\n\nPas d'hésitation.\nPas de nuance sur le fond.\nJuste une conviction absolue.\n\nLa clarté comme argument suprême.\nQuand on croit, ça se voit."},
+ {id:"r7",gradient:["#1a0000","#2e0000"],accent:"#EF4444",cat:"HISTOIRE",duration:"6 min",title:"Churchill — We Shall Fight on the Beaches",sub:"4 juin 1940 — Chambre des Communes",creator:"History Archive",init:"WSC",likes:98400,comments:12800,shares:38000,
+  ytId:"MkTw3_PmKtc",
+  body:"Londres, juin 1940.\nL'armée britannique vient d'être\névacuée de Dunkerque.\n\nChurchill refuse de capitaliser\nla défaite en rhétorique.\n\nIl énumère. Il répète.\nLes plages. Les champs.\nLes rues. Les collines.\n\n« We shall never surrender. »\n\nL'épuisement des options\ncomme démonstration de la volonté."},
+ {id:"r8",gradient:["#001018","#002030"],accent:"#2B78F5",cat:"DIPLOMATIE",duration:"14 min",title:"Lumumba — Discours de l'indépendance du Congo",sub:"30 juin 1960 — Kinshasa",creator:"Archive Coloniale",init:"PL",likes:45600,comments:7890,shares:16400,
+  ytId:"7AtCMnJnBh4",
+  body:"Kinshasa, 30 juin 1960.\nLe roi Baudouin vient de parler\nd'une indépendance « octroyée ».\n\nLumumba improvise.\nSans notes. Sans autorisation.\nContre le protocole.\n\n« Nous ne sommes plus vos singes. »\n\nLes diplomates belges se lèvent.\nIl continue.\n\n7 mois plus tard, il sera assassiné."},
 ];
 
 function ReelsScreen({T}:{T:Theme}) {
@@ -5839,78 +5856,73 @@ function ReelsScreen({T}:{T:Theme}) {
  const [current,setCurrent] = useState(0);
  const containerRef = useRef<HTMLDivElement>(null);
 
- const toggleLike=(id:string)=>{
-  haptic();
-  setLiked(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
- };
-
+ const toggleLike=(id:string)=>{haptic();setLiked(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});};
  const fmtN=(n:number)=>n>=1000?`${(n/1000).toFixed(1)}k`:String(n);
 
  const onScroll=()=>{
   if(!containerRef.current) return;
   const el=containerRef.current;
   const idx=Math.round(el.scrollTop/el.clientHeight);
-  setCurrent(idx);
+  if(idx!==current) setCurrent(idx);
  };
 
  return(
   <div style={{height:"100%",position:"relative",background:"#000",overflow:"hidden"}}>
-   {/* Cards container — snap scroll */}
-   <div ref={containerRef} onScroll={onScroll} style={{height:"100%",overflowY:"scroll",scrollSnapType:"y mandatory",scrollBehavior:"smooth",WebkitOverflowScrolling:"touch"} as React.CSSProperties}>
+   <div ref={containerRef} onScroll={onScroll} style={{height:"100%",overflowY:"scroll",scrollSnapType:"y mandatory",WebkitOverflowScrolling:"touch"} as React.CSSProperties}>
     {REELS_DATA.map((r,i)=>{
      const isLiked=liked.has(r.id);
      return(
-      <div key={r.id} style={{height:"100%",flexShrink:0,scrollSnapAlign:"start",position:"relative",background:`linear-gradient(160deg,${r.gradient[0]},${r.gradient[1]})`,display:"flex",flexDirection:"column",justifyContent:"flex-end"} as React.CSSProperties}>
-       {/* Category pill top */}
-       <div style={{position:"absolute",top:16,left:16,display:"flex",alignItems:"center",gap:8}}>
-        <span style={{background:r.accent,color:"#fff",fontSize:10,fontWeight:900,padding:"4px 10px",borderRadius:20,letterSpacing:1}}>{r.cat}</span>
-        <span style={{background:"rgba(0,0,0,.5)",color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:700,padding:"4px 8px",borderRadius:20}}>{r.duration}</span>
+      <div key={r.id} style={{height:"100%",flexShrink:0,scrollSnapAlign:"start",position:"relative",background:`linear-gradient(160deg,${r.gradient[0]},${r.gradient[1]})`,display:"flex",flexDirection:"column",overflow:"hidden"} as React.CSSProperties}>
+       {/* YouTube player */}
+       <div style={{flexShrink:0,height:"54%",position:"relative",background:"#000"}}>
+        <iframe
+         src={`https://www.youtube-nocookie.com/embed/${r.ytId}?rel=0&modestbranding=1`}
+         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+         allowFullScreen
+         style={{width:"100%",height:"100%",border:"none"}}
+        />
+        <div style={{position:"absolute",top:10,left:10,display:"flex",alignItems:"center",gap:6,pointerEvents:"none"}}>
+         <span style={{background:r.accent,color:"#fff",fontSize:10,fontWeight:900,padding:"3px 9px",borderRadius:20,letterSpacing:1}}>{r.cat}</span>
+         <span style={{background:"rgba(0,0,0,.6)",color:"rgba(255,255,255,.9)",fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:20}}>{r.duration}</span>
+        </div>
        </div>
-       {/* Body text */}
-       <div style={{position:"absolute",top:"50%",left:0,right:60,transform:"translateY(-50%)",padding:"0 20px"}}>
-        <p style={{color:"rgba(255,255,255,.9)",fontSize:15,lineHeight:1.7,fontWeight:500,whiteSpace:"pre-line"}}>{r.body}</p>
+       {/* Text content */}
+       <div style={{flex:1,overflow:"hidden",padding:"10px 72px 12px 16px",display:"flex",flexDirection:"column"}}>
+        <p style={{color:"rgba(255,255,255,.5)",fontSize:10,fontWeight:700,marginBottom:2}}>@{r.creator.toLowerCase().replace(/ /g,"_")}</p>
+        <p style={{color:"#fff",fontSize:14,fontWeight:800,lineHeight:1.3,marginBottom:2}}>{r.title}</p>
+        <p style={{color:"rgba(255,255,255,.65)",fontSize:11,marginBottom:8}}>{r.sub}</p>
+        <p style={{color:"rgba(255,255,255,.85)",fontSize:12,lineHeight:1.7,whiteSpace:"pre-line",overflow:"hidden",flex:1}}>{r.body}</p>
        </div>
        {/* Right actions */}
-       <div style={{position:"absolute",right:12,bottom:120,display:"flex",flexDirection:"column",alignItems:"center",gap:20}}>
-        {/* Creator avatar */}
-        <div style={{width:44,height:44,borderRadius:"50%",background:r.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:"#fff",border:"2px solid #fff",marginBottom:4}}>{r.init}</div>
-        {/* Like */}
-        <button onClick={()=>toggleLike(r.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-         <div style={{color:isLiked?"#ff4d6d":"#fff",transition:"transform .15s",transform:isLiked?"scale(1.25)":"scale(1)"}}>
-          <Ic n="heart" s={28} c={isLiked?"#ff4d6d":"#fff"} w={isLiked?0:2}/>
+       <div style={{position:"absolute",right:10,bottom:70,display:"flex",flexDirection:"column",alignItems:"center",gap:16,zIndex:2}}>
+        <div style={{width:38,height:38,borderRadius:"50%",background:r.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,color:"#fff",border:"2px solid rgba(255,255,255,.8)"}}>{r.init}</div>
+        <button onClick={()=>toggleLike(r.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+         <div style={{transition:"transform .15s",transform:isLiked?"scale(1.25)":"scale(1)"}}>
+          <Ic n="heart" s={26} c={isLiked?"#ff4d6d":"#fff"} w={isLiked?0:2}/>
          </div>
-         <span style={{color:"#fff",fontSize:11,fontWeight:700}}>{fmtN(r.likes+(isLiked?1:0))}</span>
+         <span style={{color:"#fff",fontSize:10,fontWeight:700}}>{fmtN(r.likes+(isLiked?1:0))}</span>
         </button>
-        {/* Comment */}
-        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-         <Ic n="msg" s={26} c="#fff" w={2}/>
-         <span style={{color:"#fff",fontSize:11,fontWeight:700}}>{fmtN(r.comments)}</span>
+        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+         <Ic n="msg" s={24} c="#fff" w={2}/>
+         <span style={{color:"#fff",fontSize:10,fontWeight:700}}>{fmtN(r.comments)}</span>
         </button>
-        {/* Share */}
-        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-         <Ic n="share" s={24} c="#fff" w={2}/>
-         <span style={{color:"#fff",fontSize:11,fontWeight:700}}>{fmtN(r.shares)}</span>
+        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+         <Ic n="share" s={22} c="#fff" w={2}/>
+         <span style={{color:"#fff",fontSize:10,fontWeight:700}}>{fmtN(r.shares)}</span>
         </button>
-        {/* Practice */}
-        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-         <div style={{width:36,height:36,borderRadius:"50%",background:r.accent,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <Ic n="mic" s={16} c="#fff" w={2}/>
+        <button style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+         <div style={{width:32,height:32,borderRadius:"50%",background:r.accent,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <Ic n="mic" s={14} c="#fff" w={2}/>
          </div>
-         <span style={{color:"#fff",fontSize:10,fontWeight:700}}>Pratiquer</span>
+         <span style={{color:"#fff",fontSize:9,fontWeight:700}}>Pratiquer</span>
         </button>
-       </div>
-       {/* Bottom info */}
-       <div style={{padding:"16px 70px 20px 16px",background:"linear-gradient(transparent,rgba(0,0,0,.85))"}}>
-        <p style={{color:"rgba(255,255,255,.6)",fontSize:11,fontWeight:700,marginBottom:4}}>@{r.creator.toLowerCase().replace(/ /g,"_")}</p>
-        <p style={{color:"#fff",fontSize:15,fontWeight:800,lineHeight:1.3,marginBottom:4}}>{r.title}</p>
-        <p style={{color:"rgba(255,255,255,.7)",fontSize:12}}>{r.sub}</p>
        </div>
       </div>
      );
     })}
    </div>
    {/* Progress dots */}
-   <div style={{position:"absolute",right:4,top:"50%",transform:"translateY(-50%)",display:"flex",flexDirection:"column",gap:4}}>
+   <div style={{position:"absolute",left:4,top:"50%",transform:"translateY(-50%)",display:"flex",flexDirection:"column",gap:4,zIndex:3}}>
     {REELS_DATA.map((_,i)=>(
      <div key={i} style={{width:3,height:i===current?20:6,borderRadius:2,background:i===current?"#fff":"rgba(255,255,255,.3)",transition:"all .2s"}}/>
     ))}
