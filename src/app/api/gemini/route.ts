@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// In-memory rate limiter: 10 req/min per IP (compatible avec la clé Gemini gratuite ~15 RPM)
+export const maxDuration = 30;
+
+// In-memory rate limiter: 15 req/min per IP (compatible avec la clé Gemini gratuite ~15 RPM)
 const rl = new Map<string, { n: number; reset: number }>();
 
 function allow(ip: string): boolean {
@@ -10,7 +12,7 @@ function allow(ip: string): boolean {
     rl.set(ip, { n: 1, reset: now + 60_000 });
     return true;
   }
-  if (e.n >= 10) return false;
+  if (e.n >= 15) return false;
   e.n++;
   return true;
 }
