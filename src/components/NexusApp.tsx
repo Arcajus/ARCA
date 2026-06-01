@@ -5873,25 +5873,25 @@ function ReelsScreen({T}:{T:Theme}) {
      const isLiked=liked.has(r.id);
      return(
       <div key={r.id} style={{height:"100%",flexShrink:0,scrollSnapAlign:"start",position:"relative",background:`linear-gradient(160deg,${r.gradient[0]},${r.gradient[1]})`,display:"flex",flexDirection:"column",overflow:"hidden"} as React.CSSProperties}>
-       {/* YouTube player */}
-       <div style={{flexShrink:0,height:"54%",position:"relative",background:"#000"}}>
-        <iframe
-         src={`https://www.youtube-nocookie.com/embed/${r.ytId}?rel=0&modestbranding=1`}
-         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-         allowFullScreen
-         style={{width:"100%",height:"100%",border:"none"}}
-        />
-        <div style={{position:"absolute",top:10,left:10,display:"flex",alignItems:"center",gap:6,pointerEvents:"none"}}>
-         <span style={{background:r.accent,color:"#fff",fontSize:10,fontWeight:900,padding:"3px 9px",borderRadius:20,letterSpacing:1}}>{r.cat}</span>
-         <span style={{background:"rgba(0,0,0,.6)",color:"rgba(255,255,255,.9)",fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:20}}>{r.duration}</span>
-        </div>
+       {/* Thumbnail background + gradient scrim */}
+       <img src={`https://img.youtube.com/vi/${r.ytId}/maxresdefault.jpg`} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:.45}}/>
+       <div style={{position:"absolute",inset:0,background:`linear-gradient(160deg,${r.gradient[0]}cc,${r.gradient[1]}dd)`}}/>
+       <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom,rgba(0,0,0,.25) 0%,transparent 35%,transparent 50%,rgba(0,0,0,.75) 100%)"}}/>
+       {/* Category pill */}
+       <div style={{position:"absolute",top:16,left:16,display:"flex",alignItems:"center",gap:8,zIndex:2}}>
+        <span style={{background:r.accent,color:"#fff",fontSize:10,fontWeight:900,padding:"4px 10px",borderRadius:20,letterSpacing:1}}>{r.cat}</span>
+        <span style={{background:"rgba(0,0,0,.5)",color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:700,padding:"4px 8px",borderRadius:20}}>{r.duration}</span>
        </div>
-       {/* Text content */}
-       <div style={{flex:1,overflow:"hidden",padding:"10px 72px 12px 16px",display:"flex",flexDirection:"column"}}>
-        <p style={{color:"rgba(255,255,255,.5)",fontSize:10,fontWeight:700,marginBottom:2}}>@{r.creator.toLowerCase().replace(/ /g,"_")}</p>
-        <p style={{color:"#fff",fontSize:14,fontWeight:800,lineHeight:1.3,marginBottom:2}}>{r.title}</p>
-        <p style={{color:"rgba(255,255,255,.65)",fontSize:11,marginBottom:8}}>{r.sub}</p>
-        <p style={{color:"rgba(255,255,255,.85)",fontSize:12,lineHeight:1.7,whiteSpace:"pre-line",overflow:"hidden",flex:1}}>{r.body}</p>
+       {/* Play button — opens video externally */}
+       <a href={`https://www.youtube.com/watch?v=${r.ytId}`} target="_blank" rel="noopener noreferrer" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-70%)",zIndex:2,width:56,height:56,borderRadius:"50%",background:"rgba(255,255,255,.18)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(255,255,255,.5)",textDecoration:"none"}}>
+        <Ic n="play" s={24} c="#fff" w={0}/>
+       </a>
+       {/* Body text */}
+       <div style={{position:"absolute",bottom:0,left:0,right:64,padding:"0 18px 18px",zIndex:2}}>
+        <p style={{color:"rgba(255,255,255,.55)",fontSize:10,fontWeight:700,marginBottom:3}}>@{r.creator.toLowerCase().replace(/ /g,"_")}</p>
+        <p style={{color:"#fff",fontSize:15,fontWeight:800,lineHeight:1.3,marginBottom:3}}>{r.title}</p>
+        <p style={{color:"rgba(255,255,255,.7)",fontSize:12,marginBottom:10}}>{r.sub}</p>
+        <p style={{color:"rgba(255,255,255,.88)",fontSize:13,lineHeight:1.7,whiteSpace:"pre-line"}}>{r.body}</p>
        </div>
        {/* Right actions */}
        <div style={{position:"absolute",right:10,bottom:70,display:"flex",flexDirection:"column",alignItems:"center",gap:16,zIndex:2}}>
