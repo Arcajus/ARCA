@@ -959,22 +959,25 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
  setTimerOn(false);
  },[autoMic]);// eslint-disable-line
 
- // Hardcoded fallback lines per opponent profile (used when Gemini is unavailable)
+ // Strip any "Name : " prefix the model might output despite instructions
+ const stripOppPrefix = (t: string) => t.replace(new RegExp(`^${opponent.name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}\\s*:\\s*`,"i"),"");
+
+ // Hardcoded fallback lines per opponent profile (used when server is unreachable)
  const oppFallbackOpen = opponent.style.includes("ibéral")
- ? `${opponent.name} : En même temps, les données économiques parlent d'elles-mêmes. Ce débat doit rester factuel et pragmatique. Êtes-vous prêt à entendre des chiffres qui contredisent votre position ?`
+ ? `En même temps, les données économiques parlent d'elles-mêmes. Ce débat doit rester factuel et pragmatique. Êtes-vous prêt à entendre des chiffres qui contredisent votre position ?`
  : opponent.style.includes("auche")||opponent.style.includes("ndignat")
- ? `${opponent.name} : Ce qu'on oublie de dire, c'est que les inégalités n'ont jamais été aussi criantes depuis des décennies. Le peuple mérite une vraie réponse, pas des compromis. Jusqu'où êtes-vous prêt à aller ?`
+ ? `Ce qu'on oublie de dire, c'est que les inégalités n'ont jamais été aussi criantes depuis des décennies. Le peuple mérite une vraie réponse, pas des compromis. Jusqu'où êtes-vous prêt à aller ?`
  : opponent.style.includes("ouverain")||opponent.style.includes("uristique")
- ? `${opponent.name} : La Constitution est pourtant claire, et les faits sont là, noir sur blanc. La souveraineté de la Nation n'est pas négociable. Comment justifiez-vous votre position face à nos textes fondamentaux ?`
- : `${opponent.name} : Le GIEC est formel — nous avons moins de dix ans avant les points de basculement. Ce débat n'a de sens que si on intègre l'urgence climatique. Pourquoi l'ignorer ?`;
+ ? `La Constitution est pourtant claire, et les faits sont là, noir sur blanc. La souveraineté de la Nation n'est pas négociable. Comment justifiez-vous votre position face à nos textes fondamentaux ?`
+ : `Le GIEC est formel — nous avons moins de dix ans avant les points de basculement. Ce débat n'a de sens que si on intègre l'urgence climatique. Pourquoi l'ignorer ?`;
 
  const oppFallbackReaction = (userText: string) => opponent.style.includes("ibéral")
- ? `${opponent.name} : En même temps, "${userText.slice(0,40)}…" — mais les chiffres de l'OCDE montrent exactement l'inverse. La vraie question est : peut-on se permettre ce que vous proposez ?`
+ ? `En même temps, "${userText.slice(0,40)}…" — mais les chiffres de l'OCDE montrent exactement l'inverse. La vraie question est : peut-on se permettre ce que vous proposez ?`
  : opponent.style.includes("auche")
- ? `${opponent.name} : Ce que dit mon contradicteur, c'est exactement ce que les élites veulent nous faire croire. La réalité pour des millions de Français, c'est tout autre chose. Assumez-vous ce choix de classe ?`
+ ? `Ce que dit mon contradicteur, c'est exactement ce que les élites veulent nous faire croire. La réalité pour des millions de Français, c'est tout autre chose. Assumez-vous ce choix de classe ?`
  : opponent.style.includes("ouverain")
- ? `${opponent.name} : Les traités sont clairs. Dans ces conditions, l'argument que vous avancez est juridiquement fragile. Connaissez-vous seulement les textes en vigueur ?`
- : `${opponent.name} : On parle de tout ça sans mentionner l'urgence écologique. Dans moins de dix ans, cette décision sera jugée par l'histoire. L'assumez-vous vraiment ?`;
+ ? `Les traités sont clairs. Dans ces conditions, l'argument que vous avancez est juridiquement fragile. Connaissez-vous seulement les textes en vigueur ?`
+ : `On parle de tout ça sans mentionner l'urgence écologique. Dans moins de dix ans, cette décision sera jugée par l'histoire. L'assumez-vous vraiment ?`;
 
  // speakTimed: plays speech AND always calls onDone after estimated duration
  // Fixes Android Chrome bug where speechSynthesis onend never fires
@@ -1002,26 +1005,23 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
  if(!mountedRef.current) return;
  let oppOpen = "";
  try{
- const oppKey=typeof window!=="undefined"?"":"";
- if(oppKey){
  const oppOpenSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
 TON PROFIL RHÉTORIQUE COMPLET : ${opponent.style}
 Sujet du débat : "${topic}".
 
-MISSION : Tu prends la parole EN PREMIER pour exposer ta position d'ouverture. Développe vraiment — 5 à 7 phrases minimum.
-1. Commence OBLIGATOIREMENT par ton prénom
-2. Expose ton angle idéologique complet avec conviction — pourquoi cette position est la seule défendable
+MISSION : Tu prends la parole EN PREMIER pour exposer ta position d'ouverture sur ce sujet précis. Développe vraiment — 5 à 7 phrases minimum.
+1. Ne commence PAS par ton nom (il est affiché automatiquement) — entre directement dans le vif du sujet "${topic}"
+2. Expose ton angle idéologique avec conviction — pourquoi cette position est la seule défendable
 3. Cite 2-3 données réelles précises (statistiques, rapports officiels, faits historiques, chiffres sourcés)
 4. Développe le raisonnement jusqu'à sa conclusion logique — montre où mène l'argument adverse
 5. Termine par une provocation rhétorique percutante qui défie directement ton adversaire
 
-Style : ${opponent.style.split(".")[0]}`;
- oppOpen=await callGemini(oppOpenSys,[{role:"user" as const,parts:[{text:`${opponent.name}, ouvrez le débat et défendez votre position sur : "${topic}".`}]}],oppKey,400);
- }
+Style authentique : ${opponent.style.split(".")[0]}`;
+ oppOpen=await callGemini(oppOpenSys,[{role:"user" as const,parts:[{text:`Ouvrez le débat et défendez votre position sur : "${topic}".`}]}],"",450);
  }catch{/*use fallback*/}
  if(!mountedRef.current) return;
  // Always speak — use Gemini reply or fallback
- const textToSpeak = oppOpen || oppFallbackOpen;
+ const textToSpeak = oppOpen ? stripOppPrefix(oppOpen) : oppFallbackOpen;
  addLine("opponent",opponent.name,textToSpeak);
  speakTimed(textToSpeak, opponent.gender as "M"|"F", ()=>{
  if(!mountedRef.current) return;
@@ -1125,28 +1125,25 @@ RÈGLES ABSOLUES :
  if(!mountedRef.current) return;
  let oppReply = "";
  try{
- const oppKey=typeof window!=="undefined"?"":"";
- if(oppKey){
  const oppSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
 TON PROFIL RHÉTORIQUE COMPLET : ${opponent.style}
 Sujet du débat : "${topic}".
 L'invité principal vient de dire : "${text.slice(0,300)}"
 Le journaliste a répondu : "${reply.slice(0,200)}"
 
-MISSION : Répondre avec force et conviction — 5 à 7 phrases minimum.
-1. Commence OBLIGATOIREMENT par ton prénom
-2. Cite PRÉCISÉMENT ce que l'invité principal vient de dire — identifie la faille principale de son argumentation
+MISSION : Répondre avec force et conviction sur le sujet précis "${topic}" — 5 à 7 phrases minimum.
+1. Ne commence PAS par ton nom — entre directement en réaction à ce que vient de dire l'adversaire
+2. Cite PRÉCISÉMENT les mots de l'invité principal — identifie la faille principale de son argumentation
 3. Contre-argumente avec 2 données réelles sourcées (INSEE, OCDE, GIEC, Sénat, rapports officiels selon ton profil)
 4. Développe le contre-argument jusqu'à sa conclusion logique — où mène vraiment la position adverse ?
 5. Élargis la perspective : conséquences concrètes pour les citoyens, précédents historiques, comparaisons internationales
 6. Termine par une question rhétorique percutante qui met l'adversaire en difficulté
 
 Style authentique : ${opponent.style.split(".")[0]}`;
- oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`${opponent.name}, répondez à l'invité principal qui vient de dire : "${text.slice(0,200)}"`}]}],oppKey,400);
- }
+ oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`Répondez à l'invité principal qui vient de dire : "${text.slice(0,200)}"`}]}],"",450);
  }catch{/*use fallback*/}
  if(!mountedRef.current) return;
- const textToSpeak = oppReply || oppFallbackReaction(text);
+ const textToSpeak = oppReply ? stripOppPrefix(oppReply) : oppFallbackReaction(text);
  addLine("opponent",opponent.name,textToSpeak);
  speakTimed(textToSpeak, opponent.gender as "M"|"F", ()=>{if(mountedRef.current)setAutoMic(true);}, 300);
  });
