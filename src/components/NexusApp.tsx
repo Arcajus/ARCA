@@ -4675,167 +4675,265 @@ RÈGLES ABSOLUES pour cette réponse :
  );
 }
 
-// TRIAL SIMULATION SCREEN 
-// Multi-character court sim: Président + Procureur speak in sequence after each user turn
+// TRIAL SIMULATION SCREEN — Procès interactif avec cérimonie d'ouverture, objections, suspension/négociation, verdict
 function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"prosecutor";trialTopic:string;T:Theme;onBack:()=>void}) {
- type TMsg = {role:"user"|"ai";charName:string;charInit:string;charColor:string;gender:"M"|"F";text:string};
- const [msgs,setMsgs] = useState<TMsg[]>([]);
- const [input,setInput] = useState("");
- const [loading,setLoading] = useState(false);
- const [audioOn,setAudioOn] = useState(true);
- const [listening,setListening] = useState(false);
- const [autoMic,setAutoMic] = useState(false);
- const [exchangeN,setExchangeN] = useState(0);
- const MAX_SIM_EXCHANGES = 15;
+ type TPhase="ouverture"|"audience"|"pause"|"plaidoirie_finale"|"delibere"|"verdict";
+ type TMsg={role:"user"|"ai"|"event";charName:string;charInit:string;charColor:string;gender:"M"|"F";text:string};
+ const [msgs,setMsgs]=useState<TMsg[]>([]);
+ const [phase,setPhase]=useState<TPhase>("ouverture");
+ const [input,setInput]=useState("");
+ const [loading,setLoading]=useState(false);
+ const [audioOn,setAudioOn]=useState(true);
+ const [listening,setListening]=useState(false);
+ const [autoMic,setAutoMic]=useState(false);
+ const [exchangeN,setExchangeN]=useState(0);
+ const [pauseOffered,setPauseOffered]=useState(false);
+ const [pauseDeal,setPauseDeal]=useState("");
+ const MAX_SIM_EXCHANGES=12;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const recRef = useRef<any>(null);
- const chatRef = useRef<HTMLDivElement>(null);
- const mountedRef = useRef(true);
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const handleSpeechRef = useRef<(t:string)=>void>((_t:string)=>{});
+ const recRef=useRef<any>(null);
+ const chatRef=useRef<HTMLDivElement>(null);
+ const mountedRef=useRef(true);
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ const handleSpeechRef=useRef<(t:string)=>void>((_:string)=>{});
+ const audioOnRef=useRef(audioOn);
+ useEffect(()=>{audioOnRef.current=audioOn;},[audioOn]);
 
- const PRES = {name:"Président du Tribunal", init:"PT", gender:"M" as const, color:"#7C3AED"};
- const PROC = {name:"Procureur de la République", init:"PR", gender:"F" as const, color:"#E03535"};
- const AVOC = {name:"Avocat Adverse", init:"AA", gender:"M" as const, color:"#D97706"};
+ const PRES={name:"Président du Tribunal",init:"PT",gender:"M" as const,color:"#7C3AED"};
+ const OPP=trialRole==="defense"?{name:"Procureur Renaud",init:"PR",gender:"M" as const,color:"#E03535"}:{name:"Maître Leclerc",init:"ML",gender:"F" as const,color:"#D97706"};
+ const GREFF={name:"Greffier",init:"GR",gender:"M" as const,color:"#6B7280"};
+ const USER_CHAR=trialRole==="defense"?{name:"Maître (Défense)",init:"MD",color:"#2B78F5"}:{name:"Procureur (Vous)",init:"MP",color:"#2B78F5"};
 
- useEffect(()=>{ mountedRef.current=true; return()=>{mountedRef.current=false;recRef.current?.stop();stopSpeech();}; },[]);
+ useEffect(()=>{mountedRef.current=true;return()=>{mountedRef.current=false;recRef.current?.stop();stopSpeech();};},[]);
 
- function speakTimed(text:string, gender:"M"|"F", onDone:()=>void, delayMs=0) {
- const estMs = Math.max(2500, text.split(/\s+/).length * 400 + 800);
+ const addMsg=(m:TMsg)=>{setMsgs(p=>[...p,m]);setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);};
+
+ function speakChain(items:{text:string;gender:"M"|"F"}[],idx:number,onDone:()=>void){
+ if(!mountedRef.current||idx>=items.length){onDone();return;}
+ if(!audioOnRef.current){onDone();return;}
+ const delay=idx===0?0:500;
  setTimeout(()=>{
- if(!mountedRef.current) return;
- let fired = false;
- const done = ()=>{ if(fired||!mountedRef.current) return; fired=true; onDone(); };
- speakAny(text, gender, done);
- setTimeout(done, estMs);
- }, delayMs);
- }
-
- function speakSequence(chars:{text:string;gender:"M"|"F"}[], idx:number, onAllDone:()=>void) {
- if(!mountedRef.current||idx>=chars.length){onAllDone();return;}
- speakTimed(chars[idx].text, chars[idx].gender, ()=>speakSequence(chars,idx+1,onAllDone), idx===0?0:500);
+ if(!mountedRef.current){onDone();return;}
+ const ms=Math.max(3000,items[idx].text.split(/\s+/).length*420+1000);
+ let f=false;
+ const next=()=>{if(f||!mountedRef.current)return;f=true;speakChain(items,idx+1,onDone);};
+ speakAny(items[idx].text,items[idx].gender,next);
+ setTimeout(next,ms);
+ },delay);
  }
 
  useEffect(()=>{
- if(!autoMic) return;
+ if(!autoMic)return;
  setAutoMic(false);
- if(typeof window==="undefined") return;
+ if(typeof window==="undefined")return;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const w=window as any;
  const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR) return;
- const rec=new SR();
- rec.lang="fr-FR"; rec.continuous=false; rec.interimResults=false;
+ if(!SR)return;
+ const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
  rec.onend=()=>setListening(false);
  try{rec.start();}catch{return;}
- recRef.current=rec; setListening(true);
+ recRef.current=rec;setListening(true);
  },[autoMic]);// eslint-disable-line
 
+ // Opening ceremony — GREFFIER → PRÉSIDENT → OPP opening → PRÉSIDENT invites
  useEffect(()=>{
- const presText = trialRole==="defense"
- ? `Audience ouverte. Tribunal correctionnel de Paris. Affaire : "${trialTopic}". La Cour est constituée. Maître de la Défense, vous avez la parole pour exposer votre ligne de défense, vos moyens principaux, et la qualification des faits que vous contestez. Soyez précis sur le droit applicable et les éléments de preuve que vous entendez soumettre.`
- : `Audience ouverte. Tribunal correctionnel de Paris. Affaire : "${trialTopic}". Monsieur le Procureur, énoncer les chefs d'inculpation retenus, les éléments constitutifs de l'infraction telle que qualifiée par le parquet, et votre premier élément de preuve matérielle.`;
- const procText = trialRole==="defense"
- ? `Votre Honneur, le ministère public a réuni des preuves matérielles solides dans cette affaire. Les faits sont établis, les témoignages convergent, et les expertises techniques confirment notre thèse. La défense devra nous expliquer comment elle entend contester des éléments aussi clairement documentés au dossier.`
- : `Votre Honneur, au nom de la défense, je m'inscris en faux contre les affirmations du parquet. La présomption d'innocence est un droit fondamental garanti par l'article 9 de la Déclaration des droits de l'homme et par l'article 6 de la Convention européenne des droits de l'homme. Aucune condamnation ne saurait intervenir sans preuve au-delà du doute raisonnable.`;
- const introMsgs:TMsg[] = [
- {role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:presText},
- {role:"ai",charName:PROC.name,charInit:PROC.init,charColor:PROC.color,gender:PROC.gender,text:procText},
- ];
- setMsgs(introMsgs);
- setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),200);
- if(audioOn){
- speakSequence([{text:presText,gender:PRES.gender},{text:procText,gender:PROC.gender}], 0, ()=>{if(mountedRef.current)setAutoMic(true);});
- }
+ const run=async()=>{
+ await new Promise(r=>setTimeout(r,700));
+ if(!mountedRef.current)return;
+ // 1. Greffier
+ addMsg({role:"event",charName:GREFF.name,charInit:GREFF.init,charColor:GREFF.color,gender:"M",text:"— La Cour ! Levez-vous !"});
+ if(audioOnRef.current){await new Promise<void>(r=>{let f=false;const d=()=>{if(f)return;f=true;r();};speakAny("La Cour! Levez-vous!","M",d);setTimeout(d,3500);});}
+ else await new Promise(r=>setTimeout(r,800));
+ if(!mountedRef.current)return;
+ // 2. Président opens
+ const pOpen=`Veuillez vous asseoir. Le Tribunal correctionnel de Paris est constitué. L'affaire inscrite au rôle : "${trialTopic}". Je rappelle les droits encadrant nos débats : présomption d'innocence (art. 9 DDHC), égalité des armes, principe du contradictoire (art. 6 CEDH). ${trialRole==="defense"?"Maître, exposez votre ligne de défense et vos moyens principaux.":"Monsieur le Procureur, exposez les réquisitions et les chefs d'inculpation retenus."}`;
+ addMsg({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:pOpen});
+ if(audioOnRef.current){const ms=Math.max(3000,pOpen.split(/\s+/).length*420+1000);await new Promise<void>(r=>{let f=false;const d=()=>{if(f)return;f=true;r();};speakAny(pOpen,"M",d);setTimeout(d,ms);});}
+ else await new Promise(r=>setTimeout(r,1200));
+ if(!mountedRef.current)return;
+ // 3. Opposing counsel opening
+ try{
+ const sys=`Tu es ${OPP.name} au procès pour "${trialTopic}". Déclaration d'ouverture en 4 phrases. ${trialRole==="defense"?"Tu es le Procureur : annonce les 2 chefs d'inculpation et tes 2 preuves principales.":"Tu es Maître Leclerc, avocat de la défense : affirme l'innocence et annonce ta stratégie."} Commence par "Votre Honneur,".`;
+ const oOpen=await callGemini(sys,[{role:"user",parts:[{text:"Déclaration d'ouverture."}]}],"",280);
+ if(!mountedRef.current)return;
+ addMsg({role:"ai",charName:OPP.name,charInit:OPP.init,charColor:OPP.color,gender:OPP.gender,text:oOpen});
+ if(audioOnRef.current){const ms=Math.max(3000,oOpen.split(/\s+/).length*420+1000);await new Promise<void>(r=>{let f=false;const d=()=>{if(f)return;f=true;r();};speakAny(oOpen,OPP.gender,d);setTimeout(d,ms);});}
+ else await new Promise(r=>setTimeout(r,1000));
+ }catch{}
+ if(!mountedRef.current)return;
+ // 4. Invitation
+ const inv=trialRole==="defense"?"Maître de la Défense, la parole est à vous.":"Monsieur le Procureur, la parole est à vous.";
+ addMsg({role:"event",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:inv});
+ if(audioOnRef.current){await new Promise<void>(r=>{let f=false;const d=()=>{if(f)return;f=true;r();};speakAny(inv,"M",d);setTimeout(d,4000);});}
+ else await new Promise(r=>setTimeout(r,500));
+ if(!mountedRef.current)return;
+ setPhase("audience");setAutoMic(true);
+ };
+ run();
  },[]);// eslint-disable-line
 
- const addMsg = (m:TMsg)=>{ setMsgs(prev=>[...prev,m]); setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100); };
+ const sendFinalPlea=async(text:string)=>{
+ if(!text.trim()||loading)return;
+ unlockAudio();setInput("");
+ const uMsg:TMsg={role:"user",charName:USER_CHAR.name,charInit:USER_CHAR.init,charColor:USER_CHAR.color,gender:"M",text};
+ setMsgs(p=>[...p,uMsg]);
+ setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
+ setLoading(true);
+ try{
+ const sys=`Tu es ${OPP.name}. Plaidoirie finale au procès "${trialTopic}". 5 phrases fermes. ${trialRole==="defense"?"Tu es le Procureur — demande une condamnation avec peines précises.":"Tu es Maître Leclerc — plaide l'acquittement ou la requalification avec faits concrets."} Commence par "Votre Honneur,".`;
+ const oppFinal=await callGemini(sys,[{role:"user",parts:[{text:"Plaidoirie finale."}]}],"",380);
+ if(!mountedRef.current){setLoading(false);return;}
+ addMsg({role:"ai",charName:OPP.name,charInit:OPP.init,charColor:OPP.color,gender:OPP.gender,text:oppFinal});
+ addMsg({role:"event",charName:GREFF.name,charInit:GREFF.init,charColor:GREFF.color,gender:"M",text:"La Cour se retire pour délibérer. — Suspension de séance."});
+ setPhase("delibere");
+ if(audioOnRef.current){
+ const ms1=Math.max(3000,oppFinal.split(/\s+/).length*420+1500);
+ await new Promise<void>(r=>{let f=false;const d=()=>{if(f)return;f=true;setTimeout(r,1000);};speakAny(oppFinal,OPP.gender,()=>{setTimeout(()=>{speakAny("La Cour se retire pour délibérer. Suspension de séance.","M",d);setTimeout(d,4000);},600);});setTimeout(d,ms1+6000);});
+ }else await new Promise(r=>setTimeout(r,1500));
+ if(!mountedRef.current){setLoading(false);return;}
+ const vSys=`Tu es ${PRES.name}. Procès "${trialTopic}". ${trialRole==="defense"?"La défense":"Le procureur"} a plaidé : "${text.slice(0,250)}". L'adversaire a déclaré : "${oppFinal.slice(0,200)}". Rends le verdict en 6 phrases formelles. Commence OBLIGATOIREMENT par "Au nom du peuple français, le Tribunal correctionnel de Paris,". Donne une décision nette avec motivations en droit.`;
+ const verdict=await callGemini(vSys,[{role:"user",parts:[{text:"Verdict."}]}],"",480);
+ if(!mountedRef.current){setLoading(false);return;}
+ addMsg({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:verdict});
+ addMsg({role:"event",charName:GREFF.name,charInit:GREFF.init,charColor:GREFF.color,gender:"M",text:"— La Cour ! Levez-vous !"});
+ setPhase("verdict");setLoading(false);
+ if(audioOnRef.current)speakAny(verdict,"M",()=>{});
+ }catch{setLoading(false);setPhase("verdict");addMsg({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:`Au nom du peuple français, le Tribunal correctionnel de Paris, après avoir délibéré, rend son jugement dans l'affaire "${trialTopic}".`});}
+ };
 
- const send = async(text:string)=>{
- if(!text.trim()||loading||exchangeN>=MAX_SIM_EXCHANGES) return;
- unlockAudio();
- setInput("");
- setExchangeN(n=>n+1);
- const userMsg:TMsg = {role:"user",charName:trialRole==="defense"?"Maître (Défense)":"Procureur",charInit:trialRole==="defense"?"MD":"MP",charColor:"#2B78F5",gender:"M",text};
- const newMsgs = [...msgs, userMsg];
+ const send=async(text:string)=>{
+ if(!text.trim()||loading||phase!=="audience")return;
+ unlockAudio();setInput("");
+ const n=exchangeN+1;setExchangeN(n);
+ const uMsg:TMsg={role:"user",charName:USER_CHAR.name,charInit:USER_CHAR.init,charColor:USER_CHAR.color,gender:"M",text};
+ const newMsgs=[...msgs,uMsg];
  setMsgs(newMsgs);
  setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
  setLoading(true);
- const trialSys = `Tu gères l'audience du Tribunal correctionnel de Paris. L'affaire : "${trialTopic}". L'utilisateur est ${trialRole==="defense"?"Maître de la Défense":"Monsieur le Procureur"}.
-
-CADRE JURIDIQUE RÉEL QUE TU MAÎTRISES PARFAITEMENT :
-- Code pénal français (qualifications précises : art. 313-1 escroquerie, 432-11 corruption, 441-1 faux...), Code de procédure pénale
-- Présomption d'innocence (art. 9 DDHC 1789), droits de la défense (art. 6 CEDH), égalité des armes
-- Jurisprudence Cour de cassation Ch. criminelle, Conseil constitutionnel, CEDH
-- Principes : intime conviction (art. 353 CPP), charge de la preuve sur l'accusation, au-delà du doute raisonnable
-- Nullités de procédure, irrecevabilité de preuves, vices de forme, expertises contradictoires
-- Circonstances aggravantes, atténuantes, récidive, complicité, co-auteurs
-- Peine : sursis, travaux d'intérêt général, interdiction professionnelle, confiscation
-
-FORMAT OBLIGATOIRE — génère DEUX personnages distincts :
-
-[PRÉSIDENT] Réaction du Président du Tribunal : cite EXACTEMENT l'argument de l'avocat/procureur, puis soit valide avec une nuance juridique précise (article de loi, arrêt de jurisprudence), soit soulève une objection (irrecevabilité, contradiction avec les pièces du dossier, vice de procédure), soit interpelle un témoin ou expert. 4 à 6 phrases solennelles avec références juridiques réelles.
-
-[PROCUREUR] Réaction du ${trialRole==="defense"?"Procureur (qui s'oppose à la défense)":"Avocat de la défense (qui s'oppose au procureur)"} : contre-argumente avec des éléments factuels précis du dossier, des expertises techniques, des témoignages, ou la qualification pénale exacte. 4 à 5 phrases percutantes. Commence par "Votre Honneur,".
-
-RÈGLES ABSOLUES :
-- Chaque personnage cite EXACTEMENT ce que vient de dire l'avocat/procureur
-- Références juridiques précises et authentiques (articles, arrêts si pertinent)
-- Chaque personnage développe UN argument principal avec preuves à l'appui
-- Vocabulaire juridique français authentique (le ministère public, la juridiction, les pièces versées au dossier, le mis en examen...)
-- Le Président maintient l'équilibre et l'ordre des débats`;
- try {
- const rawHist=newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.charName}] ${m.text}`}]}));
- const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
- const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
- const dynTrialSys = `${trialSys}
-
- PLAIDOIRIE DE CE TOUR 
-L'avocat/procureur vient de dire : "${text}"
-CHAQUE personnage doit citer ces mots EXACTS entre guillemets et y répondre directement.`;
- const reply = await callGemini(dynTrialSys, hist, "", 900);
+ const histRaw=newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.charName}] ${m.text}`}]}));
+ const firstUserIdx=histRaw.findIndex(m=>m.role==="user");
+ const hist=firstUserIdx>=0?histRaw.slice(firstUserIdx):histRaw;
+ const speakQ:{text:string;gender:"M"|"F"}[]=[];
+ try{
+ // OBJECTION (turns 3, 7, 10)
+ const doObj=[3,7,10].includes(n)||(n>4&&n%4===1&&Math.random()<0.35);
+ if(doObj){
+ const oSys=`Tu es ${OPP.name}. L'adversaire vient de dire : "${text.slice(0,180)}". OBJECTION juridiquement fondée en 2 phrases. Commence OBLIGATOIREMENT par "Objection, Votre Honneur !"`;
+ const obj=await callGemini(oSys,[{role:"user",parts:[{text:"Objection."}]}],"",100);
  if(!mountedRef.current){setLoading(false);return;}
- const presMatch = reply.match(/\[PRÉSIDENT\]\s*([\s\S]*?)(?=\[PROCUREUR\]|$)/);
- const procMatch = reply.match(/\[PROCUREUR\]\s*([\s\S]*?)(?=\[PRÉSIDENT\]|$)/);
- const charMsgs:TMsg[] = [];
- if(presMatch?.[1]?.trim()) charMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:presMatch[1].trim()});
- if(procMatch?.[1]?.trim()) charMsgs.push({role:"ai",charName:trialRole==="defense"?PROC.name:AVOC.name,charInit:trialRole==="defense"?PROC.init:AVOC.init,charColor:trialRole==="defense"?PROC.color:AVOC.color,gender:trialRole==="defense"?PROC.gender:AVOC.gender,text:procMatch[1].trim()});
- if(charMsgs.length===0) charMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:reply});
- charMsgs.forEach(m=>addMsg(m));
- setLoading(false);
- if(audioOn) speakSequence(charMsgs.map(m=>({text:m.text,gender:m.gender})), 0, ()=>{if(mountedRef.current)setAutoMic(true);});
- }catch(err){
+ addMsg({role:"event",charName:OPP.name,charInit:OPP.init,charColor:OPP.color,gender:OPP.gender,text:obj});
+ speakQ.push({text:obj,gender:OPP.gender});
+ const rSys=`Tu es ${PRES.name}. Objection : "${obj.slice(0,100)}". Statue en 2 phrases. Commence par "Objection admise —" ou "Objection rejetée —". Raison juridique précise.`;
+ const ruling=await callGemini(rSys,[{role:"user",parts:[{text:"Statuer."}]}],"",100);
  if(!mountedRef.current){setLoading(false);return;}
+ addMsg({role:"event",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:ruling});
+ speakQ.push({text:ruling,gender:"M"});
+ }
+ // ORDRE (turns 4, 8)
+ if([4,8].includes(n)&&!doObj){
+ const ord=`La Cour rappelle aux parties de s'en tenir aux éléments du dossier et aux qualifications légalement retenues. ${trialRole==="defense"?"Maître":"Monsieur le Procureur"}, concentrez-vous sur les chefs d'inculpation. Continuez.`;
+ addMsg({role:"event",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:ord});
+ speakQ.push({text:ord,gender:"M"});
+ }
+ const isFinal=n>=MAX_SIM_EXCHANGES;
+ const ctx=msgs.slice(-4).filter(m=>m.role!=="event").map(m=>`[${m.charName}]: ${m.text.slice(0,100)}`).join("\n")||"Début d'audience.";
+ const mainSys=`Tu gères l'audience du Tribunal correctionnel de Paris. Affaire : "${trialTopic}". Utilisateur : ${trialRole==="defense"?"Maître de la Défense":"Monsieur le Procureur"} (tour n°${n}).
+
+CONTEXTE RÉCENT :
+${ctx}
+
+CE QUE VIENT DE DIRE L'AVOCAT/PROCUREUR (verbatim) :
+"${text}"
+
+RÉFÉRENCES : CPP art. 427, 353, 170 — DDHC art. 9 — CEDH art. 6 — CP art. 313-1, 432-11, 311-1, 221-1, 441-1.${isFinal?" — C'est le DERNIER ÉCHANGE. Le Président annonce les plaidoiries finales.":""}
+
+FORMAT OBLIGATOIRE — 2 personnages :
+
+[PRÉSIDENT] Cite EXACTEMENT les mots de l'avocat/procureur, puis valide ou conteste avec référence juridique précise OU soulève une contradiction OU interpelle une partie. 4-5 phrases solennelles. Vocabulaire : "la juridiction", "le contradictoire", "les pièces versées au dossier".${isFinal?" Annonce l'ouverture des plaidoiries finales.":""}
+
+[PROCUREUR] ${trialRole==="defense"?"Procureur Renaud (contre la défense)":"Maître Leclerc, avocat de la défense (contre le procureur)"} : contre-argumente avec faits précis, expertises, témoignages ou qualification pénale exacte. Commence par "Votre Honneur,". 4-5 phrases. Jamais la même structure que les tours précédents.`;
+ const reply=await callGemini(mainSys,hist,"",900);
+ if(!mountedRef.current){setLoading(false);return;}
+ const pm=reply.match(/\[PRÉSIDENT\]\s*([\s\S]*?)(?=\[PROCUREUR\]|$)/);
+ const om=reply.match(/\[PROCUREUR\]\s*([\s\S]*?)(?=\[PRÉSIDENT\]|$)/);
+ const cMsgs:TMsg[]=[];
+ if(pm?.[1]?.trim())cMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:pm[1].trim()});
+ if(om?.[1]?.trim())cMsgs.push({role:"ai",charName:OPP.name,charInit:OPP.init,charColor:OPP.color,gender:OPP.gender,text:om[1].trim()});
+ if(cMsgs.length===0)cMsgs.push({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:reply});
+ cMsgs.forEach(m=>{addMsg(m);speakQ.push({text:m.text,gender:m.gender});});
+ // PAUSE OFFER (turn 6, one time)
+ if(n===6&&!pauseOffered){
+ setPauseOffered(true);
+ const pSys=`Tu es ${OPP.name}. Après 6 échanges, demande une suspension de 15 min pour négociation hors audience. 3 phrases. Propose un accord concret (requalification, peine réduite, ou transaction). Commence par "Votre Honneur, si la Cour le permet, je sollicite une brève suspension de séance…"`;
+ try{
+ const pt=await callGemini(pSys,[{role:"user",parts:[{text:"Suspension."}]}],"",200);
+ if(!mountedRef.current){setLoading(false);return;}
+ addMsg({role:"event",charName:OPP.name,charInit:OPP.init,charColor:OPP.color,gender:OPP.gender,text:pt});
+ speakQ.push({text:pt,gender:OPP.gender});
+ setPauseDeal(pt);
  setLoading(false);
- const presFb=["Maître, votre argumentation nécessite d'être précisée. Sur quel fondement juridique exact repose ce moyen de défense ? La Cour a besoin d'une référence textuelle ou jurisprudentielle précise avant de pouvoir statuer sur cette demande.","L'objection est notée au procès-verbal. Cependant, les éléments présentés ne semblent pas constitutifs d'une nullité au sens de l'article 170 du Code de procédure pénale. La Cour demande une reformulation plus précise de votre demande.","La Cour prend note de cet argument. Avant de se prononcer, elle souhaite entendre la partie adverse sur ce point précis. Le débat contradictoire est une exigence fondamentale de notre procédure."];
- const procFb = trialRole==="defense"
- ? ["Votre Honneur, la défense tente de détourner l'attention des faits établis par le dossier d'instruction. Les preuves matérielles réunies par le parquet — expertises forensiques, témoignages concordants, relevés bancaires — sont incontestables. Nous maintenons l'ensemble de nos réquisitions.","La réponse de la défense est habile mais insuffisante en droit. L'article 427 du Code de procédure pénale est clair : les juges apprécient les preuves selon leur intime conviction. Nous avons fourni suffisamment d'éléments pour emporter cette conviction."]
- : ["Votre Honneur, nous contestons formellement cette interprétation des faits. Notre client bénéficie de la présomption d'innocence, et les preuves avancées par le parquet restent insuffisantes pour écarter tout doute raisonnable sur sa culpabilité.","La charge de la preuve incombe au ministère public. Les éléments présentés ce jour sont soit inadmissibles au regard de leur mode d'obtention, soit insuffisamment corroborés. Nous demandons à la Cour d'en tirer les conséquences."];
- const fallbackMsgs:TMsg[] = [
- {role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:PRES.gender,text:presFb[Math.floor(Math.random()*presFb.length)]},
- {role:"ai",charName:trialRole==="defense"?PROC.name:AVOC.name,charInit:trialRole==="defense"?PROC.init:AVOC.init,charColor:trialRole==="defense"?PROC.color:AVOC.color,gender:trialRole==="defense"?PROC.gender:AVOC.gender,text:procFb[Math.floor(Math.random()*procFb.length)]},
- ];
- fallbackMsgs.forEach(m=>addMsg(m));
- if(audioOn) speakSequence(fallbackMsgs.map(m=>({text:m.text,gender:m.gender})), 0, ()=>{if(mountedRef.current)setAutoMic(true);});
+ if(audioOnRef.current)speakChain(speakQ,0,()=>{if(mountedRef.current)setPhase("pause");});
+ else setPhase("pause");
+ return;
+ }catch{}
+ }
+ if(isFinal){
+ setPhase("plaidoirie_finale");setLoading(false);
+ if(audioOnRef.current)speakChain(speakQ,0,()=>{if(mountedRef.current)setAutoMic(true);});
+ else setAutoMic(true);
+ return;
+ }
+ setLoading(false);
+ if(audioOnRef.current)speakChain(speakQ,0,()=>{if(mountedRef.current)setAutoMic(true);});
+ else setAutoMic(false);
+ }catch{
+ setLoading(false);
+ addMsg({role:"ai",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:"La Cour a pris note. Elle souhaite entendre la partie adverse avant de se prononcer. Le principe du contradictoire exige que chaque moyen soit débattu."});
+ if(audioOnRef.current)speakAny("La Cour a pris note. Elle souhaite entendre la partie adverse.","M",()=>{if(mountedRef.current)setAutoMic(true);});
+ else setAutoMic(true);
  }
  };
- handleSpeechRef.current = send;
+ handleSpeechRef.current=phase==="plaidoirie_finale"?sendFinalPlea:send;
+
+ const acceptNeg=async()=>{
+ setPhase("audience");
+ try{
+ const rt=await callGemini(`Tu es ${PRES.name}. Reprise après négociation hors audience, procès "${trialTopic}". 3 phrases solennelles : annonce le résultat (accord ou échec) et la suite.`,[{role:"user",parts:[{text:"Reprise."}]}],"",160);
+ addMsg({role:"event",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:rt});
+ if(audioOnRef.current)speakAny(rt,"M",()=>{if(mountedRef.current)setAutoMic(true);});
+ else setAutoMic(true);
+ }catch{setAutoMic(true);}
+ };
+ const refuseNeg=()=>{
+ setPhase("audience");
+ const t=`La suspension est refusée. L'audience reprend. ${trialRole==="defense"?"Maître":"Monsieur le Procureur"}, la parole est à vous.`;
+ addMsg({role:"event",charName:PRES.name,charInit:PRES.init,charColor:PRES.color,gender:"M",text:t});
+ if(audioOnRef.current)speakAny(t,"M",()=>{if(mountedRef.current)setAutoMic(true);});
+ else setAutoMic(true);
+ };
 
  const toggleMic=()=>{
  unlockAudio();
  if(listening){recRef.current?.stop();setListening(false);return;}
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const w=window as any;
- const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR){alert("Utilisez Chrome pour la reconnaissance vocale.");return;}
+ const w=window as any;const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
+ if(!SR){alert("Utilisez Chrome.");return;}
  const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- rec.onresult=(e:any)=>{send(e.results[0][0].transcript);setListening(false);};
- rec.onend=()=>setListening(false);
- rec.start();recRef.current=rec;setListening(true);
+ rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
+ rec.onend=()=>setListening(false);rec.start();recRef.current=rec;setListening(true);
  };
+
+ const phaseMeta:{[k in TPhase]:{label:string;color:string}}={
+ ouverture:{label:"OUVERTURE",color:T.purple},audience:{label:"INSTRUCTION",color:T.purple},
+ pause:{label:"SUSPENSION",color:T.amber},plaidoirie_finale:{label:"PLAIDOIRIE FINALE",color:T.red},
+ delibere:{label:"DÉLIBÉRÉ",color:T.amber},verdict:{label:"VERDICT",color:T.red},
+ };
+ const {label:phaseLabel,color:phaseColor}=phaseMeta[phase];
 
  return(
  <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
@@ -4846,228 +4944,277 @@ CHAQUE personnage doit citer ces mots EXACTS entre guillemets et y répondre dir
  <p style={{color:T.text,fontWeight:800,fontSize:14}}>{trialRole==="defense"?"Avocat de la Défense":"Procureur de la République"}</p>
  <p style={{color:T.textD,fontSize:11,marginTop:1}}>{trialTopic.slice(0,42)}{trialTopic.length>42?"…":""}</p>
  </div>
- <div style={{display:"flex",gap:5,alignItems:"center"}}>
- {[PRES,PROC].map(c=>(
- <div key={c.init} style={{width:26,height:26,borderRadius:"50%",background:`${c.color}15`,border:`1.5px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:c.color}}>{c.init}</div>
- ))}
- </div>
- <span style={{background:`${T.amber}15`,color:T.amber,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700}}>{exchangeN}/{MAX_SIM_EXCHANGES}</span>
+ <span style={{background:`${phaseColor}15`,color:phaseColor,fontSize:9,padding:"3px 9px",borderRadius:4,fontWeight:800,letterSpacing:.8}}>{phaseLabel}</span>
  <button onClick={()=>{const n=!audioOn;setAudioOn(n);if(!n)stopSpeech();}} style={{background:audioOn?`${T.purple}15`:"transparent",border:`1px solid ${audioOn?T.purple:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
  <Ic n="mic" s={14} c={audioOn?T.purple:T.textD}/><span style={{color:audioOn?T.purple:T.textD,fontSize:11,fontWeight:700}}>{audioOn?"AUDIO":"TEXTE"}</span>
  </button>
  </div>
- <div style={{padding:"8px 14px",background:`${T.purple}08`,borderBottom:`1px solid ${T.b1}`,display:"flex",gap:12,flexShrink:0}}>
- {[{...PRES,label:"Président"},{...PROC,label:trialRole==="defense"?"Procureur":"Avocat adv."}].map(c=>(
- <div key={c.init} style={{display:"flex",alignItems:"center",gap:5}}>
- <div style={{width:16,height:16,borderRadius:"50%",background:c.color,opacity:.8}}/>
- <span style={{color:T.textD,fontSize:10,fontWeight:600}}>{c.init} – {c.label}</span>
+ <div style={{padding:"5px 14px",background:`${T.purple}06`,borderBottom:`1px solid ${T.b1}`,display:"flex",gap:10,flexShrink:0,flexWrap:"wrap",alignItems:"center"}}>
+ {[PRES,OPP,GREFF].map(c=>(<div key={c.init} style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:10,height:10,borderRadius:"50%",background:c.color}}/><span style={{color:T.textD,fontSize:10,fontWeight:600}}>{c.init} – {c.name.split(" ")[0]}</span></div>))}
+ {phase==="audience"&&<span style={{marginLeft:"auto",color:T.muted,fontSize:10}}>{exchangeN}/{MAX_SIM_EXCHANGES}</span>}
  </div>
- ))}
+ <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:10}}>
+ {msgs.map((m,i)=>{
+ if(m.role==="event")return(<div key={i} style={{textAlign:"center",padding:"7px 16px",background:`${m.charColor}08`,border:`1px dashed ${m.charColor}30`,borderRadius:8,margin:"2px 6px"}}><span style={{color:m.charColor,fontSize:9,fontWeight:800,letterSpacing:.6,textTransform:"uppercase"}}>{m.charName}</span><p style={{color:T.textD,fontSize:12,fontStyle:"italic",marginTop:2,lineHeight:1.5}}>{m.text}</p></div>);
+ const isUser=m.role==="user";
+ return(<div key={i} style={{display:"flex",flexDirection:isUser?"row-reverse":"row",gap:10,alignItems:"flex-start"}}><div style={{width:34,height:34,borderRadius:"50%",background:`${m.charColor}15`,border:`1.5px solid ${m.charColor}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:m.charColor,flexShrink:0}}>{m.charInit}</div><div style={{maxWidth:"82%",background:isUser?T.blueG:T.card,border:`1px solid ${isUser?`${T.blueB}40`:`${m.charColor}30`}`,borderRadius:14,padding:"10px 13px"}}>{!isUser&&<p style={{color:m.charColor,fontSize:10,fontWeight:800,marginBottom:4,letterSpacing:.5,textTransform:"uppercase"}}>{m.charName}</p>}<p style={{color:T.text,fontSize:13,lineHeight:1.65}}>{m.text}</p></div></div>);
+ })}
+ {loading&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{width:34,height:34,borderRadius:"50%",background:`${PRES.color}15`,border:`1.5px solid ${PRES.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:PRES.color}}>{PRES.init}</div><div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:"12px 16px"}}><div style={{display:"flex",gap:5}}>{[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:PRES.color,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div></div></div>}
+ {phase==="delibere"&&!loading&&<div style={{textAlign:"center",padding:"28px 16px"}}><div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:14}}>{[0,1,2,3,4].map(i=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:T.purple,animation:`pulse 1.4s ${i*0.25}s infinite`}}/>)}</div><p style={{color:T.purple,fontWeight:800,fontSize:14}}>La Cour délibère…</p><p style={{color:T.textD,fontSize:12,marginTop:4}}>Le verdict sera rendu dans quelques instants</p></div>}
  </div>
- <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
- {msgs.map((m,i)=>(
- <div key={i} style={{display:"flex",flexDirection:m.role==="user"?"row-reverse":"row",gap:10,alignItems:"flex-start"}}>
- <div style={{width:34,height:34,borderRadius:"50%",background:`${m.charColor}15`,border:`1.5px solid ${m.charColor}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:m.charColor,flexShrink:0}}>{m.charInit}</div>
- <div style={{maxWidth:"82%",background:m.role==="user"?T.blueG:T.card,border:`1px solid ${m.role==="user"?`${T.blueB}40`:`${m.charColor}30`}`,borderRadius:14,padding:"10px 13px"}}>
- {m.role!=="user"&&<p style={{color:m.charColor,fontSize:10,fontWeight:800,marginBottom:4,letterSpacing:.5,textTransform:"uppercase"}}>{m.charName}</p>}
- <p style={{color:T.text,fontSize:13,lineHeight:1.65}}>{m.text}</p>
+ {phase==="pause"&&<div style={{padding:"14px 16px",background:`${T.amber}08`,borderTop:`2px solid ${T.amber}`,flexShrink:0}}>
+ <p style={{color:T.amber,fontWeight:800,fontSize:11,marginBottom:8,letterSpacing:.8,textTransform:"uppercase"}}>⚖ Suspension — Négociation hors audience</p>
+ <p style={{color:T.text,fontSize:12,marginBottom:12,lineHeight:1.55}}>{pauseDeal}</p>
+ <div style={{display:"flex",gap:10}}>
+ <button onClick={acceptNeg} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${T.amber}`,background:`${T.amber}15`,color:T.amber,fontWeight:800,fontSize:13,cursor:"pointer"}}>✓ Accepter la négociation</button>
+ <button onClick={refuseNeg} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${T.red}`,background:`${T.red}15`,color:T.red,fontWeight:800,fontSize:13,cursor:"pointer"}}>✗ Refuser — continuer</button>
  </div>
- </div>
- ))}
- {loading&&(
- <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
- <div style={{width:34,height:34,borderRadius:"50%",background:`${PRES.color}15`,border:`1.5px solid ${PRES.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:PRES.color}}>PT</div>
- <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:"12px 16px"}}>
- <div style={{display:"flex",gap:5}}>{[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:PRES.color,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div>
- </div>
- </div>
- )}
- </div>
- <div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:8,alignItems:"center"}}>
- <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
- <Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/>
- </button>
- {exchangeN>=MAX_SIM_EXCHANGES
- ? <p style={{flex:1,color:T.amber,fontSize:12,fontWeight:600,textAlign:"center"}}>Limite de {MAX_SIM_EXCHANGES} échanges atteinte — séance levée</p>
- : <><input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send(input)} placeholder={trialRole==="defense"?"Votre plaidoirie, Maître…":"Votre réquisitoire, Monsieur le Procureur…"} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
- <button onClick={()=>send(input)} disabled={!input.trim()||loading} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!loading?T.purple:T.b1,display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0,transition:"background .2s"}}>
- <Ic n="send" s={18} c={input.trim()&&!loading?"#fff":T.muted}/>
- </button></>}
- </div>
+ </div>}
+ {phase==="verdict"&&<div style={{padding:"12px 16px",background:`${T.purple}10`,borderTop:`2px solid ${T.purple}`,flexShrink:0,textAlign:"center"}}>
+ <p style={{color:T.purple,fontWeight:800,fontSize:12,letterSpacing:.8}}>⚖ VERDICT RENDU</p>
+ <button onClick={()=>{stopSpeech();onBack();}} style={{marginTop:8,padding:"8px 20px",borderRadius:10,border:`1px solid ${T.purple}`,background:`${T.purple}15`,color:T.purple,fontWeight:700,fontSize:12,cursor:"pointer"}}>Retour</button>
+ </div>}
+ {["audience","plaidoirie_finale"].includes(phase)&&<div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:8,alignItems:"center"}}>
+ <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/></button>
+ <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&handleSpeechRef.current(input)} placeholder={phase==="plaidoirie_finale"?(trialRole==="defense"?"Plaidoirie finale, Maître…":"Réquisitoire final…"):(trialRole==="defense"?"Votre plaidoirie, Maître…":"Votre réquisitoire…")} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
+ <button onClick={()=>handleSpeechRef.current(input)} disabled={!input.trim()||loading} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!loading?T.purple:T.b1,display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0}}><Ic n="send" s={18} c={input.trim()&&!loading?"#fff":T.muted}/></button>
+ </div>}
  </div>
  );
 }
 
-// UN SECURITY COUNCIL SCREEN 
-// Realistic UNSC simulation: session opening + 2 countries respond in sequence with audio
+// UN SECURITY COUNCIL SCREEN — Session complète avec protocole, chamailleries, consultation informelle et vote
 function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:string;T:Theme;onBack:()=>void}) {
- type UNMsg = {role:"user"|"ai";flag:string;country:string;gender:"M"|"F";text:string};
- // Voice gender per delegation
- const G: Record<string,("M"|"F")> = {fr:"F",us:"M",ru:"M",cn:"M",uk:"F"};
- const [msgs,setMsgs] = useState<UNMsg[]>([]);
- const [input,setInput] = useState("");
- const [loading,setLoading] = useState(false);
- const [audioOn,setAudioOn] = useState(true);
- const [listening,setListening] = useState(false);
- const [autoMic,setAutoMic] = useState(false);
- const [exchangeN,setExchangeN] = useState(0);
- const MAX_SIM_EXCHANGES = 15;
+ type UNPhase="ouverture"|"debat"|"consultation"|"vote"|"cloture";
+ type UNMsg={role:"user"|"ai"|"event";flag:string;country:string;gender:"M"|"F";text:string};
+ const G:Record<string,"M"|"F">={fr:"F",us:"M",ru:"M",cn:"M",uk:"F"};
+ const [msgs,setMsgs]=useState<UNMsg[]>([]);
+ const [phase,setPhase]=useState<UNPhase>("ouverture");
+ const [input,setInput]=useState("");
+ const [loading,setLoading]=useState(false);
+ const [audioOn,setAudioOn]=useState(true);
+ const [listening,setListening]=useState(false);
+ const [autoMic,setAutoMic]=useState(false);
+ const [exchangeN,setExchangeN]=useState(0);
+ const [consultPartner,setConsultPartner]=useState<typeof UN_DEL[0]|null>(null);
+ const [voteResults,setVoteResults]=useState<{country:string;flag:string;vote:string}[]|null>(null);
+ const MAX_SIM_EXCHANGES=10;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const recRef = useRef<any>(null);
- const chatRef = useRef<HTMLDivElement>(null);
- const mountedRef = useRef(true);
+ const recRef=useRef<any>(null);
+ const chatRef=useRef<HTMLDivElement>(null);
+ const mountedRef=useRef(true);
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const handleSpeechRef = useRef<(t:string)=>void>((_t:string)=>{});
+ const handleSpeechRef=useRef<(t:string)=>void>((_:string)=>{});
+ const audioOnRef=useRef(audioOn);
+ useEffect(()=>{audioOnRef.current=audioOn;},[audioOn]);
 
- useEffect(()=>{ mountedRef.current=true; return()=>{mountedRef.current=false;recRef.current?.stop();stopSpeech();}; },[]);
+ const PRES_DEL=UN_DEL.find(d=>d.id!==unRole.id)||UN_DEL[0];
 
- function speakTimed(text:string, gender:"M"|"F", onDone:()=>void, delayMs=0) {
- const estMs = Math.max(2500, text.split(/\s+/).length * 400 + 800);
+ useEffect(()=>{mountedRef.current=true;return()=>{mountedRef.current=false;recRef.current?.stop();stopSpeech();};},[]);
+
+ function speakChainUN(items:{text:string;gender:"M"|"F"}[],idx:number,onDone:()=>void){
+ if(!mountedRef.current||idx>=items.length){onDone();return;}
+ if(!audioOnRef.current){onDone();return;}
  setTimeout(()=>{
- if(!mountedRef.current) return;
- let fired=false;
- const done=()=>{if(fired||!mountedRef.current)return;fired=true;onDone();};
- speakAny(text,gender,done);
- setTimeout(done,estMs);
- },delayMs);
- }
- function speakSequence(items:{text:string;gender:"M"|"F"}[], idx:number, onAllDone:()=>void) {
- if(!mountedRef.current||idx>=items.length){onAllDone();return;}
- speakTimed(items[idx].text,items[idx].gender,()=>speakSequence(items,idx+1,onAllDone),idx===0?0:700);
+ if(!mountedRef.current){onDone();return;}
+ const ms=Math.max(3000,items[idx].text.split(/\s+/).length*420+1000);
+ let f=false;
+ const next=()=>{if(f||!mountedRef.current)return;f=true;speakChainUN(items,idx+1,onDone);};
+ speakAny(items[idx].text,items[idx].gender,next);setTimeout(next,ms);
+ },idx===0?0:700);
  }
 
  useEffect(()=>{
- if(!autoMic) return;
+ if(!autoMic)return;
  setAutoMic(false);
- if(typeof window==="undefined") return;
+ if(typeof window==="undefined")return;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const w=window as any;
  const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR) return;
+ if(!SR)return;
  const rec=new SR();
- rec.lang="fr-FR"; rec.continuous=false; rec.interimResults=false;
+ rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
  rec.onend=()=>setListening(false);
  try{rec.start();}catch{return;}
- recRef.current=rec; setListening(true);
+ recRef.current=rec;setListening(true);
  },[autoMic]);// eslint-disable-line
-
- // Session opening: Président du Conseil ouvre la séance
- useEffect(()=>{
- const pres = UN_DEL.find(d=>d.id!==unRole.id)||UN_DEL[0];
- const presGender = G[pres.id]||"M";
- const opening = `${pres.flag} ${pres.country} (Présidence du Conseil) : Mesdames et Messieurs les délégués, je déclare ouverte cette séance du Conseil de Sécurité, convoquée conformément à l'article 28 de la Charte des Nations Unies. L'ordre du jour porte sur la question suivante : « ${unTopic} ». La délégation de ${unRole.country} a sollicité la tenue de cette réunion d'urgence. Je lui cède la parole en premier. Je rappelle à toutes les délégations que leurs déclarations seront consignées au procès-verbal et que le vote, s'il y a lieu, se tiendra à l'issue du débat. Monsieur / Madame le représentant de ${unRole.country}, vous avez la parole.`;
- const introMsgs:UNMsg[] = [{role:"ai",flag:pres.flag,country:`${pres.country} — Présidence`,gender:presGender,text:opening}];
- setMsgs(introMsgs);
- setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),200);
- if(audioOn) speakTimed(opening,presGender,()=>{if(mountedRef.current)setAutoMic(true);},500);
- },[]);// eslint-disable-line
 
  const addMsg=(m:UNMsg)=>{setMsgs(p=>[...p,m]);setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);};
 
+ // Opening
+ useEffect(()=>{
+ const opening=`Mesdames et Messieurs les délégués, je déclare ouverte cette séance du Conseil de Sécurité, convoquée d'urgence conformément à l'article 28 de la Charte des Nations Unies. L'ordre du jour est le suivant : « ${unTopic} ». La délégation de ${unRole.country} a sollicité cette réunion. Je rappelle que le débat sera consigné au procès-verbal officiel et qu'un vote pourra être demandé à l'issue de nos travaux. ${unRole.flag} La délégation de ${unRole.country} a la parole en premier.`;
+ const openMsg:UNMsg={role:"ai",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:opening};
+ setTimeout(()=>{
+ if(!mountedRef.current)return;
+ addMsg(openMsg);setPhase("debat");
+ if(audioOnRef.current){const ms=Math.max(3000,opening.split(/\s+/).length*420+1000);let f=false;const d=()=>{if(f||!mountedRef.current)return;f=true;setAutoMic(true);};speakAny(opening,G[PRES_DEL.id]||"M",d);setTimeout(d,ms);}
+ else setTimeout(()=>{if(mountedRef.current)setAutoMic(true);},500);
+ },700);
+ },[]);// eslint-disable-line
+
+ const runVote=async()=>{
+ setPhase("vote");
+ const vAnn=`Le Conseil de Sécurité passe au vote sur : « ${unTopic} ». Je rappelle que le veto de tout membre permanent entraîne l'échec du texte.`;
+ addMsg({role:"event",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:vAnn});
+ try{
+ const vSys=`Tu es le secrétariat du Conseil de Sécurité. Décide du résultat du vote sur "${unTopic}" selon les doctrines de chaque pays P5. La délégation de ${unRole.country} a argumenté tout au long du débat. Pour chaque pays, indique exactement :
+[FRANCE] OUI/NON/ABSTENTION — raison courte
+[ÉTATS-UNIS] OUI/NON/ABSTENTION — raison courte
+[RUSSIE] OUI/NON/ABSTENTION — raison courte
+[CHINE] OUI/NON/ABSTENTION — raison courte
+[ROYAUME-UNI] OUI/NON/ABSTENTION — raison courte
+Tiens compte des positions habituelles : Russie et Chine opposées aux interventions occidentales. Rends ça dramatique et réaliste.`;
+ const vReply=await callGemini(vSys,[{role:"user",parts:[{text:"Vote."}]}],"",380);
+ if(!mountedRef.current)return;
+ const parseV=(country:string):string=>{
+ const m=vReply.match(new RegExp(`\\[${country.toUpperCase()}\\]\\s*(OUI|NON|ABSTENTION)`,"i"));
+ return m?.[1]?.toUpperCase()||"ABSTENTION";
+ };
+ const results=[
+ {country:"France",flag:"🇫🇷",vote:parseV("france")},
+ {country:"États-Unis",flag:"🇺🇸",vote:parseV("états-unis")},
+ {country:"Russie",flag:"🇷🇺",vote:parseV("russie")},
+ {country:"Chine",flag:"🇨🇳",vote:parseV("chine")},
+ {country:"Royaume-Uni",flag:"🇬🇧",vote:parseV("royaume-uni")},
+ ];
+ setVoteResults(results);
+ const hasVeto=results.some(r=>r.vote==="NON");
+ const oui=results.filter(r=>r.vote==="OUI").length;
+ const closing=hasVeto?`Un veto a été opposé au texte. La résolution sur « ${unTopic} » est REJETÉE. Le Conseil prend acte du blocage. Séance levée.`:oui>=4?`${oui} voix pour, ${results.filter(r=>r.vote==="NON").length} contre, ${results.filter(r=>r.vote==="ABSTENTION").length} abstention(s). La résolution est ADOPTÉE. Séance levée.`:`Majorité insuffisante. La résolution est REJETÉE. Séance levée.`;
+ addMsg({role:"event",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:closing});
+ setPhase("cloture");
+ }catch{setVoteResults([]);setPhase("cloture");}
+ };
+
  const send=async(text:string)=>{
- if(!text.trim()||loading||exchangeN>=MAX_SIM_EXCHANGES) return;
- unlockAudio();
- setInput("");
- const n=exchangeN+1; setExchangeN(n);
- const userMsg:UNMsg={role:"user",flag:unRole.flag,country:unRole.country,gender:G[unRole.id]||"M",text};
- const newMsgs=[...msgs,userMsg];
+ if(!text.trim()||loading||phase!=="debat")return;
+ unlockAudio();setInput("");
+ const n=exchangeN+1;setExchangeN(n);
+ const uMsg:UNMsg={role:"user",flag:unRole.flag,country:unRole.country,gender:G[unRole.id]||"M",text};
+ const newMsgs=[...msgs,uMsg];
  setMsgs(newMsgs);
  setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
  setLoading(true);
- // Rotate through 4 pairs of responders to ensure variety across turns
- const others=UN_DEL.filter(d=>d.id!==unRole.id);
- const pairs:([number,number])[]= [[0,1],[1,2],[2,3],[0,3],[1,3],[0,2]];
+ const others=UN_DEL.filter(d=>d.id!==unRole.id&&d.id!==PRES_DEL.id);
+ const pairs:([number,number])[]= [[0,1],[1,2],[0,2],[1,3],[0,3],[2,3]];
  const [i1,i2]=pairs[(n-1)%pairs.length];
  const respondents=[others[i1%others.length],others[i2%others.length]].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i);
-
- // Angle rotation — each turn focuses on a different dimension, never repeated
- const ANGLES=[
- "droit international et Charte ONU — cite l'article précis (art. 2§4 non-recours à la force, art. 51 légitime défense, Chapitre VII mesures coercitives) et une résolution précédente (S/RES/1441, S/RES/2118, S/RES/1973...)",
- "enjeux géopolitiques régionaux — alliances en présence, sphères d'influence, risque d'escalade ou de spillover, position des organisations régionales (UA, UE, OTAN, SCO, ASEAN...)",
- "impact humanitaire — droit international humanitaire (DIH), Conventions de Genève, protection des civils, accès de l'aide, chiffres OCHA/HCR/CICR réels si disponibles",
- "implications économiques et sanctions — régime de sanctions existant, impact économique, accès aux matières premières, routes commerciales, dollar vs multipolarité",
- "précédents historiques de l'ONU — résolutions similaires passées, succès ou échecs (Bosnie 1995, Libye 2011, Syrie 2013...), leçons apprises, risque d'affaiblissement du Conseil",
- "proposition concrète — libellé exact d'un paragraphe de résolution ou d'un amendement, mécanisme de surveillance, calendrier de mise en œuvre, conditions du vote de ${G[unRole.id]==='F'?'ma':'mon'} délégation",
- ];
+ const ANGLES=["droit international et Charte ONU (cite article précis + résolution réelle S/RES/...)","enjeux géopolitiques et équilibres régionaux (alliances, sphères d'influence)","impact humanitaire et DIH (Conventions de Genève, chiffres OCHA/HCR)","implications économiques et sanctions (commerce, matières premières, dollar)","précédents historiques (Bosnie 1995, Libye 2011, Syrie 2013 — leçons apprises ou répétées)","proposition concrète de résolution (libellé d'un paragraphe, mécanisme, conditions de vote)"];
  const angle=ANGLES[(n-1)%ANGLES.length];
-
  const rawHist=newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.country}] ${m.text}`}]}));
  const firstUserIdx=rawHist.findIndex(m=>m.role==="user");
  const hist=firstUserIdx>=0?rawHist.slice(firstUserIdx):rawHist;
-
+ const prevR1=msgs.filter(m=>m.country===respondents[0]?.country&&m.role==="ai").slice(-1)[0]?.text.slice(0,120)||"";
+ const speakQ:{text:string;gender:"M"|"F"}[]=[];
  try{
- // Parallel Gemini calls for both responding delegations
- const makePrompt=(del:typeof UN_DEL[0])=>`Tu es ${del.flag} la délégation de ${del.country} au Conseil de Sécurité des Nations Unies.
-
-DOCTRINE NATIONALE INTÉGRALE DE ${del.country.toUpperCase()} : ${del.doctrine}
-
-DÉCLARATION QUE VIENT DE FAIRE ${unRole.country.toUpperCase()} (échange n°${n}) :
-"${text}"
-
-ANGLE OBLIGATOIRE POUR CET ÉCHANGE : ${angle}
-→ Concentre toute ton intervention sur cet angle précis. Ne répète PAS des arguments déjà utilisés dans les échanges précédents.
-
-PROCÉDURE ONUSIENNE AUTHENTIQUE :
-- Ouvre OBLIGATOIREMENT par "Monsieur le Président," ou "Madame la Présidente,"
-- Réfère-toi à des résolutions réelles et articles de la Charte avec leurs numéros exacts
-- Utilise le vocabulaire diplomatique onusien : "ma délégation", "le Conseil est saisi de", "nous prenons note de", "nous appelons à", "nous opposons notre veto à", "nous nous abstenons sur"
-- Cite UN précédent historique réel pertinent pour ${del.country} sur ce type de sujet
-- Cite OBLIGATOIREMENT les mots exacts de ${unRole.country} entre guillemets et rebondis dessus
-
-STRUCTURE OBLIGATOIRE :
-1. Formule d'ouverture protocolaire
-2. Citation DIRECTE des mots de ${unRole.country} puis contre-argument ou appui sur l'angle du jour
-3. Position de ${del.country} avec référence juridique (article Charte ou résolution réelle)
-4. Précédent historique ou donnée chiffrée concrète liée à ${del.country} sur ce sujet
-5. Proposition ou position de vote de ${del.country} sur ce point
-
-5 à 6 phrases minimum. Développe vraiment. Vocabulaire onusien formel.`;
-
- const [r1,r2]=await Promise.allSettled(respondents.map(del=>callGemini(makePrompt(del),[...hist,{role:"user" as const,parts:[{text:`La délégation de ${del.country}, vous avez la parole.`}]}],"",550)));
+ // President gives floor
+ const presGive=`Merci, délégation de ${unRole.country}. La délégation de ${respondents[0]?.country||"suivante"} souhaite répondre.`;
+ addMsg({role:"event",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:presGive});
+ speakQ.push({text:presGive,gender:G[PRES_DEL.id]||"M"});
+ // Point d'ordre (every 3-4 turns)
+ const doPointOrdre=n>2&&(n%4===0||(n%3===2&&Math.random()<0.35));
+ const ordreCountry=others.find(d=>d.id!==respondents[0]?.id&&d.id!==respondents[1]?.id);
+ if(doPointOrdre&&ordreCountry){
+ const oSys=`Tu es ${ordreCountry.flag} la délégation de ${ordreCountry.country}. DOCTRINE : ${ordreCountry.doctrine.slice(0,180)}. Fais un POINT D'ORDRE en 2 phrases sur une question de procédure ou demande le droit de réponse. Commence par "Monsieur le Président / Madame la Présidente, point d'ordre —"`;
+ const ot=await callGemini(oSys,[{role:"user",parts:[{text:"Point d'ordre."}]}],"",100);
  if(!mountedRef.current){setLoading(false);return;}
-
- const speakItems:{text:string;gender:"M"|"F"}[]=[];
- respondents.forEach((del,idx)=>{
- const result=idx===0?r1:r2;
- if(result.status==="fulfilled"&&result.value){
- const m:UNMsg={role:"ai",flag:del.flag,country:del.country,gender:G[del.id]||"M",text:result.value};
- addMsg(m); speakItems.push({text:result.value,gender:G[del.id]||"M"});
+ addMsg({role:"event",flag:ordreCountry.flag,country:ordreCountry.country,gender:G[ordreCountry.id]||"M",text:ot});
+ speakQ.push({text:ot,gender:G[ordreCountry.id]||"M"});
+ const presOrdre=`Point d'ordre noté. La délégation de ${ordreCountry.country} sera entendue en fin de tour. La délégation de ${respondents[0]?.country||"suivante"} a la parole.`;
+ addMsg({role:"event",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:presOrdre});
+ speakQ.push({text:presOrdre,gender:G[PRES_DEL.id]||"M"});
  }
- });
- setLoading(false);
- if(audioOn&&speakItems.length>0) speakSequence(speakItems,0,()=>{if(mountedRef.current)setAutoMic(true);});
- else if(!audioOn) setAutoMic(false);
-
- }catch(err){
+ // Président appelle à l'ordre (turns 2, 6)
+ if([2,6].includes(n)&&!doPointOrdre){
+ const ord=`J'appelle les délégations à la retenue dans leurs formulations. Les débats du Conseil doivent rester dans le cadre de la Charte. Je remercie les délégations de leur coopération.`;
+ addMsg({role:"event",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:ord});
+ speakQ.push({text:ord,gender:G[PRES_DEL.id]||"M"});
+ }
+ // Parallel country responses — second one can argue with first
+ const makePrompt=(del:typeof UN_DEL[0],isSecond:boolean)=>`Tu es ${del.flag} la délégation de ${del.country} au Conseil de Sécurité des Nations Unies.
+DOCTRINE : ${del.doctrine}
+DÉCLARATION DE ${unRole.country.toUpperCase()} (échange n°${n}) : "${text}"
+${isSecond&&prevR1?`${respondents[0]?.country} vient de dire dans ce débat : "${prevR1}" — si tu es en désaccord, cite-la directement et réponds-lui en 1 phrase.`:""}
+ANGLE OBLIGATOIRE : ${angle}
+PROCÉDURE ONUSIENNE : Ouvre par "Monsieur le Président," ou "Madame la Présidente,". Cite les mots EXACTS de ${unRole.country} entre guillemets. Vocabulaire diplomatique : "ma délégation", "nous prenons acte", "nous appelons à". Cite 1 article de la Charte ou résolution réelle.
+5 à 6 phrases. Développe vraiment. Vocabulaire onusien formel.`;
+ const [res1,res2]=await Promise.allSettled(respondents.map((del,idx)=>callGemini(makePrompt(del,idx===1),[...hist,{role:"user" as const,parts:[{text:`La délégation de ${del.country} a la parole.`}]}],"",480)));
  if(!mountedRef.current){setLoading(false);return;}
+ respondents.forEach((del,idx)=>{
+ const r=idx===0?res1:res2;
+ if(r.status==="fulfilled"&&r.value){addMsg({role:"ai",flag:del.flag,country:del.country,gender:G[del.id]||"M",text:r.value});speakQ.push({text:r.value,gender:G[del.id]||"M"});}
+ });
+ // President transition
+ const presClose=n===MAX_SIM_EXCHANGES-1?`Un vote pourra être demandé à l'issue du prochain tour de parole.`:n>=MAX_SIM_EXCHANGES?`Je propose une suspension pour consultations informelles avant le vote.`:`La parole est à la délégation de ${unRole.country}.`;
+ addMsg({role:"event",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:presClose});
+ speakQ.push({text:presClose,gender:G[PRES_DEL.id]||"M"});
+ // Consultation informelle (turn 5)
+ if(n===5){
  setLoading(false);
- const fb1=respondents[0]||others[0];
- const fb2=respondents[1]||others[1];
- const fallbacks:UNMsg[]=[
- {role:"ai",flag:fb1.flag,country:fb1.country,gender:G[fb1.id]||"M",text:`Monsieur le Président, ma délégation a pris note avec la plus grande attention de la déclaration de ${unRole.country}. Sans préjuger des consultations informelles qui devront nécessairement précéder tout vote, ${fb1.country} tient à rappeler que l'article 2, paragraphe 4 de la Charte interdit le recours à la force dans les relations internationales. Nous avons été confrontés à des situations similaires par le passé — les résolutions adoptées alors constituent un précédent que le Conseil ne saurait ignorer. ${fb1.country} soumet au Conseil un appel à la retenue et propose l'ouverture immédiate de consultations informelles sous l'égide du Secrétaire Général.`},
- {role:"ai",flag:fb2.flag,country:fb2.country,gender:G[fb2.id]||"M",text:`Madame la Présidente, ${fb2.country} souhaite réagir à la déclaration de ${unRole.country}. Ma délégation considère que les arguments avancés méritent un examen approfondi au regard du droit international applicable. Nous rappelons que le Conseil de Sécurité a adopté des résolutions contraignantes sur des questions similaires — résolutions que toutes les parties sont tenues de respecter en vertu de l'article 25 de la Charte. ${fb2.country} conditionnera son vote à la présentation d'un projet de texte équilibré, respectueux de la souveraineté des États et assorti de mécanismes de vérification crédibles.`},
- ];
- fallbacks.forEach(m=>addMsg(m));
- if(audioOn) speakSequence(fallbacks.map(m=>({text:m.text,gender:m.gender})),0,()=>{if(mountedRef.current)setAutoMic(true);});
+ if(audioOnRef.current)speakChainUN(speakQ,0,()=>{if(mountedRef.current)setPhase("consultation");});
+ else setPhase("consultation");
+ return;
+ }
+ // Vote (turn >= MAX)
+ if(n>=MAX_SIM_EXCHANGES){
+ setLoading(false);
+ if(audioOnRef.current)speakChainUN(speakQ,0,()=>{if(mountedRef.current)runVote();});
+ else runVote();
+ return;
+ }
+ setLoading(false);
+ if(audioOnRef.current)speakChainUN(speakQ,0,()=>{if(mountedRef.current)setAutoMic(true);});
+ else setAutoMic(false);
+ }catch{
+ setLoading(false);
+ addMsg({role:"ai",flag:PRES_DEL.flag,country:PRES_DEL.country,gender:G[PRES_DEL.id]||"M",text:`Monsieur le Président, ma délégation a pris note de la déclaration de ${unRole.country}. Nous réservons notre position dans l'attente des consultations informelles. L'article 2§4 de la Charte doit rester notre cadre de référence.`});
+ if(audioOnRef.current)speakAny(`Délégation de ${PRES_DEL.country}. Ma délégation a pris note.`,G[PRES_DEL.id]||"M",()=>{if(mountedRef.current)setAutoMic(true);});
+ else setAutoMic(true);
  }
  };
- handleSpeechRef.current=send;
+
+ const sendConsultation=async(text:string)=>{
+ if(!text.trim()||loading||!consultPartner)return;
+ unlockAudio();setInput("");
+ addMsg({role:"user",flag:unRole.flag,country:`${unRole.country} (couloir)`,gender:G[unRole.id]||"M",text});
+ setLoading(true);
+ try{
+ const cSys=`Tu es ${consultPartner.flag} ${consultPartner.country} en consultation informelle hors séance sur "${unTopic}". DOCTRINE : ${consultPartner.doctrine.slice(0,200)}. ${unRole.country} vient de dire : "${text.slice(0,300)}". Réponds franchement en 4 phrases — dans les couloirs, tu peux faire des concessions ou proposer des amendements que tu ne ferais pas en séance plénière. Registre plus informel.`;
+ const reply=await callGemini(cSys,[{role:"user",parts:[{text}]}],"",320);
+ if(!mountedRef.current){setLoading(false);return;}
+ addMsg({role:"ai",flag:consultPartner.flag,country:`${consultPartner.country} (couloir)`,gender:G[consultPartner.id]||"M",text:reply});
+ setLoading(false);
+ if(audioOnRef.current)speakAny(reply,G[consultPartner.id]||"M",()=>{});
+ }catch{setLoading(false);}
+ };
+
+ const endConsultation=()=>{
+ setPhase("debat");setConsultPartner(null);
+ const rt=`La séance reprend. Les consultations informelles ont eu lieu. Je remercie les délégations. ${unRole.flag} La délégation de ${unRole.country} a la parole.`;
+ addMsg({role:"event",flag:PRES_DEL.flag,country:`${PRES_DEL.country} — Présidence`,gender:G[PRES_DEL.id]||"M",text:rt});
+ if(audioOnRef.current)speakAny(rt,G[PRES_DEL.id]||"M",()=>{if(mountedRef.current)setAutoMic(true);});
+ else setAutoMic(true);
+ };
+
+ handleSpeechRef.current=phase==="consultation"&&consultPartner?sendConsultation:send;
 
  const toggleMic=()=>{
  unlockAudio();
  if(listening){recRef.current?.stop();setListening(false);return;}
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- const w=window as any;
- const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
- if(!SR){alert("Utilisez Chrome pour la reconnaissance vocale.");return;}
+ const w=window as any;const SR=w.SpeechRecognition||w.webkitSpeechRecognition;
+ if(!SR){alert("Utilisez Chrome.");return;}
  const rec=new SR();rec.lang="fr-FR";rec.continuous=false;rec.interimResults=false;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
- rec.onresult=(e:any)=>{send(e.results[0][0].transcript);setListening(false);};
- rec.onend=()=>setListening(false);
- rec.start();recRef.current=rec;setListening(true);
+ rec.onresult=(e:any)=>{handleSpeechRef.current(e.results[0][0].transcript);setListening(false);};
+ rec.onend=()=>setListening(false);rec.start();recRef.current=rec;setListening(true);
  };
+
+ const phaseLabelUN:{[k in UNPhase]:string}={ouverture:"OUVERTURE",debat:"DÉBAT GÉNÉRAL",consultation:"CONSULTATION INFORMELLE",vote:"VOTE",cloture:"SÉANCE LEVÉE"};
+ const phaseColorUN:{[k in UNPhase]:string}={ouverture:T.blueB,debat:T.blueB,consultation:T.amber,vote:T.red,cloture:T.textD};
 
  return(
  <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
@@ -5075,41 +5222,51 @@ STRUCTURE OBLIGATOIRE :
  <div style={{display:"flex",alignItems:"center",gap:10}}>
  <button onClick={()=>{stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer"}}><Ic n="chevL" s={20} c={T.blueB}/></button>
  <div style={{width:32,height:32,borderRadius:8,background:`${T.blueB}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="globe" s={16} c={T.blueB}/></div>
- <div style={{flex:1}}>
- <p style={{color:T.text,fontSize:13,fontWeight:700}}>Conseil de Sécurité — ONU</p>
- <p style={{color:T.textD,fontSize:11}}>{unTopic.slice(0,44)}{unTopic.length>44?"…":""}</p>
- </div>
+ <div style={{flex:1}}><p style={{color:T.text,fontSize:13,fontWeight:700}}>Conseil de Sécurité — ONU</p><p style={{color:T.textD,fontSize:11}}>{unTopic.slice(0,44)}{unTopic.length>44?"…":""}</p></div>
+ <span style={{background:`${phaseColorUN[phase]}15`,color:phaseColorUN[phase],fontSize:9,padding:"3px 8px",borderRadius:4,fontWeight:800,letterSpacing:.7}}>{phaseLabelUN[phase]}</span>
  <button onClick={()=>{const n=!audioOn;setAudioOn(n);if(!n)stopSpeech();}} style={{background:audioOn?T.blueG:"transparent",border:`1px solid ${audioOn?T.blueB:T.b1}`,borderRadius:8,padding:"5px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
  <Ic n="mic" s={14} c={audioOn?T.blueB:T.textD}/><span style={{color:audioOn?T.blueB:T.textD,fontSize:10,fontWeight:700}}>{audioOn?"AUDIO":"TEXTE"}</span>
  </button>
  </div>
- <div style={{marginTop:8,display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
- {UN_DEL.map(d=><span key={d.id} style={{fontSize:15,opacity:d.id===unRole.id?1:0.4,cursor:"default"}}>{d.flag}</span>)}
+ <div style={{marginTop:7,display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+ {UN_DEL.map(d=><span key={d.id} style={{fontSize:16,opacity:d.id===unRole.id?1:0.35}}>{d.flag}</span>)}
  <span style={{background:T.blueG,color:T.blueB,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700,marginLeft:4}}>Vous : {unRole.flag} {unRole.country}</span>
- {exchangeN>0&&<span style={{background:`${T.amber}15`,color:T.amber,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700}}>Tour {exchangeN}/{MAX_SIM_EXCHANGES}</span>}
+ {exchangeN>0&&<span style={{background:`${T.amber}15`,color:T.amber,fontSize:10,padding:"2px 7px",borderRadius:4,fontWeight:700}}>Tour {exchangeN}/{MAX_SIM_EXCHANGES}</span>}
  </div>
  </div>
- <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
- {msgs.map((m,i)=>(
- <div key={i} style={{display:"flex",flexDirection:m.role==="user"?"row-reverse":"row",gap:10,alignItems:"flex-start"}}>
- <div style={{width:34,height:34,borderRadius:"50%",background:T.card,border:`1.5px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{m.flag}</div>
- <div style={{maxWidth:"80%",background:m.role==="user"?T.blueG:T.card,border:`1px solid ${m.role==="user"?T.blueB+"40":T.b1}`,borderRadius:12,padding:"8px 12px"}}>
- <p style={{color:m.role==="user"?T.blueB:T.textD,fontSize:10,fontWeight:800,marginBottom:4}}>{m.country}</p>
- <p style={{color:T.text,fontSize:13,lineHeight:1.65}}>{m.text}</p>
+ <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:10}}>
+ {msgs.map((m,i)=>{
+ if(m.role==="event")return(<div key={i} style={{textAlign:"center",padding:"6px 14px",background:`${T.blueB}06`,border:`1px dashed ${T.blueB}20`,borderRadius:8,margin:"2px 4px"}}><span style={{color:T.blueB,fontSize:9,fontWeight:800,letterSpacing:.6,textTransform:"uppercase"}}>{m.flag} {m.country}</span><p style={{color:T.textD,fontSize:12,fontStyle:"italic",marginTop:2,lineHeight:1.5}}>{m.text}</p></div>);
+ const isUser=m.role==="user";
+ return(<div key={i} style={{display:"flex",flexDirection:isUser?"row-reverse":"row",gap:10,alignItems:"flex-start"}}><div style={{width:34,height:34,borderRadius:"50%",background:T.card,border:`1.5px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{m.flag}</div><div style={{maxWidth:"80%",background:isUser?T.blueG:T.card,border:`1px solid ${isUser?T.blueB+"40":T.b1}`,borderRadius:12,padding:"8px 12px"}}><p style={{color:isUser?T.blueB:T.textD,fontSize:10,fontWeight:800,marginBottom:4}}>{m.country}</p><p style={{color:T.text,fontSize:13,lineHeight:1.65}}>{m.text}</p></div></div>);
+ })}
+ {loading&&<div style={{display:"flex",gap:10}}><div style={{width:34,height:34,borderRadius:"50%",background:T.card,border:`1.5px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{PRES_DEL.flag}</div><div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 16px"}}><div style={{display:"flex",gap:5}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:T.blueB,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div></div></div>}
+ {voteResults&&<div style={{background:T.card,border:`2px solid ${T.blueB}`,borderRadius:14,padding:"14px 16px",margin:"4px 0"}}>
+ <p style={{color:T.blueB,fontWeight:800,fontSize:12,marginBottom:10,letterSpacing:.8,textTransform:"uppercase"}}>Résultat du vote</p>
+ {voteResults.map((r,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"5px 0",borderBottom:i<voteResults.length-1?`1px solid ${T.b1}`:"none"}}><span style={{fontSize:16}}>{r.flag}</span><span style={{color:T.text,fontSize:12,flex:1,fontWeight:600}}>{r.country}</span><span style={{background:r.vote==="OUI"?`${T.green}20`:r.vote==="NON"?`${T.red}20`:`${T.amber}20`,color:r.vote==="OUI"?T.green:r.vote==="NON"?T.red:T.amber,fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:4}}>{r.vote}</span></div>))}
+ </div>}
  </div>
+ {phase==="consultation"&&!consultPartner&&<div style={{padding:"14px 16px",background:`${T.amber}08`,borderTop:`2px solid ${T.amber}`,flexShrink:0}}>
+ <p style={{color:T.amber,fontWeight:800,fontSize:11,marginBottom:8,letterSpacing:.8,textTransform:"uppercase"}}>🤝 Consultation informelle — dans les couloirs</p>
+ <p style={{color:T.textD,fontSize:12,marginBottom:10,lineHeight:1.5}}>Choisissez une délégation pour une négociation privée — ce que vous dites ici ne sera pas au procès-verbal.</p>
+ <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+ {UN_DEL.filter(d=>d.id!==unRole.id).map(d=>(<button key={d.id} onClick={()=>setConsultPartner(d)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.card,color:T.text,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16}}>{d.flag}</span>{d.country}</button>))}
  </div>
- ))}
- {loading&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{width:34,height:34,borderRadius:"50%",background:T.card,border:`1.5px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="globe" s={14} c={T.blueB}/></div><div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 16px"}}><div style={{display:"flex",gap:5}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:T.blueB,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div></div></div>}
- </div>
- <div style={{padding:"10px 14px 24px",borderTop:`1px solid ${T.b1}`,display:"flex",gap:8,flexShrink:0}}>
- <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
- <Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/>
- </button>
- {exchangeN>=MAX_SIM_EXCHANGES
- ? <p style={{flex:1,color:T.amber,fontSize:12,fontWeight:600,textAlign:"center"}}>Limite de {MAX_SIM_EXCHANGES} tours atteinte — séance levée</p>
- : <><input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send(input)} placeholder={`Déclaration de ${unRole.country}…`} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
- <button onClick={()=>send(input)} disabled={loading||!input.trim()} style={{width:44,height:44,borderRadius:12,background:input.trim()&&!loading?T.blueB:T.b1,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0}}><Ic n="send" s={16} c={input.trim()&&!loading?"#fff":T.muted}/></button></>}
- </div>
+ <button onClick={endConsultation} style={{padding:"8px 16px",borderRadius:10,border:`1px solid ${T.textD}`,background:"transparent",color:T.textD,fontSize:11,cursor:"pointer"}}>Passer les consultations → Reprendre le débat</button>
+ </div>}
+ {phase==="consultation"&&consultPartner&&<div style={{padding:"9px 14px",background:`${T.amber}06`,borderTop:`1px solid ${T.amber}40`,flexShrink:0,display:"flex",alignItems:"center",gap:8}}>
+ <span style={{fontSize:16}}>{consultPartner.flag}</span><p style={{color:T.amber,fontWeight:700,fontSize:12,flex:1}}>{consultPartner.country} — Discussion privée</p>
+ <button onClick={endConsultation} style={{padding:"4px 10px",borderRadius:8,border:`1px solid ${T.amber}`,background:"transparent",color:T.amber,fontSize:10,cursor:"pointer",fontWeight:700}}>Fin des consultations</button>
+ </div>}
+ {phase==="cloture"&&<div style={{padding:"12px 16px",background:`${T.blueB}08`,borderTop:`2px solid ${T.blueB}`,flexShrink:0,textAlign:"center"}}>
+ <p style={{color:T.blueB,fontWeight:800,fontSize:12,letterSpacing:.8}}>🌐 SÉANCE LEVÉE</p>
+ <button onClick={()=>{stopSpeech();onBack();}} style={{marginTop:8,padding:"8px 20px",borderRadius:10,border:`1px solid ${T.blueB}`,background:`${T.blueB}15`,color:T.blueB,fontWeight:700,fontSize:12,cursor:"pointer"}}>Retour</button>
+ </div>}
+ {(phase==="debat"||(phase==="consultation"&&!!consultPartner))&&<div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,display:"flex",gap:8,flexShrink:0}}>
+ <button onClick={toggleMic} style={{width:44,height:44,borderRadius:12,border:`1px solid ${listening?T.red:T.b1}`,background:listening?`${T.red}15`:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n={listening?"micOff":"mic"} s={20} c={listening?T.red:T.textD}/></button>
+ <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSpeechRef.current(input)} placeholder={phase==="consultation"&&consultPartner?`Discussion privée avec ${consultPartner.country}…`:`Déclaration de ${unRole.country}…`} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
+ <button onClick={()=>handleSpeechRef.current(input)} disabled={loading||!input.trim()} style={{width:44,height:44,borderRadius:12,background:input.trim()&&!loading?T.blueB:T.b1,border:"none",display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0}}><Ic n="send" s={16} c={input.trim()&&!loading?"#fff":T.muted}/></button>
+ </div>}
  </div>
  );
 }
