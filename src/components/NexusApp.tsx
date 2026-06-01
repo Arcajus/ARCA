@@ -1187,22 +1187,49 @@ RÈGLES ABSOLUES :
  if(!mountedRef.current) return;
  let oppReply = "";
  try{
+ // Build full opponent history: all user + opponent turns so the opponent remembers the whole debate
+ const oppHist = transcript
+   .map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.name}] ${m.text}`}]}));
+ const firstOppUserIdx=oppHist.findIndex(m=>m.role==="user");
+ const oppHistClean=firstOppUserIdx>=0?oppHist.slice(firstOppUserIdx):[];
+ const oppExchangeN=transcript.filter(m=>m.role==="opponent").length+1;
+ const oppAngles=["économique — données chiffrées (INSEE, OCDE, FMI, BPI)","social et humain — impact concret sur les citoyens ordinaires","historique — précédents, leçons du passé, erreurs répétées","institutionnel et juridique — Constitution, lois, traités","international — comparaisons, exemples étrangers, position de la France","éthique et valeurs — principes fondamentaux, justice, dignité"];
+ const oppAngle=oppAngles[(oppExchangeN-1)%oppAngles.length];
+ const allCtx=transcript.slice(-6).map(m=>`[${m.name}]: ${m.text.slice(0,150)}`).join("\n");
+ const userAnchor=text.split(" ").slice(0,7).join(" ");
  const oppSys=`Tu es ${opponent.name}, ${opponent.role}, invité contradicteur sur le plateau du Grand Débat NEXUS TV.
-TON PROFIL RHÉTORIQUE COMPLET : ${opponent.style}
-Sujet du débat : "${topic}".
-L'invité principal vient de dire : "${text.slice(0,300)}"
-Le journaliste a répondu : "${reply.slice(0,200)}"
 
-MISSION : Répondre avec force et conviction sur le sujet précis "${topic}" — 5 à 7 phrases minimum.
-1. Ne commence PAS par ton nom — entre directement en réaction à ce que vient de dire l'adversaire
-2. Cite PRÉCISÉMENT les mots de l'invité principal — identifie la faille principale de son argumentation
-3. Contre-argumente avec 2 données réelles sourcées (INSEE, OCDE, GIEC, Sénat, rapports officiels selon ton profil)
-4. Développe le contre-argument jusqu'à sa conclusion logique — où mène vraiment la position adverse ?
-5. Élargis la perspective : conséquences concrètes pour les citoyens, précédents historiques, comparaisons internationales
-6. Termine par une question rhétorique percutante qui met l'adversaire en difficulté
+PROFIL : ${opponent.style}
 
-Style authentique : ${opponent.style.split(".")[0]}`;
- oppReply=await callGemini(oppSys,[{role:"user" as const,parts:[{text:`Répondez à l'invité principal qui vient de dire : "${text.slice(0,200)}"`}]}],"",450);
+SUJET DU DÉBAT : "${topic}"
+Tu as une position TRANCHÉE et COHÉRENTE sur ce sujet depuis le début — tu la défends et la développes, tu ne changes pas d'avis.
+
+CONTEXTE DU DÉBAT (6 derniers échanges) :
+${allCtx||"Premier échange."}
+
+L'INVITÉ VIENT DE DIRE (verbatim) :
+"${text.slice(0,350)}"
+
+LE JOURNALISTE A RÉPONDU :
+"${reply.slice(0,150)}"
+
+ANGLE OBLIGATOIRE pour cette réplique (n°${oppExchangeN}) : ${oppAngle}
+— Construis ta réfutation autour de cet angle précis — exploite les ouvertures que l'adversaire t'a données.
+
+STRUCTURE EN 5 TEMPS (5 à 7 phrases fermes) :
+① ACCROCHE : cite les mots EXACTS "${userAnchor}…" et montre immédiatement la faille — entre dans le vif sans introduction
+② CONTRE-ARGUMENT : développe avec 2 données sourcées réelles selon ton profil (INSEE, OCDE, GIEC, Sénat, rapports officiels)
+③ CONSÉQUENCE : pousse la logique de l'adversaire jusqu'à son aboutissement absurde ou dangereux
+④ ANCRAGE : précédent historique OU comparaison internationale OU témoignage citoyen concret lié au sujet
+⑤ QUESTION RHÉTORIQUE : conclus par une question qui met l'adversaire en difficulté sur "${topic}" spécifiquement
+
+RÈGLES ABSOLUES :
+• Commence DIRECTEMENT par la réfutation — jamais "En effet", "C'est vrai que", "Tout à fait", "Je suis d'accord"
+• JAMAIS deux fois la même structure ou les mêmes mots dans ce débat — regarde l'historique ci-dessus
+• Style : ${opponent.style.split(".")[0]} — authentique, reconnaissable, irrépressible
+• FOCUS sur "${topic}" — ne dérive pas sur des généralités
+• 5 phrases minimum, développées, avec faits précis`;
+ oppReply=await callGemini(oppSys,[...oppHistClean,{role:"user" as const,parts:[{text:`Vous avez entendu l'invité dire : "${text.slice(0,200)}" — répondez maintenant sur "${topic}".`}]}],"",550);
  }catch{/*use fallback*/}
  if(!mountedRef.current) return;
  const textToSpeak = oppReply ? stripOppPrefix(oppReply) : oppFallbackReaction(text);
