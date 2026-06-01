@@ -427,7 +427,32 @@ const DEBATE_CATEGORIES = [
  {id:"droit",icon:"scale",color:"#E03535",label:"Droit, Justice & Libertés",topics:["La peine de mort est-elle jamais justifiable ?","Faut-il légaliser l'euthanasie en France ?","Le droit à l'avortement est-il menacé en Europe ?","Mariage pour tous : où en est l'Europe ?","Faut-il encadrer le port d'armes ?","La présomption d'innocence est-elle respectée ?","Faut-il abolir la détention provisoire ?","Les prisons françaises : état d'urgence ?","Faut-il dépénaliser le cannabis ?","La justice des mineurs est-elle trop laxiste ?","Faut-il élargir le droit d'asile ?","La liberté d'expression a-t-elle des limites ?","Faut-il réguler les discours de haine en ligne ?","Le droit à l'oubli numérique : réalité ou illusion ?","Faut-il une amnistie pour les gilets jaunes ?","La justice climatique est-elle une réalité ?","Faut-il créer un crime d'écocide en droit français ?","Les lanceurs d'alerte sont-ils suffisamment protégés ?","Faut-il réformer la Cour de cassation ?","Le secret professionnel des avocats est-il absolu ?","La justice prédictive par IA : acceptable ?","Faut-il indemniser les victimes d'erreurs judiciaires plus largement ?","Le droit à mourir dans la dignité : où en est la France ?","Faut-il un droit constitutionnel à l'environnement ?","Les droits des animaux : vers une personnalité juridique ?"]},
 ];
 const DEBATE_TOPICS = DEBATE_CATEGORIES.flatMap(c=>c.topics);
-const TRIAL_TOPICS = ["Corruption d'un élu local","Crime financier — blanchiment international","Atteinte à la liberté de la presse","Violation du droit international humanitaire","Discrimination systémique en entreprise","Abus de pouvoir d'un ministre"];
+const TRIAL_TOPICS = [
+ "Corruption d'un élu local",
+ "Crime financier — blanchiment international",
+ "Atteinte à la liberté de la presse",
+ "Violation du droit international humanitaire",
+ "Discrimination systémique en entreprise",
+ "Abus de pouvoir d'un ministre",
+ "Meurtre avec préméditation",
+ "Trafic de stupéfiants — réseau international",
+ "Cybercriminalité — piratage d'infrastructure critique",
+ "Terrorisme — financement d'un groupe armé",
+ "Fraude fiscale à grande échelle",
+ "Harcèlement moral et sexuel au travail",
+ "Homicide involontaire — accident industriel",
+ "Espionnage et trahison d'État",
+ "Féminicide — violence conjugale",
+ "Trafic d'êtres humains",
+ "Abus de biens sociaux — dirigeant d'entreprise",
+ "Viol — procès médiatisé",
+ "Détournement de fonds publics",
+ "Violation de données personnelles — RGPD",
+ "Crime organisé — mafia financière",
+ "Meurtre passionnel — légitime défense contestée",
+ "Corruption judiciaire — magistrat mis en cause",
+ "Exploitation de mineurs en ligne",
+];
 const JOBS = [
  {title:"Chargé de mission diplomatique",co:"Ministère des Affaires étrangères",tags:["Paris","CDI","Bac+5"]},
  {title:"Analyste géopolitique senior",co:"Institut Français des Relations Internationales",tags:["Paris","CDI","Recherche"]},
@@ -5352,10 +5377,22 @@ RÈGLES ABSOLUES :
  ))}
  </div>
  <p style={{color:T.text,fontWeight:700,fontSize:13}}>Dossier</p>
- <div style={{display:"flex",flexDirection:"column",gap:6}}>
+ <div style={{maxHeight:220,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,paddingRight:4}}>
  {TRIAL_TOPICS.map(t=>(
- <button key={t} onClick={()=>setTrialTopic(t)} style={{padding:"10px 12px",borderRadius:10,border:`1.5px solid ${trialTopic===t?T.purple:T.b1}`,background:trialTopic===t?`${T.purple}10`:T.bg2,cursor:"pointer",textAlign:"left",color:trialTopic===t?T.purple:T.text,fontSize:13,fontFamily:"inherit",fontWeight:trialTopic===t?700:400}}>{t}</button>
+ <button key={t} onClick={()=>setTrialTopic(t)} style={{padding:"10px 12px",borderRadius:10,border:`1.5px solid ${trialTopic===t?T.purple:T.b1}`,background:trialTopic===t?`${T.purple}10`:T.bg2,cursor:"pointer",textAlign:"left",color:trialTopic===t?T.purple:T.text,fontSize:13,fontFamily:"inherit",fontWeight:trialTopic===t?700:400,flexShrink:0}}>{t}</button>
  ))}
+ </div>
+ <div style={{display:"flex",flexDirection:"column",gap:6}}>
+ <p style={{color:T.textD,fontSize:12,fontWeight:600}}>Ou créez votre propre affaire</p>
+ <div style={{display:"flex",gap:8,alignItems:"center"}}>
+ <input
+ value={TRIAL_TOPICS.includes(trialTopic)?"":(trialTopic||"")}
+ onChange={e=>setTrialTopic(e.target.value)}
+ onFocus={()=>{if(TRIAL_TOPICS.includes(trialTopic))setTrialTopic("");}}
+ placeholder="Ex : Fraude à l'assurance, Faux en écriture…"
+ style={{flex:1,background:T.bg2,border:`1.5px solid ${!TRIAL_TOPICS.includes(trialTopic)&&trialTopic?T.purple:T.b1}`,borderRadius:10,padding:"10px 12px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}
+ />
+ </div>
  </div>
  <button onClick={()=>{if(trialRole&&trialTopic)setMode("trial");}} style={{padding:14,borderRadius:12,border:"none",background:trialRole&&trialTopic?T.purple:T.b1,color:trialRole&&trialTopic?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:trialRole&&trialTopic?"pointer":"not-allowed",fontFamily:"inherit"}}>Ouvrir l&apos;audience</button>
  </div>
