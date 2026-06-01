@@ -5855,6 +5855,7 @@ function ReelsScreen({T}:{T:Theme}) {
  const [liked,setLiked] = useState<Set<string>>(new Set());
  const [current,setCurrent] = useState(0);
  const [muted,setMuted] = useState(true);
+ const [expandedId,setExpandedId] = useState<string|null>(null);
  const containerRef = useRef<HTMLDivElement>(null);
  const videoRefs = useRef<(HTMLVideoElement|null)[]>([]);
 
@@ -5867,6 +5868,7 @@ function ReelsScreen({T}:{T:Theme}) {
   const idx=Math.round(el.scrollTop/el.clientHeight);
   if(idx!==current){
    videoRefs.current[current]?.pause();
+   setExpandedId(null);
    setCurrent(idx);
    const v=videoRefs.current[idx];
    if(v){v.currentTime=0;v.play().catch(()=>{});}
@@ -5878,9 +5880,10 @@ function ReelsScreen({T}:{T:Theme}) {
    <div ref={containerRef} onScroll={onScroll} style={{height:"100%",overflowY:"scroll",scrollSnapType:"y mandatory",WebkitOverflowScrolling:"touch"} as React.CSSProperties}>
     {REELS_DATA.map((r,i)=>{
      const isLiked=liked.has(r.id);
+     const isExpanded=expandedId===r.id;
      return(
-      <div key={r.id} style={{height:"100%",flexShrink:0,scrollSnapAlign:"start",position:"relative",background:`linear-gradient(160deg,${r.gradient[0]},${r.gradient[1]})`,overflow:"hidden"} as React.CSSProperties}>
-       {/* Video background — gradient shows if video fails to load */}
+      <div key={r.id} onClick={()=>{if(!isExpanded)setExpandedId(r.id);}} style={{height:"100%",flexShrink:0,scrollSnapAlign:"start",position:"relative",background:`linear-gradient(160deg,${r.gradient[0]},${r.gradient[1]})`,overflow:"hidden",cursor:"pointer"} as React.CSSProperties}>
+       {/* Video background */}
        <video
         ref={el=>{videoRefs.current[i]=el;}}
         src={r.videoUrl}
@@ -5890,25 +5893,46 @@ function ReelsScreen({T}:{T:Theme}) {
         playsInline
         style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:.5}}
        />
-       <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom,rgba(0,0,0,.3) 0%,transparent 35%,transparent 50%,rgba(0,0,0,.82) 100%)"}}/>
+       <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom,rgba(0,0,0,.3) 0%,transparent 35%,transparent 55%,rgba(0,0,0,.85) 100%)"}}/>
        {/* Category pill */}
        <div style={{position:"absolute",top:16,left:16,display:"flex",alignItems:"center",gap:8,zIndex:2}}>
         <span style={{background:r.accent,color:"#fff",fontSize:10,fontWeight:900,padding:"4px 10px",borderRadius:20,letterSpacing:1}}>{r.cat}</span>
         <span style={{background:"rgba(0,0,0,.5)",color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:700,padding:"4px 8px",borderRadius:20}}>{r.duration}</span>
        </div>
        {/* Mute toggle */}
-       <button onClick={()=>{haptic();setMuted(m=>!m);}} style={{position:"absolute",top:16,right:16,zIndex:2,background:"rgba(0,0,0,.45)",border:"none",borderRadius:"50%",width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+       <button onClick={e=>{e.stopPropagation();haptic();setMuted(m=>!m);}} style={{position:"absolute",top:16,right:16,zIndex:2,background:"rgba(0,0,0,.45)",border:"none",borderRadius:"50%",width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
         <span style={{color:"#fff",fontSize:16}}>{muted?"🔇":"🔊"}</span>
        </button>
-       {/* Body text */}
-       <div style={{position:"absolute",bottom:0,left:0,right:64,padding:"0 18px 20px",zIndex:2}}>
+       {/* Bottom info — always visible */}
+       <div style={{position:"absolute",bottom:0,left:0,right:64,padding:"0 18px 22px",zIndex:2}}>
         <p style={{color:"rgba(255,255,255,.55)",fontSize:10,fontWeight:700,marginBottom:3}}>@{r.creator.toLowerCase().replace(/ /g,"_")}</p>
         <p style={{color:"#fff",fontSize:15,fontWeight:800,lineHeight:1.3,marginBottom:3}}>{r.title}</p>
-        <p style={{color:"rgba(255,255,255,.7)",fontSize:12,marginBottom:10}}>{r.sub}</p>
-        <p style={{color:"rgba(255,255,255,.88)",fontSize:13,lineHeight:1.7,whiteSpace:"pre-line"}}>{r.body}</p>
+        <p style={{color:"rgba(255,255,255,.7)",fontSize:12,marginBottom:0}}>{r.sub}</p>
+        {!isExpanded&&(
+         <p style={{color:r.accent,fontSize:11,fontWeight:700,marginTop:6}}>Voir l'analyse →</p>
+        )}
        </div>
+       {/* Analysis panel — slides up on tap */}
+       {isExpanded&&(
+        <div onClick={e=>e.stopPropagation()} style={{position:"absolute",inset:0,zIndex:10,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
+         <div style={{background:"rgba(0,0,0,.88)",backdropFilter:"blur(12px)",borderRadius:"20px 20px 0 0",padding:"20px 20px 32px",maxHeight:"70%",overflowY:"auto"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+           <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{background:r.accent,color:"#fff",fontSize:10,fontWeight:900,padding:"3px 9px",borderRadius:20,letterSpacing:1}}>{r.cat}</span>
+            <span style={{color:"rgba(255,255,255,.5)",fontSize:11,fontWeight:700}}>@{r.creator.toLowerCase().replace(/ /g,"_")}</span>
+           </div>
+           <button onClick={()=>setExpandedId(null)} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:"50%",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+            <Ic n="x" s={14} c="#fff"/>
+           </button>
+          </div>
+          <p style={{color:"#fff",fontSize:15,fontWeight:800,lineHeight:1.3,marginBottom:6}}>{r.title}</p>
+          <p style={{color:"rgba(255,255,255,.6)",fontSize:12,marginBottom:14}}>{r.sub}</p>
+          <p style={{color:"rgba(255,255,255,.9)",fontSize:13,lineHeight:1.8,whiteSpace:"pre-line"}}>{r.body}</p>
+         </div>
+        </div>
+       )}
        {/* Right actions */}
-       <div style={{position:"absolute",right:10,bottom:70,display:"flex",flexDirection:"column",alignItems:"center",gap:16,zIndex:2}}>
+       <div onClick={e=>e.stopPropagation()} style={{position:"absolute",right:10,bottom:70,display:"flex",flexDirection:"column",alignItems:"center",gap:16,zIndex:11}}>
         <div style={{width:38,height:38,borderRadius:"50%",background:r.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,color:"#fff",border:"2px solid rgba(255,255,255,.8)"}}>{r.init}</div>
         <button onClick={()=>toggleLike(r.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
          <div style={{transition:"transform .15s",transform:isLiked?"scale(1.25)":"scale(1)"}}>
