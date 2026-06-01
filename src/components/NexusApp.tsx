@@ -1068,12 +1068,26 @@ Style : ${opponent.style.split(".")[0]}`,
  const oppOpen = await oppOpenPromise;
  const textToSpeak = oppOpen ? stripOppPrefix(oppOpen as string) : oppFallbackOpen;
  addLine("opponent",opponent.name,textToSpeak);
- speakTimed(textToSpeak, opponent.gender as "M"|"F", ()=>{
+ // Wait 300ms then speak opponent — use Promise so we await real end of audio
+ await new Promise<void>(res=>{
+  setTimeout(()=>{
+   if(!mountedRef.current){res();return;}
+   const maxMs = Math.max(12000, textToSpeak.split(/\s+/).length * 500 + 5000);
+   const t = setTimeout(res, maxMs);
+   speakAny(textToSpeak, opponent.gender as "M"|"F", ()=>{clearTimeout(t);res();});
+  },300);
+ });
  if(!mountedRef.current) return;
  const handover=`Et vous — comment répondez-vous à ça ?`;
  addLine("journalist",j?.name||"Journaliste",handover);
- speakTimed(handover,(j?.gender||"F") as "M"|"F",()=>{if(mountedRef.current){setAutoMic(true);setTimer(initTime);setTimerOn(true);}}, 200);
- }, 300);
+ await new Promise<void>(res=>{
+  setTimeout(()=>{
+   if(!mountedRef.current){res();return;}
+   const t = setTimeout(res, 8000);
+   speakAny(handover,(j?.gender||"F") as "M"|"F",()=>{clearTimeout(t);res();});
+  },200);
+ });
+ if(mountedRef.current){setAutoMic(true);setTimer(initTime);setTimerOn(true);}
  });
  } else {
  const introText=`Bonsoir. Je suis ${j?.name||"votre journaliste"}. Sujet du soir : « ${topic} ». ${publicSide?`Public ${publicSide.label} en salle. `:""}À vous la parole.`;
