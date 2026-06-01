@@ -5143,6 +5143,7 @@ Ne commence JAMAIS par répéter ce que ${unRole.country} a dit mot pour mot.`;
  respondents.forEach((del,idx)=>{
  const r=idx===0?res1:res2;
  if(r.status==="fulfilled"&&r.value){addMsg({role:"ai",flag:del.flag,country:del.country,gender:G[del.id]||"M",text:r.value});speakQ.push({text:r.value,gender:G[del.id]||"M"});}
+ else{const fb=`Monsieur le Président, ma délégation prend note de la déclaration de ${unRole.country} concernant « ${unTopic} ». Nous souhaitons souligner l'importance du respect du droit international et de la Charte des Nations Unies. Ma délégation se réserve le droit de répondre formellement lors du prochain tour de parole.`;addMsg({role:"ai",flag:del.flag,country:del.country,gender:G[del.id]||"M",text:fb});speakQ.push({text:fb,gender:G[del.id]||"M"});}
  });
  // President transition
  const presClose=n===MAX_SIM_EXCHANGES-1?`Un vote pourra être demandé à l'issue du prochain tour de parole.`:n>=MAX_SIM_EXCHANGES?`Je propose une suspension pour consultations informelles avant le vote.`:`La parole est à la délégation de ${unRole.country}.`;
