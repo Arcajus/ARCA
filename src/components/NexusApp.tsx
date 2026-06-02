@@ -5518,9 +5518,23 @@ RÈGLES ABSOLUES :
 }
 
 // PROFILE SCREEN 
-function ProfileScreen({T,onPremium,isAdmin,streak,onProgress}:{T:Theme;onPremium:()=>void;isAdmin:boolean;streak:number;onProgress:()=>void}) {
+function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}:{T:Theme;onPremium:()=>void;isAdmin:boolean;streak:number;onProgress:()=>void;dark:boolean;onToggleDark:()=>void}) {
  const [activeTab,setActiveTab] = useState<"posts"|"score"|"badges">("posts");
+ const [showSettings,setShowSettings] = useState(false);
  const scores:{[k:string]:number} = {"Géopolitique":82,"Droit":68,"Diplomatie":75,"Histoire":88,"Institutions":61};
+
+ const ls=(k:string,d="")=>typeof window!=="undefined"?localStorage.getItem(k)||d:d;
+ const [name,setName] = useState(()=>ls("nexus_name","Arcajus Auguste"));
+ const [handle,setHandle] = useState(()=>ls("nexus_handle","arcajus"));
+ const [bio,setBio] = useState(()=>ls("nexus_bio","Citoyen du monde · Passionné de géopolitique et diplomatie · Fondateur NEXUS"));
+ const [location,setLocation] = useState(()=>ls("nexus_location","Marseille, France"));
+ const [ek,setEk] = useState(()=>ls("el_key"));
+ const [azk,setAzk] = useState(()=>ls("azure_tts_key"));
+ const [azr,setAzr] = useState(()=>ls("azure_tts_region","eastus"));
+
+ const save=(k:string,v:string)=>{if(typeof window!=="undefined")localStorage.setItem(k,v);};
+ const saveProfile=()=>{save("nexus_name",name);save("nexus_handle",handle);save("nexus_bio",bio);save("nexus_location",location);};
+
  type UserPost = {id:number;text:string;time:string;src:string;verif:{label:string;color:string;comment:string}|null};
  const [userPosts] = useState<UserPost[]>(()=>{
  if(typeof window==="undefined") return [];
@@ -5529,16 +5543,98 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress}:{T:Theme;onPremiu
  const postCount = userPosts.length;
  const xp = getXP();
  const lvl = levelInfo(xp);
+ const initials = name.split(" ").map((w:string)=>w[0]||"").join("").slice(0,2).toUpperCase()||"?";
+
+ if(showSettings) return(
+ <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+  <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+   <button onClick={()=>{saveProfile();setShowSettings(false);}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+   <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Paramètres du compte</h2>
+  </div>
+  <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:20}}>
+
+   {/* PROFIL */}
+   <div>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>PROFIL</p>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+     {([
+      {label:"Nom d'affichage",val:name,set:setName,k:"nexus_name",ph:"Ex: Jean Dupont"},
+      {label:"Pseudo",val:handle,set:setHandle,k:"nexus_handle",ph:"Ex: jeandupont"},
+      {label:"Ville / Pays",val:location,set:setLocation,k:"nexus_location",ph:"Ex: Paris, France"},
+     ] as {label:string;val:string;set:(v:string)=>void;k:string;ph:string}[]).map(f=>(
+      <div key={f.k} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px"}}>
+       <p style={{color:T.muted,fontSize:11,fontWeight:700,marginBottom:4}}>{f.label}</p>
+       <input value={f.val} onChange={e=>f.set(e.target.value)} onBlur={saveProfile} placeholder={f.ph} style={{width:"100%",background:"transparent",border:"none",outline:"none",color:T.text,fontSize:14,fontFamily:"inherit",boxSizing:"border-box"}}/>
+      </div>
+     ))}
+     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px"}}>
+      <p style={{color:T.muted,fontSize:11,fontWeight:700,marginBottom:4}}>Bio</p>
+      <textarea value={bio} onChange={e=>setBio(e.target.value)} onBlur={saveProfile} rows={3} placeholder="Décris-toi en quelques mots…" style={{width:"100%",background:"transparent",border:"none",outline:"none",color:T.text,fontSize:14,fontFamily:"inherit",resize:"none",boxSizing:"border-box",lineHeight:1.5}}/>
+     </div>
+    </div>
+   </div>
+
+   {/* PRÉFÉRENCES */}
+   <div>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>PRÉFÉRENCES</p>
+    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,overflow:"hidden"}}>
+     <button onClick={onToggleDark} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",background:"none",border:"none",cursor:"pointer"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+       <Ic n={dark?"sun":"moon"} s={18} c={T.text}/>
+       <span style={{color:T.text,fontSize:14,fontWeight:600,fontFamily:"inherit"}}>Mode {dark?"jour":"nuit"}</span>
+      </div>
+      <div style={{width:42,height:24,borderRadius:12,background:dark?T.blueB:T.b1,position:"relative",transition:"background .2s",flexShrink:0}}>
+       <div style={{position:"absolute",top:3,left:dark?20:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
+      </div>
+     </button>
+    </div>
+   </div>
+
+   {/* AUDIO */}
+   <div>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>AUDIO — VOIX IA (OPTIONNEL)</p>
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+     <div style={{background:T.card,border:`1px solid ${azk?"#0078d4":T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
+      <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Azure TTS <span style={{color:T.green,fontWeight:700,textTransform:"none",letterSpacing:0}}>(voix premium)</span></p>
+      <input type="password" value={azk} onChange={e=>{setAzk(e.target.value);save("azure_tts_key",e.target.value);}} placeholder="Clé Azure Speech…" style={{width:"100%",background:T.bg2,border:`1px solid ${azk?"#0078d4":T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:6}}/>
+      <input type="text" value={azr} onChange={e=>{setAzr(e.target.value);save("azure_tts_region",e.target.value);}} placeholder="Région (ex: eastus)" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+     </div>
+     <div style={{background:T.card,border:`1px solid ${ek?T.purple:T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
+      <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>ElevenLabs <span style={{color:T.muted,fontWeight:400,textTransform:"none",letterSpacing:0}}>(voix naturelles)</span></p>
+      <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+     </div>
+    </div>
+   </div>
+
+   {/* COMPTE */}
+   <div>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>COMPTE</p>
+    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,overflow:"hidden"}}>
+     <button onClick={()=>{if(typeof window!=="undefined"&&confirm("Réinitialiser toute ta progression ? (XP, série, badges)")){localStorage.removeItem("nx_xp");localStorage.removeItem("nx_streak");localStorage.removeItem("nx_skills");localStorage.removeItem("nx_sessions");window.location.reload();}}} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 16px",background:"none",border:"none",borderBottom:`1px solid ${T.b1}`,cursor:"pointer",textAlign:"left"}}>
+      <Ic n="trending" s={18} c={T.red}/>
+      <span style={{color:T.red,fontSize:14,fontWeight:600,fontFamily:"inherit"}}>Réinitialiser ma progression</span>
+     </button>
+     <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+      <span style={{color:T.muted,fontSize:12}}>Version</span>
+      <span style={{color:T.muted,fontSize:12,fontWeight:700}}>NEXUS v1.0.0</span>
+     </div>
+    </div>
+   </div>
+
+   <button onClick={()=>{saveProfile();setShowSettings(false);}} style={{padding:"14px",borderRadius:12,border:"none",background:T.blueB,color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Enregistrer</button>
+  </div>
+ </div>
+ );
 
  return(
  <div>
  <div style={{height:100,background:`linear-gradient(135deg,${T.blueB}30,${T.purple}20)`,position:"relative"}}>
  <div style={{position:"absolute",bottom:-28,left:20}}>
- <div style={{width:62,height:62,borderRadius:"50%",background:T.blueG,border:`3px solid ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:T.blueB}}>A</div>
+ <div style={{width:62,height:62,borderRadius:"50%",background:T.blueG,border:`3px solid ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:T.blueB}}>{initials}</div>
  </div>
  <div style={{position:"absolute",top:12,right:16}}>
- <button style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:8,padding:"6px 12px",color:T.textD,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
- <Ic n="settings" s={14} c={T.blueB}/>Modifier
+ <button onClick={()=>setShowSettings(true)} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:8,padding:"6px 12px",color:T.textD,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
+ <Ic n="settings" s={14} c={T.blueB}/>Paramètres
  </button>
  </div>
  </div>
@@ -5546,11 +5642,11 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress}:{T:Theme;onPremiu
  <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
  <div>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
- <h2 style={{color:T.text,fontSize:20,fontWeight:800}}>Arcajus Auguste</h2>
+ <h2 style={{color:T.text,fontSize:20,fontWeight:800}}>{name}</h2>
  <span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:10,padding:"2px 6px",borderRadius:4,fontWeight:800}}> VÉRIFIÉ</span>
  </div>
- <p style={{color:T.textD,fontSize:13,marginTop:2}}>@arcajus · Marseille, France</p>
- <p style={{color:T.textD,fontSize:13,marginTop:6,lineHeight:1.5}}>Citoyen du monde · Passionné de géopolitique et diplomatie · Fondateur NEXUS</p>
+ <p style={{color:T.textD,fontSize:13,marginTop:2}}>@{handle} · {location}</p>
+ <p style={{color:T.textD,fontSize:13,marginTop:6,lineHeight:1.5}}>{bio}</p>
  </div>
  </div>
  <div style={{display:"flex",gap:20,marginTop:16,flexWrap:"wrap"}}>
@@ -5567,7 +5663,6 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress}:{T:Theme;onPremiu
  </div>
  )}
  </div>
- {isAdmin&&<ApiKeySettings T={T}/>}
  <button onClick={onPremium} style={{width:"100%",marginTop:12,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
  <Ic n="zap" s={16} c={T.amber}/>Passer à NEXUS+ — 5,99€/mois
  </button>
@@ -6373,7 +6468,7 @@ export default function NexusApp() {
  {tab==="search"&&<SearchScreen T={T} onSimulation={openSimulation}/>}
  {tab==="messages"&&<MessagesScreen T={T}/>}
  {tab==="reels"&&<ReelsScreen T={T}/>}
- {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)} isAdmin={isAdmin} streak={streak} onProgress={()=>setShowProgress(true)}/>}
+ {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)} isAdmin={isAdmin} streak={streak} onProgress={()=>setShowProgress(true)} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}}/>}
  </div>
  )}
  </div>
