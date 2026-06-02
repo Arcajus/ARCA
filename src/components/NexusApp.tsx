@@ -4158,13 +4158,7 @@ function EloquenceScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
 
 // CARRIÈRE & CONCOURS SCREEN
 function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:()=>void}){
- const [sub,setSub]=useState<"menu"|"generateur"|"builder"|"concours">("menu");
- const [genSubject,setGenSubject]=useState("");
- const [genResult,setGenResult]=useState("");
- const [genLoading,setGenLoading]=useState(false);
- const [buildPos,setBuildPos]=useState("");
- const [buildResult,setBuildResult]=useState("");
- const [buildLoading,setBuildLoading]=useState(false);
+ const [sub,setSub]=useState<"menu"|"concours">("menu");
  const [concoursKey,setConcoursKey]=useState<"sciencespo"|"ens"|"fonction"|"droit">("sciencespo");
  const [concoursAnnee,setConcoursAnnee]=useState<number|null>(null);
  const [concoursTab,setConcoursTab]=useState<"epreuves"|"stats"|"grilles">("epreuves");
@@ -4190,51 +4184,6 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  };
  const getKey=()=>typeof window!=="undefined"?"":"";
 
- const genDiscours=async()=>{
- const key=getKey();
- setGenLoading(true);setGenResult("");
- try{const r=await callGemini(`Tu es un expert en rhétorique. Génère un discours de 3 minutes (400 mots) sur : "${genSubject}". Structure : accroche percutante, problème, 3 arguments avec exemples concrets, conclusion mémorable. Utilise des figures de style (anaphore, métaphore).`,[{role:"user",parts:[{text:genSubject}]}],"",600);setGenResult(r);addXP(20);}
- catch(err){setGenResult("Erreur: "+(err instanceof Error?err.message:"inconnu"));}
- setGenLoading(false);
- };
-
- const buildArgs=async()=>{
- const key=getKey();
- setBuildLoading(true);setBuildResult("");
- try{const r=await callGemini(`Expert en argumentation. Pour la position : "${buildPos}", génère : 3 arguments POUR avec exemple et chiffre, 3 arguments CONTRE avec exemple et chiffre, 3 réfutations. Format clair et structuré.`,[{role:"user",parts:[{text:buildPos}]}],"",500);setBuildResult(r);addXP(15);}
- catch(err){setBuildResult("Erreur: "+(err instanceof Error?err.message:"inconnu"));}
- setBuildLoading(false);
- };
-
- if(sub==="generateur")return(
- <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
- <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
- <button onClick={()=>{setSub("menu");setGenResult("");setGenSubject("");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
- <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Générateur de discours</h2>
- </div>
- <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:12}}>
- <p style={{color:T.textD,fontSize:13}}>Entre un sujet — Nexus génère un discours structuré prêt à prononcer.</p>
- <input value={genSubject} onChange={e=>setGenSubject(e.target.value)} onKeyDown={e=>e.key==="Enter"&&genDiscours()} placeholder="Ex: L'IA va-t-elle détruire l'emploi ?" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
- <button onClick={genDiscours} disabled={genLoading||!genSubject.trim()} style={{padding:"13px",borderRadius:12,border:"none",background:genSubject.trim()?T.blueB:T.b1,color:genSubject.trim()?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:genSubject.trim()?"pointer":"default",fontFamily:"inherit"}}>{genLoading?"Génération…":"Générer le discours · +20 XP"}</button>
- {genResult&&<div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}><p style={{color:T.text,fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{genResult}</p></div>}
- </div>
- </div>
- );
-
- if(sub==="builder")return(
- <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
- <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
- <button onClick={()=>{setSub("menu");setBuildResult("");setBuildPos("");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
- <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Builder d&apos;arguments</h2>
- </div>
- <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:12}}>
- <p style={{color:T.textD,fontSize:13}}>Entre une position — Nexus structure tes arguments pour et contre.</p>
- <input value={buildPos} onChange={e=>setBuildPos(e.target.value)} onKeyDown={e=>e.key==="Enter"&&buildArgs()} placeholder="Ex: La peine de mort doit être rétablie" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
- <button onClick={buildArgs} disabled={buildLoading||!buildPos.trim()} style={{padding:"13px",borderRadius:12,border:"none",background:buildPos.trim()?T.purple:T.b1,color:buildPos.trim()?"#fff":T.muted,fontSize:14,fontWeight:800,cursor:buildPos.trim()?"pointer":"default",fontFamily:"inherit"}}>{buildLoading?"Analyse…":"Structurer les arguments · +15 XP"}</button>
- {buildResult&&<div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}><p style={{color:T.text,fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{buildResult}</p></div>}
- </div>
- </div>
- );
 
  if(sub==="concours"){
  const CONC_META=[
@@ -4407,7 +4356,7 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Carrière & Concours</h2><p style={{color:T.muted,fontSize:11}}>Outils IA pour ta progression</p></div>
  </div>
  <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
- {([{id:"generateur",icon:"send",label:"Générateur de discours",desc:"Discours IA structuré sur n'importe quel sujet",color:"#2B78F5"},{id:"builder",icon:"info",label:"Builder d'arguments",desc:"Structure tes pour/contre instantanément",color:"#7C3AED"},{id:"concours",icon:"award",label:"Prépa concours",desc:"Sciences Po, ENS, Barreau, Fonction publique",color:"#D97706"}] as const).map(s=>(
+ {([{id:"concours",icon:"award",label:"Prépa concours",desc:"Sciences Po, ENS, Barreau, Fonction publique",color:"#D97706"}] as const).map(s=>(
  <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
  <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={T.blueB}/></div>
@@ -4444,7 +4393,7 @@ function SimulationHub({T,onPremium}:{T:Theme;onPremium?:()=>void}) {
  {/* APPRENDRE & CARRIÈRE — en haut */}
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase"}}>RESSOURCES</p>
- {([{id:"apprendre",icon:"info",label:"Apprendre",desc:"Discours · Rhétorique · Fiches · Dictionnaire",color:"#2B78F5"},{id:"carriere",icon:"brief",label:"Carrière & Concours",desc:"Générateur de discours · Arguments · Lettre",color:"#16A34A"},{id:"eloquence",icon:"mic",label:"Éloquence",desc:"Discours · Littérature · Poésie · Pratique",color:"#7C3AED"}] as const).map(c=>(
+ {([{id:"apprendre",icon:"info",label:"Apprendre",desc:"Discours · Rhétorique · Fiches · Dictionnaire",color:"#2B78F5"},{id:"carriere",icon:"brief",label:"Carrière & Concours",desc:"Sciences Po · ENS · Barreau · Fonction publique",color:"#16A34A"},{id:"eloquence",icon:"mic",label:"Éloquence",desc:"Discours · Littérature · Poésie · Pratique",color:"#7C3AED"}] as const).map(c=>(
  <button key={c.id} onClick={()=>{haptic();setView(c.id);}} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
  <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={c.icon} s={26} c={T.blueB}/></div>
