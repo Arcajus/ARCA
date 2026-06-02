@@ -5221,7 +5221,7 @@ ${isSecond&&prevR1?`${respondents[0]?.country} a dit : "${prevR1.slice(0,80)}" �
 
 // SIMULATION SCREEN 
 function SimulationScreen({T,onBack}:{T:Theme;onBack?:()=>void}) {
- const [mode,setMode] = useState<"home"|"un"|"trial"|"interview"|"elections"|"soutenance"|"examen"|"pitch"|"secu"|"prise"|"tutorat">("home");
+ const [mode,setMode] = useState<"home"|"un"|"trial"|"interview"|"elections"|"eloquence"|"prise"|"tutorat">("home");
  const [unRole,setUnRole] = useState<typeof UN_DEL[0]|null>(null);
  const [unTopic,setUnTopic] = useState("");
  const [trialRole,setTrialRole] = useState<"defense"|"prosecutor"|null>(null);
@@ -5256,32 +5256,6 @@ RÈGLES ABSOLUES :
 - Développe VRAIMENT tes réactions : analyse la réponse, identifie ce qui manque, donne un contexte sectoriel réel (marché, enjeux du poste, culture d'entreprise)
 - 5 à 7 phrases minimum. Ton professionnel, humain, mais sans complaisance.`,
  welcome:"Bonjour, entrez. Je suis Marie Dupont, DRH. J'ai votre dossier sous les yeux — votre profil a retenu notre attention, mais je dois valider quelques points essentiels avant de pouvoir vous faire une proposition. Nous avons 45 minutes. Avant tout : présentez-vous en 90 secondes, pas le CV — ce que vous êtes vraiment, ce qui vous motive, et ce que vous cherchez dans ce poste précisément. Je vous écoute."
- },
- soutenance: {
- title:"Soutenance orale",icon:"award",color:"#D97706",voiceGender:"M",
- systemPrompt:`Tu es le Professeur Bernard Leroy, Professeur des Universités en sciences sociales, directeur de thèse depuis 25 ans, président de jury de soutenance. Tu as évalué plus de 200 thèses et mémoires. Tu es exigeant, précis, et tu ne laisses rien passer — mais tu es juste.
-
-GRILLE D'ÉVALUATION COMPLÈTE que tu appliques rigoureusement :
-1. ORIGINALITÉ : La contribution est-elle vraiment nouvelle ? Que dit la littérature académique sur ce point précis (auteurs, années, conclusions) ? Y a-t-il un gap que ce travail comble vraiment ?
-2. RIGUEUR MÉTHODOLOGIQUE : L'échantillon est-il représentatif ? Les biais de sélection sont-ils contrôlés ? La méthode (quantitative/qualitative/mixte) est-elle cohérente avec les hypothèses ?
-3. COHÉRENCE INTERNE : La problématique, les hypothèses, la méthodologie et les conclusions forment-elles un tout logique ? Y a-t-il des contradictions internes ?
-4. MAÎTRISE DES LIMITES : L'étudiant connaît-il ses angles morts ? A-t-il répondu à toutes ses hypothèses initiales ?
-5. PERTINENCE : À quoi ça sert ? Qui peut utiliser ces résultats ? Quelles implications pratiques ou théoriques ?
-6. MAÎTRISE DU DOMAINE : Connait-il les auteurs fondateurs, les débats en cours, les courants contradictoires ?
-
-TECHNIQUES D'INTERROGATOIRE :
-- Commence par valider un point précis, puis déstabilise IMMÉDIATEMENT ce même point
-- Pose des questions que les autres membres du jury PEW pourraient poser : "Le Professeur Durand du jury me demanderait sûrement..."
-- Creuse les failles : "Votre hypothèse H1 repose sur X — mais avez-vous contrôlé pour Y ?"
-- Exige des preuves concrètes : "Taille de l'échantillon ? Logiciel d'analyse ? Taux de réponse ?"
-- Ne valide JAMAIS sans creuser : "Intéressant — mais quelle est la limite principale de cette conclusion ?"
-
-RÈGLES ABSOLUES :
-- Cite exactement ce que l'étudiant vient d'expliquer avant de questionner
-- Développe ton analyse avec des références académiques réelles si pertinent (Bourdieu, Piketty, March, etc.)
-- Identifie et nomme précisément la faille méthodologique ou conceptuelle
-- 5 à 7 phrases minimum, academiques et rigoureuses. Ton neutre mais exigeant.`,
- welcome:"La soutenance est ouverte. Je suis le Professeur Bernard Leroy, président de jury. Avant votre exposé, commençons par l'essentiel : en une seule phrase précise et sans jargon inutile, quelle est la contribution originale de votre travail — concrètement, ce que personne n'avait démontré avant vous ? Ensuite, précisez votre méthode principale en deux phrases. Le reste de la soutenance découlera de votre réponse."
  },
  prise: {
  title:"Prise de parole publique",icon:"users",color:T.blueB,voiceGender:"F",
@@ -5346,6 +5320,9 @@ RÈGLES ABSOLUES :
  if(mode==="un"&&unRole&&unTopic){
  return <UNSimScreen key="un" unRole={unRole} unTopic={unTopic} T={T} onBack={()=>setMode("home")}/>;
  }
+ if(mode==="eloquence"){
+ return <EloquenceScreen T={T} onBack={()=>setMode("home")} onPremium={()=>{}}/>;
+ }
  if(mode in SIM_CONFIGS && mode!=="elections" && !(mode==="un"&&(!unRole||!unTopic))){
  const cfg=SIM_CONFIGS[mode];
  return <GenericSimScreen key={mode} title={cfg.title} icon={cfg.icon} color={cfg.color} systemPrompt={cfg.systemPrompt} welcome={cfg.welcome} voiceGender={cfg.voiceGender} T={T} onBack={()=>setMode("home")}/>;
@@ -5401,7 +5378,7 @@ RÈGLES ABSOLUES :
  {id:"un",icon:"globe",label:"Simulation ONU",sub:"Conseil de Sécurité",color:T.blueB},
  {id:"trial",icon:"scale",label:"Procès fictif",sub:"Avocat ou Procureur",color:T.purple},
  {id:"interview",icon:"brief",label:"Entretien RH",sub:"Coaching carrière",color:T.green},
- {id:"soutenance",icon:"award",label:"Soutenance orale",sub:"Thèse / Projet",color:"#D97706"},
+ {id:"eloquence",icon:"mic",label:"Éloquence",sub:"Textes · Pratique · Coaching",color:T.purple},
  {id:"prise",icon:"users",label:"Prise de parole",sub:"Discours public",color:T.blueB},
  {id:"tutorat",icon:"info",label:"Cours magistral",sub:"Enseigner un sujet",color:"#D97706"},
  ].map(sim=>(
@@ -5495,10 +5472,9 @@ RÈGLES ABSOLUES :
  </div>
  )}
  {/* One-click start for other sims */}
- {(["soutenance","prise","tutorat"] as const).map(s=>{
+ {(["prise","tutorat"] as const).map(s=>{
  if(mode!==s)return null;
  const info:{[k:string]:{icon:string;color:string;desc:string}} = {
- soutenance:{icon:"award",color:"#D97706",desc:"Le jury vous écoute. Présentez votre sujet et défendez vos choix."},
  prise:{icon:"users",color:T.blueB,desc:"Coaching prise de parole. Présentez votre discours pour l'analyser."},
  tutorat:{icon:"info",color:"#D97706",desc:"Cours magistral personnalisé. Choisissez n'importe quel sujet."},
  };
