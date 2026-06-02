@@ -5605,75 +5605,116 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}
  </div>
  );
 
+ const HIGHLIGHTS=[
+  {label:"Débats",icon:"mic",color:T.blueB},
+  {label:"ONU",icon:"globe",color:"#16A34A"},
+  {label:"Procès",icon:"scale",color:"#E03535"},
+  {label:"Soutenance",icon:"award",color:T.purple},
+  {label:"Discours",icon:"zap",color:T.amber},
+ ];
+ const POST_COLORS=["#2B78F525","#7C3AED25","#E0353525","#16A34A25","#D9770625"];
+
  return(
- <div>
- <div style={{height:100,background:`linear-gradient(135deg,${T.blueB}30,${T.purple}20)`,position:"relative"}}>
- <div style={{position:"absolute",bottom:-28,left:20}}>
- <div style={{width:62,height:62,borderRadius:"50%",background:T.blueG,border:`3px solid ${T.bg}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:T.blueB}}>{initials}</div>
- </div>
- <div style={{position:"absolute",top:12,right:16}}>
- <button onClick={()=>setShowSettings(true)} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:8,padding:"6px 12px",color:T.textD,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
- <Ic n="settings" s={14} c={T.blueB}/>Paramètres
- </button>
- </div>
- </div>
- <div style={{padding:"36px 20px 16px"}}>
- <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
- <div>
- <div style={{display:"flex",alignItems:"center",gap:8}}>
- <h2 style={{color:T.text,fontSize:20,fontWeight:800}}>{name}</h2>
- <span style={{background:`${T.blueB}20`,color:T.blueB,fontSize:10,padding:"2px 6px",borderRadius:4,fontWeight:800}}> VÉRIFIÉ</span>
- </div>
- <p style={{color:T.textD,fontSize:13,marginTop:2}}>@{handle} · {location}</p>
- <p style={{color:T.textD,fontSize:13,marginTop:6,lineHeight:1.5}}>{bio}</p>
- </div>
- </div>
- <div style={{display:"flex",gap:20,marginTop:16,flexWrap:"wrap"}}>
- {[["284","Abonnés"],["1,2k","Followers"],[String(47+postCount),"Débats"]].map(([v,l])=>(
- <div key={l} style={{textAlign:"center"}}>
- <p style={{color:T.text,fontWeight:800,fontSize:16}}>{v}</p>
- <p style={{color:T.muted,fontSize:11}}>{l}</p>
- </div>
- ))}
- </div>
- <button onClick={onPremium} style={{width:"100%",marginTop:12,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
- <Ic n="zap" s={16} c={T.amber}/>Passer à NEXUS+ — 5,99€/mois
- </button>
- </div>
- <div style={{borderTop:`1px solid ${T.b1}`,display:"flex"}}>
- {[{id:"posts",label:"Publications"},{id:"republications",label:"Republications"}].map(tab=>(
- <button key={tab.id} onClick={()=>setActiveTab(tab.id as "posts"|"republications")} style={{flex:1,padding:"12px 0",border:"none",background:"transparent",borderBottom:`2px solid ${activeTab===tab.id?T.blueB:"transparent"}`,color:activeTab===tab.id?T.blueB:T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>{tab.label}</button>
- ))}
- </div>
- <div style={{padding:"16px 20px"}}>
- {activeTab==="posts"&&(
- <div style={{display:"flex",flexDirection:"column",gap:10}}>
- {userPosts.length===0&&(
- <div style={{textAlign:"center",padding:"32px 0"}}>
- <p style={{color:T.muted,fontSize:14}}>Aucune publication pour l&apos;instant</p>
- <p style={{color:T.muted,fontSize:12,marginTop:4}}>Partagez votre première analyse dans le Feed</p>
- </div>
- )}
- {userPosts.map(p=>(
- <div key={p.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
- <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5}}>{p.text}</p>
- {p.verif&&<span style={{display:"inline-block",marginTop:6,background:`${p.verif.color}20`,color:p.verif.color,fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:800}}> {p.verif.label}</span>}
- <div style={{display:"flex",gap:12,marginTop:10}}>
- <span style={{color:T.muted,fontSize:12,display:"flex",alignItems:"center",gap:4}}><Ic n="heart" s={14} c={T.muted}/>0</span>
- <span style={{color:T.muted,fontSize:12,display:"flex",alignItems:"center",gap:4}}><Ic n="comment" s={14} c={T.muted}/>0</span>
- <span style={{color:T.muted,fontSize:11,marginLeft:"auto"}}>{timeFromTs(p.id)}</span>
- </div>
- </div>
- ))}
- </div>
- )}
- {activeTab==="republications"&&(
- <div style={{textAlign:"center",padding:"32px 0"}}>
- <p style={{color:T.muted,fontSize:14}}>Aucune republication pour l&apos;instant</p>
- <p style={{color:T.muted,fontSize:12,marginTop:4}}>Les articles que tu republies depuis le Feed apparaîtront ici</p>
- </div>
- )}
- </div>
+ <div style={{display:"flex",flexDirection:"column",height:"100%",overflowY:"auto"}}>
+
+  {/* HEADER — like IG */}
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px 10px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+   <div style={{display:"flex",alignItems:"center",gap:6}}>
+    <span style={{color:T.text,fontWeight:800,fontSize:17}}>@{handle}</span>
+    <Ic n="check" s={14} c={T.blueB} w={2.5}/>
+   </div>
+   <button onClick={()=>setShowSettings(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ic n="settings" s={22} c={T.text}/></button>
+  </div>
+
+  {/* AVATAR + STATS */}
+  <div style={{padding:"18px 18px 14px",display:"flex",alignItems:"center",gap:20}}>
+   {/* Avatar */}
+   <div style={{position:"relative",flexShrink:0}}>
+    <div style={{width:82,height:82,borderRadius:"50%",background:`linear-gradient(135deg,${T.blueB},${T.purple})`,padding:3}}>
+     <div style={{width:"100%",height:"100%",borderRadius:"50%",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:900,color:T.blueB}}>{initials}</div>
+    </div>
+   </div>
+   {/* Stats */}
+   <div style={{flex:1,display:"flex",justifyContent:"space-around"}}>
+    {[{v:String(47+postCount),l:"Publications"},{v:"284",l:"Abonnés"},{v:"1,2k",l:"Abonnements"}].map(s=>(
+     <div key={s.l} style={{textAlign:"center"}}>
+      <p style={{color:T.text,fontWeight:800,fontSize:18,lineHeight:1}}>{s.v}</p>
+      <p style={{color:T.muted,fontSize:11,marginTop:3}}>{s.l}</p>
+     </div>
+    ))}
+   </div>
+  </div>
+
+  {/* BIO */}
+  <div style={{padding:"0 18px 14px"}}>
+   <p style={{color:T.text,fontWeight:700,fontSize:14,marginBottom:2}}>{name}</p>
+   <p style={{color:T.textD,fontSize:13,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{bio}</p>
+   {location&&<p style={{color:T.muted,fontSize:12,marginTop:4,display:"flex",alignItems:"center",gap:4}}><Ic n="globe" s={12} c={T.muted}/>{location}</p>}
+  </div>
+
+  {/* ACTIONS */}
+  <div style={{padding:"0 18px 16px",display:"flex",gap:8}}>
+   <button onClick={()=>setShowSettings(true)} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.card,color:T.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Modifier le profil</button>
+   <button onClick={onPremium} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${T.amber}60`,background:`${T.amber}12`,color:T.amber,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="zap" s={14} c={T.amber}/>NEXUS+</button>
+  </div>
+
+  {/* HIGHLIGHTS */}
+  <div style={{display:"flex",gap:14,padding:"0 18px 16px",overflowX:"auto",WebkitOverflowScrolling:"touch",flexShrink:0}}>
+   {HIGHLIGHTS.map(h=>(
+    <div key={h.label} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,flexShrink:0,cursor:"pointer"}}>
+     <div style={{width:60,height:60,borderRadius:"50%",background:`linear-gradient(135deg,${h.color},${h.color}80)`,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${T.bg}`,boxShadow:`0 0 0 2px ${h.color}60`}}>
+      <Ic n={h.icon} s={24} c="#fff"/>
+     </div>
+     <span style={{color:T.text,fontSize:11,fontWeight:600}}>{h.label}</span>
+    </div>
+   ))}
+   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,flexShrink:0,cursor:"pointer"}}>
+    <div style={{width:60,height:60,borderRadius:"50%",border:`2px dashed ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+     <Ic n="plus" s={24} c={T.muted}/>
+    </div>
+    <span style={{color:T.muted,fontSize:11}}>Nouveau</span>
+   </div>
+  </div>
+
+  {/* TABS */}
+  <div style={{display:"flex",borderTop:`1px solid ${T.b1}`,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+   {([{id:"posts",icon:"grid"},{id:"republications",icon:"repeat"}] as const).map(tab=>(
+    <button key={tab.id} onClick={()=>setActiveTab(tab.id)} style={{flex:1,padding:"12px 0",border:"none",background:"none",borderTop:`2px solid ${activeTab===tab.id?T.text:"transparent"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+     {tab.id==="posts"
+      ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={activeTab===tab.id?T.text:T.muted} strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={activeTab===tab.id?T.text:T.muted} strokeWidth="1.8"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+     }
+    </button>
+   ))}
+  </div>
+
+  {/* GRID */}
+  {activeTab==="posts"&&(
+   userPosts.length===0
+   ? <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"60px 20px",gap:12}}>
+      <div style={{width:54,height:54,borderRadius:"50%",border:`2px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="camera" s={26} c={T.muted}/></div>
+      <p style={{color:T.text,fontWeight:800,fontSize:16}}>Aucune publication</p>
+      <p style={{color:T.muted,fontSize:13,textAlign:"center"}}>Partage ta première analyse dans le Feed</p>
+     </div>
+   : <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:2}}>
+      {userPosts.map((p,i)=>(
+       <div key={p.id} style={{aspectRatio:"1",background:POST_COLORS[i%POST_COLORS.length],display:"flex",alignItems:"center",justifyContent:"center",padding:8,overflow:"hidden",position:"relative"}}>
+        <p style={{color:T.text,fontSize:10,fontWeight:600,lineHeight:1.4,textAlign:"center",display:"-webkit-box",WebkitLineClamp:4,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{p.text}</p>
+        {p.verif&&<div style={{position:"absolute",bottom:4,right:4,width:16,height:16,borderRadius:"50%",background:p.verif.color,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="check" s={9} c="#fff" w={3}/></div>}
+       </div>
+      ))}
+     </div>
+  )}
+  {activeTab==="republications"&&(
+   <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"60px 20px",gap:12}}>
+    <div style={{width:54,height:54,borderRadius:"50%",border:`2px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="1.8"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+    </div>
+    <p style={{color:T.text,fontWeight:800,fontSize:16}}>Aucune republication</p>
+    <p style={{color:T.muted,fontSize:13,textAlign:"center"}}>Les articles que tu partages apparaîtront ici</p>
+   </div>
+  )}
+
  </div>
  );
 }
