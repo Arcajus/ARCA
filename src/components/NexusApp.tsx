@@ -4540,16 +4540,36 @@ Réponds dans ton rôle de façon naturelle, pertinente et personnalisée. 4-5 p
  }
  if(mountedRef.current&&audioOnRef.current&&fullReply) speakTimed(fullReply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
  if(mountedRef.current&&!fullReply){
- const reply="Pouvez-vous m'en dire plus ? Plus vous êtes précis sur votre situation, plus je pourrai vous aider efficacement.";
+ const FALLBACKS:{[k:string]:string[]}={
+  "Cours magistral":[
+   "Excellente question. Ce sujet touche à plusieurs dimensions fondamentales que nous allons explorer ensemble. Donnez-moi votre compréhension actuelle pour que j'adapte mon explication.",
+   "Voilà un point essentiel. En sciences politiques, on distingue généralement plusieurs approches. Quel aspect vous semble le plus opaque pour l'instant ?",
+   "C'est précisément là que réside tout l'enjeu. Permettez-moi de vous donner les concepts clés, puis nous les appliquerons à un exemple concret.",
+   "Bonne intuition. Ce domaine est riche et parfois contre-intuitif. Commençons par poser les bases théoriques avant d'aller vers la pratique.",
+  ],
+  "Entretien RH":[
+   "Intéressant. Pouvez-vous me donner un exemple concret, avec une situation réelle, une action que vous avez menée personnellement, et un résultat mesurable ?",
+   "Je note. Mais soyez plus précis : quelle était votre contribution directe, pas celle de l'équipe ?",
+   "Développez. Donnez-moi une date, un contexte, et l'impact chiffré de votre action.",
+  ],
+  "Prise de parole publique":[
+   "Je vous entends. Reformulez maintenant cette idée en une seule phrase d'accroche percutante — votre auditoire a 10 secondes pour être convaincu d'écouter la suite.",
+   "Bien. Maintenant travaillons la structure : quel est le message central que vous voulez que votre public retienne ?",
+   "Continuez. Identifiez votre point fort dans ce que vous venez de dire — et le point qui manque de conviction.",
+  ],
+ };
+ const ctxFallbacks=FALLBACKS[title]||[
+  "Je vous écoute. Développez votre pensée pour que je puisse vous répondre précisément.",
+  "Continuez. Plus de détails me permettront de vous donner une réponse vraiment utile.",
+  "Intéressant point de départ. Allons plus loin ensemble.",
+ ];
+ const reply=ctxFallbacks[exchangeN%ctxFallbacks.length];
  setMsgs(m=>[...m,{role:"ai" as const,text:reply}]);
  if(audioOnRef.current) speakTimed(reply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
  }
- }catch(err){
+ }catch{
  if(!mountedRef.current) return;
  setLoading(false);
- const reply="Pouvez-vous m'en dire plus ? Plus vous êtes précis, plus je pourrai adapter ma réponse à votre situation concrète.";
- setMsgs(m=>[...m,{role:"ai" as const,text:reply}]);
- if(audioOnRef.current) speakTimed(reply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
  }
  };
  handleSpeechRef.current = send;
