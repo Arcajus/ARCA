@@ -3679,11 +3679,13 @@ const CONCOURS_EPREUVES:{[k:string]:{annee:number;matiere:string;sujet:string;ty
 
 // APPRENDRE SCREEN 
 function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:()=>void}){
- const [sub,setSub]=useState<"menu"|"discours"|"rhetori"|"dict"|"fiches">("menu");
+ const [sub,setSub]=useState<"menu"|"discours"|"rhetori"|"dict"|"fiches"|"concours">("menu");
  const [selSpeech,setSelSpeech]=useState<typeof DISCOURS_DATA[0]|null>(null);
  const [selLesson,setSelLesson]=useState<typeof RHETORIC_DATA[0]|null>(null);
  const [dictQ,setDictQ]=useState("");
  const [selFiche,setSelFiche]=useState<typeof FICHES_DATA[0]|null>(null);
+
+ if(sub==="concours") return <CarriereScreen T={T} onBack={()=>setSub("menu")} onPremium={onPremium}/>;
 
  if(sub==="discours")return(
  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -3840,7 +3842,7 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Apprendre</h2><p style={{color:T.muted,fontSize:11}}>Rhétorique · Diplomatie · Géopolitique</p></div>
  </div>
  <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
- {([{id:"discours",icon:"send",label:"Discours",desc:"Grands discours historiques analysés",color:"#2B78F5"},{id:"rhetori",icon:"award",label:"Rhétorique",desc:"Techniques d'argumentation",color:"#7C3AED"},{id:"dict",icon:"info",label:"Dictionnaire",desc:"Termes diplomatiques expliqués",color:"#16A34A"},{id:"fiches",icon:"check",label:"Fiches de révision",desc:"ONU · UE · OTAN · Géopolitique",color:"#D97706"}] as const).map(s=>(
+ {([{id:"discours",icon:"send",label:"Discours",desc:"Grands discours historiques analysés",color:"#2B78F5"},{id:"rhetori",icon:"award",label:"Rhétorique",desc:"Techniques d'argumentation",color:"#7C3AED"},{id:"dict",icon:"info",label:"Dictionnaire",desc:"Termes diplomatiques expliqués",color:"#16A34A"},{id:"fiches",icon:"check",label:"Fiches de révision",desc:"ONU · UE · OTAN · Géopolitique",color:"#D97706"},{id:"concours",icon:"brief",label:"Prépa concours",desc:"Sciences Po · ENS · Barreau · Fonction publique",color:"#16A34A"}] as const).map(s=>(
  <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
  <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={T.blueB}/></div>
@@ -4370,7 +4372,7 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
 }
 
 function SimulationHub({T,onPremium}:{T:Theme;onPremium?:()=>void}) {
- const [view,setView] = useState<"hub"|"studio"|"sims"|"apprendre"|"carriere"|"eloquence">("hub");
+ const [view,setView] = useState<"hub"|"studio"|"sims"|"apprendre">("hub");
  const [showPremiumHub,setShowPremiumHub] = useState(false);
 
  const launch=(id:"studio"|"sims")=>{haptic();setView(id);};
@@ -4378,8 +4380,6 @@ function SimulationHub({T,onPremium}:{T:Theme;onPremium?:()=>void}) {
  if(view==="studio") return <StudioScreen T={T} onPremium={()=>setShowPremiumHub(true)} onBack={()=>setView("hub")}/>;
  if(view==="sims") return <SimulationScreen T={T} onBack={()=>setView("hub")}/>;
  if(view==="apprendre") return <ApprendreScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
- if(view==="carriere") return <CarriereScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
- if(view==="eloquence") return <EloquenceScreen T={T} onBack={()=>setView("hub")} onPremium={()=>setShowPremiumHub(true)}/>;
  if(showPremiumHub) return <PremiumScreen T={T} onBack={()=>setShowPremiumHub(false)}/>;
 
  return(
@@ -4393,7 +4393,7 @@ function SimulationHub({T,onPremium}:{T:Theme;onPremium?:()=>void}) {
  {/* APPRENDRE & CARRIÈRE — en haut */}
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase"}}>RESSOURCES</p>
- {([{id:"apprendre",icon:"info",label:"Apprendre",desc:"Discours · Rhétorique · Fiches · Dictionnaire",color:"#2B78F5"},{id:"carriere",icon:"brief",label:"Carrière & Concours",desc:"Sciences Po · ENS · Barreau · Fonction publique",color:"#16A34A"},{id:"eloquence",icon:"mic",label:"Éloquence",desc:"Discours · Littérature · Poésie · Pratique",color:"#7C3AED"}] as const).map(c=>(
+ {([{id:"apprendre",icon:"info",label:"Apprendre",desc:"Discours · Rhétorique · Fiches · Concours",color:"#2B78F5"}] as const).map(c=>(
  <button key={c.id} onClick={()=>{haptic();setView(c.id);}} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
  <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={c.icon} s={26} c={T.blueB}/></div>
