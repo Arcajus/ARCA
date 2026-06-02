@@ -5519,19 +5519,14 @@ RÈGLES ABSOLUES :
 
 // PROFILE SCREEN 
 function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}:{T:Theme;onPremium:()=>void;isAdmin:boolean;streak:number;onProgress:()=>void;dark:boolean;onToggleDark:()=>void}) {
- const [activeTab,setActiveTab] = useState<"posts"|"score"|"badges">("posts");
+ const [activeTab,setActiveTab] = useState<"posts"|"republications">("posts");
  const [showSettings,setShowSettings] = useState(false);
- const scores:{[k:string]:number} = {"Géopolitique":82,"Droit":68,"Diplomatie":75,"Histoire":88,"Institutions":61};
 
  const ls=(k:string,d="")=>typeof window!=="undefined"?localStorage.getItem(k)||d:d;
  const [name,setName] = useState(()=>ls("nexus_name","Arcajus Auguste"));
  const [handle,setHandle] = useState(()=>ls("nexus_handle","arcajus"));
  const [bio,setBio] = useState(()=>ls("nexus_bio","Citoyen du monde · Passionné de géopolitique et diplomatie · Fondateur NEXUS"));
  const [location,setLocation] = useState(()=>ls("nexus_location","Marseille, France"));
- const [ek,setEk] = useState(()=>ls("el_key"));
- const [azk,setAzk] = useState(()=>ls("azure_tts_key"));
- const [azr,setAzr] = useState(()=>ls("azure_tts_region","eastus"));
-
  const save=(k:string,v:string)=>{if(typeof window!=="undefined")localStorage.setItem(k,v);};
  const saveProfile=()=>{save("nexus_name",name);save("nexus_handle",handle);save("nexus_bio",bio);save("nexus_location",location);};
 
@@ -5590,22 +5585,6 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}
     </div>
    </div>
 
-   {/* AUDIO */}
-   <div>
-    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>AUDIO — VOIX IA (OPTIONNEL)</p>
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-     <div style={{background:T.card,border:`1px solid ${azk?"#0078d4":T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
-      <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Azure TTS <span style={{color:T.green,fontWeight:700,textTransform:"none",letterSpacing:0}}>(voix premium)</span></p>
-      <input type="password" value={azk} onChange={e=>{setAzk(e.target.value);save("azure_tts_key",e.target.value);}} placeholder="Clé Azure Speech…" style={{width:"100%",background:T.bg2,border:`1px solid ${azk?"#0078d4":T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",marginBottom:6}}/>
-      <input type="text" value={azr} onChange={e=>{setAzr(e.target.value);save("azure_tts_region",e.target.value);}} placeholder="Région (ex: eastus)" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-     </div>
-     <div style={{background:T.card,border:`1px solid ${ek?T.purple:T.b1}`,borderRadius:12,padding:14,transition:"border .2s"}}>
-      <p style={{color:T.textD,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>ElevenLabs <span style={{color:T.muted,fontWeight:400,textTransform:"none",letterSpacing:0}}>(voix naturelles)</span></p>
-      <input type="password" value={ek} onChange={e=>{setEk(e.target.value);save("el_key",e.target.value);}} placeholder="sk_…" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-     </div>
-    </div>
-   </div>
-
    {/* COMPTE */}
    <div>
     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>COMPTE</p>
@@ -5650,26 +5629,20 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}
  </div>
  </div>
  <div style={{display:"flex",gap:20,marginTop:16,flexWrap:"wrap"}}>
- {[["284","Abonnés"],["1,2k","Followers"],[String(47+postCount),"Débats"],["82","Score"]].map(([v,l])=>(
+ {[["284","Abonnés"],["1,2k","Followers"],[String(47+postCount),"Débats"]].map(([v,l])=>(
  <div key={l} style={{textAlign:"center"}}>
  <p style={{color:T.text,fontWeight:800,fontSize:16}}>{v}</p>
  <p style={{color:T.muted,fontSize:11}}>{l}</p>
  </div>
  ))}
- {streak>0&&(
- <div onClick={()=>onProgress()} style={{textAlign:"center",cursor:"pointer"}}>
- <p style={{color:T.amber,fontWeight:800,fontSize:16}}>🔥 {streak}</p>
- <p style={{color:T.muted,fontSize:11}}>Série</p>
- </div>
- )}
  </div>
  <button onClick={onPremium} style={{width:"100%",marginTop:12,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
  <Ic n="zap" s={16} c={T.amber}/>Passer à NEXUS+ — 5,99€/mois
  </button>
  </div>
  <div style={{borderTop:`1px solid ${T.b1}`,display:"flex"}}>
- {[{id:"posts",label:"Publications"},{id:"score",label:"Score"},{id:"badges",label:"Badges"}].map(tab=>(
- <button key={tab.id} onClick={()=>setActiveTab(tab.id as "posts"|"score"|"badges")} style={{flex:1,padding:"12px 0",border:"none",background:"transparent",borderBottom:`2px solid ${activeTab===tab.id?T.blueB:"transparent"}`,color:activeTab===tab.id?T.blueB:T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>{tab.label}</button>
+ {[{id:"posts",label:"Publications"},{id:"republications",label:"Republications"}].map(tab=>(
+ <button key={tab.id} onClick={()=>setActiveTab(tab.id as "posts"|"republications")} style={{flex:1,padding:"12px 0",border:"none",background:"transparent",borderBottom:`2px solid ${activeTab===tab.id?T.blueB:"transparent"}`,color:activeTab===tab.id?T.blueB:T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>{tab.label}</button>
  ))}
  </div>
  <div style={{padding:"16px 20px"}}>
@@ -5694,43 +5667,10 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}
  ))}
  </div>
  )}
- {activeTab==="score"&&(
- <div style={{display:"flex",flexDirection:"column",gap:12}}>
- <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:20,textAlign:"center"}}>
- <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Score global d&apos;éloquence</p>
- <span style={{fontSize:52,fontWeight:900,color:T.blueB,fontFamily:"monospace"}}>78</span>
- <p style={{color:T.textD,fontSize:13,marginTop:4}}>/100 · Rang #127 mondial</p>
- </div>
- {Object.entries(scores).map(([k,v])=>(
- <div key={k} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14}}>
- <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
- <span style={{color:T.text,fontWeight:600,fontSize:13}}>{k}</span>
- <span style={{color:v>=80?T.green:v>=65?T.blueB:T.amber,fontWeight:800,fontSize:13}}>{v}/100</span>
- </div>
- <div style={{height:6,background:T.b1,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${v}%`,background:v>=80?T.green:v>=65?T.blueB:T.amber,borderRadius:3}}/></div>
- </div>
- ))}
- </div>
- )}
- {activeTab==="badges"&&(
- <div style={{display:"flex",flexDirection:"column",gap:10}}>
- {getStreak()>0&&<div style={{background:`${T.amber}10`,border:`1px solid ${T.amber}30`,borderRadius:14,padding:14,display:"flex",alignItems:"center",gap:12}}>
- <span style={{fontSize:26}}></span>
- <div>
- <p style={{color:T.amber,fontWeight:800,fontSize:15}}>{getStreak()} jour{getStreak()>1?"s":""} de suite</p>
- <p style={{color:T.muted,fontSize:12,marginTop:2}}>Continue comme ça !</p>
- </div>
- </div>}
- <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
- {[{icon:"award",label:"Top débatteur",c:T.amber},{icon:"globe",label:"Diplomate",c:T.blueB},{icon:"scale",label:"Juriste",c:T.purple},{icon:"star",label:"Contributeur",c:T.green},{icon:"trending",label:"Viral",c:T.red},{icon:"shield",label:"Modérateur",c:T.textD}].map(b=>(
- <div key={b.label} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"16px 8px",textAlign:"center"}}>
- <div style={{width:40,height:40,borderRadius:10,background:`${b.c}15`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px"}}>
- <Ic n={b.icon} s={20} c={b.c}/>
- </div>
- <p style={{color:T.text,fontSize:11,fontWeight:700}}>{b.label}</p>
- </div>
- ))}
- </div>
+ {activeTab==="republications"&&(
+ <div style={{textAlign:"center",padding:"32px 0"}}>
+ <p style={{color:T.muted,fontSize:14}}>Aucune republication pour l&apos;instant</p>
+ <p style={{color:T.muted,fontSize:12,marginTop:4}}>Les articles que tu republies depuis le Feed apparaîtront ici</p>
  </div>
  )}
  </div>
