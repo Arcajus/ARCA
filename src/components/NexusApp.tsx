@@ -4563,39 +4563,44 @@ function GenericSimScreen({title,icon,color,systemPrompt,welcome,voiceGender,T,o
  const n=exchangeN+1; setExchangeN(n);
  const dynSys=`${systemPrompt}
 
- TOUR N°${n} — INSTRUCTION IMPÉRATIVE 
-L'interlocuteur vient de dire exactement : "${text}"
-
-RÈGLES ABSOLUES pour cette réponse :
-1. Réponds DIRECTEMENT à cet argument — jamais de réponse générique
-2. Apporte un ANGLE NOUVEAU pas encore utilisé dans cette conversation
-3. Développe avec 5 à 7 phrases, des faits réels, des chiffres si pertinents
-4. Ne commence JAMAIS par répéter ce que l'interlocuteur vient de dire`;
+Tour ${n}. L'interlocuteur vient de dire : "${text.slice(0,300)}"
+Réponds dans ton rôle de façon naturelle, pertinente et personnalisée. 4-5 phrases. Ne répète jamais mot pour mot ce que l'interlocuteur vient de dire.`;
  let firstChunk=true;
  let fullReply="";
- await streamGemini(dynSys,hist,"",450,(full)=>{
+ try{
+ await streamGemini(dynSys,hist,"",400,(full)=>{
  if(!mountedRef.current) return;
  fullReply=full;
  if(firstChunk){firstChunk=false;setLoading(false);setMsgs(m=>[...m,{role:"ai" as const,text:full}]);}
  else setMsgs(m=>{const u=[...m];u[u.length-1]={role:"ai" as const,text:full};return u;});
  setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),30);
  });
- if(mountedRef.current&&audioOnRef.current) speakTimed(fullReply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
- }catch(err){
+ }catch{
+ // Streaming failed — retry with non-streaming (more reliable)
+ try{
+ const r=await callGemini(dynSys,hist,"",350);
+ if(!mountedRef.current) return;
+ fullReply=r;
+ setLoading(false);
+ setMsgs(m=>[...m,{role:"ai" as const,text:r}]);
+ setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),50);
+ }catch{
  if(!mountedRef.current) return;
  setLoading(false);
- {
- const fallbacks=[
- `Pouvez-vous préciser ? Ce que vous venez de dire appelle des éléments concrets. Donnez un exemple réel, un chiffre vérifiable, ou une référence précise qui soutient votre position.`,
- `C'est un début. Mais quelle est votre preuve la plus solide ? Anticipez la principale objection à votre argument et réfutez-la immédiatement, avec des faits.`,
- `Construisez l'argument complet : thèse principale, deux preuves empiriques distinctes, réfutation de la critique centrale, conclusion. Pas de généralités — du concret et du mesurable.`,
- `Allez plus loin. Quelles seraient les conséquences précises si votre position est juste ? Soyez spécifique sur les délais, les acteurs impliqués et les mécanismes réels.`,
- `Votre réponse est trop générale. Quel mécanisme précis sous-tend votre raisonnement ? Illustrez avec un cas concret que votre interlocuteur ne peut pas ignorer.`,
- ];
- const reply=fallbacks[Math.floor(Math.random()*fallbacks.length)];
+ }
+ }
+ if(mountedRef.current&&audioOnRef.current&&fullReply) speakTimed(fullReply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
+ if(mountedRef.current&&!fullReply){
+ const reply="Pouvez-vous m'en dire plus ? Plus vous êtes précis sur votre situation, plus je pourrai vous aider efficacement.";
  setMsgs(m=>[...m,{role:"ai" as const,text:reply}]);
  if(audioOnRef.current) speakTimed(reply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
  }
+ }catch(err){
+ if(!mountedRef.current) return;
+ setLoading(false);
+ const reply="Pouvez-vous m'en dire plus ? Plus vous êtes précis, plus je pourrai adapter ma réponse à votre situation concrète.";
+ setMsgs(m=>[...m,{role:"ai" as const,text:reply}]);
+ if(audioOnRef.current) speakTimed(reply,voiceGender,()=>{if(mountedRef.current)setAutoMic(true);});
  }
  };
  handleSpeechRef.current = send;
