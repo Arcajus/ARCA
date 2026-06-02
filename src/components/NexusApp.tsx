@@ -431,11 +431,18 @@ const PUBLICS = [
  {id:"m",label:"Mixte",desc:"Toutes tendances — surprise garantie"},
 ];
 const UN_DEL = [
- {id:"fr",flag:"",country:"France",init:"FR",doctrine:"Membre permanent, droit d'ingérence humanitaire (doctrine Kouchner), autonomie stratégique européenne, dissuasion nucléaire indépendante (280 têtes), siège permanent depuis 1945. Budget défense 44Md€ (2024). Partisan d'une Europe puissance, opposé à tout unilatéralisme américain."},
- {id:"us",flag:"",country:"États-Unis",init:"US",doctrine:"Hégémonie libérale, chef de l'OTAN (32 membres, 2% PIB requis), sanctions SWIFT, dollar comme arme géopolitique. Budget défense 886Md$ (2024, 40% du budget mondial). Doctrine Monroe pour l'Amérique latine. Soutien inconditionnel à Israël. AUKUS avec UK et Australie."},
- {id:"ru",flag:"",country:"Russie",init:"RU",doctrine:"Souveraineté absolue, doctrine Gerasimov (guerre hybride), anti-OTAN, veto systématique au CSNU (17 vetos depuis 2011 sur Syrie/Ukraine), sphère d'influence ex-URSS, arsenal nucléaire 6257 têtes, partenariat stratégique Chine. Sanctions occidentales: 14000 mesures depuis 2022."},
- {id:"cn",flag:"",country:"Chine",init:"CN",doctrine:"Non-ingérence stricte (principe des 5 de Bandung), BRI (Routes de la Soie, 150 pays, 1000Md$), réunification Taiwan non négociable, coalition Global South, Shanghaï Cooperation Organisation. PIB 2e mondial, armée 2,1M soldats. Abstention préférentielle au CSNU."},
- {id:"uk",flag:"",country:"Royaume-Uni",init:"UK",doctrine:"Atlantisme post-Brexit, membre OTAN et Five Eyes (renseignement US/UK/CA/AU/NZ), puissance nucléaire (225 têtes Trident), soft power Commonwealth (54 pays, 2,7Md habitants), sanctions ciblées individuelles. Partenaire privilégié USA mais autonomie diplomatique. AUKUS."},
+ // Membres permanents (P5)
+ {id:"fr",flag:"🇫🇷",country:"France",init:"FR",perm:true,doctrine:"Membre permanent, droit d'ingérence humanitaire (doctrine Kouchner), autonomie stratégique européenne, dissuasion nucléaire indépendante (280 têtes), siège permanent depuis 1945. Budget défense 44Md€ (2024). Partisan d'une Europe puissance, opposé à tout unilatéralisme américain."},
+ {id:"us",flag:"🇺🇸",country:"États-Unis",init:"US",perm:true,doctrine:"Hégémonie libérale, chef de l'OTAN (32 membres, 2% PIB requis), sanctions SWIFT, dollar comme arme géopolitique. Budget défense 886Md$ (2024, 40% du budget mondial). Soutien inconditionnel à Israël. AUKUS avec UK et Australie."},
+ {id:"ru",flag:"🇷🇺",country:"Russie",init:"RU",perm:true,doctrine:"Souveraineté absolue, doctrine Gerasimov (guerre hybride), anti-OTAN, veto systématique au CSNU, sphère d'influence ex-URSS, arsenal nucléaire 6257 têtes, partenariat stratégique Chine. Sanctions occidentales: 14000 mesures depuis 2022."},
+ {id:"cn",flag:"🇨🇳",country:"Chine",init:"CN",perm:true,doctrine:"Non-ingérence stricte (principe des 5 de Bandung), BRI (Routes de la Soie, 150 pays, 1000Md$), réunification Taiwan non négociable, coalition Global South. PIB 2e mondial, armée 2,1M soldats. Abstention préférentielle au CSNU."},
+ {id:"uk",flag:"🇬🇧",country:"Royaume-Uni",init:"UK",perm:true,doctrine:"Atlantisme post-Brexit, membre OTAN et Five Eyes, puissance nucléaire (225 têtes Trident), soft power Commonwealth (54 pays, 2,7Md habitants), sanctions ciblées individuelles. AUKUS."},
+ // Membres non-permanents élus
+ {id:"dz",flag:"🇩🇿",country:"Algérie",init:"DZ",perm:false,doctrine:"Voix de l'Afrique et du monde arabe, principe de non-ingérence, panafricanisme, soutien actif à la cause palestinienne. Président de l'UA 2023. Médiateur reconnu dans les conflits africains. Opposé aux sanctions unilatérales occidentales."},
+ {id:"jp",flag:"🇯🇵",country:"Japon",init:"JP",perm:false,doctrine:"Pacifisme constitutionnel (article 9), allié clé des États-Unis (traité de sécurité 1960), puissance économique G7, promotion du multilatéralisme et du droit international. Pays hôte du G7 2023. Partisan d'un CSNU élargi avec siège permanent pour le Japon."},
+ {id:"br",flag:"🇧🇷",country:"Brésil",init:"BR",perm:false,doctrine:"Diplomatie autonome (doctrine Lula), leader du Global South, BRICS (membre fondateur), non-alignement actif, médiation de paix en Amérique latine. Opposition aux sanctions extraterritoriales. Candidat historique au siège permanent."},
+ {id:"ec",flag:"🇪🇨",country:"Équateur",init:"EC",perm:false,doctrine:"Petit État, voix du droit international et des peuples autochtones, respect strict de la souveraineté, position indépendante des grandes puissances. Représente les intérêts de l'Amérique andine et des nations en développement."},
+ {id:"sl",flag:"🇸🇱",country:"Sierra Leone",init:"SL",perm:false,doctrine:"Représentant de l'Afrique subsaharienne et des pays post-conflit, plaide pour la consolidation de la paix, la reconstruction, l'aide au développement et la réforme du CSNU pour plus de représentativité africaine."},
 ];
 const UN_TOPICS = ["Cessez-le-feu immédiat en Ukraine","Réforme du droit de veto","Intervention humanitaire en zone de conflit","Régulation internationale de l'IA militaire","Reconnaissance d'un nouvel État indépendant"];
 const DEBATE_CATEGORIES = [
@@ -4566,7 +4573,7 @@ RÈGLES ABSOLUES pour cette réponse :
 4. Ne commence JAMAIS par répéter ce que l'interlocuteur vient de dire`;
  let firstChunk=true;
  let fullReply="";
- await streamGemini(dynSys,hist,"",700,(full)=>{
+ await streamGemini(dynSys,hist,"",450,(full)=>{
  if(!mountedRef.current) return;
  fullReply=full;
  if(firstChunk){firstChunk=false;setLoading(false);setMsgs(m=>[...m,{role:"ai" as const,text:full}]);}
@@ -4578,13 +4585,12 @@ RÈGLES ABSOLUES pour cette réponse :
  if(!mountedRef.current) return;
  setLoading(false);
  {
- const words=text.split(" ").filter(Boolean).slice(0,5).join(" ");
  const fallbacks=[
- `Vous dites "${words}" — développez en profondeur. Quels faits concrets soutiennent votre position ? Citez des chiffres précis, des exemples réels, des sources vérifiables. Un argument sans preuve reste une affirmation.`,
- `Point intéressant, mais insuffisant. L'argument adverse serait que vous avez tort sur ce point précis — et ils auraient des données pour le prouver. Comment les réfutez-vous point par point ? Soyez méthodique.`,
- `"${words}" — c'est affirmer beaucoup sans démontrer. Quel mécanisme concret défendez-vous ? Quel délai réaliste proposez-vous ? Quels acteurs sont impliqués, et quels obstacles anticipez-vous ?`,
- `Je vous relance : au-delà des mots, qu'est-ce qui change concrètement dans la vie des gens ? Donnez un exemple précis, mesurable, avec un chiffre et une date. C'est ça, argumenter.`,
- `Bien. Maintenant construisez l'argument complet : thèse principale, preuve empirique numéro 1, preuve numéro 2, réfutation de la critique principale, et conclusion logique. Pas de généralités — du concret.`,
+ `Pouvez-vous préciser ? Ce que vous venez de dire appelle des éléments concrets. Donnez un exemple réel, un chiffre vérifiable, ou une référence précise qui soutient votre position.`,
+ `C'est un début. Mais quelle est votre preuve la plus solide ? Anticipez la principale objection à votre argument et réfutez-la immédiatement, avec des faits.`,
+ `Construisez l'argument complet : thèse principale, deux preuves empiriques distinctes, réfutation de la critique centrale, conclusion. Pas de généralités — du concret et du mesurable.`,
+ `Allez plus loin. Quelles seraient les conséquences précises si votre position est juste ? Soyez spécifique sur les délais, les acteurs impliqués et les mécanismes réels.`,
+ `Votre réponse est trop générale. Quel mécanisme précis sous-tend votre raisonnement ? Illustrez avec un cas concret que votre interlocuteur ne peut pas ignorer.`,
  ];
  const reply=fallbacks[Math.floor(Math.random()*fallbacks.length)];
  setMsgs(m=>[...m,{role:"ai" as const,text:reply}]);
@@ -4972,7 +4978,7 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
 function UNSimScreen({unRole,unTopic,T,onBack}:{unRole:typeof UN_DEL[0];unTopic:string;T:Theme;onBack:()=>void}) {
  type UNPhase="ouverture"|"debat"|"consultation"|"vote"|"cloture";
  type UNMsg={role:"user"|"ai"|"event";flag:string;country:string;gender:"M"|"F";text:string};
- const G:Record<string,"M"|"F">={fr:"F",us:"M",ru:"M",cn:"M",uk:"F"};
+ const G:Record<string,"M"|"F">={fr:"F",us:"M",ru:"M",cn:"M",uk:"F",dz:"M",jp:"M",br:"M",ec:"F",sl:"F"};
  const [msgs,setMsgs]=useState<UNMsg[]>([]);
  const [phase,setPhase]=useState<UNPhase>("ouverture");
  const [input,setInput]=useState("");
@@ -5070,9 +5076,10 @@ Tiens compte des positions habituelles : Russie et Chine opposées aux intervent
  setTimeout(()=>chatRef.current?.scrollTo({top:9999,behavior:"smooth"}),100);
  setLoading(true);
  const others=UN_DEL.filter(d=>d.id!==unRole.id&&d.id!==PRES_DEL.id);
- const pairs:([number,number])[]= [[0,1],[1,2],[0,2],[1,3],[0,3],[2,3]];
- const [i1,i2]=pairs[(n-1)%pairs.length];
- const respondents=[others[i1%others.length],others[i2%others.length]].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i);
+ // Rotate through all delegates each turn — always picks 2 different ones
+ const i1=(n-1)%others.length;
+ const i2=(n)%others.length===i1?(n+1)%others.length:(n)%others.length;
+ const respondents=[others[i1],others[i2]].filter((v,i,a)=>v&&a.findIndex(x=>x.id===v.id)===i);
  const ANGLES=["droit international et Charte ONU (cite article précis + résolution réelle S/RES/...)","enjeux géopolitiques et équilibres régionaux (alliances, sphères d'influence)","impact humanitaire et DIH (Conventions de Genève, chiffres OCHA/HCR)","implications économiques et sanctions (commerce, matières premières, dollar)","précédents historiques (Bosnie 1995, Libye 2011, Syrie 2013 — leçons apprises ou répétées)","proposition concrète de résolution (libellé d'un paragraphe, mécanisme, conditions de vote)"];
  const angle=ANGLES[(n-1)%ANGLES.length];
  const rawHist=newMsgs.map(m=>({role:(m.role==="user"?"user":"model") as "user"|"model",parts:[{text:`[${m.country}] ${m.text}`}]}));
@@ -5105,21 +5112,22 @@ Tiens compte des positions habituelles : Russie et Chine opposées aux intervent
  speakQ.push({text:ord,gender:G[PRES_DEL.id]||"M"});
  }
  // Parallel country responses — second argues with first, both react naturally to user
- const makePrompt=(del:typeof UN_DEL[0],isSecond:boolean)=>`Tu es ${del.flag} ${del.country} au Conseil de Sécurité de l'ONU. Réponds naturellement à ce que ${unRole.country} vient de dire.
-
-DOCTRINE : ${del.doctrine.slice(0,200)}
-${unRole.country} a dit : "${text}"
-${isSecond&&prevR1?`${respondents[0]?.country} vient de déclarer : "${prevR1.slice(0,100)}" — si tu n'es pas d'accord, réponds-leur directement en 1 phrase.`:""}
-Angle ce tour : ${angle}
-
-Réponds comme un vrai diplomate dans un débat : réagis à l'argument de ${unRole.country}, soutiens ou conteste avec un fait précis, propose ou critique une action. Vocabulaire onusien naturel. Cite 1 article de la Charte ou résolution réelle. 4-5 phrases. Commence par "Monsieur le Président," ou "Madame la Présidente,".
-Ne commence JAMAIS par répéter ce que ${unRole.country} a dit mot pour mot.`;
- const [res1,res2]=await Promise.allSettled(respondents.map((del,idx)=>callGemini(makePrompt(del,idx===1),[...hist,{role:"user" as const,parts:[{text:`La délégation de ${del.country} a la parole.`}]}],"",480)));
+ const makePrompt=(del:typeof UN_DEL[0],isSecond:boolean)=>`Tu es ${del.flag} ${del.country}, Conseil de Sécurité ONU. Sujet : « ${unTopic} ». ${unRole.country} vient de déclarer : "${text.slice(0,200)}".
+DOCTRINE : ${del.doctrine.slice(0,150)}
+${isSecond&&prevR1?`${respondents[0]?.country} a dit : "${prevR1.slice(0,80)}" — réponds-leur en 1 phrase si tu n'es pas d'accord.`:""}
+3-4 phrases diplomatiques. Commence par "Monsieur le Président," ou "Madame la Présidente,". Cite 1 résolution S/RES/ ou article de la Charte. Angle : ${angle.slice(0,80)}.`;
+ const callDel=async(del:typeof UN_DEL[0],isSecond:boolean):Promise<string>=>{
+ const p=makePrompt(del,isSecond);
+ const h=[...hist,{role:"user" as const,parts:[{text:`La délégation de ${del.country} prend la parole.`}]}];
+ try{return await callGemini(p,h,"",300);}
+ catch{await new Promise(r=>setTimeout(r,900));return await callGemini(p,h,"",280);}
+ };
+ const [res1,res2]=await Promise.allSettled(respondents.map((del,idx)=>callDel(del,idx===1)));
  if(!mountedRef.current){setLoading(false);return;}
  respondents.forEach((del,idx)=>{
  const r=idx===0?res1:res2;
  if(r.status==="fulfilled"&&r.value){addMsg({role:"ai",flag:del.flag,country:del.country,gender:G[del.id]||"M",text:r.value});speakQ.push({text:r.value,gender:G[del.id]||"M"});}
- else{const FBS=[`Monsieur le Président, ma délégation a écouté attentivement la déclaration de ${unRole.country} sur « ${unTopic} ». Notre position reste fondée sur les principes de la Charte des Nations Unies, notamment l'article 2 paragraphe 4. Nous exprimons nos réserves et interviendrons lors du prochain tour.`,`Madame la Présidente, la délégation de ${del.country} prend acte des arguments avancés par ${unRole.country}. Tout règlement de cette question doit respecter les principes de souveraineté et de non-ingérence. Nous nous réservons le droit de répondre dans les meilleurs délais.`,`Monsieur le Président, la délégation de ${del.country} considère que le sujet « ${unTopic} » appelle un examen approfondi. Nous invitons à la prudence et rappelons l'importance du consensus au sein du Conseil. Notre délégation fera parvenir une déclaration écrite.`,`Madame la Présidente, nous avons pris note des préoccupations exprimées par ${unRole.country}. La délégation de ${del.country} souligne que toute décision doit être fondée sur le droit international et les résolutions pertinentes du Conseil de Sécurité. Nous interviendrons au prochain tour.`];const fb=FBS[(idx*2+n)%FBS.length];addMsg({role:"ai",flag:del.flag,country:del.country,gender:G[del.id]||"M",text:fb});speakQ.push({text:fb,gender:G[del.id]||"M"});}
+ else{const FBS=[`Monsieur le Président, ${del.country} a pris note de la déclaration de ${unRole.country} sur « ${unTopic} ». Notre position s'appuie sur la Charte des Nations Unies, notamment l'article 2§4. Nous exprimons nos réserves et interviendrons au prochain tour.`,`Madame la Présidente, ${del.country} prend acte des arguments de ${unRole.country}. Tout règlement de cette question exige le respect strict de la souveraineté des États et du principe de non-ingérence. Nous communiquerons notre position dans les meilleurs délais.`,`Monsieur le Président, ${del.country} considère que « ${unTopic} » appelle un examen approfondi. La résolution S/RES/2202 et les principes fondateurs de la Charte doivent guider nos travaux. Nous interviendrons lors du prochain tour.`,`Madame la Présidente, ${del.country} a écouté attentivement ${unRole.country}. Toute décision sur « ${unTopic} » doit reposer sur le consensus et le droit international. Notre délégation déposera une déclaration formelle.`];const fb=FBS[(idx*2+n)%FBS.length];addMsg({role:"ai",flag:del.flag,country:del.country,gender:G[del.id]||"M",text:fb});speakQ.push({text:fb,gender:G[del.id]||"M"});}
  });
  // President transition
  const presClose=n===MAX_SIM_EXCHANGES-1?`Un vote pourra être demandé à l'issue du prochain tour de parole.`:n>=MAX_SIM_EXCHANGES?`Je propose une suspension pour consultations informelles avant le vote.`:`La parole est à la délégation de ${unRole.country}.`;
