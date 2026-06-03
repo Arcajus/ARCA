@@ -6849,7 +6849,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [phase,setPhase] = useState<Phase>("select");
  const [myCountry,setMyCountry] = useState<{id:string;flag:string;country:string}|null>(null);
  const [countrySearch,setCountrySearch] = useState("");
- const [tab,setTab] = useState<"salle"|"file"|"participants">("salle");
+ const [tab,setTab] = useState<"vue"|"debat"|"file"|"delegues"|"script">("vue");
  type Msg = {id:number;user:string;flag:string;text:string;time:number;system?:boolean;hasFloor?:boolean};
  const [msgs,setMsgs] = useState<Msg[]>([
   {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance est ouverte. Le Conseil est saisi du point suivant : « ${sim.topic} ». Je rappelle les règles : chaque délégation dispose de 2 à 5 minutes de temps de parole. Veuillez lever la main pour demander la parole.`,time:Date.now()-900000,system:true},
@@ -6860,7 +6860,6 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [input,setInput] = useState("");
  const [handRaised,setHandRaised] = useState(false);
  const [hasFloor,setHasFloor] = useState(false);
- const [timer,setTimer] = useState(0);
  const [timerActive,setTimerActive] = useState(false);
  const [speakerTime,setSpeakerTime] = useState(180);
  const [votes,setVotes] = useState<{pour:number;contre:number;abstention:number}>({pour:0,contre:0,abstention:0});
@@ -6928,6 +6927,138 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   c.id.includes(countrySearch.toLowerCase())
  );
 
+ // ── CHAMBER VIEW (SVG horseshoe) ───────────────────
+ const ChamberView=()=>{
+  const W=380,H=218;
+  const CX=W/2,CY=100;
+  const RX=148,RY=80;
+  const countries=ALL_UN_COUNTRIES.slice(0,Math.min(sim.participants,20));
+  const N=countries.length;
+  const presIdx=Math.floor(N/2);
+  const seats=countries.map((c,i)=>{
+   const ang=(180+i*180/Math.max(N-1,1))*Math.PI/180;
+   return{...c,x:CX+RX*Math.cos(ang),y:CY+RY*Math.sin(ang),isPres:i===presIdx};
+  });
+  const activeSpeaker=hasFloor?myCountry?.country:msgs.filter(m=>m.hasFloor&&!m.system).slice(-1)[0]?.user;
+  return(
+   <div style={{padding:"10px 12px 0"}}>
+    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}}>
+     {/* Background */}
+     <rect width={W} height={H} rx="12" fill={T.bg2}/>
+     {/* Chamber floor ellipse */}
+     <ellipse cx={CX} cy={CY+12} rx={170} ry={108} fill={T.surf}/>
+     <ellipse cx={CX} cy={CY+12} rx={160} ry={100} fill={T.mode==="dark"?"#0d1d35":"#dde6f5"}/>
+     {/* Horseshoe table */}
+     <ellipse cx={CX} cy={CY} rx={95} ry={53} fill={T.mode==="dark"?"#0a1e3d":"#1a3a6e"} stroke={col+"60"} strokeWidth="2"/>
+     <ellipse cx={CX} cy={CY} rx={87} ry={45} fill={T.mode==="dark"?"#071429":"#0f2855"}/>
+     {/* UN emblem */}
+     <text x={CX} y={CY+6} textAnchor="middle" fontSize="22" fill={col} opacity="0.35">🌐</text>
+     {/* Nameplate strips on table edge */}
+     <ellipse cx={CX} cy={CY} rx={95} ry={53} fill="none" stroke={col+"30"} strokeWidth="6" strokeDasharray="4 6"/>
+     {/* Seats */}
+     {seats.map((s,i)=>{
+      const isMe=s.id===myCountry?.id;
+      const isSpeaking=s.country===activeSpeaker;
+      const isRaised=handRaised&&s.id===myCountry?.id;
+      const R=s.isPres?21:isMe?19:17;
+      const fill=s.isPres?"#8B691430":isMe?col+"30":isSpeaking?"#16A34A30":T.card+"80";
+      const stroke=s.isPres?"#D97706":isMe?col:isSpeaking?"#16A34A":isRaised?"#D97706":T.b2;
+      const sw=isMe||isSpeaking?2.5:1.5;
+      return(
+       <g key={i}>
+        {isSpeaking&&<>
+         <circle cx={s.x} cy={s.y} r={R+9} fill="none" stroke="#16A34A" strokeWidth="1" opacity="0.25"/>
+         <circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke="#16A34A" strokeWidth="1.5" opacity="0.45"/>
+        </>}
+        {isMe&&!isSpeaking&&<circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke={col} strokeWidth="1" opacity="0.35"/>}
+        <circle cx={s.x} cy={s.y} r={R} fill={fill} stroke={stroke} strokeWidth={sw}/>
+        <text x={s.x} y={s.y+5} textAnchor="middle" fontSize={s.isPres?16:13}>{s.isPres?"🌐":s.flag}</text>
+        {isRaised&&<text x={s.x+R} y={s.y-R} fontSize="9">✋</text>}
+        {(isMe||s.isPres)&&(
+         <text x={s.x} y={s.y+R+11} textAnchor="middle" fontSize="7" fill={s.isPres?"#D97706":col} fontWeight="bold">
+          {s.isPres&&!isMe?"PRÉS.":(s.country.slice(0,8).toUpperCase())}
+         </text>
+        )}
+       </g>
+      );
+     })}
+     {/* Live speaker banner */}
+     {activeSpeaker&&(
+      <g>
+       <rect x="6" y={H-26} width={W-12} height={20} rx="5" fill="#16A34A20" stroke="#16A34A40" strokeWidth="1"/>
+       <circle cx="20" cy={H-16} r="4" fill="#16A34A"/>
+       <text x="30" y={H-11} fontSize="9" fill="#16A34A" fontWeight="bold">AU PUPITRE : {activeSpeaker.toUpperCase()}</text>
+      </g>
+     )}
+     {/* Legend */}
+     {!activeSpeaker&&(
+      <g>
+       <rect x="6" y={H-24} width={W-12} height={18} rx="4" fill={T.bg2} opacity="0.85"/>
+       <circle cx="18" cy={H-15} r="4" fill={col+"30"} stroke={col} strokeWidth="1.5"/>
+       <text x="26" y={H-11} fontSize="8" fill={T.textD}>Vous</text>
+       <circle cx="54" cy={H-15} r="4" fill="#16A34A30" stroke="#16A34A" strokeWidth="1.5"/>
+       <text x="62" y={H-11} fontSize="8" fill={T.textD}>Orateur</text>
+       <circle cx="100" cy={H-15} r="4" fill="#D9770630" stroke="#D97706" strokeWidth="1.5"/>
+       <text x="108" y={H-11} fontSize="8" fill={T.textD}>Main levée / Président</text>
+      </g>
+     )}
+    </svg>
+    {/* State cards below SVG */}
+    <div style={{display:"flex",gap:8,marginTop:8,marginBottom:10}}>
+     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,padding:"8px 11px",flex:1,minWidth:0}}>
+      <p style={{color:T.muted,fontSize:8,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase" as const}}>DÉLÉGATION</p>
+      <p style={{color:T.text,fontSize:12,fontWeight:800,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{myCountry?`${myCountry.flag} ${myCountry.country}`:"—"}</p>
+     </div>
+     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,padding:"8px 11px",flex:1,minWidth:0}}>
+      <p style={{color:T.muted,fontSize:8,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase" as const}}>DÉLÉGUÉS</p>
+      <p style={{color:T.text,fontSize:12,fontWeight:800,marginTop:2}}>{sim.participants} pays</p>
+     </div>
+     {hasFloor&&(
+      <div style={{background:"#16A34A15",border:"1px solid #16A34A40",borderRadius:9,padding:"8px 11px",flex:1}}>
+       <p style={{color:"#16A34A",fontSize:8,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase" as const}}>TEMPS</p>
+       <p style={{color:"#16A34A",fontSize:12,fontWeight:900,fontFamily:"monospace",marginTop:2}}>{fmtTimer(speakerTime)}</p>
+      </div>
+     )}
+    </div>
+   </div>
+  );
+ };
+
+ // ── TRANSCRIPT VIEW ────────────────────────────────
+ const TranscriptView=()=>{
+  const time=(ts:number)=>new Date(ts).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+  return(
+   <div style={{padding:"14px",flex:1 as const,overflowY:"auto" as const}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,flex:1}}>TRANSCRIPTION OFFICIELLE</p>
+     <span style={{background:T.bg2,color:T.muted,fontSize:9,padding:"2px 8px",borderRadius:4,border:`1px solid ${T.b1}`}}>{msgs.filter(m=>!m.system).length} interv.</span>
+    </div>
+    {msgs.map(m=>{
+     const t=time(m.time);
+     if(m.system) return(
+      <div key={m.id} style={{marginBottom:8,paddingLeft:10,borderLeft:`2px solid ${T.b1}`}}>
+       <p style={{color:T.muted,fontSize:10,fontStyle:"italic" as const,lineHeight:1.4}}>[{t}] {m.text}</p>
+      </div>
+     );
+     return(
+      <div key={m.id} style={{marginBottom:12,background:T.card,border:`1px solid ${m.hasFloor?col+"40":T.b1}`,borderRadius:10,padding:"10px 13px"}}>
+       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+        <span style={{fontSize:15}}>{m.flag}</span>
+        <span style={{color:T.text,fontSize:11,fontWeight:800,flex:1}}>{m.user}</span>
+        {m.hasFloor&&<span style={{background:col+"20",color:col,fontSize:8,fontWeight:800,padding:"1px 6px",borderRadius:3}}>PUPITRE</span>}
+        <span style={{color:T.muted,fontSize:9}}>{t}</span>
+       </div>
+       <p style={{color:T.textD,fontSize:12,lineHeight:1.6,fontStyle:"italic" as const}}>« {m.text} »</p>
+      </div>
+     );
+    })}
+    {msgs.filter(m=>!m.system).length===0&&(
+     <p style={{color:T.muted,fontSize:12,textAlign:"center" as const,marginTop:40}}>Aucune intervention pour l'instant.</p>
+    )}
+   </div>
+  );
+ };
+
  // Phase: country selection
  if(phase==="select") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
@@ -6979,7 +7110,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     <div style={{textAlign:"center" as const,marginBottom:8}}>
      <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>VOTE DE RÉSOLUTION</p>
      <p style={{color:T.text,fontSize:16,fontWeight:800,lineHeight:1.4,marginBottom:4}}>Le Conseil vote sur :</p>
-     <p style={{color:col,fontSize:14,fontWeight:700,lineHeight:1.4,fontStyle:"italic"}}>« {sim.topic} »</p>
+     <p style={{color:col,fontSize:14,fontWeight:700,lineHeight:1.4,fontStyle:"italic" as const}}>« {sim.topic} »</p>
     </div>
     {!myVote?(
      <div style={{display:"flex",flexDirection:"column" as const,gap:10,width:"100%",maxWidth:320}}>
@@ -7013,6 +7144,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  );
 
  // Phase: debate
+ const TABS:[typeof tab,string][]=[["vue","Chambre"],["debat","Débat"],["file","File"],["delegues","Délégués"],["script","Script"]];
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
    {/* Header */}
@@ -7029,32 +7161,52 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      </div>
      <button onClick={()=>setPhase("vote")} style={{background:"#16A34A",color:"#fff",fontSize:10,fontWeight:800,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>VOTER</button>
     </div>
-    {/* Timer bar when user has floor */}
     {hasFloor&&(
-     <div style={{background:`#E03535`+"15",border:`1px solid #E0353530`,borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+     <div style={{background:"#E03535"+"15",border:"1px solid #E0353530",borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
       <span style={{width:7,height:7,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite",flexShrink:0}}/>
       <span style={{color:"#E03535",fontSize:12,fontWeight:800,flex:1}}>Vous avez la parole — {myCountry?.flag} {myCountry?.country}</span>
       <span style={{fontFamily:"monospace",color:"#E03535",fontSize:14,fontWeight:900}}>{fmtTimer(speakerTime)}</span>
      </div>
     )}
-    <div style={{display:"flex",gap:5}}>
-     {(["salle","file","participants"] as const).map(t=>(
-      <button key={t} onClick={()=>setTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${tab===t?col:T.b1}`,background:tab===t?col+"15":"transparent",color:tab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
-       {t==="salle"?"Salle":t==="file"?"File ("+QUEUE.length+")":"Participants"}
+    <div style={{display:"flex",gap:4,overflowX:"auto" as const}}>
+     {TABS.map(([t,label])=>(
+      <button key={t} onClick={()=>setTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${tab===t?col:T.b1}`,background:tab===t?col+"15":"transparent",color:tab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0,whiteSpace:"nowrap" as const}}>
+       {label}{t==="file"?` (${QUEUE.length})`:""}
       </button>
      ))}
     </div>
    </div>
 
    <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
-    {tab==="salle"&&(
+    {tab==="vue"&&(
+     <div style={{flex:1,overflowY:"auto" as const}}>
+      <ChamberView/>
+      {/* Mini chat preview below chamber */}
+      <div style={{padding:"0 12px 12px"}}>
+       <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8}}>DERNIÈRES INTERVENTIONS</p>
+       {msgs.filter(m=>!m.system).slice(-3).map(m=>(
+        <div key={m.id} style={{display:"flex",gap:8,marginBottom:8,alignItems:"flex-start"}}>
+         <span style={{fontSize:16,flexShrink:0}}>{m.flag}</span>
+         <div style={{flex:1,minWidth:0}}>
+          <span style={{color:T.muted,fontSize:9,fontWeight:700}}>{m.user}</span>
+          <p style={{color:T.textD,fontSize:11,lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as const}}>{m.text}</p>
+         </div>
+        </div>
+       ))}
+       <button onClick={()=>setTab("debat")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:4}}>
+        Ouvrir le débat complet →
+       </button>
+      </div>
+     </div>
+    )}
+    {tab==="debat"&&(
      <>
       <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:7}}>
        {msgs.map(m=>(
         <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:1,alignItems:m.user===myCountry?.country?"flex-end":"flex-start" as const}}>
          {!m.system&&<span style={{color:T.muted,fontSize:10}}>{m.flag} {m.user}</span>}
          <div style={{maxWidth:"82%",padding:"7px 11px",borderRadius:11,background:m.system?T.bg2:m.user===myCountry?.country?col+"25":T.card,border:`1px solid ${m.system?T.b1:m.hasFloor?col+"50":T.b1}`}}>
-          {m.hasFloor&&!m.system&&<div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}><span style={{width:5,height:5,borderRadius:"50%",background:col,display:"inline-block"}}/>  <span style={{color:col,fontSize:9,fontWeight:800}}>AU PUPITRE</span></div>}
+          {m.hasFloor&&!m.system&&<div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}><span style={{width:5,height:5,borderRadius:"50%",background:col,display:"inline-block"}}/><span style={{color:col,fontSize:9,fontWeight:800}}>AU PUPITRE</span></div>}
           <p style={{color:m.system?T.muted:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
          </div>
          <span style={{color:T.muted,fontSize:9}}>{timeFromTs(m.time)}</span>
@@ -7102,7 +7254,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       </div>
      </div>
     )}
-    {tab==="participants"&&(
+    {tab==="delegues"&&(
      <div style={{padding:"14px",flex:1,overflowY:"auto"}}>
       <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>DÉLÉGATIONS PRÉSENTES · {sim.participants}</p>
       <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
@@ -7116,6 +7268,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       </div>
      </div>
     )}
+    {tab==="script"&&<TranscriptView/>}
    </div>
   </div>
  );
