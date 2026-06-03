@@ -6198,6 +6198,16 @@ function MenuDrawer({T,dark,onToggleDark,onClose,onSimulation,onAgenda,onPremium
 // ──────────────────────────────────────────────────
 // NEWS SCREEN
 // ──────────────────────────────────────────────────
+const STATIC_NEWS_FALLBACK: LiveArticle[] = [
+ {id:"sn1",title:"Conseil de sécurité de l'ONU : débat sur la réforme du droit de veto",src:"Le Monde Diplomatique",tag:"ONU",tagC:"#1A5FD4",time:"Il y a 2h",imgUrl:null,link:"#",verif:{label:"Source vérifiée",color:"#16A34A"}},
+ {id:"sn2",title:"Présidentielle 2027 : les candidats dévoilent leurs programmes économiques",src:"Le Figaro",tag:"POLITIQUE",tagC:"#E03535",time:"Il y a 3h",imgUrl:null,link:"#"},
+ {id:"sn3",title:"COP31 : accord historique sur le financement des pays en développement",src:"France 24",tag:"CLIMAT",tagC:"#16A34A",time:"Il y a 5h",imgUrl:null,link:"#"},
+ {id:"sn4",title:"Intelligence artificielle : l'UE finalise les premiers règlements d'application",src:"Les Échos",tag:"IA",tagC:"#7C3AED",time:"Il y a 6h",imgUrl:null,link:"#"},
+ {id:"sn5",title:"Parlement européen : vote sur la réforme du marché commun numérique",src:"Euronews",tag:"EUROPE",tagC:"#D97706",time:"Il y a 8h",imgUrl:null,link:"#"},
+ {id:"sn6",title:"Ukraine : sommet de paix à Genève — positions des 40 pays participants",src:"RFI",tag:"CONFLITS",tagC:"#E03535",time:"Il y a 10h",imgUrl:null,link:"#"},
+ {id:"sn7",title:"Sciences Po Paris : résultats du concours d'entrée 2026 et nouveaux chiffres d'admission",src:"L'Étudiant",tag:"ÉDUCATION",tagC:"#2B78F5",time:"Il y a 12h",imgUrl:null,link:"#"},
+];
+
 const NEWS_CATS = [
  {id:"all",label:"Tout",icon:"globe"},
  {id:"geo",label:"Géopolitique",icon:"globe",tags:["GÉOPOLITIQUE","DIPLOMATIE","CONFLITS","UKRAINE","GAZA","MOYEN-ORIENT","ONU","OTAN","USA","RUSSIE","CHINE","INDE","ASIE-PAC.","AM. LATINE","OCÉANIE","EUROPE","BALKANS","EU. EST","CAUCASE","ASIE CENT."]},
@@ -6235,7 +6245,7 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
    if(!quiet) setLoading(false);
   });
   if(!cancelled){
-   setLiveNews(articles);
+   setLiveNews(articles.length?articles:STATIC_NEWS_FALLBACK);
    setLoading(false);
    setRefreshing(false);
    setLastRefresh(new Date());
@@ -6356,8 +6366,9 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
      <div style={{textAlign:"center" as const,padding:"40px 20px"}}>
       <Ic n="globe" s={40} c={T.muted}/>
       <p style={{color:T.muted,marginTop:12,fontSize:13}}>
-       {search?"Aucun résultat pour « "+search+" »":"Chargement des actualités…"}
+       {search?"Aucun résultat pour « "+search+" »":"Aucune actualité disponible pour le moment."}
       </p>
+      {!search&&<p style={{color:T.muted,fontSize:11,marginTop:6}}>Appuie sur ⟳ pour réessayer ou explore les autres onglets.</p>}
      </div>
     )}
    </div>
@@ -8531,6 +8542,7 @@ export default function NexusApp() {
  useEffect(()=>{
  if(typeof window==="undefined") return;
  setStreak(updateStreak());
+ if(localStorage.getItem("nexus_onboarded")!=="1") setShowOnboarding(true);
  },[]);
 
  useEffect(()=>{
@@ -8572,11 +8584,11 @@ export default function NexusApp() {
  };
 
  const NAV = [
- {id:"news",icon:"globe",label:"NEWS"},
- {id:"community",icon:"users",label:"COMMUNAUTÉ"},
- {id:"opportunities",icon:"brief",label:"OPPS"},
- {id:"messages",icon:"msg",label:"MESSAGES"},
- {id:"simulations",icon:"play",label:"SIMS"},
+ {id:"news",icon:"globe",label:"Actus"},
+ {id:"community",icon:"users",label:"Réseau"},
+ {id:"opportunities",icon:"brief",label:"Offres"},
+ {id:"messages",icon:"msg",label:"Messages"},
+ {id:"simulations",icon:"play",label:"Débats"},
  ];
 
  return(
@@ -8722,16 +8734,17 @@ export default function NexusApp() {
  {!showPremium&&(
  <div style={{background:`${T.surf}F5`,backdropFilter:"blur(24px)",borderTop:`1px solid ${T.b1}`,display:"flex",paddingTop:8,paddingBottom:`max(20px, env(safe-area-inset-bottom))`,flexShrink:0,zIndex:100}}>
  {NAV.map(n=>(
- <button key={n.id} onClick={()=>switchTab(n.id as typeof tab)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"4px 0",transition:"transform .1s"}}>
- <div style={{width:40,height:34,borderRadius:12,background:tab===n.id?T.blueG:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",position:"relative"}}>
+ <button key={n.id} onClick={()=>switchTab(n.id as typeof tab)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"none",border:"none",cursor:"pointer",padding:"4px 0",transition:"transform .1s"}}>
+ <div style={{width:40,height:30,borderRadius:12,background:tab===n.id?T.blueG:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",position:"relative"}}>
  {tab===n.id&&<div style={{position:"absolute",top:-1,left:"50%",transform:"translateX(-50%)",width:20,height:3,borderRadius:2,background:T.blueB}}/>}
- <Ic n={n.icon} s={20} c={tab===n.id?T.blueB:T.muted} w={tab===n.id?2.2:1.6}/>
+ <Ic n={n.icon} s={18} c={tab===n.id?T.blueB:T.muted} w={tab===n.id?2.2:1.6}/>
  {n.id==="news"&&feedUnread>0&&tab!=="news"&&(
- <div style={{position:"absolute",top:2,right:4,minWidth:16,height:16,borderRadius:8,background:T.red,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:900,color:"#fff",padding:"0 3px"}}>
+ <div style={{position:"absolute",top:2,right:4,minWidth:15,height:15,borderRadius:8,background:T.red,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:900,color:"#fff",padding:"0 2px"}}>
  {feedUnread>9?"9+":feedUnread}
  </div>
  )}
  </div>
+ <span style={{fontSize:9,fontWeight:700,color:tab===n.id?T.blueB:T.muted,letterSpacing:.3,textTransform:"uppercase"}}>{n.label}</span>
  </button>
  ))}
  </div>
