@@ -6879,9 +6879,12 @@ const ttsSpeak=(text:string)=>{
 
 function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const col="#1A5FD4";
+ const hasPremium=typeof window!=="undefined"&&(localStorage.getItem("nexus_premium")==="true"||localStorage.getItem("nexus_mod")==="true");
+ // Non-premium: skip country selection, assign randomly
+ const randomCountry=ALL_UN_COUNTRIES[Math.floor(Math.random()*Math.min(sim.participants,ALL_UN_COUNTRIES.length))];
  type Phase="select"|"debate"|"vote";
- const [phase,setPhase]=useState<Phase>("select");
- const [myCountry,setMyCountry]=useState<{id:string;flag:string;country:string}|null>(null);
+ const [phase,setPhase]=useState<Phase>(hasPremium?"select":"debate");
+ const [myCountry,setMyCountry]=useState<{id:string;flag:string;country:string}|null>(hasPremium?null:randomCountry);
  const [countrySearch,setCountrySearch]=useState("");
  const [tab,setTab]=useState<"vue"|"file"|"delegues"|"script">("vue");
  type Msg={id:number;user:string;flag:string;text:string;time:number;system?:boolean;hasFloor?:boolean};
@@ -7076,6 +7079,16 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      </div>
     )}
 
+    {/* Random country banner for non-premium */}
+    {!hasPremium&&myCountry&&(
+     <div style={{margin:"0 12px",background:`${T.amber}15`,border:`1px solid ${T.amber}40`,borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
+      <span style={{fontSize:18,flexShrink:0}}>{myCountry.flag}</span>
+      <div style={{flex:1,minWidth:0}}>
+       <p style={{color:T.amber,fontSize:10,fontWeight:800}}>Pays attribué aléatoirement</p>
+       <p style={{color:T.textD,fontSize:11}}>{myCountry.country} · Abonnez-vous pour choisir votre délégation</p>
+      </div>
+     </div>
+    )}
     {/* Link to transcript */}
     <div style={{padding:"8px 14px 12px"}}>
      <button onClick={()=>setTab("script")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:5}}>
@@ -7912,6 +7925,7 @@ function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
  type SimView = "hub"|"create"|"room";
  type SimFilter = "all"|SimType;
+ const hasPremium = typeof window!=="undefined"&&(localStorage.getItem("nexus_premium")==="true"||localStorage.getItem("nexus_mod")==="true");
  const [view,setView] = useState<SimView>("hub");
  const [filter,setFilter] = useState<SimFilter>("all");
  const [selectedSim,setSelectedSim] = useState<SimRoom|null>(null);
@@ -7934,7 +7948,10 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
 
  if(view==="room"&&selectedSim) return <SimRoomView T={T} sim={selectedSim} onBack={()=>{setView("hub");setSelectedSim(null);}}/>;
 
- if(view==="create") return(
+ if(view==="create") {
+  if(!hasPremium){onPremium();setView("hub");}
+ }
+ if(view==="create"&&hasPremium) return(
   <div style={{padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:16}}>
    <div style={{display:"flex",alignItems:"center",gap:10}}>
     <button onClick={()=>setView("hub")} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
@@ -7950,18 +7967,22 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
       </button>
      ))}
     </div>
-    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginTop:4}}>SUJET</p>
-    <textarea value={createTopic} onChange={e=>setCreateTopic(e.target.value)} placeholder="Entrez le sujet de la simulation…" rows={2} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none"}}/>
-    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
-     {(createType==="onu"?UN_TOPICS:createType==="proces"?TRIAL_TOPICS.slice(0,5):DEBATE_CATEGORIES[0].topics.slice(0,5)).slice(0,3).map(s=>(
-      <button key={s} onClick={()=>setCreateTopic(s)} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${T.b1}`,background:T.bg2,color:T.textD,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",flexShrink:0,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{s}</button>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginTop:4}}>SUJET <span style={{color:SIM_TYPE_COLORS[createType],fontSize:9}}>(libre — écrivez votre propre sujet)</span></p>
+    <textarea value={createTopic} onChange={e=>setCreateTopic(e.target.value)} placeholder={createType==="onu"?"Ex : Cessez-le-feu immédiat à Gaza…":createType==="proces"?"Ex : Affaire de corruption ministérielle…":"Ex : Le revenu universel est-il une utopie ?"} rows={3} style={{padding:"10px 12px",borderRadius:8,border:`1.5px solid ${createTopic.trim()?SIM_TYPE_COLORS[createType]:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none",transition:"border-color .2s"}}/>
+    <p style={{color:T.muted,fontSize:9,marginTop:-6}}>ou choisissez un sujet suggéré :</p>
+    <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
+     {(createType==="onu"?UN_TOPICS:createType==="proces"?TRIAL_TOPICS:DEBATE_CATEGORIES[0].topics).slice(0,6).map(s=>(
+      <button key={s} onClick={()=>setCreateTopic(s)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${createTopic===s?SIM_TYPE_COLORS[createType]:T.b1}`,background:createTopic===s?SIM_TYPE_COLORS[createType]+"15":T.bg2,color:createTopic===s?SIM_TYPE_COLORS[createType]:T.textD,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{s}</button>
      ))}
     </div>
     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginTop:4}}>DATE (minimum 48h)</p>
     <input type="datetime-local" value={createDate} onChange={e=>setCreateDate(e.target.value)} min={new Date(Date.now()+172800000).toISOString().slice(0,16)} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
-    <div style={{background:SIM_TYPE_COLORS[createType]+"12",border:`1px solid ${SIM_TYPE_COLORS[createType]}30`,borderRadius:10,padding:"10px 14px"}}>
-     <p style={{color:SIM_TYPE_COLORS[createType],fontSize:12,fontWeight:800}}>Requiert : NEXUS MODÉRATEUR (9,99€/mois)</p>
-     <p style={{color:T.textD,fontSize:11,marginTop:3}}>{createType==="onu"?"193 délégations · Salle auto-créée si > 193 participants":createType==="proces"?"Phases : Discovery (24h) → Procès · Rôles assignés":"2 équipes · Points · Vote final"}</p>
+    <div style={{background:"#16A34A15",border:"1px solid #16A34A30",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
+     <span style={{fontSize:16,flexShrink:0}}>✅</span>
+     <div>
+      <p style={{color:"#16A34A",fontSize:12,fontWeight:800}}>Accès NEXUS MODÉRATEUR actif</p>
+      <p style={{color:T.textD,fontSize:11,marginTop:2}}>{createType==="onu"?"Jusqu'à 193 délégations · Non-abonnés auront un pays aléatoire":createType==="proces"?"Discovery (24h) → Procès complet · Rôles assignés":"2 équipes · Points · Vote public final"}</p>
+     </div>
     </div>
     <button onClick={createSim} disabled={!createTopic.trim()||!createDate} style={{padding:"13px",borderRadius:10,border:"none",background:createTopic.trim()&&createDate?SIM_TYPE_COLORS[createType]:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:createTopic.trim()&&createDate?"pointer":"default",fontFamily:"inherit"}}>Créer la simulation</button>
    </div>
@@ -7975,8 +7996,8 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>Débats en temps réel</p>
      <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>SIMULATIONS</h1>
     </div>
-    <button onClick={()=>{haptic();setView("create");}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginTop:4,flexShrink:0}}>
-     <Ic n="plus" s={14} c={T.blueB}/> Créer
+    <button onClick={()=>{haptic();if(!hasPremium){onPremium();return;}setView("create");}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,border:`1px solid ${hasPremium?T.blueB:T.amber+"80"}`,background:hasPremium?T.blueG:`${T.amber}10`,color:hasPremium?T.blueB:T.amber,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginTop:4,flexShrink:0}}>
+     {hasPremium?<Ic n="plus" s={14} c={T.blueB}/>:<span style={{fontSize:13}}>🔒</span>} Créer
     </button>
    </div>
    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
