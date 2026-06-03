@@ -6580,11 +6580,42 @@ async function fetchLiveOpps(onChunk?:(items:LiveOpp[])=>void):Promise<LiveOpp[]
  return all;
 }
 
+const TYPE_OPP_COL:Record<string,string>={Stage:"#2B78F5",Emploi:"#16A34A",Alternance:"#7C3AED",Bénévolat:"#D97706",JPO:"#E03535"};
+const STATIC_LIVE_OPPS:LiveOpp[]=OPPORTUNITIES_DATA.map(o=>({
+ id:String(o.id),
+ title:o.title,
+ src:o.org,
+ type:(o.type==="Bénévolat"?"gigs":"emploi") as LiveOpp["type"],
+ link:o.link,
+ time:o.deadline||o.duration||"Ouvert",
+ tag:o.type.toUpperCase(),
+ tagC:TYPE_OPP_COL[o.type]||"#2B78F5",
+}));
+const STATIC_EVENTS:LiveOpp[]=[
+ {id:"ev1",title:"Forum Sciences Po — Carrières Internationales",src:"Sciences Po Paris",type:"events",link:"https://www.sciencespo.fr",time:"Mars 2027",tag:"FORUM",tagC:"#16A34A"},
+ {id:"ev2",title:"Conférence annuelle IRIS — Géopolitique mondiale 2026",src:"IRIS",type:"events",link:"https://www.iris-france.org",time:"Nov. 2026",tag:"CONFÉRENCE",tagC:"#16A34A"},
+ {id:"ev3",title:"MUN Paris Sciences Po — Simulation ONU",src:"AMUN Paris",type:"events",link:"https://www.sciencespo.fr",time:"Fév. 2027",tag:"MUN",tagC:"#1A5FD4"},
+ {id:"ev4",title:"Tournoi Éloquence Paris — Inter-Grandes Écoles",src:"Eloquence France",type:"events",link:"#",time:"Avr. 2027",tag:"COMPÉTITION",tagC:"#7C3AED"},
+ {id:"ev5",title:"Salon de l'Étudiant — Carrières Droit & RI",src:"Studyrama",type:"events",link:"https://www.studyrama.com",time:"Jan. 2027",tag:"SALON",tagC:"#D97706"},
+ {id:"ev6",title:"THIMUN — La Haye (UNESCO Model UN)",src:"THIMUN Foundation",type:"events",link:"https://www.thimun.org",time:"Jan. 2027",tag:"MUN",tagC:"#1A5FD4"},
+ {id:"ev7",title:"Conférence OCDE — Forum mondial économie",src:"OCDE",type:"events",link:"https://www.oecd.org",time:"Mai 2027",tag:"CONFÉRENCE",tagC:"#16A34A"},
+ {id:"ev8",title:"Brussels Forum — German Marshall Fund",src:"GMF",type:"events",link:"https://www.gmfus.org",time:"Mars 2027",tag:"FORUM",tagC:"#16A34A"},
+ {id:"ev9",title:"Tournoi National Joutes Oratoires — NEXUS Cup",src:"NEXUS",type:"events",link:"#",time:"Juin 2027",tag:"NEXUS",tagC:"#E03535"},
+ {id:"ev10",title:"Rencontres Internationales Sciences Politiques — RISPO",src:"AFSP",type:"events",link:"https://www.afsp.info",time:"Juil. 2027",tag:"COLLOQUES",tagC:"#16A34A"},
+];
+const STATIC_GIGS:LiveOpp[]=[
+ {id:"g1",title:"Consultant·e en communication politique — mission 3 mois",src:"Agence Publicum",type:"gigs",link:"#",time:"Immédiat",tag:"CONSULTING",tagC:"#7C3AED"},
+ {id:"g2",title:"Rédacteur·rice de discours et notes politiques — freelance",src:"Cabinet Oratoire",type:"gigs",link:"#",time:"Ouvert",tag:"RÉDACTION",tagC:"#7C3AED"},
+ {id:"g3",title:"Coach prise de parole en public — formateur indépendant",src:"Éloquence Pro",type:"gigs",link:"#",time:"Ouvert",tag:"COACHING",tagC:"#7C3AED"},
+ {id:"g4",title:"Interprète de conférence FR/EN/ES — missions ponctuelles",src:"Geneva Interpreting",type:"gigs",link:"#",time:"Selon missions",tag:"INTERPRÉTARIAT",tagC:"#7C3AED"},
+ {id:"g5",title:"Chargé·e de veille géopolitique — mission mensuelle",src:"Think Tank indépendant",type:"gigs",link:"#",time:"Ouvert",tag:"VEILLE",tagC:"#7C3AED"},
+];
+
 function NewOpportunitiesScreen({T}:{T:Theme}) {
  type OppTab = "emploi"|"gigs"|"events"|"deals";
  const [subTab,setSubTab] = useState<OppTab>("emploi");
- const [liveOpps,setLiveOpps] = useState<LiveOpp[]>([]);
- const [loading,setLoading] = useState(true);
+ const [liveOpps,setLiveOpps] = useState<LiveOpp[]>([...STATIC_LIVE_OPPS,...STATIC_EVENTS,...STATIC_GIGS]);
+ const [loading,setLoading] = useState(false);
  const [lastRefresh,setLastRefresh] = useState<Date|null>(null);
  const [showPost,setShowPost] = useState(false);
  const [postForm,setPostForm] = useState({title:"",desc:"",link:""});
