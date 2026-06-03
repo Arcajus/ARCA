@@ -6553,7 +6553,7 @@ const JOB_FEEDS = [
  {q:"salon emploi public secteur associations recrutement france",type:"events",src:"Salons Emploi"},
 ];
 
-type LiveOpp = {id:string;title:string;src:string;type:"emploi"|"gigs"|"events"|"deals";link:string;time:string;tag:string;tagC:string};
+type LiveOpp = {id:string;title:string;src:string;type:"emploi"|"gigs"|"events"|"deals";link:string;time:string;tag:string;tagC:string;deadlineIso?:string};
 
 async function fetchLiveOpps(onChunk?:(items:LiveOpp[])=>void):Promise<LiveOpp[]> {
  const seen=new Set<string>();
@@ -6581,16 +6581,20 @@ async function fetchLiveOpps(onChunk?:(items:LiveOpp[])=>void):Promise<LiveOpp[]
 }
 
 const TYPE_OPP_COL:Record<string,string>={Stage:"#2B78F5",Emploi:"#16A34A",Alternance:"#7C3AED",Bénévolat:"#D97706",JPO:"#E03535"};
-const STATIC_LIVE_OPPS:LiveOpp[]=OPPORTUNITIES_DATA.map(o=>({
- id:String(o.id),
- title:o.title,
- src:o.org,
- type:(o.type==="Bénévolat"?"gigs":"emploi") as LiveOpp["type"],
- link:o.link,
- time:o.deadline||o.duration||"Ouvert",
- tag:o.type.toUpperCase(),
- tagC:TYPE_OPP_COL[o.type]||"#2B78F5",
-}));
+const _TODAY=new Date().toISOString().slice(0,10);
+const STATIC_LIVE_OPPS:LiveOpp[]=OPPORTUNITIES_DATA
+ .filter(o=>!o.deadlineIso||o.deadlineIso>=_TODAY)
+ .map(o=>({
+  id:String(o.id),
+  title:o.title,
+  src:o.org,
+  type:(o.type==="Bénévolat"?"gigs":"emploi") as LiveOpp["type"],
+  link:o.link,
+  time:o.deadline||o.duration||"Ouvert",
+  tag:o.type.toUpperCase(),
+  tagC:TYPE_OPP_COL[o.type]||"#2B78F5",
+  deadlineIso:o.deadlineIso,
+ }));
 const STATIC_EVENTS:LiveOpp[]=[
  {id:"ev1",title:"Forum Sciences Po — Carrières Internationales",src:"Sciences Po Paris",type:"events",link:"https://www.sciencespo.fr",time:"Mars 2027",tag:"FORUM",tagC:"#16A34A"},
  {id:"ev2",title:"Conférence annuelle IRIS — Géopolitique mondiale 2026",src:"IRIS",type:"events",link:"https://www.iris-france.org",time:"Nov. 2026",tag:"CONFÉRENCE",tagC:"#16A34A"},
@@ -6656,9 +6660,14 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
 
  const col = COLORS[subTab];
  const q=search.toLowerCase();
+ const todayStr=new Date().toISOString().slice(0,10);
  const displayed = subTab==="deals"
   ? STATIC_DEALS.filter(d=>!q||d.title.toLowerCase().includes(q))
-  : liveOpps.filter(o=>o.type===subTab&&(!q||o.title.toLowerCase().includes(q)||o.src.toLowerCase().includes(q)));
+  : liveOpps.filter(o=>
+     o.type===subTab
+     &&(!o.deadlineIso||o.deadlineIso>=todayStr)
+     &&(!q||o.title.toLowerCase().includes(q)||o.src.toLowerCase().includes(q))
+    );
 
  const timeSince=(d:Date)=>{const s=Math.floor((Date.now()-d.getTime())/1000);if(s<60)return`${s}s`;if(s<3600)return`${Math.floor(s/60)}min`;if(s<86400)return`${Math.floor(s/3600)}h`;return`${Math.floor(s/86400)}j`;};
 
