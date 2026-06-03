@@ -5677,10 +5677,10 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}
 // PREMIUM SCREEN 
 function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
  const plans = [
- {id:"free",name:"Gratuit",price:"0€",sub:"Pour toujours",features:["3 débats / mois","Journalistes Novice & Initié","Feed d'actualité","Score de base"],highlight:false,cta:"Plan actuel"},
- {id:"plus",name:"NEXUS+",price:"5,99€",sub:"/mois",features:["Débats illimités","Tous niveaux sauf Élite","Simulation ONU & Procès","Score détaillé","Classement mondial"],highlight:true,cta:"Commencer l'essai gratuit 7j"},
- {id:"pro",name:"NEXUS Pro",price:"14,99€",sub:"/mois",features:["Tout NEXUS+","Niveau Élite (Ministre)","Coaching personnalisé IA","Replay & analyse","Certification NEXUS"],highlight:false,cta:"Choisir Pro"},
- {id:"institution",name:"Institution",price:"299€",sub:"/mois",features:["Tout NEXUS Pro","Tableau de bord profs","Licences étudiants illimitées","Parcours concours (Sciences Po, ENA…)","Support dédié"],highlight:false,cta:"Contacter les ventes"},
+ {id:"free",name:"Gratuit",price:"0€",sub:"Pour toujours",features:["Observateur uniquement","Accès au fil NEWS","Accès à la Communauté","Voir les simulations en direct"],highlight:false,cta:"Plan actuel"},
+ {id:"plus",name:"NEXUS PLUS",price:"5,99€",sub:"/mois",features:["Participer aux simulations","Tout accès (Débat, ONU, Procès)","Guides & stratégies","Opportunités & Événements","Notifications & Calendrier"],highlight:true,cta:"Commencer l'essai gratuit 7j"},
+ {id:"mod",name:"NEXUS MODÉRATEUR",price:"9,99€",sub:"/mois",features:["Créer & modérer des simulations","Tout NEXUS PLUS","Contrôles modérateur (mute/kick)","Statistiques & enregistrements","Rôles premium (juge, président)"],highlight:false,cta:"Devenir Modérateur"},
+ {id:"institution",name:"Institution",price:"299-999€",sub:"/mois",features:["Tout NEXUS MODÉRATEUR","Dashboard institutions","Licences étudiants illimitées","Parcours personnalisés","Support dédié & SLA"],highlight:false,cta:"Contacter les ventes"},
  ];
  return(
  <div style={{padding:"16px 20px 32px"}}>
@@ -6194,16 +6194,605 @@ function MenuDrawer({T,dark,onToggleDark,onClose,onSimulation,onAgenda,onPremium
  );
 }
 
+
+// ──────────────────────────────────────────────────
+// NEWS SCREEN
+// ──────────────────────────────────────────────────
+function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
+ const [liveNews,setLiveNews] = useState<LiveArticle[]>([]);
+ const [loading,setLoading] = useState(true);
+ const [search,setSearch] = useState("");
+
+ useEffect(()=>{
+  let cancelled=false;
+  (async()=>{
+   setLoading(true);
+   const articles = await fetchLiveNews(chunk=>{
+    if(cancelled) return;
+    setLiveNews(prev=>{
+     const ids=new Set(prev.map((a:LiveArticle)=>a.id));
+     const news=chunk.filter((a:LiveArticle)=>!ids.has(a.id));
+     return news.length?[...news,...prev].slice(0,200):prev;
+    });
+    setLoading(false);
+   });
+   if(!cancelled){setLiveNews(articles);setLoading(false);}
+  })();
+  return()=>{cancelled=true;};
+ },[]);
+
+ const q=search.toLowerCase();
+ const filtered = liveNews.filter((a:LiveArticle)=>{
+  if(q&&!a.title.toLowerCase().includes(q)) return false;
+  return true;
+ });
+
+ return(
+  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
+   <div>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>Actualités en direct</p>
+    <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>NEWS</h1>
+   </div>
+   <div style={{position:"relative" as const}}>
+    <span style={{position:"absolute" as const,left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none" as const,display:"flex"}}><Ic n="search" s={14} c={T.muted}/></span>
+    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher une actualité…" style={{width:"100%",padding:"9px 12px 9px 34px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box" as const}}/>
+   </div>
+   {loading&&liveNews.length===0&&<div style={{display:"flex",flexDirection:"column" as const,gap:10}}>{[1,2,3,4,5].map(i=><div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:16,height:80,animation:"pulse 1.5s ease infinite"}}/>)}</div>}
+   <div style={{display:"flex",flexDirection:"column" as const,gap:12}}>
+    {filtered.map((a:LiveArticle)=>(
+     <a key={a.id} href={a.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none" as const}}>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column" as const,gap:8,transition:"all .15s",cursor:"pointer"}}
+       onMouseEnter={e=>(e.currentTarget as HTMLElement).style.borderColor=T.blueB+"60"}
+       onMouseLeave={e=>(e.currentTarget as HTMLElement).style.borderColor=T.b1}>
+       <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <span style={{background:T.blueG,color:T.blueB,fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:4,letterSpacing:1}}>{a.src}</span>
+        {a.verif&&<span style={{background:a.verif.color+"22",color:a.verif.color,fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:4}}>{a.verif.label}</span>}
+        <span style={{color:T.muted,fontSize:10,marginLeft:"auto"}}>{a.time}</span>
+       </div>
+       <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.4}}>{a.title}</p>
+       <div style={{display:"flex",alignItems:"center",gap:6}}>
+        <Ic n="globe" s={11} c={T.muted}/>
+        <span style={{color:T.muted,fontSize:10}}>Lire la suite →</span>
+       </div>
+      </div>
+     </a>
+    ))}
+    {filtered.length===0&&!loading&&<div style={{textAlign:"center" as const,padding:"40px 20px"}}><Ic n="globe" s={40} c={T.muted}/><p style={{color:T.muted,marginTop:12}}>Chargement des actualités…</p></div>}
+   </div>
+  </div>
+ );
+}
+
+// ──────────────────────────────────────────────────
+// COMMUNITY SCREEN
+// ──────────────────────────────────────────────────
+const COMMUNITY_POSTS_SEED = [
+ {id:1,handle:"@claire_debat",initials:"CD",text:"Retour sur ma simulation ONU hier — représenter la France face aux États-Unis sur la réforme du Conseil de Sécurité, c'est une expérience incroyable. Les arguments doivent être chirurgicaux.",time:Date.now()-3600000,likes:24,comments:7,simLink:""},
+ {id:2,handle:"@thomasL",initials:"TL",text:"Question : quelqu'un sait comment préparer un contre-interrogatoire convaincant pour le procès de demain ? Je suis côté défense.",time:Date.now()-7200000,likes:8,comments:12,simLink:""},
+ {id:3,handle:"@debatrice_pro",initials:"DP",text:"Débat général sur la réforme des retraites — victoire 8-5 pour le POUR. La clé : les arguments économiques bien sourcés > les arguments émotionnels.",time:Date.now()-86400000,likes:41,comments:19,simLink:"sim_123"},
+ {id:4,handle:"@nexus_user",initials:"NU",text:"À tous les débutants : commencez par les débats généraux avant de sauter dans les simulations ONU. La structure est plus simple et ça vous prépare vraiment bien.",time:Date.now()-172800000,likes:33,comments:6,simLink:""},
+];
+
+type CommunityPost = {id:number;handle:string;initials:string;text:string;time:number;likes:number;comments:number;simLink:string};
+
+function CommunityScreen({T}:{T:Theme}) {
+ const [posts,setPosts] = useState<CommunityPost[]>(()=>{
+  if(typeof window==="undefined") return COMMUNITY_POSTS_SEED;
+  try{const s=localStorage.getItem("nexus_community");return s?JSON.parse(s):COMMUNITY_POSTS_SEED;}catch{return COMMUNITY_POSTS_SEED;}
+ });
+ const [liked,setLiked] = useState<Set<number>>(new Set());
+ const [compose,setCompose] = useState("");
+ const [showCompose,setShowCompose] = useState(false);
+ const handle = typeof window!=="undefined"?localStorage.getItem("nexus_handle")||"Anonyme":"Anonyme";
+ const initials = handle.replace("@","").slice(0,2).toUpperCase();
+ const COLORS = ["#2B78F5","#7C3AED","#16A34A","#D97706","#E03535","#0891B2","#BE185D"];
+ const colorFor = (s:string) => COLORS[s.charCodeAt(0)%COLORS.length];
+
+ const submitPost = ()=>{
+  if(!compose.trim()) return;
+  const np:CommunityPost = {id:Date.now(),handle:handle||"@vous",initials,text:compose.trim(),time:Date.now(),likes:0,comments:0,simLink:""};
+  const updated = [np,...posts];
+  setPosts(updated);
+  if(typeof window!=="undefined") localStorage.setItem("nexus_community",JSON.stringify(updated.slice(0,200)));
+  setCompose("");
+  setShowCompose(false);
+  haptic();
+ };
+
+ const toggleLike=(id:number)=>{
+  haptic();
+  const wasLiked=liked.has(id);
+  setLiked(s=>{const ns=new Set(s);wasLiked?ns.delete(id):ns.add(id);return ns;});
+  setPosts(ps=>ps.map(p=>p.id===id?{...p,likes:p.likes+(wasLiked?-1:1)}:p));
+ };
+
+ return(
+  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:14}}>
+   <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+    <div>
+     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>Débats & Opinions</p>
+     <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>COMMUNAUTÉ</h1>
+    </div>
+    <button onClick={()=>{haptic();setShowCompose(s=>!s);}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginTop:4,flexShrink:0}}>
+     <Ic n="plus" s={14} c={T.blueB}/> Publier
+    </button>
+   </div>
+   {showCompose&&(
+    <div style={{background:T.card,border:`1px solid ${T.blueB}40`,borderRadius:14,padding:14,display:"flex",flexDirection:"column" as const,gap:10,animation:"fadeUp .2s ease"}}>
+     <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+      <div style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,flexShrink:0}}>{initials}</div>
+      <textarea value={compose} onChange={e=>setCompose(e.target.value)} placeholder="Partagez une opinion, un résultat de simulation, un débat…" rows={3} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none"}}/>
+     </div>
+     <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+      <button onClick={()=>setShowCompose(false)} style={{padding:"7px 14px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
+      <button onClick={submitPost} disabled={!compose.trim()} style={{padding:"7px 14px",borderRadius:8,border:"none",background:compose.trim()?T.blueB:"#555",color:"#fff",fontSize:12,fontWeight:800,cursor:compose.trim()?"pointer":"default",fontFamily:"inherit"}}>Publier</button>
+     </div>
+    </div>
+   )}
+   <div style={{display:"flex",flexDirection:"column" as const,gap:12}}>
+    {posts.map(p=>(
+     <div key={p.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column" as const,gap:10}}>
+      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+       <div style={{width:36,height:36,borderRadius:"50%",background:colorFor(p.handle)+"22",border:`1.5px solid ${colorFor(p.handle)}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:colorFor(p.handle),flexShrink:0}}>{p.initials||p.handle.slice(0,2).toUpperCase()}</div>
+       <div style={{flex:1}}>
+        <p style={{color:T.text,fontSize:13,fontWeight:800}}>{p.handle}</p>
+        <p style={{color:T.muted,fontSize:10}}>{timeFromTs(p.time)}</p>
+       </div>
+      </div>
+      <p style={{color:T.text,fontSize:13,lineHeight:1.6}}>{p.text}</p>
+      {p.simLink&&<div style={{background:T.blueG,border:`1px solid ${T.blueB}30`,borderRadius:8,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}><Ic n="play" s={14} c={T.blueB}/><span style={{color:T.blueB,fontSize:12,fontWeight:700}}>Voir la simulation</span></div>}
+      <div style={{display:"flex",gap:16,borderTop:`1px solid ${T.b1}`,paddingTop:10}}>
+       <button onClick={()=>toggleLike(p.id)} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",padding:0,color:liked.has(p.id)?T.red:T.muted}}>
+        <Ic n="heart" s={15} c={liked.has(p.id)?T.red:T.muted} w={liked.has(p.id)?2.5:1.6}/>
+        <span style={{fontSize:12,fontWeight:700,color:liked.has(p.id)?T.red:T.muted}}>{p.likes}</span>
+       </button>
+       <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",padding:0,color:T.muted}}>
+        <Ic n="comment" s={15} c={T.muted}/>
+        <span style={{fontSize:12,fontWeight:700,color:T.muted}}>{p.comments}</span>
+       </button>
+       <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",padding:0,color:T.muted,marginLeft:"auto"}}>
+        <Ic n="share" s={15} c={T.muted}/>
+       </button>
+      </div>
+     </div>
+    ))}
+   </div>
+  </div>
+ );
+}
+
+// ──────────────────────────────────────────────────
+// OPPORTUNITIES SCREEN (REDESIGNED)
+// ──────────────────────────────────────────────────
+function NewOpportunitiesScreen({T}:{T:Theme}) {
+ type OppTab = "emploi"|"gigs"|"events"|"deals";
+ const [subTab,setSubTab] = useState<OppTab>("emploi");
+ const [showPost,setShowPost] = useState(false);
+ const [postForm,setPostForm] = useState({title:"",desc:"",link:""});
+
+ const PRICES:Record<OppTab,string> = {emploi:"50€",gigs:"20€",events:"30€",deals:"Gratuit"};
+ const LABELS:Record<OppTab,string> = {emploi:"Emplois & Stages",gigs:"Freelance & Gigs",events:"Événements",deals:"Bons Plans"};
+ const ICONS:Record<OppTab,string> = {emploi:"brief",gigs:"zap",events:"cal",deals:"star"};
+ const COLORS:Record<OppTab,string> = {emploi:T.blueB,gigs:"#7C3AED",events:"#16A34A",deals:"#D97706"};
+
+ const MOCK_JOBS = [
+  {id:1,title:"Analyste Politique Junior",org:"Sciences Po Alumni",loc:"Paris",type:"CDI",desc:"Analyse des politiques publiques, rédaction de notes de synthèse.",link:"#",date:Date.now()-86400000},
+  {id:2,title:"Assistant Parlementaire",org:"Assemblée Nationale",loc:"Paris",type:"Stage",desc:"Soutien au travail législatif d'un député, suivi de l'actualité politique.",link:"#",date:Date.now()-172800000},
+  {id:3,title:"Chargé de Communication",org:"ONG Droits & Libertés",loc:"Remote",type:"Alternance",desc:"Création de contenu, gestion des réseaux, campagnes de sensibilisation.",link:"#",date:Date.now()-259200000},
+ ];
+ const MOCK_GIGS = [
+  {id:1,title:"Consultant pour débat public",org:"@debatexpert",budget:"150-300€",desc:"Préparation et coaching d'un client pour un débat professionnel. 2 sessions.",link:"#",date:Date.now()-3600000},
+  {id:2,title:"Rédacteur discours politique",org:"@rhetoriquelive",budget:"200-500€",desc:"Rédaction de discours pour élections municipales. Expérience requise.",link:"#",date:Date.now()-86400000},
+ ];
+ const MOCK_EVENTS = [
+  {id:1,title:"Conférence Diplomatie & IA",org:"IFRI",loc:"Paris",date_event:"15 juin 2026",price:"25€",desc:"Les nouvelles technologies au service de la diplomatie.",link:"#",date:Date.now()-86400000},
+  {id:2,title:"Tournoi d'éloquence IEP",org:"Sciences Po Paris",loc:"Paris",date_event:"22 juin 2026",price:"Gratuit",desc:"Championnat universitaire d'éloquence ouvert aux étudiants.",link:"#",date:Date.now()-172800000},
+  {id:3,title:"Forum Paix et Sécurité",org:"ONU France",loc:"Paris",date_event:"5 juil. 2026",price:"40€",desc:"Forum annuel sur les défis de la paix internationale.",link:"#",date:Date.now()-259200000},
+ ];
+ const MOCK_DEALS = [
+  {id:1,title:"Livre : L'Art de la Rhétorique",org:"Eyrolles",desc:"-30% pour les membres NEXUS. Code : NEXUS30",link:"#",date:Date.now()-86400000},
+  {id:2,title:"Accès Premium Sciences Po Online",org:"Sciences Po",desc:"3 mois offerts pour les abonnés NEXUS+",link:"#",date:Date.now()-172800000},
+ ];
+
+ const col = COLORS[subTab];
+
+ const renderItems = () => {
+  if(subTab==="emploi") return MOCK_JOBS.map(j=>(
+   <div key={j.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
+    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
+     <div style={{flex:1}}><p style={{color:T.text,fontSize:14,fontWeight:800}}>{j.title}</p><p style={{color:T.textD,fontSize:12,marginTop:2}}>{j.org} · {j.loc}</p></div>
+     <span style={{background:T.blueG,color:T.blueB,fontSize:10,fontWeight:800,padding:"3px 8px",borderRadius:6,flexShrink:0,marginLeft:8}}>{j.type}</span>
+    </div>
+    <p style={{color:T.textD,fontSize:12,lineHeight:1.5,marginBottom:10}}>{j.desc}</p>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+     <span style={{color:T.muted,fontSize:10}}>{timeFromTs(j.date)}</span>
+     <a href={j.link} target="_blank" rel="noopener noreferrer" style={{background:T.blueB,color:"#fff",fontSize:11,fontWeight:800,padding:"6px 14px",borderRadius:8,textDecoration:"none" as const}}>Postuler</a>
+    </div>
+   </div>
+  ));
+  if(subTab==="gigs") return MOCK_GIGS.map(g=>(
+   <div key={g.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
+    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
+     <p style={{color:T.text,fontSize:14,fontWeight:800,flex:1}}>{g.title}</p>
+     <span style={{color:"#7C3AED",fontSize:12,fontWeight:800,flexShrink:0,marginLeft:8}}>{g.budget}</span>
+    </div>
+    <p style={{color:T.textD,fontSize:12,marginBottom:4}}>{g.org}</p>
+    <p style={{color:T.textD,fontSize:12,lineHeight:1.5,marginBottom:10}}>{g.desc}</p>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+     <span style={{color:T.muted,fontSize:10}}>{timeFromTs(g.date)}</span>
+     <a href={g.link} target="_blank" rel="noopener noreferrer" style={{background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:800,padding:"6px 14px",borderRadius:8,textDecoration:"none" as const}}>Contacter</a>
+    </div>
+   </div>
+  ));
+  if(subTab==="events") return MOCK_EVENTS.map(ev=>(
+   <div key={ev.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
+    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
+     <p style={{color:T.text,fontSize:14,fontWeight:800,flex:1}}>{ev.title}</p>
+     <span style={{color:"#16A34A",fontSize:12,fontWeight:800,flexShrink:0,marginLeft:8}}>{ev.price}</span>
+    </div>
+    <p style={{color:T.textD,fontSize:12,marginBottom:6}}>{ev.org} · {ev.loc}</p>
+    <div style={{background:"#16A34A15",borderRadius:6,padding:"4px 10px",display:"inline-flex",alignItems:"center",gap:5,marginBottom:8}}>
+     <Ic n="cal" s={11} c="#16A34A"/>
+     <span style={{color:"#16A34A",fontSize:11,fontWeight:700}}>{ev.date_event}</span>
+    </div>
+    <p style={{color:T.textD,fontSize:12,lineHeight:1.5,marginBottom:10}}>{ev.desc}</p>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+     <span style={{color:T.muted,fontSize:10}}>{timeFromTs(ev.date)}</span>
+     <a href={ev.link} target="_blank" rel="noopener noreferrer" style={{background:"#16A34A",color:"#fff",fontSize:11,fontWeight:800,padding:"6px 14px",borderRadius:8,textDecoration:"none" as const}}>S&apos;inscrire</a>
+    </div>
+   </div>
+  ));
+  return MOCK_DEALS.map(d=>(
+   <div key={d.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
+    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
+     <p style={{color:T.text,fontSize:14,fontWeight:800,flex:1}}>{d.title}</p>
+     <span style={{background:"#D97706"+"22",color:"#D97706",fontSize:10,fontWeight:800,padding:"3px 8px",borderRadius:6,flexShrink:0,marginLeft:8}}>DEAL</span>
+    </div>
+    <p style={{color:T.textD,fontSize:12,marginBottom:8}}>{d.org}</p>
+    <p style={{color:T.textD,fontSize:12,lineHeight:1.5,marginBottom:10}}>{d.desc}</p>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+     <span style={{color:T.muted,fontSize:10}}>{timeFromTs(d.date)}</span>
+     <a href={d.link} target="_blank" rel="noopener noreferrer" style={{background:"#D97706",color:"#fff",fontSize:11,fontWeight:800,padding:"6px 14px",borderRadius:8,textDecoration:"none" as const}}>Voir l&apos;offre</a>
+    </div>
+   </div>
+  ));
+ };
+
+ return(
+  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:14}}>
+   <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+    <div>
+     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>Carrières & Réseau</p>
+     <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>OPPORTUNITÉS</h1>
+    </div>
+    <button onClick={()=>{haptic();setShowPost(s=>!s);}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,border:`1px solid ${col}`,background:col+"15",color:col,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginTop:4,flexShrink:0}}>
+     <Ic n="plus" s={14} c={col}/> Publier
+    </button>
+   </div>
+   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+    {(["emploi","gigs","events","deals"] as OppTab[]).map(t=>(
+     <button key={t} onClick={()=>{haptic();setSubTab(t);}} style={{padding:"10px",borderRadius:10,border:`1px solid ${subTab===t?COLORS[t]:T.b1}`,background:subTab===t?COLORS[t]+"15":"transparent",color:subTab===t?COLORS[t]:T.textD,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,justifyContent:"center",transition:"all .15s"}}>
+      <Ic n={ICONS[t]} s={13} c={subTab===t?COLORS[t]:T.muted}/>
+      {t==="emploi"?"Emplois":t==="gigs"?"Gigs":t==="events"?"Événements":"Bons Plans"}
+     </button>
+    ))}
+   </div>
+   {showPost&&(
+    <div style={{background:T.card,border:`1px solid ${col}40`,borderRadius:14,padding:14,display:"flex",flexDirection:"column" as const,gap:10,animation:"fadeUp .2s ease"}}>
+     <p style={{color:T.text,fontSize:14,fontWeight:800}}>Publier une offre · <span style={{color:col}}>{PRICES[subTab]}</span></p>
+     <input value={postForm.title} onChange={e=>setPostForm(f=>({...f,title:e.target.value}))} placeholder="Titre" style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+     <textarea value={postForm.desc} onChange={e=>setPostForm(f=>({...f,desc:e.target.value}))} placeholder="Description" rows={3} style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",resize:"none" as const,outline:"none"}}/>
+     <input value={postForm.link} onChange={e=>setPostForm(f=>({...f,link:e.target.value}))} placeholder="Lien (URL)" style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+     <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+      <button onClick={()=>setShowPost(false)} style={{padding:"7px 14px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
+      <button onClick={()=>{haptic();setShowPost(false);setPostForm({title:"",desc:"",link:""});}} style={{padding:"7px 14px",borderRadius:8,border:"none",background:col,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Soumettre · {PRICES[subTab]}</button>
+     </div>
+    </div>
+   )}
+   <div style={{display:"flex",flexDirection:"column" as const,gap:12}}>{renderItems()}</div>
+  </div>
+ );
+}
+
+// ──────────────────────────────────────────────────
+// SIMULATIONS TAB
+// ──────────────────────────────────────────────────
+type SimType = "onu"|"proces"|"debat";
+type SimStatus = "upcoming"|"open"|"live"|"closed";
+interface SimRoom {id:string;type:SimType;topic:string;status:SimStatus;scheduled:number;participants:number;maxParticipants:number;moderator:string;room:number;}
+
+const MOCK_SIMS:SimRoom[] = [
+ {id:"s1",type:"onu",topic:"Réforme du droit de veto au Conseil de Sécurité",status:"upcoming",scheduled:Date.now()+86400000*2,participants:47,maxParticipants:193,moderator:"@mod_alice",room:1},
+ {id:"s2",type:"onu",topic:"Cessez-le-feu immédiat en Ukraine",status:"live",scheduled:Date.now()-3600000,participants:193,maxParticipants:193,moderator:"@mod_pierre",room:1},
+ {id:"s3",type:"onu",topic:"Cessez-le-feu immédiat en Ukraine",status:"live",scheduled:Date.now()-3600000,participants:87,maxParticipants:193,moderator:"@mod_pierre",room:2},
+ {id:"s4",type:"proces",topic:"Corruption d'un élu local",status:"upcoming",scheduled:Date.now()+86400000*3,participants:6,maxParticipants:12,moderator:"@juge_martin",room:1},
+ {id:"s5",type:"debat",topic:"L'intelligence artificielle va-t-elle détruire l'emploi ?",status:"open",scheduled:Date.now()+3600000,participants:8,maxParticipants:20,moderator:"@mod_sofia",room:1},
+ {id:"s6",type:"debat",topic:"Faut-il taxer les milliardaires ?",status:"live",scheduled:Date.now()-1800000,participants:16,maxParticipants:20,moderator:"@mod_jean",room:1},
+];
+
+const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat"};
+const SIM_TYPE_COLORS:Record<SimType,string> = {onu:"#1A5FD4",proces:"#8B4513",debat:"#E03535"};
+const SIM_TYPE_ICONS:Record<SimType,string> = {onu:"globe",proces:"scale",debat:"users"};
+const SIM_STATUS_LABELS:Record<SimStatus,string> = {upcoming:"À venir",open:"Inscriptions ouvertes",live:"EN DIRECT",closed:"Terminé"};
+
+function fmtSimDate(ts:number){const d=new Date(ts);return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
+function msUntilStr(ts:number){const diff=ts-Date.now();if(diff<0)return"En cours";const h=Math.floor(diff/3600000);const m=Math.floor((diff%3600000)/60000);if(h>24)return`Dans ${Math.floor(h/24)}j ${h%24}h`;return`Dans ${h}h${m.toString().padStart(2,"0")}`;}
+
+function SimCard({s,T,onJoin,highlight}:{s:SimRoom;T:Theme;onJoin:()=>void;highlight?:boolean}) {
+ const col = SIM_TYPE_COLORS[s.type];
+ const statusColors:Record<SimStatus,string> = {upcoming:T.muted,open:"#16A34A",live:"#E03535",closed:T.muted};
+ return(
+  <div style={{background:T.card,border:`2px solid ${highlight?col:T.b1}`,borderRadius:14,padding:16,position:"relative" as const,overflow:"hidden"}}>
+   {highlight&&<div style={{position:"absolute" as const,top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${col},${col}80)`}}/>}
+   <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:10}}>
+    <div style={{width:44,height:44,borderRadius:12,background:col+"15",border:`1px solid ${col}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={SIM_TYPE_ICONS[s.type]} s={20} c={col}/></div>
+    <div style={{flex:1}}>
+     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+      <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4,letterSpacing:.5}}>{SIM_TYPE_LABELS[s.type]}</span>
+      {s.room>1&&<span style={{background:T.bg2,color:T.muted,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>Salle {s.room}</span>}
+     </div>
+     <p style={{color:T.text,fontSize:13,fontWeight:800,lineHeight:1.3}}>{s.topic}</p>
+    </div>
+   </div>
+   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap" as const}}>
+    <div style={{display:"flex",alignItems:"center",gap:4}}><Ic n="users" s={12} c={T.muted}/><span style={{color:T.muted,fontSize:11}}>{s.participants}/{s.maxParticipants}</span></div>
+    <div style={{display:"flex",alignItems:"center",gap:4}}><Ic n="cal" s={12} c={T.muted}/><span style={{color:T.muted,fontSize:11}}>{fmtSimDate(s.scheduled)}</span></div>
+    <span style={{color:statusColors[s.status],fontSize:10,fontWeight:800,background:statusColors[s.status]+"15",padding:"2px 8px",borderRadius:4}}>{SIM_STATUS_LABELS[s.status]}</span>
+   </div>
+   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+    <span style={{color:T.muted,fontSize:11}}>Modérateur : {s.moderator}</span>
+    <button onClick={onJoin} style={{background:s.status==="live"?col:T.blueG,color:s.status==="live"?"#fff":T.blueB,fontSize:12,fontWeight:800,padding:"7px 14px",borderRadius:8,border:`1px solid ${s.status==="live"?col:T.blueB}`,cursor:"pointer",fontFamily:"inherit"}}>
+     {s.status==="live"?"Rejoindre →":"S'inscrire"}
+    </button>
+   </div>
+  </div>
+ );
+}
+
+function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ type RoomTab = "room"|"queue"|"participants"|"docs";
+ const [tab,setTab] = useState<RoomTab>("room");
+ type ChatMsg = {id:number;user:string;text:string;time:number;system?:boolean};
+ const [msgs,setMsgs] = useState<ChatMsg[]>([
+  {id:1,user:"SYSTÈME",text:`Bienvenue dans la salle de simulation. Sujet : "${sim.topic}". Bonne chance à tous.`,time:Date.now()-600000,system:true},
+  {id:2,user:"@mod_pierre",text:"Rappel des règles : respectez le temps de parole, attendez votre tour.",time:Date.now()-540000},
+  {id:3,user:"@claire_fr",text:"Prêt(e). Je souhaite ouvrir sur la question de la représentativité.",time:Date.now()-480000},
+ ]);
+ const [input,setInput] = useState("");
+ const [handRaised,setHandRaised] = useState(false);
+ const chatRef = useRef<HTMLDivElement>(null);
+ const handle = typeof window!=="undefined"?localStorage.getItem("nexus_handle")||"@vous":"@vous";
+ const col = SIM_TYPE_COLORS[sim.type];
+
+ const QUEUE = ["@marie_ru","@thomas_cn","@claire_fr","@omar_uk"];
+ const PARTICIPANTS = [
+  {h:"@marie_ru",country:"🇷🇺 Russie",role:"Délégué"},
+  {h:"@thomas_cn",country:"🇨🇳 Chine",role:"Délégué"},
+  {h:"@claire_fr",country:"🇫🇷 France",role:"Délégué"},
+  {h:"@omar_uk",country:"🇬🇧 Royaume-Uni",role:"Délégué"},
+  {h:handle,country:"🇩🇪 Allemagne",role:"Délégué"},
+ ];
+
+ const sendMsg = ()=>{
+  if(!input.trim()) return;
+  const newMsg:ChatMsg={id:Date.now(),user:handle,text:input.trim(),time:Date.now()};
+  setMsgs(m=>[...m,newMsg]);
+  setInput("");
+  haptic();
+  setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+ };
+
+ const roomTabs = (["room","queue","participants",...(sim.type==="proces"?["docs" as RoomTab]:[])] as RoomTab[]);
+
+ return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
+     <div style={{flex:1}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>{SIM_TYPE_LABELS[sim.type]}</span>
+       <span style={{color:"#E03535",fontSize:9,fontWeight:800,background:"#E0353520",padding:"2px 7px",borderRadius:4,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>EN DIRECT</span>
+      </div>
+      <p style={{color:T.text,fontSize:13,fontWeight:800,lineHeight:1.2}}>{sim.topic.length>50?sim.topic.slice(0,50)+"…":sim.topic}</p>
+     </div>
+    </div>
+    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
+     {roomTabs.map(t=>(
+      <button key={t} onClick={()=>setTab(t)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${tab===t?col:T.b1}`,background:tab===t?col+"15":"transparent",color:tab===t?col:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+       {t==="room"?"Salle":t==="queue"?"File":t==="participants"?"Participants":"Documents"}
+      </button>
+     ))}
+    </div>
+   </div>
+   <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
+    {tab==="room"&&(
+     <>
+      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:8}}>
+       {msgs.map(m=>(
+        <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:2,alignItems:m.user===handle?"flex-end":"flex-start" as const}}>
+         {!m.system&&<span style={{color:T.muted,fontSize:10,marginBottom:1}}>{m.user}</span>}
+         <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:12,background:m.system?T.bg2:m.user===handle?T.blueG:T.card,border:`1px solid ${m.system?T.b1:m.user===handle?T.blueB+"40":T.b1}`}}>
+          <p style={{color:m.system?T.muted:T.text,fontSize:13,lineHeight:1.5}}>{m.text}</p>
+         </div>
+         <span style={{color:T.muted,fontSize:9}}>{timeFromTs(m.time)}</span>
+        </div>
+       ))}
+      </div>
+      <div style={{padding:"10px 16px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+       <div style={{display:"flex",gap:8,marginBottom:8}}>
+        <button onClick={()=>{haptic();setHandRaised(r=>!r);}} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:8,border:`1px solid ${handRaised?"#D97706":T.b1}`,background:handRaised?"#D97706"+"20":"transparent",color:handRaised?"#D97706":T.muted,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+         ✋ {handRaised?"Main levée":"Lever la main"}
+        </button>
+       </div>
+       <div style={{display:"flex",gap:8}}>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Tapez votre message…" style={{flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+        <button onClick={sendMsg} style={{background:T.blueB,border:"none",borderRadius:10,width:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={16} c="#fff"/></button>
+       </div>
+      </div>
+     </>
+    )}
+    {tab==="queue"&&(
+     <div style={{padding:"16px",flex:1,overflowY:"auto"}}>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>FILE D&apos;ATTENTE · {QUEUE.length} en attente</p>
+      <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
+       {QUEUE.map((q,i)=>(
+        <div key={q} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+         <span style={{width:24,height:24,borderRadius:"50%",background:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:T.blueB,flexShrink:0}}>{i+1}</span>
+         <span style={{color:T.text,fontSize:13,fontWeight:700,flex:1}}>{q}</span>
+         {i===0&&<span style={{background:"#16A34A"+"20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:4}}>À venir</span>}
+        </div>
+       ))}
+       <button onClick={()=>{haptic();setHandRaised(true);}} style={{marginTop:8,padding:"10px",borderRadius:10,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>+ Rejoindre la file d&apos;attente</button>
+      </div>
+     </div>
+    )}
+    {tab==="participants"&&(
+     <div style={{padding:"16px",flex:1,overflowY:"auto"}}>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>PARTICIPANTS · {sim.participants}</p>
+      <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
+       {PARTICIPANTS.map(p=>(
+        <div key={p.h} style={{background:T.card,border:`1px solid ${p.h===handle?T.blueB+"40":T.b1}`,borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+         <div style={{width:34,height:34,borderRadius:"50%",background:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,flexShrink:0}}>{p.h.replace("@","").slice(0,2).toUpperCase()}</div>
+         <div style={{flex:1}}>
+          <p style={{color:T.text,fontSize:13,fontWeight:700}}>{p.h}{p.h===handle&&" (vous)"}</p>
+          <p style={{color:T.textD,fontSize:11}}>{p.country} · {p.role}</p>
+         </div>
+        </div>
+       ))}
+      </div>
+     </div>
+    )}
+    {tab==="docs"&&(
+     <div style={{padding:"16px",flex:1,overflowY:"auto"}}>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>DISCOVERY · Documents</p>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:16,marginBottom:12}}>
+       <p style={{color:T.text,fontSize:13,fontWeight:800,marginBottom:4}}>Phase Discovery</p>
+       <p style={{color:T.textD,fontSize:12,lineHeight:1.5}}>Les avocats des deux parties échangent leurs pièces. Délai : 24h. Les documents soumis sont définitifs.</p>
+       <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,background:"#D97706"+"15",borderRadius:8,padding:"6px 10px"}}>
+        <Ic n="cal" s={13} c="#D97706"/>
+        <span style={{color:"#D97706",fontSize:11,fontWeight:800}}>Délai : 18h 30min restantes</span>
+       </div>
+      </div>
+      <button style={{width:"100%",padding:"10px",borderRadius:10,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>+ Soumettre un document</button>
+     </div>
+    )}
+   </div>
+  </div>
+ );
+}
+
+function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
+ type SimView = "hub"|"create"|"room";
+ type SimFilter = "all"|SimType;
+ const [view,setView] = useState<SimView>("hub");
+ const [filter,setFilter] = useState<SimFilter>("all");
+ const [selectedSim,setSelectedSim] = useState<SimRoom|null>(null);
+ const [createType,setCreateType] = useState<SimType>("debat");
+ const [createTopic,setCreateTopic] = useState("");
+ const [createDate,setCreateDate] = useState("");
+ const [sims,setSims] = useState<SimRoom[]>(MOCK_SIMS);
+
+ const filtered = filter==="all"?sims:sims.filter(s=>s.type===filter);
+
+ const createSim = () => {
+  if(!createTopic.trim()||!createDate) return;
+  const ns:SimRoom = {id:`s${Date.now()}`,type:createType,topic:createTopic,status:"upcoming",scheduled:new Date(createDate).getTime(),participants:1,maxParticipants:createType==="onu"?193:createType==="proces"?12:20,moderator:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",room:1};
+  setSims(p=>[ns,...p]);
+  setView("hub");
+  setCreateTopic("");
+  setCreateDate("");
+  haptic();
+ };
+
+ if(view==="room"&&selectedSim) return <SimRoomView T={T} sim={selectedSim} onBack={()=>{setView("hub");setSelectedSim(null);}}/>;
+
+ if(view==="create") return(
+  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:16}}>
+   <div style={{display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={()=>setView("hub")} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
+    <h2 style={{color:T.text,fontSize:20,fontWeight:800}}>Créer une simulation</h2>
+   </div>
+   <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column" as const,gap:12}}>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>TYPE DE SIMULATION</p>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+     {(["debat","onu","proces"] as SimType[]).map(t=>(
+      <button key={t} onClick={()=>setCreateType(t)} style={{padding:"12px 6px",borderRadius:10,border:`2px solid ${createType===t?SIM_TYPE_COLORS[t]:T.b1}`,background:createType===t?SIM_TYPE_COLORS[t]+"15":"transparent",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,cursor:"pointer",transition:"all .15s"}}>
+       <Ic n={SIM_TYPE_ICONS[t]} s={20} c={createType===t?SIM_TYPE_COLORS[t]:T.muted}/>
+       <span style={{color:createType===t?SIM_TYPE_COLORS[t]:T.muted,fontSize:11,fontWeight:800}}>{SIM_TYPE_LABELS[t]}</span>
+      </button>
+     ))}
+    </div>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginTop:4}}>SUJET</p>
+    <textarea value={createTopic} onChange={e=>setCreateTopic(e.target.value)} placeholder="Entrez le sujet de la simulation…" rows={2} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none"}}/>
+    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
+     {(createType==="onu"?UN_TOPICS:createType==="proces"?TRIAL_TOPICS.slice(0,5):DEBATE_CATEGORIES[0].topics.slice(0,5)).slice(0,3).map(s=>(
+      <button key={s} onClick={()=>setCreateTopic(s)} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${T.b1}`,background:T.bg2,color:T.textD,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",flexShrink:0,maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{s}</button>
+     ))}
+    </div>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginTop:4}}>DATE (minimum 48h)</p>
+    <input type="datetime-local" value={createDate} onChange={e=>setCreateDate(e.target.value)} min={new Date(Date.now()+172800000).toISOString().slice(0,16)} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+    <div style={{background:SIM_TYPE_COLORS[createType]+"12",border:`1px solid ${SIM_TYPE_COLORS[createType]}30`,borderRadius:10,padding:"10px 14px"}}>
+     <p style={{color:SIM_TYPE_COLORS[createType],fontSize:12,fontWeight:800}}>Requiert : NEXUS MODÉRATEUR (9,99€/mois)</p>
+     <p style={{color:T.textD,fontSize:11,marginTop:3}}>{createType==="onu"?"193 délégations · Salle auto-créée si > 193 participants":createType==="proces"?"Phases : Discovery (24h) → Procès · Rôles assignés":"2 équipes · Points · Vote final"}</p>
+    </div>
+    <button onClick={createSim} disabled={!createTopic.trim()||!createDate} style={{padding:"13px",borderRadius:10,border:"none",background:createTopic.trim()&&createDate?SIM_TYPE_COLORS[createType]:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:createTopic.trim()&&createDate?"pointer":"default",fontFamily:"inherit"}}>Créer la simulation</button>
+   </div>
+  </div>
+ );
+
+ return(
+  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:14}}>
+   <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+    <div>
+     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>Débats en temps réel</p>
+     <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>SIMULATIONS</h1>
+    </div>
+    <button onClick={()=>{haptic();setView("create");}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginTop:4,flexShrink:0}}>
+     <Ic n="plus" s={14} c={T.blueB}/> Créer
+    </button>
+   </div>
+   <div style={{display:"flex",gap:6,overflowX:"auto"}}>
+    {(["all","debat","onu","proces"] as const).map(f=>{
+     const col=f==="all"?T.blueB:SIM_TYPE_COLORS[f as SimType];
+     return <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 13px",borderRadius:6,border:`1px solid ${filter===f?col:T.b1}`,background:filter===f?col+"15":"transparent",color:filter===f?col:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",whiteSpace:"nowrap" as const}}>{f==="all"?"Tout":SIM_TYPE_LABELS[f as SimType]}</button>;
+    })}
+   </div>
+   {filtered.filter(s=>s.status==="live").length>0&&(
+    <div>
+     <p style={{color:"#E03535",fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:"#E03535",display:"inline-block" as const,animation:"pulse 1s ease infinite"}}/>EN DIRECT</p>
+     <div style={{display:"flex",flexDirection:"column" as const,gap:10}}>
+      {filtered.filter(s=>s.status==="live").map(s=><SimCard key={s.id} s={s} T={T} onJoin={()=>{setSelectedSim(s);setView("room");}} highlight/>)}
+     </div>
+    </div>
+   )}
+   {filtered.filter(s=>s.status!=="live"&&s.status!=="closed").length>0&&(
+    <div>
+     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8}}>PROCHAINES</p>
+     <div style={{display:"flex",flexDirection:"column" as const,gap:10}}>
+      {filtered.filter(s=>s.status!=="live"&&s.status!=="closed").map(s=><SimCard key={s.id} s={s} T={T} onJoin={()=>{setSelectedSim(s);setView("room");}}/>)}
+     </div>
+    </div>
+   )}
+   <div style={{background:`linear-gradient(135deg,${T.blueB}15,#7C3AED15)`,border:`1px solid ${T.blueB}30`,borderRadius:14,padding:16,display:"flex",alignItems:"center",gap:12}}>
+    <div style={{width:44,height:44,borderRadius:12,background:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="award" s={22} c={T.blueB}/></div>
+    <div style={{flex:1}}><p style={{color:T.text,fontSize:14,fontWeight:800}}>Guides & Stratégies</p><p style={{color:T.textD,fontSize:12,marginTop:2}}>Techniques de débat, diplomatie, rhétorique — NEXUS+</p></div>
+    <button onClick={onPremium} style={{background:T.blueB,color:"#fff",fontSize:11,fontWeight:800,padding:"7px 12px",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>NEXUS+</button>
+   </div>
+  </div>
+ );
+}
+
 // ROOT APP
 export default function NexusApp() {
  const [dark,setDark] = useState(false);
  const T = dark ? DARK : LIGHT;
- const [tab,setTab] = useState<"feed"|"search"|"messages"|"reels"|"profile">("feed");
+ const [tab,setTab] = useState<"news"|"community"|"opportunities"|"messages"|"simulations">("news");
  const [showPremium,setShowPremium] = useState(false);
  const [showOnboarding,setShowOnboarding] = useState(false);
  const [showProgress,setShowProgress] = useState(false);
  const [showMenu,setShowMenu] = useState(false);
- const [showSimulation,setShowSimulation] = useState(false);
+ const [showProfile,setShowProfile] = useState(false);
  const [showAgenda,setShowAgenda] = useState(false);
  const [showInstall,setShowInstall] = useState(false);
  const [tabAnim,setTabAnim] = useState("fadeIn");
@@ -6241,14 +6830,14 @@ export default function NexusApp() {
  const openSimulation = () => {
   haptic();
   if(typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1") setShowOnboarding(true);
-  setShowSimulation(true);
+  switchTab("simulations");
  };
 
  const switchTab = (id: typeof tab) => {
  haptic();
  setTabAnim("slideInRight");
  setTab(id);
- if(id==="feed"){
+ if(id==="news"){
  setFeedUnread(0);
  setFeedKey(k=>k+1);
  scrollRef.current?.scrollTo({top:0,behavior:"smooth"});
@@ -6258,17 +6847,17 @@ export default function NexusApp() {
  };
 
  const handleNewPosts = (n:number)=>{
- if(tab!=="feed"){
+ if(tab!=="news"){
  setFeedUnread(p=>{const next=p+n;if(typeof window!=="undefined")localStorage.setItem("nexus_unread",String(next));return next;});
  }
  };
 
  const NAV = [
- {id:"feed",icon:"feed",label:"ACTU"},
- {id:"search",icon:"search",label:"RECHERCHE"},
- {id:"messages",icon:"msg",label:"MSG"},
- {id:"reels",icon:"play",label:"RÉELS"},
- {id:"profile",icon:"user",label:"PROFIL"},
+ {id:"news",icon:"globe",label:"NEWS"},
+ {id:"community",icon:"users",label:"COMMUNAUTÉ"},
+ {id:"opportunities",icon:"brief",label:"OPPS"},
+ {id:"messages",icon:"msg",label:"MESSAGES"},
+ {id:"simulations",icon:"play",label:"SIMS"},
  ];
 
  return(
@@ -6299,18 +6888,7 @@ export default function NexusApp() {
   </div>
  )}
 
- {/* Simulation full-screen overlay */}
- {showSimulation&&(
-  <div style={{position:"absolute",inset:0,zIndex:600,background:T.bg,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-   <div style={{display:"flex",alignItems:"center",gap:10,padding:"13px 16px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
-    <button onClick={()=>setShowSimulation(false)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
-    <span style={{color:T.text,fontSize:16,fontWeight:800}}>Simulation</span>
-   </div>
-   <div style={{flex:1,overflowY:"auto"}}>
-    <SimulationHub T={T} onPremium={()=>{setShowSimulation(false);setShowPremium(true);}}/>
-   </div>
-  </div>
- )}
+
  {/* Agenda full-screen overlay */}
  {showAgenda&&(
   <div style={{position:"absolute",inset:0,zIndex:600,background:T.bg,display:"flex",flexDirection:"column",overflow:"hidden"}}>
@@ -6326,7 +6904,7 @@ export default function NexusApp() {
  {/* Menu overlay */}
  {showMenu&&(
   <div style={{position:"absolute",inset:0,zIndex:400,display:"flex",justifyContent:"flex-end"}} onClick={()=>setShowMenu(false)}>
-   <MenuDrawer T={T} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}} onClose={()=>setShowMenu(false)} onSimulation={()=>{setShowSimulation(true);if(typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1")setShowOnboarding(true);}} onAgenda={()=>setShowAgenda(true)} onPremium={()=>setShowPremium(true)}/>
+   <MenuDrawer T={T} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}} onClose={()=>setShowMenu(false)} onSimulation={()=>{setShowMenu(false);switchTab("simulations");if(typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1")setShowOnboarding(true);}} onAgenda={()=>setShowAgenda(true)} onPremium={()=>setShowPremium(true)}/>
   </div>
  )}
 
@@ -6364,7 +6942,7 @@ export default function NexusApp() {
  <button onClick={()=>{haptic();setShowMenu(m=>!m);}} style={{background:showMenu?T.blueG:T.card,border:`1px solid ${showMenu?T.blueB:T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
  <Ic n="menu" s={16} c={showMenu?T.blueB:T.text}/>
  </button>
- <div onClick={()=>{haptic();switchTab("profile");}} style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,cursor:"pointer",flexShrink:0}}>A</div>
+ <div onClick={()=>{haptic();setShowProfile(p=>!p);}} style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,cursor:"pointer",flexShrink:0}}>A</div>
  </div>
  </div>
  )}
@@ -6394,17 +6972,29 @@ export default function NexusApp() {
  </div>
  )}
 
+ {/* Profile overlay */}
+ {showProfile&&!showPremium&&(
+  <div style={{position:"absolute",inset:0,zIndex:600,background:T.bg,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+   <div style={{display:"flex",alignItems:"center",gap:10,padding:"13px 16px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    <button onClick={()=>setShowProfile(false)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
+    <span style={{color:T.text,fontSize:16,fontWeight:800}}>Profil</span>
+   </div>
+   <div style={{flex:1,overflowY:"auto"}}>
+    <ProfileScreen T={T} onPremium={()=>{setShowProfile(false);setShowPremium(true);}} isAdmin={isAdmin} streak={streak} onProgress={()=>{setShowProfile(false);setShowProgress(true);}} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}}/>
+   </div>
+  </div>
+ )}
  {/* Content */}
- <div ref={scrollRef} style={{flex:1,overflowY:tab==="reels"?"hidden":"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
+ <div ref={scrollRef} style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
  {showPremium ? (
  <PremiumScreen T={T} onBack={()=>setShowPremium(false)}/>
  ) : (
  <div key={tab} style={{animation:`${tabAnim} .25s ease`,height:"100%"}}>
- {tab==="feed"&&<FeedScreen key={feedKey} T={T} onDebate={openSimulation} onNewPosts={handleNewPosts}/>}
- {tab==="search"&&<SearchScreen T={T} onSimulation={openSimulation}/>}
+ {tab==="news"&&<NewsScreen key={feedKey} T={T} onNewPosts={handleNewPosts}/>}
+ {tab==="community"&&<CommunityScreen T={T}/>}
+ {tab==="opportunities"&&<NewOpportunitiesScreen T={T}/>}
  {tab==="messages"&&<MessagesScreen T={T}/>}
- {tab==="reels"&&<ReelsScreen T={T}/>}
- {tab==="profile"&&<ProfileScreen T={T} onPremium={()=>setShowPremium(true)} isAdmin={isAdmin} streak={streak} onProgress={()=>setShowProgress(true)} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}}/>}
+ {tab==="simulations"&&<SimulationsTab T={T} onPremium={()=>setShowPremium(true)}/>}
  </div>
  )}
  </div>
@@ -6417,7 +7007,7 @@ export default function NexusApp() {
  <div style={{width:40,height:34,borderRadius:12,background:tab===n.id?T.blueG:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",position:"relative"}}>
  {tab===n.id&&<div style={{position:"absolute",top:-1,left:"50%",transform:"translateX(-50%)",width:20,height:3,borderRadius:2,background:T.blueB}}/>}
  <Ic n={n.icon} s={20} c={tab===n.id?T.blueB:T.muted} w={tab===n.id?2.2:1.6}/>
- {n.id==="feed"&&feedUnread>0&&tab!=="feed"&&(
+ {n.id==="news"&&feedUnread>0&&tab!=="news"&&(
  <div style={{position:"absolute",top:2,right:4,minWidth:16,height:16,borderRadius:8,background:T.red,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:900,color:"#fff",padding:"0 3px"}}>
  {feedUnread>9?"9+":feedUnread}
  </div>
