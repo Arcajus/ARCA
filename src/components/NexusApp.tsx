@@ -6735,7 +6735,8 @@ const MOCK_SIMS:SimRoom[] = [
  {id:"s1",type:"onu",topic:"Réforme du droit de veto au Conseil de Sécurité",status:"upcoming",scheduled:Date.now()+86400000*2,participants:47,maxParticipants:193,moderator:"@mod_alice",room:1},
  {id:"s2",type:"onu",topic:"Cessez-le-feu immédiat en Ukraine",status:"live",scheduled:Date.now()-3600000,participants:193,maxParticipants:193,moderator:"@mod_pierre",room:1},
  {id:"s3",type:"onu",topic:"Cessez-le-feu immédiat en Ukraine",status:"live",scheduled:Date.now()-3600000,participants:87,maxParticipants:193,moderator:"@mod_pierre",room:2},
- {id:"s4",type:"proces",topic:"Corruption d'un élu local",status:"upcoming",scheduled:Date.now()+86400000*3,participants:6,maxParticipants:12,moderator:"@juge_martin",room:1},
+ {id:"s4",type:"proces",topic:"Corruption d'un élu local",status:"live",scheduled:Date.now()-5400000,participants:8,maxParticipants:12,moderator:"@juge_martin",room:1},
+ {id:"s7",type:"proces",topic:"Viol — affaire Dumont c. Ministère",status:"upcoming",scheduled:Date.now()+86400000*2,participants:3,maxParticipants:12,moderator:"@juge_sophie",room:1},
  {id:"s5",type:"debat",topic:"L'intelligence artificielle va-t-elle détruire l'emploi ?",status:"open",scheduled:Date.now()+3600000,participants:8,maxParticipants:20,moderator:"@mod_sofia",room:1},
  {id:"s6",type:"debat",topic:"Faut-il taxer les milliardaires ?",status:"live",scheduled:Date.now()-1800000,participants:16,maxParticipants:20,moderator:"@mod_jean",room:1},
 ];
