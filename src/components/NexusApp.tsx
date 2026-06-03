@@ -6347,11 +6347,15 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
         </div>
         {/* Body */}
         <div style={{padding:"10px 13px 12px",display:"flex",flexDirection:"column" as const,gap:6}}>
+         <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{width:5,height:5,borderRadius:"50%",background:a.tagC,display:"inline-block",flexShrink:0}}/>
+          <span style={{color:T.muted,fontSize:10,fontWeight:700}}>{a.src}</span>
+          {a.verif&&<span style={{background:a.verif.color+"22",color:a.verif.color,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3,marginLeft:2}}>{a.verif.label}</span>}
+         </div>
          <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.4}}>{a.title}</p>
          <div style={{display:"flex",alignItems:"center",gap:8}}>
-          {a.verif&&<span style={{background:a.verif.color+"22",color:a.verif.color,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{a.verif.label}</span>}
-          <span style={{color:T.muted,fontSize:10,marginLeft:"auto"}}>{a.time}</span>
-          <div style={{display:"flex",alignItems:"center",gap:3,color:T.blueB}}>
+          <span style={{color:T.muted,fontSize:10}}>{a.time}</span>
+          <div style={{display:"flex",alignItems:"center",gap:3,color:T.blueB,marginLeft:"auto"}}>
            <Ic n="globe" s={10} c={T.blueB}/>
            <span style={{fontSize:10,fontWeight:700}}>Lire →</span>
           </div>
