@@ -6198,66 +6198,168 @@ function MenuDrawer({T,dark,onToggleDark,onClose,onSimulation,onAgenda,onPremium
 // ──────────────────────────────────────────────────
 // NEWS SCREEN
 // ──────────────────────────────────────────────────
+const NEWS_CATS = [
+ {id:"all",label:"Tout",icon:"globe"},
+ {id:"geo",label:"Géopolitique",icon:"globe",tags:["GÉOPOLITIQUE","DIPLOMATIE","CONFLITS","UKRAINE","GAZA","MOYEN-ORIENT","ONU","OTAN","USA","RUSSIE","CHINE","INDE","ASIE-PAC.","AM. LATINE","OCÉANIE","EUROPE","BALKANS","EU. EST","CAUCASE","ASIE CENT."]},
+ {id:"france",label:"France",icon:"flag",tags:["POLITIQUE","PARLEMENT","ÉLYSÉE","ÉLECTIONS","SOCIÉTÉ","JUSTICE","SÉCURITÉ","IMMIGRATION","ÉDUCATION","SANTÉ","ÉCONOMIE","EMPLOI","LOGEMENT","ÉNERGIE","TRANSPORT","LE MONDE","LE FIGARO","LIBÉRATION","20 MINUTES","L'EXPRESS","LE POINT","LES ÉCHOS"]},
+ {id:"europe",label:"Europe",icon:"map",tags:["EU. EST","BALKANS","CAUCASE","DROIT UE","JURIDICTIONS","OTAN","COURRIER INT.","DW"]},
+ {id:"eco",label:"Économie",icon:"bar",tags:["ÉCONOMIE","ÉCO MONDE","MARCHÉS","COMMERCE","INFLATION","CRYPTO","FMI","OMC","G7/G20","LES ÉCHOS","EMPLOI"]},
+ {id:"sciences",label:"Sciences & IA",icon:"zap",tags:["SCIENCE","MÉDECINE","ESPACE","IA","TECH","CYBER","SPATIAL","OMS","ARCHÉO"]},
+ {id:"climat",label:"Climat",icon:"globe",tags:["CLIMAT","BIODIVERSITÉ","ÉNERGIE MONDE","EAU","ALIMENTATION","DÉVELOPPEMENT","RÉFUGIÉS"]},
+ {id:"culture",label:"Culture & Sport",icon:"award",tags:["CULTURE","SPORT","HISTOIRE","HIST. FR","MÉMOIRE","ARCHÉO","MÉDIAS","RS","RELIGION","JEUNESSE","GENRE"]},
+ {id:"afrique",label:"Afrique",icon:"map",tags:["JEUNE AFRIQUE","SAHEL","MAGHREB","AF. EST","UA","RFI","DROITS","UNICEF","UNESCO"]},
+ {id:"intl",label:"Monde",icon:"globe",tags:["FRANCE 24","TV5MONDE","BBC","COURRIER INT.","DW","AM. LATINE","OCÉANIE","ASIE-PAC.","MOYEN-ORIENT","DIPLOMATIE"]},
+];
+
 function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
  const [liveNews,setLiveNews] = useState<LiveArticle[]>([]);
  const [loading,setLoading] = useState(true);
  const [search,setSearch] = useState("");
+ const [cat,setCat] = useState("all");
+ const [lastRefresh,setLastRefresh] = useState<Date|null>(null);
+ const [refreshing,setRefreshing] = useState(false);
+ const refreshRef = useRef<ReturnType<typeof setTimeout>|null>(null);
+
+ const doFetch = async(quiet=false)=>{
+  if(!quiet) setLoading(true);
+  setRefreshing(true);
+  let cancelled=false;
+  const articles = await fetchLiveNews(chunk=>{
+   if(cancelled) return;
+   setLiveNews(prev=>{
+    const ids=new Set(prev.map((a:LiveArticle)=>a.id));
+    const news=chunk.filter((a:LiveArticle)=>!ids.has(a.id));
+    if(news.length&&!quiet) onNewPosts(news.length);
+    return news.length?[...news,...prev].slice(0,400):prev;
+   });
+   if(!quiet) setLoading(false);
+  });
+  if(!cancelled){
+   setLiveNews(articles);
+   setLoading(false);
+   setRefreshing(false);
+   setLastRefresh(new Date());
+  }
+  return()=>{cancelled=true;};
+ };
 
  useEffect(()=>{
-  let cancelled=false;
-  (async()=>{
-   setLoading(true);
-   const articles = await fetchLiveNews(chunk=>{
-    if(cancelled) return;
-    setLiveNews(prev=>{
-     const ids=new Set(prev.map((a:LiveArticle)=>a.id));
-     const news=chunk.filter((a:LiveArticle)=>!ids.has(a.id));
-     return news.length?[...news,...prev].slice(0,200):prev;
-    });
-    setLoading(false);
-   });
-   if(!cancelled){setLiveNews(articles);setLoading(false);}
-  })();
-  return()=>{cancelled=true;};
+  doFetch();
+  refreshRef.current=setInterval(()=>doFetch(true),5*60*1000);
+  return()=>{if(refreshRef.current) clearInterval(refreshRef.current);};
+ // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
 
+ const catDef = NEWS_CATS.find(c=>c.id===cat);
  const q=search.toLowerCase();
  const filtered = liveNews.filter((a:LiveArticle)=>{
-  if(q&&!a.title.toLowerCase().includes(q)) return false;
+  if(q&&!a.title.toLowerCase().includes(q)&&!a.src.toLowerCase().includes(q)) return false;
+  if(cat!=="all"&&catDef?.tags){
+   const tagMatch = catDef.tags.some(t=>a.tag.includes(t)||a.src.includes(t));
+   if(!tagMatch) return false;
+  }
   return true;
  });
 
+ const timeSince=(d:Date)=>{
+  const s=Math.floor((Date.now()-d.getTime())/1000);
+  if(s<60) return `${s}s`;
+  if(s<3600) return `${Math.floor(s/60)}min`;
+  return `${Math.floor(s/3600)}h`;
+ };
+
  return(
-  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
-   <div>
-    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>Actualités en direct</p>
-    <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>NEWS</h1>
-   </div>
-   <div style={{position:"relative" as const}}>
-    <span style={{position:"absolute" as const,left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none" as const,display:"flex"}}><Ic n="search" s={14} c={T.muted}/></span>
-    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher une actualité…" style={{width:"100%",padding:"9px 12px 9px 34px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box" as const}}/>
-   </div>
-   {loading&&liveNews.length===0&&<div style={{display:"flex",flexDirection:"column" as const,gap:10}}>{[1,2,3,4,5].map(i=><div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:16,height:80,animation:"pulse 1.5s ease infinite"}}/>)}</div>}
-   <div style={{display:"flex",flexDirection:"column" as const,gap:12}}>
-    {filtered.map((a:LiveArticle)=>(
-     <a key={a.id} href={a.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none" as const}}>
-      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column" as const,gap:8,transition:"all .15s",cursor:"pointer"}}
-       onMouseEnter={e=>(e.currentTarget as HTMLElement).style.borderColor=T.blueB+"60"}
-       onMouseLeave={e=>(e.currentTarget as HTMLElement).style.borderColor=T.b1}>
-       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <span style={{background:T.blueG,color:T.blueB,fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:4,letterSpacing:1}}>{a.src}</span>
-        {a.verif&&<span style={{background:a.verif.color+"22",color:a.verif.color,fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:4}}>{a.verif.label}</span>}
-        <span style={{color:T.muted,fontSize:10,marginLeft:"auto"}}>{a.time}</span>
-       </div>
-       <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.4}}>{a.title}</p>
-       <div style={{display:"flex",alignItems:"center",gap:6}}>
-        <Ic n="globe" s={11} c={T.muted}/>
-        <span style={{color:T.muted,fontSize:10}}>Lire la suite →</span>
-       </div>
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {/* Sticky top bar */}
+   <div style={{padding:"12px 16px 0",background:T.surf,flexShrink:0,borderBottom:`1px solid ${T.b1}`}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+     <div style={{flex:1}}>
+      <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>Actualités en direct</p>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginTop:1}}>
+       <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text}}>NEWS</h1>
+       {lastRefresh&&<span style={{color:T.muted,fontSize:10}}>· {timeSince(lastRefresh)}</span>}
       </div>
-     </a>
+     </div>
+     <button onClick={()=>doFetch()} disabled={refreshing} style={{background:refreshing?T.bg2:T.blueG,border:`1px solid ${T.blueB}30`,borderRadius:8,padding:"5px 10px",display:"flex",alignItems:"center",gap:5,cursor:"pointer",flexShrink:0}}>
+      <span style={{fontSize:13,display:"inline-block",animation:refreshing?"pulse 1s ease infinite":"none"}}>⟳</span>
+      <span style={{color:T.blueB,fontSize:10,fontWeight:800}}>{refreshing?"…":"Actu"}</span>
+     </button>
+    </div>
+    {/* Search */}
+    <div style={{position:"relative" as const,marginBottom:10}}>
+     <span style={{position:"absolute" as const,left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none" as const}}><Ic n="search" s={13} c={T.muted}/></span>
+     <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher…" style={{width:"100%",padding:"7px 10px 7px 28px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box" as const}}/>
+    </div>
+    {/* Category tabs */}
+    <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:10,scrollbarWidth:"none" as const}}>
+     {NEWS_CATS.map(c=>(
+      <button key={c.id} onClick={()=>setCat(c.id)} style={{padding:"5px 12px",borderRadius:16,border:`1px solid ${cat===c.id?T.blueB:T.b1}`,background:cat===c.id?T.blueB:"transparent",color:cat===c.id?"#fff":T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",whiteSpace:"nowrap" as const,transition:"all .15s"}}>
+       {c.label}
+      </button>
+     ))}
+    </div>
+   </div>
+
+   {/* Content */}
+   <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:12}}>
+    {/* Skeleton loaders */}
+    {loading&&liveNews.length===0&&[1,2,3,4].map(i=>(
+     <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,overflow:"hidden",animation:"pulse 1.5s ease infinite"}}>
+      <div style={{height:160,background:T.b1}}/>
+      <div style={{padding:12,display:"flex",flexDirection:"column" as const,gap:8}}>
+       <div style={{height:10,borderRadius:4,background:T.b1,width:"30%"}}/>
+       <div style={{height:14,borderRadius:4,background:T.b1,width:"90%"}}/>
+       <div style={{height:14,borderRadius:4,background:T.b1,width:"70%"}}/>
+      </div>
+     </div>
     ))}
-    {filtered.length===0&&!loading&&<div style={{textAlign:"center" as const,padding:"40px 20px"}}><Ic n="globe" s={40} c={T.muted}/><p style={{color:T.muted,marginTop:12}}>Chargement des actualités…</p></div>}
+
+    {/* Article cards */}
+    {filtered.map((a:LiveArticle)=>{
+     const img = a.imgUrl||getFallbackImg(a.tag,a.title);
+     return(
+      <a key={a.id} href={a.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none" as const}}>
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,overflow:"hidden",transition:"all .15s",cursor:"pointer"}}
+        onMouseEnter={e=>(e.currentTarget as HTMLElement).style.borderColor=a.tagC+"60"}
+        onMouseLeave={e=>(e.currentTarget as HTMLElement).style.borderColor=T.b1}>
+        {/* Image */}
+        <div style={{height:160,background:T.b1,overflow:"hidden",position:"relative" as const}}>
+         <img src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover" as const,display:"block"}} loading="lazy" onError={(e)=>{(e.target as HTMLImageElement).style.display="none";}}/>
+         {/* Source badge overlay */}
+         <div style={{position:"absolute" as const,bottom:8,left:8,background:"rgba(0,0,0,0.72)",backdropFilter:"blur(6px)",borderRadius:5,padding:"3px 8px",display:"flex",alignItems:"center",gap:5}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:a.tagC,display:"inline-block",flexShrink:0}}/>
+          <span style={{color:"#fff",fontSize:9,fontWeight:800,letterSpacing:.5}}>{a.src}</span>
+         </div>
+         {/* Category badge */}
+         <div style={{position:"absolute" as const,top:8,right:8,background:a.tagC,borderRadius:4,padding:"2px 7px"}}>
+          <span style={{color:"#fff",fontSize:9,fontWeight:800,letterSpacing:.5}}>{a.tag}</span>
+         </div>
+        </div>
+        {/* Body */}
+        <div style={{padding:"10px 13px 12px",display:"flex",flexDirection:"column" as const,gap:6}}>
+         <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.4}}>{a.title}</p>
+         <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {a.verif&&<span style={{background:a.verif.color+"22",color:a.verif.color,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{a.verif.label}</span>}
+          <span style={{color:T.muted,fontSize:10,marginLeft:"auto"}}>{a.time}</span>
+          <div style={{display:"flex",alignItems:"center",gap:3,color:T.blueB}}>
+           <Ic n="globe" s={10} c={T.blueB}/>
+           <span style={{fontSize:10,fontWeight:700}}>Lire →</span>
+          </div>
+         </div>
+        </div>
+       </div>
+      </a>
+     );
+    })}
+
+    {filtered.length===0&&!loading&&(
+     <div style={{textAlign:"center" as const,padding:"40px 20px"}}>
+      <Ic n="globe" s={40} c={T.muted}/>
+      <p style={{color:T.muted,marginTop:12,fontSize:13}}>
+       {search?"Aucun résultat pour « "+search+" »":"Chargement des actualités…"}
+      </p>
+     </div>
+    )}
    </div>
   </div>
  );
@@ -6276,6 +6378,8 @@ const COMMUNITY_POSTS_SEED = [
 type CommunityPost = {id:number;handle:string;initials:string;text:string;time:number;likes:number;comments:number;simLink:string};
 
 function CommunityScreen({T}:{T:Theme}) {
+ type CommTab = "feed"|"search";
+ const [commTab,setCommTab] = useState<CommTab>("feed");
  const [posts,setPosts] = useState<CommunityPost[]>(()=>{
   if(typeof window==="undefined") return COMMUNITY_POSTS_SEED;
   try{const s=localStorage.getItem("nexus_community");return s?JSON.parse(s):COMMUNITY_POSTS_SEED;}catch{return COMMUNITY_POSTS_SEED;}
@@ -6283,10 +6387,19 @@ function CommunityScreen({T}:{T:Theme}) {
  const [liked,setLiked] = useState<Set<number>>(new Set());
  const [compose,setCompose] = useState("");
  const [showCompose,setShowCompose] = useState(false);
+ const [search,setSearch] = useState("");
  const handle = typeof window!=="undefined"?localStorage.getItem("nexus_handle")||"Anonyme":"Anonyme";
  const initials = handle.replace("@","").slice(0,2).toUpperCase();
  const COLORS = ["#2B78F5","#7C3AED","#16A34A","#D97706","#E03535","#0891B2","#BE185D"];
  const colorFor = (s:string) => COLORS[s.charCodeAt(0)%COLORS.length];
+
+ const MOCK_ACCOUNTS = [
+  {handle:"@claire_debat",initials:"CD",bio:"Simulatrice ONU · Sciences Po · 3 victoires",followers:124,sims:8},
+  {handle:"@thomas_rheto",initials:"TR",bio:"Avocat plaidant · Débat général · POUR",followers:87,sims:12},
+  {handle:"@debatrice_pro",initials:"DP",bio:"Championne d'éloquence 2024 · Procès",followers:312,sims:24},
+  {handle:"@nexus_diplomate",initials:"ND",bio:"Délégué ONU France · Géopolitique",followers:201,sims:19},
+  {handle:"@marie_contre",initials:"MC",bio:"Débat · CONTRE · Économie politique",followers:56,sims:5},
+ ];
 
  const submitPost = ()=>{
   if(!compose.trim()) return;
@@ -6306,190 +6419,307 @@ function CommunityScreen({T}:{T:Theme}) {
   setPosts(ps=>ps.map(p=>p.id===id?{...p,likes:p.likes+(wasLiked?-1:1)}:p));
  };
 
+ const q=search.toLowerCase();
+ const filteredPosts = q?posts.filter(p=>p.text.toLowerCase().includes(q)||p.handle.toLowerCase().includes(q)):posts;
+ const filteredAccounts = q?MOCK_ACCOUNTS.filter(a=>a.handle.toLowerCase().includes(q)||a.bio.toLowerCase().includes(q)):MOCK_ACCOUNTS;
+
  return(
-  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:14}}>
-   <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-    <div>
-     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>Débats & Opinions</p>
-     <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>COMMUNAUTÉ</h1>
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {/* Header */}
+   <div style={{padding:"12px 16px 0",background:T.surf,flexShrink:0,borderBottom:`1px solid ${T.b1}`}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+     <div>
+      <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>Débats & Opinions</p>
+      <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text}}>COMMUNAUTÉ</h1>
+     </div>
+     <button onClick={()=>{haptic();setShowCompose(s=>!s);}} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:9,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+      <Ic n="plus" s={13} c={T.blueB}/> Publier
+     </button>
     </div>
-    <button onClick={()=>{haptic();setShowCompose(s=>!s);}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,border:`1px solid ${T.blueB}`,background:T.blueG,color:T.blueB,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginTop:4,flexShrink:0}}>
-     <Ic n="plus" s={14} c={T.blueB}/> Publier
-    </button>
+    {/* Search */}
+    <div style={{position:"relative" as const,marginBottom:10}}>
+     <span style={{position:"absolute" as const,left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none" as const}}><Ic n="search" s={13} c={T.muted}/></span>
+     <input value={search} onChange={e=>{setSearch(e.target.value);setCommTab("search");if(!e.target.value)setCommTab("feed");}} placeholder="Rechercher publications, comptes…" style={{width:"100%",padding:"7px 10px 7px 28px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box" as const}}/>
+    </div>
+    {/* Tabs — only show when searching */}
+    {search&&(
+     <div style={{display:"flex",gap:6,marginBottom:10}}>
+      {(["feed","search"] as CommTab[]).map(t=>(
+       <button key={t} onClick={()=>setCommTab(t)} style={{padding:"4px 12px",borderRadius:6,border:`1px solid ${commTab===t?T.blueB:T.b1}`,background:commTab===t?T.blueG:"transparent",color:commTab===t?T.blueB:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+        {t==="feed"?"Publications ("+filteredPosts.length+")":"Comptes ("+filteredAccounts.length+")"}
+       </button>
+      ))}
+     </div>
+    )}
    </div>
-   {showCompose&&(
-    <div style={{background:T.card,border:`1px solid ${T.blueB}40`,borderRadius:14,padding:14,display:"flex",flexDirection:"column" as const,gap:10,animation:"fadeUp .2s ease"}}>
-     <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-      <div style={{width:34,height:34,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,flexShrink:0}}>{initials}</div>
-      <textarea value={compose} onChange={e=>setCompose(e.target.value)} placeholder="Partagez une opinion, un résultat de simulation, un débat…" rows={3} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none"}}/>
+
+   <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:12}}>
+    {/* Compose box */}
+    {showCompose&&(
+     <div style={{background:T.card,border:`1px solid ${T.blueB}40`,borderRadius:14,padding:13,display:"flex",flexDirection:"column" as const,gap:10,animation:"fadeUp .2s ease"}}>
+      <div style={{display:"flex",gap:9,alignItems:"flex-start"}}>
+       <div style={{width:32,height:32,borderRadius:"50%",background:T.blueG,border:`1.5px solid ${T.blueB}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:T.blueB,flexShrink:0}}>{initials}</div>
+       <textarea value={compose} onChange={e=>setCompose(e.target.value)} placeholder="Opinion, résultat simulation, question…" rows={3} style={{flex:1,padding:"7px 9px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",resize:"none" as const,outline:"none"}}/>
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:7}}>
+       <button onClick={()=>setShowCompose(false)} style={{padding:"6px 12px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
+       <button onClick={submitPost} disabled={!compose.trim()} style={{padding:"6px 12px",borderRadius:7,border:"none",background:compose.trim()?T.blueB:"#555",color:"#fff",fontSize:11,fontWeight:800,cursor:compose.trim()?"pointer":"default",fontFamily:"inherit"}}>Publier</button>
+      </div>
      </div>
-     <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
-      <button onClick={()=>setShowCompose(false)} style={{padding:"7px 14px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
-      <button onClick={submitPost} disabled={!compose.trim()} style={{padding:"7px 14px",borderRadius:8,border:"none",background:compose.trim()?T.blueB:"#555",color:"#fff",fontSize:12,fontWeight:800,cursor:compose.trim()?"pointer":"default",fontFamily:"inherit"}}>Publier</button>
-     </div>
-    </div>
-   )}
-   <div style={{display:"flex",flexDirection:"column" as const,gap:12}}>
-    {posts.map(p=>(
-     <div key={p.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column" as const,gap:10}}>
-      <div style={{display:"flex",gap:10,alignItems:"center"}}>
-       <div style={{width:36,height:36,borderRadius:"50%",background:colorFor(p.handle)+"22",border:`1.5px solid ${colorFor(p.handle)}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:colorFor(p.handle),flexShrink:0}}>{p.initials||p.handle.slice(0,2).toUpperCase()}</div>
-       <div style={{flex:1}}>
-        <p style={{color:T.text,fontSize:13,fontWeight:800}}>{p.handle}</p>
-        <p style={{color:T.muted,fontSize:10}}>{timeFromTs(p.time)}</p>
+    )}
+
+    {/* Accounts search results */}
+    {commTab==="search"&&search&&(
+     <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
+      {filteredAccounts.length===0&&<p style={{color:T.muted,fontSize:13,textAlign:"center" as const,padding:"20px 0"}}>Aucun compte trouvé</p>}
+      {filteredAccounts.map(a=>(
+       <div key={a.handle} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:42,height:42,borderRadius:"50%",background:colorFor(a.handle)+"22",border:`2px solid ${colorFor(a.handle)}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:colorFor(a.handle),flexShrink:0}}>{a.initials}</div>
+        <div style={{flex:1}}>
+         <p style={{color:T.text,fontSize:13,fontWeight:800}}>{a.handle}</p>
+         <p style={{color:T.textD,fontSize:11,marginTop:1}}>{a.bio}</p>
+         <div style={{display:"flex",gap:10,marginTop:4}}>
+          <span style={{color:T.muted,fontSize:10}}>{a.followers} abonnés</span>
+          <span style={{color:T.muted,fontSize:10}}>·</span>
+          <span style={{color:T.muted,fontSize:10}}>{a.sims} simulations</span>
+         </div>
+        </div>
+        <button style={{background:T.blueG,border:`1px solid ${T.blueB}`,color:T.blueB,fontSize:11,fontWeight:800,padding:"5px 10px",borderRadius:7,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Suivre</button>
        </div>
-      </div>
-      <p style={{color:T.text,fontSize:13,lineHeight:1.6}}>{p.text}</p>
-      {p.simLink&&<div style={{background:T.blueG,border:`1px solid ${T.blueB}30`,borderRadius:8,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}><Ic n="play" s={14} c={T.blueB}/><span style={{color:T.blueB,fontSize:12,fontWeight:700}}>Voir la simulation</span></div>}
-      <div style={{display:"flex",gap:16,borderTop:`1px solid ${T.b1}`,paddingTop:10}}>
-       <button onClick={()=>toggleLike(p.id)} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",padding:0,color:liked.has(p.id)?T.red:T.muted}}>
-        <Ic n="heart" s={15} c={liked.has(p.id)?T.red:T.muted} w={liked.has(p.id)?2.5:1.6}/>
-        <span style={{fontSize:12,fontWeight:700,color:liked.has(p.id)?T.red:T.muted}}>{p.likes}</span>
-       </button>
-       <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",padding:0,color:T.muted}}>
-        <Ic n="comment" s={15} c={T.muted}/>
-        <span style={{fontSize:12,fontWeight:700,color:T.muted}}>{p.comments}</span>
-       </button>
-       <button style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",padding:0,color:T.muted,marginLeft:"auto"}}>
-        <Ic n="share" s={15} c={T.muted}/>
-       </button>
-      </div>
+      ))}
      </div>
-    ))}
+    )}
+
+    {/* Posts feed */}
+    {(commTab==="feed"||!search)&&(
+     <div style={{display:"flex",flexDirection:"column" as const,gap:11}}>
+      {filteredPosts.length===0&&search&&<p style={{color:T.muted,fontSize:13,textAlign:"center" as const,padding:"20px 0"}}>Aucune publication trouvée</p>}
+      {filteredPosts.map(p=>(
+       <div key={p.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:13,padding:14,display:"flex",flexDirection:"column" as const,gap:9}}>
+        <div style={{display:"flex",gap:9,alignItems:"center"}}>
+         <div style={{width:35,height:35,borderRadius:"50%",background:colorFor(p.handle)+"22",border:`1.5px solid ${colorFor(p.handle)}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:colorFor(p.handle),flexShrink:0}}>{p.initials||p.handle.slice(0,2).toUpperCase()}</div>
+         <div style={{flex:1}}>
+          <p style={{color:T.text,fontSize:13,fontWeight:800}}>{p.handle}</p>
+          <p style={{color:T.muted,fontSize:10}}>{timeFromTs(p.time)}</p>
+         </div>
+        </div>
+        <p style={{color:T.text,fontSize:13,lineHeight:1.6}}>{p.text}</p>
+        {p.simLink&&<div style={{background:T.blueG,border:`1px solid ${T.blueB}30`,borderRadius:7,padding:"7px 11px",display:"flex",alignItems:"center",gap:7}}><Ic n="play" s={13} c={T.blueB}/><span style={{color:T.blueB,fontSize:12,fontWeight:700}}>Voir la simulation</span></div>}
+        <div style={{display:"flex",gap:14,borderTop:`1px solid ${T.b1}`,paddingTop:9}}>
+         <button onClick={()=>toggleLike(p.id)} style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:0,color:liked.has(p.id)?T.red:T.muted}}>
+          <Ic n="heart" s={14} c={liked.has(p.id)?T.red:T.muted} w={liked.has(p.id)?2.5:1.6}/>
+          <span style={{fontSize:12,fontWeight:700,color:liked.has(p.id)?T.red:T.muted}}>{p.likes}</span>
+         </button>
+         <button style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:0,color:T.muted}}>
+          <Ic n="comment" s={14} c={T.muted}/>
+          <span style={{fontSize:12,fontWeight:700,color:T.muted}}>{p.comments}</span>
+         </button>
+         <button style={{display:"flex",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:0,color:T.muted,marginLeft:"auto"}}>
+          <Ic n="share" s={14} c={T.muted}/>
+         </button>
+        </div>
+       </div>
+      ))}
+     </div>
+    )}
    </div>
   </div>
  );
 }
 
+
 // ──────────────────────────────────────────────────
 // OPPORTUNITIES SCREEN (REDESIGNED)
 // ──────────────────────────────────────────────────
+const JOB_FEEDS = [
+ // Emploi — Google News RSS ciblé métiers
+ {q:"offre emploi stage CDI CDD analyste politique diplomatie france",type:"emploi",src:"Offres FR"},
+ {q:"recrutement sciences po ENA inspecteur finances attaché parlementaire",type:"emploi",src:"Fonctions publiques"},
+ {q:"emploi ONG association droits humains humanitaire solidarité",type:"emploi",src:"Secteur associatif"},
+ {q:"offre emploi journaliste reporter correspondant presse france",type:"emploi",src:"Médias & Presse"},
+ {q:"emploi consultant politique publique think tank chercheur france",type:"emploi",src:"Think Tanks"},
+ {q:"stage alternance sciences politiques communication publique",type:"emploi",src:"Stages & Alternances"},
+ {q:"offre emploi avocat juriste droit public droit international",type:"emploi",src:"Droit & Justice"},
+ {q:"emploi chargé mission europe bruxelles euractiv institutions",type:"emploi",src:"Institutions EU"},
+ // Gigs — freelance, consulting
+ {q:"freelance consultant communication stratégique rédaction discours",type:"gigs",src:"Consulting"},
+ {q:"mission consultant politique indépendant coaching prise de parole",type:"gigs",src:"Coaching Oral"},
+ {q:"freelance traduction interprète conférence international",type:"gigs",src:"Traduction & Interp."},
+ // Événements — conférences, forums
+ {q:"conférence forum débat géopolitique diplomatie sciences po 2025 2026",type:"events",src:"Conférences"},
+ {q:"colloque symposium relations internationales droit politique france",type:"events",src:"Colloques & Symposia"},
+ {q:"tournoi éloquence concours débat compétition oratoire france 2025",type:"events",src:"Compétitions"},
+ {q:"MUN modèle nations unies simulation conférence étudiants france",type:"events",src:"MUN & Simulations"},
+ {q:"salon emploi public secteur associations recrutement france",type:"events",src:"Salons Emploi"},
+];
+
+type LiveOpp = {id:string;title:string;src:string;type:"emploi"|"gigs"|"events"|"deals";link:string;time:string;tag:string;tagC:string};
+
+async function fetchLiveOpps(onChunk?:(items:LiveOpp[])=>void):Promise<LiveOpp[]> {
+ const seen=new Set<string>();
+ const all:LiveOpp[]=[];
+ const TYPE_COLORS:Record<string,string> = {emploi:"#2B78F5",gigs:"#7C3AED",events:"#16A34A",deals:"#D97706"};
+ const fetchOne=async(feed:typeof JOB_FEEDS[0])=>{
+  try{
+   const proxyUrl=`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(G(feed.q))}&count=6`;
+   const r=await fetch(proxyUrl,{signal:AbortSignal.timeout(8000)});
+   if(!r.ok) return;
+   const j=await r.json();
+   const items=(j.items||[]).slice(0,5).map((it:{title:string;link:string;pubDate:string;guid:string})=>{
+    const id=it.guid||it.link;
+    if(seen.has(id)) return null;
+    seen.add(id);
+    const opp:LiveOpp={id,title:it.title,src:feed.src,type:feed.type as LiveOpp["type"],link:it.link,time:makeTimeStr(it.pubDate),tag:feed.src.toUpperCase(),tagC:TYPE_COLORS[feed.type]||"#2B78F5"};
+    all.push(opp);
+    return opp;
+   }).filter(Boolean) as LiveOpp[];
+   if(items.length>0) onChunk?.(items);
+  }catch{/*skip*/}
+ };
+ await Promise.allSettled(JOB_FEEDS.map(f=>fetchOne(f)));
+ return all;
+}
+
 function NewOpportunitiesScreen({T}:{T:Theme}) {
  type OppTab = "emploi"|"gigs"|"events"|"deals";
  const [subTab,setSubTab] = useState<OppTab>("emploi");
+ const [liveOpps,setLiveOpps] = useState<LiveOpp[]>([]);
+ const [loading,setLoading] = useState(true);
+ const [lastRefresh,setLastRefresh] = useState<Date|null>(null);
  const [showPost,setShowPost] = useState(false);
  const [postForm,setPostForm] = useState({title:"",desc:"",link:""});
+ const [search,setSearch] = useState("");
 
  const PRICES:Record<OppTab,string> = {emploi:"50€",gigs:"20€",events:"30€",deals:"Gratuit"};
  const LABELS:Record<OppTab,string> = {emploi:"Emplois & Stages",gigs:"Freelance & Gigs",events:"Événements",deals:"Bons Plans"};
  const ICONS:Record<OppTab,string> = {emploi:"brief",gigs:"zap",events:"cal",deals:"star"};
- const COLORS:Record<OppTab,string> = {emploi:T.blueB,gigs:"#7C3AED",events:"#16A34A",deals:"#D97706"};
+ const COLORS:Record<OppTab,string> = {emploi:"#2B78F5",gigs:"#7C3AED",events:"#16A34A",deals:"#D97706"};
 
- const MOCK_JOBS = [
-  {id:1,title:"Analyste Politique Junior",org:"Sciences Po Alumni",loc:"Paris",type:"CDI",desc:"Analyse des politiques publiques, rédaction de notes de synthèse.",link:"#",date:Date.now()-86400000},
-  {id:2,title:"Assistant Parlementaire",org:"Assemblée Nationale",loc:"Paris",type:"Stage",desc:"Soutien au travail législatif d'un député, suivi de l'actualité politique.",link:"#",date:Date.now()-172800000},
-  {id:3,title:"Chargé de Communication",org:"ONG Droits & Libertés",loc:"Remote",type:"Alternance",desc:"Création de contenu, gestion des réseaux, campagnes de sensibilisation.",link:"#",date:Date.now()-259200000},
+ const STATIC_DEALS = [
+  {id:"d1",title:"Livre : L'Art de la Rhétorique — Eyrolles",src:"Partenaires",type:"deals" as OppTab,link:"#",time:"1j",tag:"DEAL",tagC:"#D97706"},
+  {id:"d2",title:"Sciences Po Online — 3 mois offerts (NEXUS+)",src:"Partenaires",type:"deals" as OppTab,link:"#",time:"2j",tag:"DEAL",tagC:"#D97706"},
+  {id:"d3",title:"Accès Cairn.info — 6 mois -50% pour membres",src:"Partenaires",type:"deals" as OppTab,link:"#",time:"3j",tag:"DEAL",tagC:"#D97706"},
  ];
- const MOCK_GIGS = [
-  {id:1,title:"Consultant pour débat public",org:"@debatexpert",budget:"150-300€",desc:"Préparation et coaching d'un client pour un débat professionnel. 2 sessions.",link:"#",date:Date.now()-3600000},
-  {id:2,title:"Rédacteur discours politique",org:"@rhetoriquelive",budget:"200-500€",desc:"Rédaction de discours pour élections municipales. Expérience requise.",link:"#",date:Date.now()-86400000},
- ];
- const MOCK_EVENTS = [
-  {id:1,title:"Conférence Diplomatie & IA",org:"IFRI",loc:"Paris",date_event:"15 juin 2026",price:"25€",desc:"Les nouvelles technologies au service de la diplomatie.",link:"#",date:Date.now()-86400000},
-  {id:2,title:"Tournoi d'éloquence IEP",org:"Sciences Po Paris",loc:"Paris",date_event:"22 juin 2026",price:"Gratuit",desc:"Championnat universitaire d'éloquence ouvert aux étudiants.",link:"#",date:Date.now()-172800000},
-  {id:3,title:"Forum Paix et Sécurité",org:"ONU France",loc:"Paris",date_event:"5 juil. 2026",price:"40€",desc:"Forum annuel sur les défis de la paix internationale.",link:"#",date:Date.now()-259200000},
- ];
- const MOCK_DEALS = [
-  {id:1,title:"Livre : L'Art de la Rhétorique",org:"Eyrolles",desc:"-30% pour les membres NEXUS. Code : NEXUS30",link:"#",date:Date.now()-86400000},
-  {id:2,title:"Accès Premium Sciences Po Online",org:"Sciences Po",desc:"3 mois offerts pour les abonnés NEXUS+",link:"#",date:Date.now()-172800000},
- ];
+
+ useEffect(()=>{
+  let cancelled=false;
+  (async()=>{
+   setLoading(true);
+   await fetchLiveOpps(chunk=>{
+    if(cancelled) return;
+    setLiveOpps(prev=>{
+     const ids=new Set(prev.map(o=>o.id));
+     const news=chunk.filter(o=>!ids.has(o.id));
+     return news.length?[...prev,...news]:prev;
+    });
+    setLoading(false);
+   });
+   if(!cancelled){setLoading(false);setLastRefresh(new Date());}
+  })();
+  // Refresh daily
+  const t=setInterval(()=>{
+   if(!cancelled){setLoading(true);fetchLiveOpps(chunk=>{if(!cancelled)setLiveOpps(prev=>{const ids=new Set(prev.map(o=>o.id));const news=chunk.filter(o=>!ids.has(o.id));return news.length?[...prev,...news]:prev;});}).then(()=>{if(!cancelled){setLoading(false);setLastRefresh(new Date());}});}
+  },24*60*60*1000);
+  return()=>{cancelled=true;clearInterval(t);};
+ },[]);
 
  const col = COLORS[subTab];
+ const q=search.toLowerCase();
+ const displayed = subTab==="deals"
+  ? STATIC_DEALS.filter(d=>!q||d.title.toLowerCase().includes(q))
+  : liveOpps.filter(o=>o.type===subTab&&(!q||o.title.toLowerCase().includes(q)||o.src.toLowerCase().includes(q)));
 
- const renderItems = () => {
-  if(subTab==="emploi") return MOCK_JOBS.map(j=>(
-   <div key={j.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
-    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
-     <div style={{flex:1}}><p style={{color:T.text,fontSize:14,fontWeight:800}}>{j.title}</p><p style={{color:T.textD,fontSize:12,marginTop:2}}>{j.org} · {j.loc}</p></div>
-     <span style={{background:T.blueG,color:T.blueB,fontSize:10,fontWeight:800,padding:"3px 8px",borderRadius:6,flexShrink:0,marginLeft:8}}>{j.type}</span>
-    </div>
-    <p style={{color:T.textD,fontSize:12,lineHeight:1.5,marginBottom:10}}>{j.desc}</p>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-     <span style={{color:T.muted,fontSize:10}}>{timeFromTs(j.date)}</span>
-     <a href={j.link} target="_blank" rel="noopener noreferrer" style={{background:T.blueB,color:"#fff",fontSize:11,fontWeight:800,padding:"6px 14px",borderRadius:8,textDecoration:"none" as const}}>Postuler</a>
-    </div>
-   </div>
-  ));
-  if(subTab==="gigs") return MOCK_GIGS.map(g=>(
-   <div key={g.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
-    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
-     <p style={{color:T.text,fontSize:14,fontWeight:800,flex:1}}>{g.title}</p>
-     <span style={{color:"#7C3AED",fontSize:12,fontWeight:800,flexShrink:0,marginLeft:8}}>{g.budget}</span>
-    </div>
-    <p style={{color:T.textD,fontSize:12,marginBottom:4}}>{g.org}</p>
-    <p style={{color:T.textD,fontSize:12,lineHeight:1.5,marginBottom:10}}>{g.desc}</p>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-     <span style={{color:T.muted,fontSize:10}}>{timeFromTs(g.date)}</span>
-     <a href={g.link} target="_blank" rel="noopener noreferrer" style={{background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:800,padding:"6px 14px",borderRadius:8,textDecoration:"none" as const}}>Contacter</a>
-    </div>
-   </div>
-  ));
-  if(subTab==="events") return MOCK_EVENTS.map(ev=>(
-   <div key={ev.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
-    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
-     <p style={{color:T.text,fontSize:14,fontWeight:800,flex:1}}>{ev.title}</p>
-     <span style={{color:"#16A34A",fontSize:12,fontWeight:800,flexShrink:0,marginLeft:8}}>{ev.price}</span>
-    </div>
-    <p style={{color:T.textD,fontSize:12,marginBottom:6}}>{ev.org} · {ev.loc}</p>
-    <div style={{background:"#16A34A15",borderRadius:6,padding:"4px 10px",display:"inline-flex",alignItems:"center",gap:5,marginBottom:8}}>
-     <Ic n="cal" s={11} c="#16A34A"/>
-     <span style={{color:"#16A34A",fontSize:11,fontWeight:700}}>{ev.date_event}</span>
-    </div>
-    <p style={{color:T.textD,fontSize:12,lineHeight:1.5,marginBottom:10}}>{ev.desc}</p>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-     <span style={{color:T.muted,fontSize:10}}>{timeFromTs(ev.date)}</span>
-     <a href={ev.link} target="_blank" rel="noopener noreferrer" style={{background:"#16A34A",color:"#fff",fontSize:11,fontWeight:800,padding:"6px 14px",borderRadius:8,textDecoration:"none" as const}}>S&apos;inscrire</a>
-    </div>
-   </div>
-  ));
-  return MOCK_DEALS.map(d=>(
-   <div key={d.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
-    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
-     <p style={{color:T.text,fontSize:14,fontWeight:800,flex:1}}>{d.title}</p>
-     <span style={{background:"#D97706"+"22",color:"#D97706",fontSize:10,fontWeight:800,padding:"3px 8px",borderRadius:6,flexShrink:0,marginLeft:8}}>DEAL</span>
-    </div>
-    <p style={{color:T.textD,fontSize:12,marginBottom:8}}>{d.org}</p>
-    <p style={{color:T.textD,fontSize:12,lineHeight:1.5,marginBottom:10}}>{d.desc}</p>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-     <span style={{color:T.muted,fontSize:10}}>{timeFromTs(d.date)}</span>
-     <a href={d.link} target="_blank" rel="noopener noreferrer" style={{background:"#D97706",color:"#fff",fontSize:11,fontWeight:800,padding:"6px 14px",borderRadius:8,textDecoration:"none" as const}}>Voir l&apos;offre</a>
-    </div>
-   </div>
-  ));
- };
+ const timeSince=(d:Date)=>{const s=Math.floor((Date.now()-d.getTime())/1000);if(s<60)return`${s}s`;if(s<3600)return`${Math.floor(s/60)}min`;if(s<86400)return`${Math.floor(s/3600)}h`;return`${Math.floor(s/86400)}j`;};
 
  return(
-  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:14}}>
-   <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-    <div>
-     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>Carrières & Réseau</p>
-     <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>OPPORTUNITÉS</h1>
-    </div>
-    <button onClick={()=>{haptic();setShowPost(s=>!s);}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,border:`1px solid ${col}`,background:col+"15",color:col,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginTop:4,flexShrink:0}}>
-     <Ic n="plus" s={14} c={col}/> Publier
-    </button>
-   </div>
-   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-    {(["emploi","gigs","events","deals"] as OppTab[]).map(t=>(
-     <button key={t} onClick={()=>{haptic();setSubTab(t);}} style={{padding:"10px",borderRadius:10,border:`1px solid ${subTab===t?COLORS[t]:T.b1}`,background:subTab===t?COLORS[t]+"15":"transparent",color:subTab===t?COLORS[t]:T.textD,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,justifyContent:"center",transition:"all .15s"}}>
-      <Ic n={ICONS[t]} s={13} c={subTab===t?COLORS[t]:T.muted}/>
-      {t==="emploi"?"Emplois":t==="gigs"?"Gigs":t==="events"?"Événements":"Bons Plans"}
-     </button>
-    ))}
-   </div>
-   {showPost&&(
-    <div style={{background:T.card,border:`1px solid ${col}40`,borderRadius:14,padding:14,display:"flex",flexDirection:"column" as const,gap:10,animation:"fadeUp .2s ease"}}>
-     <p style={{color:T.text,fontSize:14,fontWeight:800}}>Publier une offre · <span style={{color:col}}>{PRICES[subTab]}</span></p>
-     <input value={postForm.title} onChange={e=>setPostForm(f=>({...f,title:e.target.value}))} placeholder="Titre" style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
-     <textarea value={postForm.desc} onChange={e=>setPostForm(f=>({...f,desc:e.target.value}))} placeholder="Description" rows={3} style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",resize:"none" as const,outline:"none"}}/>
-     <input value={postForm.link} onChange={e=>setPostForm(f=>({...f,link:e.target.value}))} placeholder="Lien (URL)" style={{padding:"9px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
-     <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-      <button onClick={()=>setShowPost(false)} style={{padding:"7px 14px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
-      <button onClick={()=>{haptic();setShowPost(false);setPostForm({title:"",desc:"",link:""});}} style={{padding:"7px 14px",borderRadius:8,border:"none",background:col,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Soumettre · {PRICES[subTab]}</button>
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {/* Sticky header */}
+   <div style={{padding:"12px 16px 0",background:T.surf,flexShrink:0,borderBottom:`1px solid ${T.b1}`}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+     <div>
+      <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>Carrières & Réseau</p>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginTop:1}}>
+       <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:20,fontWeight:800,color:T.text}}>OPPORTUNITÉS</h1>
+       {lastRefresh&&<span style={{color:T.muted,fontSize:10}}>· {timeSince(lastRefresh)}</span>}
+      </div>
      </div>
+     <button onClick={()=>{haptic();setShowPost(s=>!s);}} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 11px",borderRadius:9,border:`1px solid ${col}`,background:col+"15",color:col,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+      <Ic n="plus" s={13} c={col}/> Publier
+     </button>
     </div>
-   )}
-   <div style={{display:"flex",flexDirection:"column" as const,gap:12}}>{renderItems()}</div>
+    {/* Search */}
+    <div style={{position:"relative" as const,marginBottom:10}}>
+     <span style={{position:"absolute" as const,left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none" as const}}><Ic n="search" s={13} c={T.muted}/></span>
+     <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher offre, organisme…" style={{width:"100%",padding:"7px 10px 7px 28px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box" as const}}/>
+    </div>
+    {/* Sub-tabs */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:5,marginBottom:10}}>
+     {(["emploi","gigs","events","deals"] as OppTab[]).map(t=>(
+      <button key={t} onClick={()=>{haptic();setSubTab(t);}} style={{padding:"8px 4px",borderRadius:9,border:`1px solid ${subTab===t?COLORS[t]:T.b1}`,background:subTab===t?COLORS[t]+"15":"transparent",color:subTab===t?COLORS[t]:T.textD,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,justifyContent:"center",transition:"all .15s"}}>
+       <Ic n={ICONS[t]} s={12} c={subTab===t?COLORS[t]:T.muted}/>
+       <span>{t==="emploi"?"Emplois":t==="gigs"?"Gigs":t==="events"?"Events":"Deals"}</span>
+      </button>
+     ))}
+    </div>
+   </div>
+
+   <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:10}}>
+    {/* Post modal */}
+    {showPost&&(
+     <div style={{background:T.card,border:`1px solid ${col}40`,borderRadius:13,padding:13,display:"flex",flexDirection:"column" as const,gap:9,animation:"fadeUp .2s ease"}}>
+      <p style={{color:T.text,fontSize:13,fontWeight:800}}>Publier une offre · <span style={{color:col}}>{PRICES[subTab]}</span></p>
+      <input value={postForm.title} onChange={e=>setPostForm(f=>({...f,title:e.target.value}))} placeholder="Titre" style={{padding:"8px 11px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+      <textarea value={postForm.desc} onChange={e=>setPostForm(f=>({...f,desc:e.target.value}))} placeholder="Description" rows={3} style={{padding:"8px 11px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",resize:"none" as const,outline:"none"}}/>
+      <input value={postForm.link} onChange={e=>setPostForm(f=>({...f,link:e.target.value}))} placeholder="Lien (URL de l'offre)" style={{padding:"8px 11px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+      <div style={{display:"flex",gap:7,justifyContent:"flex-end"}}>
+       <button onClick={()=>setShowPost(false)} style={{padding:"6px 12px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
+       <button onClick={()=>{haptic();setShowPost(false);setPostForm({title:"",desc:"",link:""});}} style={{padding:"6px 12px",borderRadius:7,border:"none",background:col,color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Payer {PRICES[subTab]} & Publier</button>
+      </div>
+     </div>
+    )}
+
+    {/* Skeleton */}
+    {loading&&displayed.length===0&&[1,2,3].map(i=>(
+     <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:14,height:90,animation:"pulse 1.5s ease infinite"}}/>
+    ))}
+
+    {/* Items */}
+    {displayed.map(o=>(
+     <a key={o.id} href={o.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none" as const}}>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:13,padding:14,display:"flex",flexDirection:"column" as const,gap:8,transition:"all .15s",cursor:"pointer"}}
+       onMouseEnter={e=>(e.currentTarget as HTMLElement).style.borderColor=o.tagC+"60"}
+       onMouseLeave={e=>(e.currentTarget as HTMLElement).style.borderColor=T.b1}>
+       <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+        <div style={{width:36,height:36,borderRadius:9,background:o.tagC+"15",border:`1px solid ${o.tagC}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+         <Ic n={ICONS[subTab]} s={16} c={o.tagC}/>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+         <p style={{color:T.text,fontSize:13,fontWeight:800,lineHeight:1.3}}>{o.title}</p>
+         <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
+          <span style={{background:o.tagC+"20",color:o.tagC,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{o.src}</span>
+          <span style={{color:T.muted,fontSize:10}}>{o.time}</span>
+         </div>
+        </div>
+       </div>
+       <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end"}}>
+        <div style={{display:"flex",alignItems:"center",gap:4,color:o.tagC}}>
+         <Ic n="globe" s={11} c={o.tagC}/>
+         <span style={{fontSize:11,fontWeight:700,color:o.tagC}}>Voir l&apos;offre →</span>
+        </div>
+       </div>
+      </div>
+     </a>
+    ))}
+
+    {!loading&&displayed.length===0&&(
+     <div style={{textAlign:"center" as const,padding:"30px 20px"}}>
+      <Ic n={ICONS[subTab]} s={36} c={T.muted}/>
+      <p style={{color:T.muted,fontSize:13,marginTop:10}}>
+       {search?`Aucun résultat pour « ${search} »`:`Chargement des ${LABELS[subTab].toLowerCase()}…`}
+      </p>
+     </div>
+    )}
+   </div>
   </div>
  );
 }
