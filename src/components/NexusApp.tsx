@@ -7443,155 +7443,306 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
 // ── TRIAL ROOM ─────────────────────────────────────────────────────
 
-type TrialPhase="discovery"|"opening"|"case_pros"|"lunch"|"case_def"|"closing"|"deliberation"|"verdict";
-const TRIAL_PHASE_LABELS:Record<TrialPhase,string>={discovery:"Discovery",opening:"Ouverture",case_pros:"Plaidoirie — Accusation",lunch:"Pause",case_def:"Plaidoirie — Défense",closing:"Conclusions",deliberation:"Délibération",verdict:"Verdict"};
-const TRIAL_PHASE_DURATIONS:Record<TrialPhase,string>={discovery:"24h",opening:"10 min / partie",case_pros:"2h",lunch:"Pause",case_def:"2h",closing:"15 min / partie",deliberation:"Jury seul",verdict:"Annonce"};
-type TrialRole="judge"|"prosecutor"|"defense"|"jury"|"witness"|"spectator";
-const TRIAL_ROLE_LABELS:Record<TrialRole,string>={judge:"Juge",prosecutor:"Procureur",defense:"Avocat de la défense",jury:"Juré",witness:"Témoin",spectator:"Observateur"};
-const TRIAL_ROLE_COLORS:Record<TrialRole,string>={judge:"#8B4513",prosecutor:"#E03535",defense:"#1A5FD4",jury:"#7C3AED",witness:"#D97706",spectator:"#384F6A"};
+type TrialType="correctionnel"|"assises"|"civil";
+type TrialPhase="p1"|"p2"|"p3"|"p4"|"p5"|"p6"|"p7"|"p8";
+type TrialRole="president"|"assesseur"|"procureur"|"avocat_gen"|"prevenu"|"avocat_def"|"partie_civile"|"avocat_pc"|"jure"|"temoin"|"demandeur"|"defendeur"|"public";
+
+const TRIAL_TYPE_LABELS:Record<TrialType,string>={correctionnel:"Tribunal Correctionnel",assises:"Cour d'Assises",civil:"Tribunal Civil"};
+const TRIAL_TYPE_COLORS:Record<TrialType,string>={correctionnel:"#8B4513",assises:"#7C3AED",civil:"#1A5FD4"};
+const TRIAL_TYPE_DESC:Record<TrialType,string>={
+ correctionnel:"Délits — vol, escroquerie, violences, conduite en état d'ivresse…",
+ assises:"Crimes — meurtre, viol, braquage à main armée…",
+ civil:"Litiges civils — divorce, contrat, dette, voisinage…"
+};
+const TRIAL_ROLES_BY_TYPE:Record<TrialType,TrialRole[]>={
+ correctionnel:["president","procureur","prevenu","avocat_def","partie_civile","avocat_pc","temoin","public"],
+ assises:["president","assesseur","avocat_gen","prevenu","avocat_def","partie_civile","avocat_pc","jure","temoin","public"],
+ civil:["president","demandeur","defendeur","avocat_def","avocat_pc","temoin","public"],
+};
+const TRIAL_ROLE_COLORS:Record<TrialRole,string>={
+ president:"#8B4513",assesseur:"#A0522D",procureur:"#E03535",avocat_gen:"#C0392B",
+ prevenu:"#384F6A",avocat_def:"#1A5FD4",partie_civile:"#D97706",avocat_pc:"#E6910A",
+ jure:"#7C3AED",temoin:"#16A34A",demandeur:"#16A34A",defendeur:"#384F6A",public:"#64748B",
+};
+const getRoleLabel=(r:TrialRole,t:TrialType):string=>{
+ if(r==="president") return t==="assises"?"Président de la Cour":"Président du Tribunal";
+ if(r==="procureur") return t==="assises"?"Avocat général":"Procureur de la République";
+ if(r==="avocat_gen") return "Avocat général";
+ if(r==="prevenu") return t==="assises"?"Accusé·e":"Prévenu·e";
+ if(r==="partie_civile") return "Partie civile / Victime";
+ if(r==="avocat_pc") return t==="civil"?"Avocat du demandeur":"Avocat de la partie civile";
+ const base:Partial<Record<TrialRole,string>>={assesseur:"Juge assesseur",avocat_def:"Avocat de la défense",jure:"Juré·e citoyen·ne",temoin:"Témoin",demandeur:"Demandeur·euse",defendeur:"Défendeur·euse",public:"Public / Observateur"};
+ return base[r]||r;
+};
+const getRoleDesc=(r:TrialRole,t:TrialType):string=>{
+ if(r==="president") return "Préside l'audience, maintient l'ordre, interroge les parties";
+ if(r==="assesseur") return "Juge professionnel siégeant aux côtés du président (Cour d'assises)";
+ if(r==="procureur"||r==="avocat_gen") return "Représente la société, requiert la peine, interroge les témoins";
+ if(r==="prevenu") return t==="assises"?"L'accusé·e (crime) — peut s'exprimer, interrogé·e par la Cour":"Le/la prévenu·e (délit) — répond aux charges devant le tribunal";
+ if(r==="avocat_def") return "Défend le/la prévenu·e, réfute les charges, plaide pour son client";
+ if(r==="partie_civile") return "La victime constituée partie civile pour obtenir réparation du préjudice";
+ if(r==="avocat_pc") return "Représente et défend les intérêts de la victime devant la juridiction";
+ if(r==="jure") return "Citoyen·ne tiré·e au sort — délibère et rend le verdict avec la Cour";
+ if(r==="temoin") return "Témoigne sous serment à la barre, répond aux questions des parties";
+ if(r==="demandeur") return "Celui/celle qui a saisi la justice pour faire valoir ses droits";
+ if(r==="defendeur") return "La partie contre qui l'action civile est intentée";
+ return "Observe l'audience depuis les bancs du public sans intervenir";
+};
+const PHASE_LABELS:Record<TrialType,Record<TrialPhase,string>>={
+ correctionnel:{p1:"Vérification d'identité",p2:"Lecture des charges",p3:"Audition du prévenu",p4:"Audition des témoins",p5:"Expertise / Pièces",p6:"Réquisitions du parquet",p7:"Plaidoiries de la défense",p8:"Jugement"},
+ assises:{p1:"Constitution du jury",p2:"Acte d'accusation",p3:"Interrogatoire de l'accusé",p4:"Dépositions des témoins",p5:"Expertise / Pièces",p6:"Réquisitions de l'avocat général",p7:"Plaidoiries de la défense",p8:"Délibéré et verdict"},
+ civil:{p1:"Introduction de l'instance",p2:"Exposé du demandeur",p3:"Exposé du défendeur",p4:"Audition des témoins",p5:"Expertise / Pièces",p6:"Plaidoiries du demandeur",p7:"Plaidoiries du défendeur",p8:"Jugement"},
+};
+const PHASE_DURATIONS:Record<TrialPhase,string>={p1:"~10 min",p2:"~15 min",p3:"~30–60 min",p4:"Variable",p5:"Variable",p6:"~15–30 min",p7:"~15–30 min",p8:"Délibéré"};
+// keep TRIAL_ROLE_LABELS alias for the "en direct" tab backward compat
+const TRIAL_ROLE_LABELS:Partial<Record<TrialRole,string>>={};
+const TRIAL_PHASE_LABELS:Partial<Record<TrialPhase,string>>={};
+const TRIAL_PHASE_DURATIONS:Partial<Record<TrialPhase,string>>={};
 
 function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
- const col="#8B4513";
- type SetupPhase="role"|"trial";
- const [setup,setSetup]=useState<SetupPhase>("role");
+ type SetupPhase="type"|"role"|"trial";
+ const [setup,setSetup]=useState<SetupPhase>("type");
+ const [trialType,setTrialType]=useState<TrialType|null>(null);
  const [myRole,setMyRole]=useState<TrialRole|null>(null);
- const [phase,setPhase]=useState<TrialPhase>("discovery");
+ const [phase,setPhase]=useState<TrialPhase>("p1");
  const [roomTab,setRoomTab]=useState<"audience"|"direct"|"docs"|"script">("audience");
  const [hasFloor,setHasFloor]=useState(false);
  const [speakerRole,setSpeakerRole]=useState<TrialRole|null>(null);
  const [showInput,setShowInput]=useState(false);
+ const col=trialType?TRIAL_TYPE_COLORS[trialType]:"#8B4513";
  type Msg={id:number;role:TrialRole|"system";user:string;text:string;time:number};
- const [msgs,setMsgs]=useState<Msg[]>([
-  {id:1,role:"system",user:"GREFFIER",text:`L'audience est ouverte. Affaire : « ${sim.topic} ». Toutes les parties sont invitées à prendre leur place.`,time:Date.now()-1200000},
-  {id:2,role:"judge",user:"Juge Moreau",text:"Avant de commencer, je rappelle les règles de procédure. Tout intervenant doit s'adresser à la cour avec respect.",time:Date.now()-1140000},
-  {id:3,role:"prosecutor",user:"Me. Dubois (Accusation)",text:"L'accusation est prête, Votre Honneur.",time:Date.now()-1080000},
-  {id:4,role:"defense",user:"Me. Laurent (Défense)",text:"La défense est prête.",time:Date.now()-1020000},
- ]);
+ const [msgs,setMsgs]=useState<Msg[]>([]);
  const [input,setInput]=useState("");
  type DocEntry={id:number;name:string;type:string;by:TrialRole;time:number};
- const [docs,setDocs]=useState<DocEntry[]>([
-  {id:1,name:"Rapport d'expertise comptable",type:"Exhibit A",by:"prosecutor",time:Date.now()-86400000},
-  {id:2,name:"Déclaration du témoin principal",type:"Déclaration",by:"prosecutor",time:Date.now()-82800000},
-  {id:3,name:"Alibi — relevés bancaires",type:"Exhibit B",by:"defense",time:Date.now()-79200000},
- ]);
+ const [docs,setDocs]=useState<DocEntry[]>([]);
  const [docName,setDocName]=useState("");
- const [docType,setDocType]=useState("Exhibit");
+ const [docType,setDocType]=useState("Pièce");
  const chatRef=useRef<HTMLDivElement>(null);
 
- const PHASES:TrialPhase[]=["discovery","opening","case_pros","lunch","case_def","closing","deliberation","verdict"];
+ const PHASES:TrialPhase[]=["p1","p2","p3","p4","p5","p6","p7","p8"];
  const phaseIdx=PHASES.indexOf(phase);
+ const phaseLabel=(p:TrialPhase)=>trialType?PHASE_LABELS[trialType][p]:p;
+
+ const enterTrial=(tt:TrialType,r:TrialRole)=>{
+  haptic();
+  const greeting=tt==="correctionnel"
+   ?`L'audience est ouverte. Tribunal Correctionnel. Affaire : « ${sim.topic} ». Les parties prennent place.`
+   :tt==="assises"
+   ?`La Cour d'Assises est constituée. Affaire : « ${sim.topic} ». Mesdames et messieurs les jurés, veuillez vous lever.`
+   :`L'audience est ouverte. Tribunal Civil. Objet du litige : « ${sim.topic} ».`;
+  setMsgs([
+   {id:1,role:"system",user:"GREFFIER",text:greeting,time:Date.now()-600000},
+   {id:2,role:"president",user:"Président·e",text:"Je rappelle à toutes les parties leurs obligations de respect envers la Cour et leurs interlocuteurs.",time:Date.now()-540000},
+  ]);
+  setSetup("trial");
+ };
+
  const nextPhase=()=>{
   if(phaseIdx<PHASES.length-1){
    const np=PHASES[phaseIdx+1];
    setPhase(np);
-   setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Phase suivante : ${TRIAL_PHASE_LABELS[np]}. ${TRIAL_PHASE_DURATIONS[np]}`,time:Date.now()}]);
+   const label=trialType?PHASE_LABELS[trialType][np]:np;
+   setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Nouvelle phase : ${label}. ${PHASE_DURATIONS[np]}`,time:Date.now()}]);
    haptic();
   }
  };
 
  const sendMsg=()=>{
-  if(!input.trim()||!myRole) return;
-  const m:Msg={id:Date.now(),role:myRole,user:TRIAL_ROLE_LABELS[myRole],text:input.trim(),time:Date.now()};
+  if(!input.trim()||!myRole||!trialType) return;
+  const m:Msg={id:Date.now(),role:myRole,user:getRoleLabel(myRole,trialType),text:input.trim(),time:Date.now()};
   setMsgs(p=>[...p,m]);setInput("");setShowInput(false);haptic();
   setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
  };
 
  const submitDoc=()=>{
-  if(!docName.trim()||!myRole) return;
+  if(!docName.trim()||!myRole||!trialType) return;
   const d:DocEntry={id:Date.now(),name:docName.trim(),type:docType,by:myRole,time:Date.now()};
-  setDocs(p=>[...p,d]);
-  setDocName("");
-  setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Pièce soumise par ${TRIAL_ROLE_LABELS[myRole||"spectator"]} : « ${d.name} » (${d.type}).`,time:Date.now()}]);
+  setDocs(p=>[...p,d]);setDocName("");
+  setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Pièce versée au dossier par ${getRoleLabel(myRole,trialType)} : « ${d.name} » (${d.type}).`,time:Date.now()}]);
   haptic();
  };
 
  const takeMic=()=>{
   haptic();
   if(hasFloor){setHasFloor(false);setSpeakerRole(null);return;}
-  if(!myRole||myRole==="spectator") return;
+  if(!myRole||myRole==="public"||!trialType) return;
   setHasFloor(true);setSpeakerRole(myRole);
-  ttsSpeak(`La parole est à ${TRIAL_ROLE_LABELS[myRole]}.`);
-  setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`${TRIAL_ROLE_LABELS[myRole]} prend la parole.`,time:Date.now()}]);
+  ttsSpeak(`La parole est à ${getRoleLabel(myRole,trialType)}.`);
+  setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`${getRoleLabel(myRole,trialType)} prend la parole.`,time:Date.now()}]);
  };
 
- // Courtroom layout component
+ // ── COURTROOM LAYOUT ─────────────────────────────────────────────────
  const CourtroomView=()=>{
-  const JUDGE_COL="#8B4513";
-  const PROS_COL="#E03535";
-  const DEF_COL="#1A5FD4";
-  const JUR_COL="#7C3AED";
+  if(!trialType) return null;
   const myC=myRole?TRIAL_ROLE_COLORS[myRole]:T.muted;
+  const PRES_COL=TRIAL_ROLE_COLORS.president;
+  const PROS_COL=trialType==="assises"?TRIAL_ROLE_COLORS.avocat_gen:TRIAL_ROLE_COLORS.procureur;
+  const DEF_COL=TRIAL_ROLE_COLORS.avocat_def;
+  const JUR_COL=TRIAL_ROLE_COLORS.jure;
+  const PCV_COL=TRIAL_ROLE_COLORS.partie_civile;
 
-  const RoleBox=({role,name,short,emoji,side}:{role:TrialRole,name:string,short:string,emoji:string,side?:"left"|"right"|"center"})=>{
+  const RoleCard=({role,label,emoji,flex=1}:{role:TrialRole,label:string,emoji:string,flex?:number})=>{
    const c=TRIAL_ROLE_COLORS[role];
    const isActive=speakerRole===role;
    const isMe=myRole===role;
    return(
-    <div style={{flex:1,minWidth:0,background:T.card,border:`2px solid ${isMe?c:isActive?c:T.b1}`,borderRadius:12,padding:"10px 10px 8px",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,position:"relative" as const}}>
-     {isMe&&<span style={{position:"absolute" as const,top:4,right:6,background:c+"25",color:c,fontSize:7,fontWeight:900,padding:"1px 5px",borderRadius:3}}>VOUS</span>}
-     <div style={{width:40,height:40,borderRadius:"50%",background:c+"20",border:`2px solid ${isActive?c:c+"40"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{emoji}</div>
-     <p style={{color:c,fontSize:9,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const,textAlign:"center" as const,lineHeight:1.2}}>{short}</p>
-     <p style={{color:T.textD,fontSize:10,fontWeight:700,textAlign:"center" as const,lineHeight:1.2}}>{name}</p>
-     {isActive&&<AudioWave active={true} color={c} bars={8} h={22}/>}
+    <div style={{flex,minWidth:0,background:T.card,border:`2px solid ${isMe?c:isActive?c:T.b1}`,borderRadius:11,padding:"9px 9px 7px",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:5,position:"relative" as const}}>
+     {isMe&&<span style={{position:"absolute" as const,top:3,right:5,background:c+"25",color:c,fontSize:7,fontWeight:900,padding:"1px 4px",borderRadius:3}}>VOUS</span>}
+     <div style={{width:36,height:36,borderRadius:"50%",background:c+"20",border:`2px solid ${isActive?c:c+"40"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{emoji}</div>
+     <p style={{color:c,fontSize:8,fontWeight:900,letterSpacing:.8,textTransform:"uppercase" as const,textAlign:"center" as const,lineHeight:1.2}}>{label}</p>
+     {isActive&&<AudioWave active={true} color={c} bars={7} h={18}/>}
     </div>
    );
   };
 
   return(
-   <div style={{padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
-    {/* JUDGE BENCH */}
-    <div style={{background:T.mode==="dark"?"#1a0d00":"#f5ede6",border:`2px solid ${JUDGE_COL}40`,borderRadius:14,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
-     <div style={{width:48,height:48,borderRadius:"50%",background:JUDGE_COL+"25",border:`2px solid ${speakerRole==="judge"?JUDGE_COL:JUDGE_COL+"50"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>⚖️</div>
-     <div style={{flex:1}}>
-      <p style={{color:JUDGE_COL,fontSize:10,fontWeight:900,letterSpacing:1.5,textTransform:"uppercase" as const}}>PRÉSIDENCE DU TRIBUNAL</p>
-      <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:1}}>Juge Moreau{myRole==="judge"?" (Vous)":""}</p>
-      <p style={{color:T.textD,fontSize:10,marginTop:1}}>{TRIAL_PHASE_LABELS[phase]} · {TRIAL_PHASE_DURATIONS[phase]}</p>
-     </div>
-     {speakerRole==="judge"&&<AudioWave active={true} color={JUDGE_COL} bars={6} h={28}/>}
-    </div>
+   <div style={{padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:9}}>
 
-    {/* PROSECUTION | DEFENSE */}
-    <div style={{display:"flex",gap:10}}>
-     <RoleBox role="prosecutor" name="Me. Dubois" short="ACCUSATION" emoji="🔴"/>
-     <div style={{display:"flex",alignItems:"center",justifyContent:"center" as const,padding:"0 4px"}}>
-      <p style={{color:T.muted,fontSize:12,fontWeight:900,textAlign:"center" as const}}>VS</p>
-     </div>
-     <RoleBox role="defense" name="Me. Laurent" short="DÉFENSE" emoji="🔵"/>
-    </div>
-
-    {/* WITNESS STAND — visible when case phase */}
-    {(phase==="case_pros"||phase==="case_def")&&(
-     <div style={{background:T.card,border:`1.5px solid #D97706${speakerRole==="witness"?"":"40"}`,borderRadius:12,padding:"10px 12px",display:"flex",alignItems:"center",gap:10}}>
-      <div style={{width:36,height:36,borderRadius:"50%",background:"#D9770620",border:"1.5px solid #D9770660",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👤</div>
-      <div style={{flex:1}}>
-       <p style={{color:"#D97706",fontSize:9,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const}}>BARRE DES TÉMOINS</p>
-       <p style={{color:T.textD,fontSize:11,fontWeight:700}}>{myRole==="witness"?"Vous (Témoin)":"Témoin en attente"}</p>
+    {/* ── ESTRADE : PRÉSIDENCE + GREFFIER (fond de salle, en haut) ── */}
+    <div style={{background:T.mode==="dark"?"#1a0d00":"#f5ede6",border:`2px solid ${PRES_COL}50`,borderRadius:14,padding:"11px 14px"}}>
+     <p style={{color:PRES_COL,fontSize:8,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>
+      {trialType==="assises"?"COUR D'ASSISES — ESTRADE":trialType==="civil"?"SIÈGE DU TRIBUNAL — ESTRADE":"PRÉSIDENCE DU TRIBUNAL — ESTRADE"}
+     </p>
+     <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
+      {/* President */}
+      <div style={{flex:1,display:"flex",alignItems:"center",gap:10}}>
+       <div style={{width:44,height:44,borderRadius:"50%",background:PRES_COL+"25",border:`2px solid ${speakerRole==="president"?PRES_COL:PRES_COL+"50"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>⚖️</div>
+       <div style={{flex:1}}>
+        <p style={{color:PRES_COL,fontSize:9,fontWeight:900,letterSpacing:1}}>PRÉSIDENT·E</p>
+        <p style={{color:T.text,fontSize:12,fontWeight:800}}>M. Moreau{myRole==="president"?" (Vous)":""}</p>
+        <p style={{color:T.textD,fontSize:9,marginTop:1}}>{phaseLabel(phase)}</p>
+       </div>
+       {speakerRole==="president"&&<AudioWave active={true} color={PRES_COL} bars={6} h={24}/>}
       </div>
-      {speakerRole==="witness"&&<AudioWave active={true} color="#D97706" bars={7} h={24}/>}
+      {/* Assesseurs — assises only */}
+      {trialType==="assises"&&(
+       <div style={{display:"flex",gap:5,alignItems:"center"}}>
+        {[{n:"M. Petit",k:0},{n:"Mme Roux",k:1}].map(a=>(
+         <div key={a.k} style={{background:T.bg2,border:`1px solid ${TRIAL_ROLE_COLORS.assesseur}30`,borderRadius:8,padding:"6px 8px",textAlign:"center" as const}}>
+          <p style={{fontSize:14,marginBottom:2}}>👨‍⚖️</p>
+          <p style={{color:TRIAL_ROLE_COLORS.assesseur,fontSize:8,fontWeight:800}}>ASSESSEUR</p>
+          <p style={{color:T.textD,fontSize:9}}>{a.n}{myRole==="assesseur"&&a.k===0?" (Vous)":""}</p>
+         </div>
+        ))}
+       </div>
+      )}
+      {/* Greffier */}
+      <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"6px 8px",display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center" as const,gap:2}}>
+       <span style={{fontSize:14}}>📋</span>
+       <p style={{color:T.muted,fontSize:8,fontWeight:800}}>GREFFIER</p>
+       <p style={{color:T.textD,fontSize:9}}>Mme Blanc</p>
+      </div>
+     </div>
+    </div>
+
+    {/* ── JURY (assises only) — côté droit de la salle ── */}
+    {trialType==="assises"&&(
+     <div style={{background:T.card,border:`1.5px solid ${JUR_COL}40`,borderRadius:12,padding:"9px 12px"}}>
+      <p style={{color:JUR_COL,fontSize:8,fontWeight:900,letterSpacing:1.5,textTransform:"uppercase" as const,marginBottom:6}}>
+       BOX DU JURY — 6 JURÉS CITOYENS{phase==="p8"?" · DÉLIBÉRATION EN COURS":""}
+       {myRole==="jure"&&<span style={{marginLeft:6,background:JUR_COL+"25",padding:"1px 5px",borderRadius:3,fontSize:7}}>VOUS ÊTES JURÉ·E</span>}
+      </p>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
+       {(["👩","👨","🧑","👩‍💼","👨‍💼","🧑‍💼"] as const).map((em,i)=>(
+        <div key={i} style={{width:30,height:30,borderRadius:"50%",background:JUR_COL+"15",border:`1.5px solid ${JUR_COL}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>{em}</div>
+       ))}
+      </div>
      </div>
     )}
 
-    {/* JURY BOX */}
-    <div style={{background:T.card,border:`1.5px solid ${JUR_COL}30`,borderRadius:12,padding:"10px 12px"}}>
-     <p style={{color:JUR_COL,fontSize:9,fontWeight:900,letterSpacing:1.5,textTransform:"uppercase" as const,marginBottom:6}}>JURY · 12 JURÉS{phase==="deliberation"?" — DÉLIBÉRATION EN COURS":""}</p>
-     <div style={{display:"flex",gap:5,flexWrap:"wrap" as const}}>
-      {Array.from({length:12},(_,i)=>(
-       <div key={i} style={{width:26,height:26,borderRadius:"50%",background:JUR_COL+"15",border:`1px solid ${JUR_COL}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>
-        {["👩","👨","🧑","👩‍💼","👨‍💼","🧑‍💼","👩‍🦱","👨‍🦱","👩‍🦳","👨‍🦳","🧑‍🦱","👩‍🦰"][i]}
+    {/* ── PARQUET — face au tribunal ── */}
+    {(trialType==="correctionnel"||trialType==="assises")&&(
+     <div style={{background:T.card,border:`1.5px solid ${PROS_COL}40`,borderRadius:12,padding:"9px 12px",display:"flex",alignItems:"center",gap:10}}>
+      <div style={{width:38,height:38,borderRadius:"50%",background:PROS_COL+"20",border:`2px solid ${speakerRole===(trialType==="assises"?"avocat_gen":"procureur")?PROS_COL:PROS_COL+"40"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🔴</div>
+      <div style={{flex:1}}>
+       <p style={{color:PROS_COL,fontSize:8,fontWeight:900,letterSpacing:1.2,textTransform:"uppercase" as const}}>
+        {trialType==="assises"?"MINISTÈRE PUBLIC — AVOCAT GÉNÉRAL":"MINISTÈRE PUBLIC — PARQUET"}
+       </p>
+       <p style={{color:T.text,fontSize:11,fontWeight:800}}>
+        {trialType==="assises"?"Me. Lefèvre (Avocat général)":"Me. Dubois (Procureur de la République)"}
+        {(trialType==="assises"?myRole==="avocat_gen":myRole==="procureur")&&" (Vous)"}
+       </p>
+       <p style={{color:T.textD,fontSize:9,marginTop:1}}>Face au tribunal — côté gauche</p>
+      </div>
+      {speakerRole===(trialType==="assises"?"avocat_gen":"procureur")&&<AudioWave active={true} color={PROS_COL} bars={7} h={22}/>}
+     </div>
+    )}
+
+    {/* ── BANCS DES AVOCATS — face au tribunal ── */}
+    <div style={{display:"flex",gap:8}}>
+     {/* Défense */}
+     <div style={{flex:1,background:T.card,border:`1.5px solid ${DEF_COL}${speakerRole==="avocat_def"?"":"40"}`,borderRadius:11,padding:"9px 10px"}}>
+      <p style={{color:DEF_COL,fontSize:8,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const,marginBottom:4}}>
+       {trialType==="civil"?"AVOCAT DU DÉFENDEUR":"BANC DE LA DÉFENSE"}
+      </p>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+       <div style={{width:32,height:32,borderRadius:"50%",background:DEF_COL+"20",border:`1.5px solid ${DEF_COL}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🔵</div>
+       <div style={{flex:1}}>
+        <p style={{color:T.textD,fontSize:10,fontWeight:700}}>Me. Laurent{myRole==="avocat_def"?" (Vous)":""}</p>
+        <p style={{color:T.muted,fontSize:9}}>Côté gauche de la salle</p>
        </div>
-      ))}
+       {speakerRole==="avocat_def"&&<AudioWave active={true} color={DEF_COL} bars={6} h={18}/>}
+      </div>
+     </div>
+     {/* Partie civile / Demandeur */}
+     <div style={{flex:1,background:T.card,border:`1.5px solid ${PCV_COL}${speakerRole==="avocat_pc"||speakerRole==="partie_civile"||speakerRole==="demandeur"?"":"40"}`,borderRadius:11,padding:"9px 10px"}}>
+      <p style={{color:PCV_COL,fontSize:8,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const,marginBottom:4}}>
+       {trialType==="civil"?"BANC DU DEMANDEUR":"BANC DE LA PARTIE CIVILE"}
+      </p>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+       <div style={{width:32,height:32,borderRadius:"50%",background:PCV_COL+"20",border:`1.5px solid ${PCV_COL}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🟠</div>
+       <div style={{flex:1}}>
+        <p style={{color:T.textD,fontSize:10,fontWeight:700}}>
+         {trialType==="civil"?"M. Bernard (Demandeur)":"Me. Simon + Mme Dupont"}
+         {(myRole==="partie_civile"||myRole==="avocat_pc"||myRole==="demandeur")&&" (Vous)"}
+        </p>
+        <p style={{color:T.muted,fontSize:9}}>Côté droit de la salle</p>
+       </div>
+       {(speakerRole==="partie_civile"||speakerRole==="avocat_pc"||speakerRole==="demandeur")&&<AudioWave active={true} color={PCV_COL} bars={6} h={18}/>}
+      </div>
      </div>
     </div>
 
-    {/* PUBLIC GALLERY */}
-    <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
-     <span style={{fontSize:16}}>👥</span>
-     <p style={{color:T.textD,fontSize:11}}>Galerie publique · <span style={{fontWeight:700}}>47 observateurs</span></p>
+    {/* ── BOX DU PRÉVENU / ACCUSÉ ── */}
+    {(trialType==="correctionnel"||trialType==="assises")&&(
+     <div style={{background:T.mode==="dark"?"#0d1117":"#f0f4f8",border:`1.5px solid ${TRIAL_ROLE_COLORS.prevenu}${speakerRole==="prevenu"?"":"40"}`,borderRadius:12,padding:"9px 12px",display:"flex",alignItems:"center",gap:10}}>
+      <div style={{width:36,height:36,borderRadius:"50%",background:TRIAL_ROLE_COLORS.prevenu+"20",border:`1.5px solid ${TRIAL_ROLE_COLORS.prevenu}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👤</div>
+      <div style={{flex:1}}>
+       <p style={{color:TRIAL_ROLE_COLORS.prevenu,fontSize:8,fontWeight:900,letterSpacing:1.2,textTransform:"uppercase" as const}}>
+        {trialType==="assises"?"BOX DE L'ACCUSÉ·E — DEVANT LA COUR":"BOX DU PRÉVENU·E — DEVANT LE TRIBUNAL"}
+       </p>
+       <p style={{color:T.textD,fontSize:10,fontWeight:700}}>
+        {myRole==="prevenu"?"Vous (prévenu·e)":"M. Martin — Prévenu·e"}
+       </p>
+      </div>
+      {speakerRole==="prevenu"&&<AudioWave active={true} color={TRIAL_ROLE_COLORS.prevenu} bars={6} h={20}/>}
+     </div>
+    )}
+
+    {/* ── BARRE DES TÉMOINS ── */}
+    {(phase==="p4"||phase==="p5"||speakerRole==="temoin")&&(
+     <div style={{background:T.card,border:`1.5px solid ${TRIAL_ROLE_COLORS.temoin}${speakerRole==="temoin"?"":"40"}`,borderRadius:11,padding:"9px 12px",display:"flex",alignItems:"center",gap:10}}>
+      <div style={{width:32,height:32,borderRadius:"50%",background:TRIAL_ROLE_COLORS.temoin+"20",border:`1.5px solid ${TRIAL_ROLE_COLORS.temoin}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🗣️</div>
+      <div style={{flex:1}}>
+       <p style={{color:TRIAL_ROLE_COLORS.temoin,fontSize:8,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const}}>BARRE DES TÉMOINS — APPELÉ·E À TÉMOIGNER</p>
+       <p style={{color:T.textD,fontSize:10,fontWeight:700}}>{myRole==="temoin"?"Vous (Témoin)":"Témoin appelé·e à la barre"}</p>
+      </div>
+      {speakerRole==="temoin"&&<AudioWave active={true} color={TRIAL_ROLE_COLORS.temoin} bars={6} h={20}/>}
+     </div>
+    )}
+
+    {/* ── PUBLIC (bancs au fond) ── */}
+    <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"7px 12px",display:"flex",alignItems:"center",gap:8}}>
+     <span style={{fontSize:15}}>👥</span>
+     <div style={{flex:1}}>
+      <p style={{color:T.textD,fontSize:10}}>Bancs du public — fond de la salle · <span style={{fontWeight:700}}>38 observateurs</span></p>
+      {myRole==="public"&&<p style={{color:T.muted,fontSize:9,marginTop:1}}>Vous observez l'audience — sans droit de parole</p>}
+     </div>
     </div>
 
-    {/* MIC CONTROL */}
-    {myRole&&myRole!=="spectator"&&(
-     <div style={{paddingTop:4}}>
+    {/* ── CONTRÔLE MICRO ── */}
+    {myRole&&myRole!=="public"&&(
+     <div style={{paddingTop:2}}>
       {!hasFloor?(
        <button onClick={takeMic} style={{width:"100%",padding:"13px",borderRadius:11,border:"none",background:myC,color:"#fff",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:8}}>
         <span style={{fontSize:18}}>🎤</span> Prendre la parole
@@ -7612,47 +7763,96 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
         <button onClick={sendMsg} style={{background:myC,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
        </div>
       )}
-      {(myRole as string)==="spectator"&&<p style={{color:T.muted,fontSize:11,textAlign:"center" as const,marginTop:8}}>Mode observateur — vous ne pouvez pas intervenir.</p>}
      </div>
     )}
    </div>
   );
  };
 
- if(setup==="role") return(
+ // ── SETUP: TYPE SELECTION ─────────────────────────────────────────
+ if(setup==="type") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
    <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
-    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.muted}/></button>
     <div>
-     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>PROCÈS · ASSIGNATION DES RÔLES</span>
+     <span style={{background:"#8B451320",color:"#8B4513",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>PROCÈS · TYPE D'AUDIENCE</span>
      <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic}</p>
     </div>
    </div>
-   <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:10}}>
-    <div style={{background:col+"15",border:`1px solid ${col}30`,borderRadius:12,padding:"12px 16px"}}>
-     <p style={{color:col,fontSize:13,fontWeight:800}}>Choisissez votre rôle</p>
-     <p style={{color:T.textD,fontSize:12,marginTop:2}}>La simulation est <strong>audio</strong> — votre micro s'activera selon votre rôle. Le texte est une option de repli.</p>
+   <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column" as const,gap:10}}>
+    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 16px"}}>
+     <p style={{color:T.text,fontSize:13,fontWeight:800}}>Quel type de procès simuler ?</p>
+     <p style={{color:T.textD,fontSize:12,marginTop:2}}>En France, les juridictions varient selon la nature de l'affaire. Choisissez le tribunal.</p>
     </div>
-    {(["judge","prosecutor","defense","jury","witness","spectator"] as TrialRole[]).map(r=>(
-     <button key={r} onClick={()=>{haptic();setMyRole(r);}} style={{padding:"14px 16px",borderRadius:12,border:`2px solid ${myRole===r?TRIAL_ROLE_COLORS[r]:T.b1}`,background:myRole===r?TRIAL_ROLE_COLORS[r]+"15":T.card,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
-      <div style={{width:38,height:38,borderRadius:10,background:TRIAL_ROLE_COLORS[r]+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-       <Ic n={r==="judge"?"scale":r==="prosecutor"?"flag":r==="defense"?"shield":r==="jury"?"users":r==="witness"?"user":"feed"} s={18} c={TRIAL_ROLE_COLORS[r]}/>
-      </div>
-      <div style={{flex:1}}>
-       <p style={{color:T.text,fontSize:13,fontWeight:800}}>{TRIAL_ROLE_LABELS[r]}</p>
-       <p style={{color:T.textD,fontSize:11,marginTop:1}}>{r==="judge"?"Préside l'audience, maintient l'ordre":r==="prosecutor"?"Présente les charges, interroge les témoins":r==="defense"?"Défend l'accusé, réfute les charges":r==="jury"?"Délibère et rend le verdict":r==="witness"?"Témoigne sous serment":"Observe sans intervenir"}</p>
-      </div>
-      {myRole===r&&<Ic n="check" s={18} c={TRIAL_ROLE_COLORS[r]} w={2.5}/>}
-     </button>
-    ))}
+    {(["correctionnel","assises","civil"] as TrialType[]).map(tt=>{
+     const c=TRIAL_TYPE_COLORS[tt];
+     return(
+      <button key={tt} onClick={()=>{haptic();setTrialType(tt);setSetup("role");}} style={{padding:"16px",borderRadius:14,border:`2px solid ${trialType===tt?c:T.b1}`,background:trialType===tt?c+"12":T.card,display:"flex",alignItems:"flex-start",gap:13,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
+       <div style={{width:42,height:42,borderRadius:11,background:c+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20}}>
+        {tt==="correctionnel"?"⚖️":tt==="assises"?"🔴":"📄"}
+       </div>
+       <div style={{flex:1}}>
+        <p style={{color:T.text,fontSize:14,fontWeight:800}}>{TRIAL_TYPE_LABELS[tt]}</p>
+        <p style={{color:T.textD,fontSize:11,marginTop:2}}>{TRIAL_TYPE_DESC[tt]}</p>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap" as const,marginTop:6}}>
+         {TRIAL_ROLES_BY_TYPE[tt].slice(0,4).map(r=>(
+          <span key={r} style={{background:TRIAL_ROLE_COLORS[r]+"20",color:TRIAL_ROLE_COLORS[r],fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>
+           {getRoleLabel(r,tt).split(" ")[0]}
+          </span>
+         ))}
+         {TRIAL_ROLES_BY_TYPE[tt].length>4&&<span style={{background:T.bg2,color:T.muted,fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4}}>+{TRIAL_ROLES_BY_TYPE[tt].length-4}</span>}
+        </div>
+       </div>
+       {trialType===tt&&<Ic n="check" s={18} c={c} w={2.5}/>}
+      </button>
+     );
+    })}
    </div>
-   <div style={{padding:"12px 16px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-    <button onClick={()=>{if(myRole){haptic();setSetup("trial");}}} disabled={!myRole} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:myRole?TRIAL_ROLE_COLORS[myRole]:"#333",color:"#fff",fontSize:14,fontWeight:800,cursor:myRole?"pointer":"default",fontFamily:"inherit"}}>
-     {myRole?`Entrer comme ${TRIAL_ROLE_LABELS[myRole]}`:"Sélectionnez un rôle"}
+  </div>
+ );
+
+ // ── SETUP: ROLE SELECTION ─────────────────────────────────────────
+ if(setup==="role"&&trialType) return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={()=>setSetup("type")} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
+    <div>
+     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>{TRIAL_TYPE_LABELS[trialType].toUpperCase()} · RÔLE</span>
+     <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic}</p>
+    </div>
+   </div>
+   <div style={{flex:1,overflowY:"auto",padding:"14px",display:"flex",flexDirection:"column" as const,gap:8}}>
+    <div style={{background:col+"15",border:`1px solid ${col}30`,borderRadius:12,padding:"11px 14px"}}>
+     <p style={{color:col,fontSize:12,fontWeight:800}}>Choisissez votre rôle dans l'audience</p>
+     <p style={{color:T.textD,fontSize:11,marginTop:2}}>La simulation est <strong>audio</strong>. Le texte est un repli optionnel.</p>
+    </div>
+    {TRIAL_ROLES_BY_TYPE[trialType].map(r=>{
+     const c=TRIAL_ROLE_COLORS[r];
+     return(
+      <button key={r} onClick={()=>{haptic();setMyRole(r);}} style={{padding:"13px 14px",borderRadius:12,border:`2px solid ${myRole===r?c:T.b1}`,background:myRole===r?c+"15":T.card,display:"flex",alignItems:"center",gap:11,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
+       <div style={{width:36,height:36,borderRadius:9,background:c+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        <Ic n={r==="president"||r==="assesseur"?"scale":r==="procureur"||r==="avocat_gen"?"flag":r==="avocat_def"||r==="avocat_pc"?"shield":r==="jure"?"users":r==="temoin"||r==="demandeur"||r==="defendeur"||r==="prevenu"?"user":"feed"} s={16} c={c}/>
+       </div>
+       <div style={{flex:1}}>
+        <p style={{color:T.text,fontSize:12,fontWeight:800}}>{getRoleLabel(r,trialType)}</p>
+        <p style={{color:T.textD,fontSize:10,marginTop:1}}>{getRoleDesc(r,trialType)}</p>
+       </div>
+       {myRole===r&&<Ic n="check" s={16} c={c} w={2.5}/>}
+      </button>
+     );
+    })}
+   </div>
+   <div style={{padding:"12px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+    <button onClick={()=>{if(myRole)enterTrial(trialType,myRole);}} disabled={!myRole} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:myRole?TRIAL_ROLE_COLORS[myRole]:"#333",color:"#fff",fontSize:14,fontWeight:800,cursor:myRole?"pointer":"default",fontFamily:"inherit"}}>
+     {myRole?`Entrer comme ${getRoleLabel(myRole,trialType)}`:"Sélectionnez un rôle"}
     </button>
    </div>
   </div>
  );
+
+ // ── MAIN TRIAL ROOM ───────────────────────────────────────────────
+ if(!trialType||!myRole) return null;
+ const myC=TRIAL_ROLE_COLORS[myRole];
 
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
@@ -7660,14 +7860,14 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
      <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
      <div style={{flex:1,minWidth:0}}>
-      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1,flexWrap:"wrap" as const}}>
-       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>PROCÈS</span>
-       {myRole&&<span style={{background:TRIAL_ROLE_COLORS[myRole]+"20",color:TRIAL_ROLE_COLORS[myRole],fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{TRIAL_ROLE_LABELS[myRole].toUpperCase()}</span>}
+      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:1,flexWrap:"wrap" as const}}>
+       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{TRIAL_TYPE_LABELS[trialType].toUpperCase()}</span>
+       <span style={{background:myC+"20",color:myC,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{getRoleLabel(myRole,trialType).toUpperCase()}</span>
        <span style={{background:"#E0353515",color:"#E03535",fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3,display:"flex",alignItems:"center",gap:2}}><span style={{width:4,height:4,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>DIRECT</span>
       </div>
       <p style={{color:T.text,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
      </div>
-     {myRole==="judge"&&<button onClick={nextPhase} style={{background:col,color:"#fff",fontSize:10,fontWeight:800,padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Phase +</button>}
+     {myRole==="president"&&<button onClick={nextPhase} style={{background:col,color:"#fff",fontSize:10,fontWeight:800,padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Phase +</button>}
     </div>
     <div style={{display:"flex",gap:2,marginBottom:6}}>
      {PHASES.map((p,i)=>(
@@ -7695,23 +7895,27 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      </div>
     )}
     {roomTab==="direct"&&(()=>{
-     const PROS_COL="#E03535";const DEF_COL="#1A5FD4";const JUR_COL="#7C3AED";
-     const prosMsgs=msgs.filter(m=>m.role==="prosecutor");
-     const defMsgs=msgs.filter(m=>m.role==="defense");
-     const prosScore=prosMsgs.length*10+docs.filter(d=>d.by==="prosecutor").length*15;
-     const defScore=defMsgs.length*10+docs.filter(d=>d.by==="defense").length*15;
+     const PROS_COL=trialType==="assises"?TRIAL_ROLE_COLORS.avocat_gen:TRIAL_ROLE_COLORS.procureur;
+     const DEF_COL=TRIAL_ROLE_COLORS.avocat_def;
+     const JUR_COL=TRIAL_ROLE_COLORS.jure;
+     const prosRole:TrialRole=trialType==="assises"?"avocat_gen":"procureur";
+     const prosMsgs=msgs.filter(m=>m.role===prosRole||m.role==="demandeur");
+     const defMsgs=msgs.filter(m=>m.role==="avocat_def"||m.role==="prevenu"||m.role==="defendeur");
+     const prosScore=prosMsgs.length*10+docs.filter(d=>d.by===prosRole||d.by==="demandeur").length*15;
+     const defScore=defMsgs.length*10+docs.filter(d=>d.by==="avocat_def"||d.by==="prevenu").length*15;
      const total=prosScore+defScore||1;
      const prosP=Math.round(prosScore/total*100);
      const defP=100-prosP;
-     const phaseGuilt:Record<TrialPhase,number>={discovery:50,opening:48,case_pros:58,lunch:56,case_def:44,closing:50,deliberation:52,verdict:55};
-     const guiltCount=Math.round((phaseGuilt[phase]||50)/100*12);
+     const phaseGuilt:Record<TrialPhase,number>={p1:50,p2:48,p3:55,p4:52,p5:54,p6:58,p7:44,p8:52};
+     const juryN=trialType==="assises"?6:0;
+     const guiltCount=juryN>0?Math.round((phaseGuilt[phase]||50)/100*juryN):0;
      const recentArgs=msgs.filter(m=>m.role!=="system").slice(-4);
      return(
       <div style={{flex:1,overflowY:"auto" as const,padding:"14px",display:"flex",flexDirection:"column" as const,gap:12}}>
        {/* Case header */}
        <div style={{background:col+"15",border:`1.5px solid ${col}40`,borderRadius:12,padding:"12px 14px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between" as const,marginBottom:4}}>
-         <span style={{color:col,fontSize:9,fontWeight:900,letterSpacing:2}}>TRIBUNAL CORRECTIONNEL</span>
+         <span style={{color:col,fontSize:9,fontWeight:900,letterSpacing:2}}>{TRIAL_TYPE_LABELS[trialType].toUpperCase()}</span>
          <span style={{background:"#E0353515",color:"#E03535",fontSize:8,fontWeight:900,padding:"2px 6px",borderRadius:3,display:"flex",alignItems:"center",gap:3}}>
           <span style={{width:4,height:4,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>DIRECT
          </span>
@@ -7728,7 +7932,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
            {i<phaseIdx&&<span style={{fontSize:8,color:"#fff",fontWeight:900}}>✓</span>}
            {i===phaseIdx&&<span style={{width:6,height:6,borderRadius:"50%",background:"#fff",display:"inline-block"}}/>}
           </div>
-          <p style={{color:i===phaseIdx?T.text:i<phaseIdx?"#16A34A":T.muted,fontSize:11,fontWeight:i===phaseIdx?800:600,flex:1}}>{TRIAL_PHASE_LABELS[p]}</p>
+          <p style={{color:i===phaseIdx?T.text:i<phaseIdx?"#16A34A":T.muted,fontSize:11,fontWeight:i===phaseIdx?800:600,flex:1}}>{phaseLabel(p)}</p>
           {i===phaseIdx&&<span style={{background:col+"20",color:col,fontSize:8,fontWeight:900,padding:"1px 5px",borderRadius:3,flexShrink:0}}>EN COURS</span>}
          </div>
         ))}
@@ -7745,26 +7949,28 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
          <div style={{flex:1,background:DEF_COL,transition:"width .5s ease"}}/>
         </div>
         <div style={{display:"flex",justifyContent:"space-between" as const,marginTop:5}}>
-         <span style={{color:T.muted,fontSize:9}}>{docs.filter(d=>d.by==="prosecutor").length} pièces · {prosMsgs.length} interv.</span>
-         <span style={{color:T.muted,fontSize:9}}>{defMsgs.length} interv. · {docs.filter(d=>d.by==="defense").length} pièces</span>
+         <span style={{color:T.muted,fontSize:9}}>{docs.filter(d=>d.by===prosRole||d.by==="demandeur").length} pièces · {prosMsgs.length} interv.</span>
+         <span style={{color:T.muted,fontSize:9}}>{defMsgs.length} interv. · {docs.filter(d=>d.by==="avocat_def"||d.by==="prevenu"||d.by==="defendeur").length} pièces</span>
         </div>
        </div>
-       {/* Jury sentiment */}
-       <div style={{background:T.card,border:`1px solid ${JUR_COL}30`,borderRadius:12,padding:"12px 14px"}}>
-        <p style={{color:JUR_COL,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:8}}>SENTIMENT DU JURY (ESTIMÉ)</p>
-        <div style={{display:"flex",gap:3,marginBottom:8}}>
-         {(["👩","👨","🧑","👩‍💼","👨‍💼","🧑‍💼","👩‍🦱","👨‍🦱","👩‍🦳","👨‍🦳","🧑‍🦱","👩‍🦰"] as const).map((em,i)=>(
-          <div key={i} style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",gap:2}}>
-           <span style={{fontSize:14}}>{em}</span>
-           <div style={{width:8,height:8,borderRadius:"50%",background:i<guiltCount?PROS_COL:DEF_COL}}/>
-          </div>
-         ))}
+       {/* Jury sentiment — assises only */}
+       {trialType==="assises"&&(
+        <div style={{background:T.card,border:`1px solid ${JUR_COL}30`,borderRadius:12,padding:"12px 14px"}}>
+         <p style={{color:JUR_COL,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:8}}>SENTIMENT DU JURY POPULAIRE — 6 JURÉS (ESTIMÉ)</p>
+         <div style={{display:"flex",gap:6,marginBottom:8}}>
+          {(["👩","👨","🧑","👩‍💼","👨‍💼","🧑‍💼"] as const).map((em,i)=>(
+           <div key={i} style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",gap:3}}>
+            <span style={{fontSize:18}}>{em}</span>
+            <div style={{width:10,height:10,borderRadius:"50%",background:i<guiltCount?PROS_COL:DEF_COL}}/>
+           </div>
+          ))}
+         </div>
+         <div style={{display:"flex",justifyContent:"space-between" as const,padding:"6px 10px",background:T.bg2,borderRadius:8}}>
+          <span style={{color:PROS_COL,fontSize:11,fontWeight:800}}>🔴 Coupable : {guiltCount}/6</span>
+          <span style={{color:DEF_COL,fontSize:11,fontWeight:800}}>🔵 Non coupable : {6-guiltCount}/6</span>
+         </div>
         </div>
-        <div style={{display:"flex",justifyContent:"space-between" as const,padding:"6px 10px",background:T.bg2,borderRadius:8}}>
-         <span style={{color:PROS_COL,fontSize:11,fontWeight:800}}>🔴 Coupable : {guiltCount}/12</span>
-         <span style={{color:DEF_COL,fontSize:11,fontWeight:800}}>🔵 Non coupable : {12-guiltCount}/12</span>
-        </div>
-       </div>
+       )}
        {/* Recent declarations */}
        {recentArgs.length>0&&(
         <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
@@ -7790,7 +7996,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
            <div style={{width:28,height:28,borderRadius:7,background:c+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13}}>📄</div>
            <div style={{flex:1}}>
             <p style={{color:T.text,fontSize:11,fontWeight:700}}>{d.name}</p>
-            <p style={{color:T.textD,fontSize:9}}>{d.type} · {TRIAL_ROLE_LABELS[d.by]}</p>
+            <p style={{color:T.textD,fontSize:9}}>{d.type} · {getRoleLabel(d.by,trialType)}</p>
            </div>
            <span style={{background:"#16A34A20",color:"#16A34A",fontSize:8,fontWeight:900,padding:"1px 5px",borderRadius:3,flexShrink:0}}>VERSÉ</span>
           </div>
@@ -7807,19 +8013,19 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     {roomTab==="docs"&&(
      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
       <div style={{background:col+"12",border:`1px solid ${col}25`,borderRadius:10,padding:"10px 13px"}}>
-       <p style={{color:col,fontSize:12,fontWeight:800}}>Phase : {TRIAL_PHASE_LABELS[phase]}</p>
-       <p style={{color:T.textD,fontSize:11,marginTop:2}}>{phase==="discovery"?"Échangez vos pièces avant le procès. Délai 24h.":"Documents versés au dossier — accessibles à toutes les parties."}</p>
+       <p style={{color:col,fontSize:12,fontWeight:800}}>Phase : {phaseLabel(phase)}</p>
+       <p style={{color:T.textD,fontSize:11,marginTop:2}}>Documents versés au dossier — accessibles à toutes les parties.</p>
       </div>
-      {(myRole==="prosecutor"||myRole==="defense")&&phase==="discovery"&&(
+      {myRole&&myRole!=="public"&&myRole!=="jure"&&(
        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:12,display:"flex",flexDirection:"column" as const,gap:8}}>
-        <p style={{color:T.text,fontSize:12,fontWeight:800}}>Soumettre une pièce</p>
+        <p style={{color:T.text,fontSize:12,fontWeight:800}}>Verser une pièce au dossier</p>
         <div style={{display:"flex",gap:7}}>
          <input value={docName} onChange={e=>setDocName(e.target.value)} placeholder="Nom du document…" style={{flex:1,padding:"7px 10px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
          <select value={docType} onChange={e=>setDocType(e.target.value)} style={{padding:"7px 10px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}>
-          <option>Exhibit</option><option>Déclaration</option><option>Expertise</option><option>Témoin</option>
+          <option>Pièce</option><option>Expertise</option><option>Déclaration</option><option>Témoignage</option><option>Constat</option>
          </select>
         </div>
-        <button onClick={submitDoc} disabled={!docName.trim()} style={{padding:"8px",borderRadius:8,border:"none",background:docName.trim()?col:"#444",color:"#fff",fontSize:12,fontWeight:800,cursor:docName.trim()?"pointer":"default",fontFamily:"inherit"}}>Soumettre</button>
+        <button onClick={submitDoc} disabled={!docName.trim()} style={{padding:"8px",borderRadius:8,border:"none",background:docName.trim()?col:"#444",color:"#fff",fontSize:12,fontWeight:800,cursor:docName.trim()?"pointer":"default",fontFamily:"inherit"}}>Verser au dossier</button>
        </div>
       )}
       {docs.map(d=>(
@@ -7827,7 +8033,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
         <div style={{width:34,height:34,borderRadius:8,background:TRIAL_ROLE_COLORS[d.by]+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="feed" s={16} c={TRIAL_ROLE_COLORS[d.by]}/></div>
         <div style={{flex:1}}>
          <p style={{color:T.text,fontSize:12,fontWeight:800}}>{d.name}</p>
-         <p style={{color:T.textD,fontSize:10,marginTop:1}}>{d.type} · {TRIAL_ROLE_LABELS[d.by]} · {timeFromTs(d.time)}</p>
+         <p style={{color:T.textD,fontSize:10,marginTop:1}}>{d.type} · {getRoleLabel(d.by,trialType)} · {timeFromTs(d.time)}</p>
         </div>
         <span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>VERSÉ</span>
        </div>
@@ -7839,7 +8045,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>PROCÈS-VERBAL D'AUDIENCE</p>
       {msgs.map(m=>{
        const t=new Date(m.time).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
-       const c=m.role==="system"?T.muted:TRIAL_ROLE_COLORS[m.role as TrialRole]||T.muted;
+       const c=m.role==="system"?T.muted:(TRIAL_ROLE_COLORS[m.role as TrialRole]||T.muted);
        if(m.role==="system") return(
         <div key={m.id} style={{marginBottom:8,paddingLeft:10,borderLeft:`2px solid ${T.b1}`}}>
          <p style={{color:T.muted,fontSize:10,fontStyle:"italic" as const,lineHeight:1.4}}>[{t}] {m.text}</p>
