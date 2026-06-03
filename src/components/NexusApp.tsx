@@ -6886,7 +6886,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [phase,setPhase]=useState<Phase>(hasPremium?"select":"debate");
  const [myCountry,setMyCountry]=useState<{id:string;flag:string;country:string}|null>(hasPremium?null:randomCountry);
  const [countrySearch,setCountrySearch]=useState("");
- const [tab,setTab]=useState<"vue"|"file"|"delegues"|"script">("vue");
+ const [tab,setTab]=useState<"vue"|"dossier"|"file"|"delegues"|"script">("vue");
  type Msg={id:number;user:string;flag:string;text:string;time:number;system?:boolean;hasFloor?:boolean};
  const [msgs,setMsgs]=useState<Msg[]>([
   {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance est ouverte. Sujet : « ${sim.topic} ». Chaque délégation dispose de 2 à 5 minutes. Levez la main pour demander la parole.`,time:Date.now()-900000,system:true},
@@ -7133,7 +7133,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  };
 
  const QUEUE=["🇩🇪 Allemagne","🇧🇷 Brésil","🇮🇳 Inde","🇨🇳 Chine","🇯🇵 Japon"];
- const TABS:[typeof tab,string][]=[["vue","Chambre"],["file","File"],["delegues","Délégués"],["script","Script"]];
+ const TABS:[typeof tab,string][]=[["vue","Chambre"],["dossier","Dossier"],["file","File"],["delegues","Délégués"],["script","Script"]];
 
  if(phase==="select") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
@@ -7250,6 +7250,120 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
    <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
     {tab==="vue"&&<div style={{flex:1,overflowY:"auto" as const}}><ChamberView/></div>}
+
+    {tab==="dossier"&&(()=>{
+     // Live voting intentions — each delegation marks their position
+     type Intent="pour"|"contre"|"abstention"|null;
+     const DELEGATES=ALL_UN_COUNTRIES.slice(0,sim.participants);
+     // Simulate positions for other delegates
+     const SIMULATED:Record<string,Intent>={
+      "us":"pour","gb":"pour","fr":"pour","de":"pour","jp":"pour",
+      "ru":"contre","cn":"contre","by":"contre","kp":"contre",
+      "br":"abstention","in":"abstention","za":"abstention","ng":"abstention","eg":"abstention",
+     };
+     const myIntent:Intent=myVote as Intent||null;
+     const intentFor=(id:string)=>id===myCountry?.id?myIntent:(SIMULATED[id]||null);
+     const counts={pour:DELEGATES.filter(d=>intentFor(d.id)==="pour").length+8,contre:DELEGATES.filter(d=>intentFor(d.id)==="contre").length+4,abstention:DELEGATES.filter(d=>intentFor(d.id)==="abstention").length+3,unknown:0};
+     counts.unknown=sim.participants-counts.pour-counts.contre-counts.abstention;
+     const totalKnown=counts.pour+counts.contre+counts.abstention;
+     // Key arguments from msgs
+     const speeches=msgs.filter(m=>m.hasFloor&&!m.system);
+     const AMENDMENTS=[
+      {id:"A",by:"Russie",flag:"🇷🇺",text:"Ajouter un mécanisme de vérification indépendant avant toute résolution contraignante.",status:"en cours"},
+      {id:"B",by:"France",flag:"🇫🇷",text:"Inclure une clause humanitaire prioritaire pour les zones de conflit actif.",status:"adopté"},
+     ];
+     return(
+      <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
+       {/* Resolution header */}
+       <div style={{background:col+"12",border:`1px solid ${col}30`,borderRadius:14,padding:"14px 16px",marginBottom:12}}>
+        <p style={{color:col,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>RÉSOLUTION EN DÉLIBÉRATION · SC/RES/{new Date().getFullYear()}/0{Math.floor(Math.random()*9)+1}</p>
+        <p style={{color:T.text,fontSize:15,fontWeight:800,lineHeight:1.4,fontStyle:"italic" as const}}>« {sim.topic} »</p>
+        <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap" as const}}>
+         <span style={{background:"#E0353515",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:4,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>DÉBAT EN COURS</span>
+         <span style={{background:T.bg2,color:T.muted,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4}}>{sim.participants} délégations · {speeches.length} interv.</span>
+         <span style={{background:T.bg2,color:T.muted,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4}}>🕐 {new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</span>
+        </div>
+       </div>
+
+       {/* Live vote intentions */}
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:10}}>📊 Intentions de vote en direct</p>
+        <div style={{display:"flex",borderRadius:8,overflow:"hidden",height:16,marginBottom:8}}>
+         <div style={{width:`${Math.round(counts.pour/sim.participants*100)}%`,background:"#16A34A",transition:"width .6s"}}/>
+         <div style={{width:`${Math.round(counts.contre/sim.participants*100)}%`,background:"#E03535"}}/>
+         <div style={{width:`${Math.round(counts.abstention/sim.participants*100)}%`,background:"#D97706"}}/>
+         <div style={{flex:1,background:T.b1}}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
+         {[{k:"pour",label:"POUR",c:"#16A34A",n:counts.pour},{k:"contre",label:"CONTRE",c:"#E03535",n:counts.contre},{k:"abstention",label:"ABST.",c:"#D97706",n:counts.abstention},{k:"unknown",label:"INCONNU",c:T.muted,n:counts.unknown}].map(({k,label,c,n})=>(
+          <div key={k} style={{textAlign:"center" as const,background:T.bg2,borderRadius:7,padding:"7px 4px"}}>
+           <p style={{color:c,fontSize:14,fontWeight:900}}>{n}</p>
+           <p style={{color:T.muted,fontSize:8,fontWeight:700}}>{label}</p>
+          </div>
+         ))}
+        </div>
+        {/* My intention */}
+        {myCountry&&(
+         <div style={{marginTop:10,borderTop:`1px solid ${T.b1}`,paddingTop:10}}>
+          <p style={{color:T.muted,fontSize:9,fontWeight:700,marginBottom:6}}>Votre intention — {myCountry.flag} {myCountry.country}</p>
+          <div style={{display:"flex",gap:6}}>
+           {(["pour","contre","abstention"] as const).map(v=>(
+            <button key={v} onClick={()=>castVote(v)} style={{flex:1,padding:"7px 4px",borderRadius:7,border:`1.5px solid ${myVote===v?"#16A34A":v==="pour"?"#16A34A30":v==="contre"?"#E0353530":"#D9770630"}`,background:myVote===v?(v==="pour"?"#16A34A20":v==="contre"?"#E0353520":"#D9770620"):"transparent",color:v==="pour"?"#16A34A":v==="contre"?"#E03535":"#D97706",fontSize:9,fontWeight:800,cursor:myVote?"default":"pointer",fontFamily:"inherit"}}>
+             {v==="pour"?"✅ POUR":v==="contre"?"❌ CONTRE":"⬜ ABST."}
+            </button>
+           ))}
+          </div>
+         </div>
+        )}
+       </div>
+
+       {/* Key arguments */}
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8}}>💬 Arguments consignés au dossier</p>
+        {speeches.length===0&&<p style={{color:T.muted,fontSize:11,fontStyle:"italic" as const}}>Aucun argument soumis pour l'instant.</p>}
+        {speeches.slice(-5).map((m,i)=>(
+         <div key={m.id} style={{display:"flex",gap:8,marginBottom:8,paddingBottom:8,borderBottom:i<speeches.slice(-5).length-1?`1px solid ${T.b1}`:"none"}}>
+          <span style={{fontSize:16,flexShrink:0}}>{m.flag}</span>
+          <div style={{flex:1,minWidth:0}}>
+           <p style={{color:col,fontSize:9,fontWeight:800}}>{m.user}</p>
+           <p style={{color:T.textD,fontSize:11,lineHeight:1.4,fontStyle:"italic" as const}}>« {m.text.slice(0,140)}{m.text.length>140?"…":""}  »</p>
+          </div>
+         </div>
+        ))}
+       </div>
+
+       {/* Amendments */}
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8}}>📝 Amendements proposés</p>
+        {AMENDMENTS.map(a=>(
+         <div key={a.id} style={{background:T.bg2,border:`1px solid ${a.status==="adopté"?"#16A34A40":T.b1}`,borderRadius:9,padding:"9px 12px",marginBottom:7}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+           <span style={{fontSize:14}}>{a.flag}</span>
+           <span style={{color:T.text,fontSize:10,fontWeight:800,flex:1}}>Amendement {a.id} — {a.by}</span>
+           <span style={{background:a.status==="adopté"?"#16A34A20":"#D9770620",color:a.status==="adopté"?"#16A34A":"#D97706",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:3}}>{a.status.toUpperCase()}</span>
+          </div>
+          <p style={{color:T.textD,fontSize:11,lineHeight:1.4}}>{a.text}</p>
+         </div>
+        ))}
+        {myCountry&&(
+         <button onClick={()=>setTab("vue")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:4}}>
+          + Soumettre un amendement (audio depuis la Chambre)
+         </button>
+        )}
+       </div>
+
+       {/* Signataires */}
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
+        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8}}>✍️ Co-signataires ({Math.floor(sim.participants*0.3)})</p>
+        <div style={{display:"flex",flexWrap:"wrap" as const,gap:4}}>
+         {DELEGATES.slice(0,Math.floor(sim.participants*0.3)).map(d=>(
+          <span key={d.id} style={{fontSize:16}}>{d.flag}</span>
+         ))}
+        </div>
+       </div>
+      </div>
+     );
+    })()}
 
     {tab==="file"&&(
      <div style={{padding:"14px",flex:1,overflowY:"auto"}}>
