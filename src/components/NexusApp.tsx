@@ -6843,59 +6843,113 @@ const ALL_UN_COUNTRIES = [
  {id:"vn",flag:"🇻🇳",country:"Viêt Nam"},
 ];
 
+// ── SHARED AUDIO COMPONENTS ─────────────────────────────────────
+
+function AudioWave({active,color,bars=16,h=32}:{active:boolean,color:string,bars?:number,h?:number}) {
+ const [lv,setLv] = useState(()=>Array.from({length:bars},()=>0.12));
+ useEffect(()=>{
+  if(!active){setLv(Array.from({length:bars},()=>0.12));return;}
+  const iv=setInterval(()=>{
+   const t=Date.now()/160;
+   setLv(Array.from({length:bars},(_,i)=>{
+    const v=Math.sin(t+i*0.55)*0.35+Math.sin(t*1.8+i*0.28)*0.25+0.45;
+    return Math.max(0.08,Math.min(0.95,v));
+   }));
+  },80);
+  return()=>clearInterval(iv);
+ },[active,bars]);
+ return(
+  <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:2.5,height:h}}>
+   {lv.map((l,i)=>(
+    <div key={i} style={{width:3,borderRadius:99,background:color,height:Math.max(3,Math.round(l*h)),transition:"height .08s ease"}}/>
+   ))}
+  </div>
+ );
+}
+
+const ttsSpeak=(text:string)=>{
+ if(typeof window==="undefined"||!window.speechSynthesis) return;
+ window.speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.lang="fr-FR"; u.rate=0.88; u.pitch=1.05;
+ window.speechSynthesis.speak(u);
+};
+
+// ── UN DEBATE ROOM ────────────────────────────────────────────────
+
 function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
- const col = "#1A5FD4";
- type Phase = "select"|"debate"|"vote";
- const [phase,setPhase] = useState<Phase>("select");
- const [myCountry,setMyCountry] = useState<{id:string;flag:string;country:string}|null>(null);
- const [countrySearch,setCountrySearch] = useState("");
- const [tab,setTab] = useState<"vue"|"debat"|"file"|"delegues"|"script">("vue");
- type Msg = {id:number;user:string;flag:string;text:string;time:number;system?:boolean;hasFloor?:boolean};
- const [msgs,setMsgs] = useState<Msg[]>([
-  {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance est ouverte. Le Conseil est saisi du point suivant : « ${sim.topic} ». Je rappelle les règles : chaque délégation dispose de 2 à 5 minutes de temps de parole. Veuillez lever la main pour demander la parole.`,time:Date.now()-900000,system:true},
+ const col="#1A5FD4";
+ type Phase="select"|"debate"|"vote";
+ const [phase,setPhase]=useState<Phase>("select");
+ const [myCountry,setMyCountry]=useState<{id:string;flag:string;country:string}|null>(null);
+ const [countrySearch,setCountrySearch]=useState("");
+ const [tab,setTab]=useState<"vue"|"debat"|"file"|"delegues"|"script">("vue");
+ type Msg={id:number;user:string;flag:string;text:string;time:number;system?:boolean;hasFloor?:boolean};
+ const [msgs,setMsgs]=useState<Msg[]>([
+  {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance est ouverte. Sujet : « ${sim.topic} ». Chaque délégation dispose de 2 à 5 minutes. Levez la main pour demander la parole.`,time:Date.now()-900000,system:true},
   {id:2,user:"États-Unis",flag:"🇺🇸",text:"La délégation des États-Unis souhaite ouvrir le débat. Nous rappelons notre position ferme en faveur d'une réforme ambitieuse.",time:Date.now()-840000,hasFloor:true},
   {id:3,user:"Russie",flag:"🇷🇺",text:"La Russie s'oppose catégoriquement à toute modification unilatérale des structures fondamentales du Conseil.",time:Date.now()-780000,hasFloor:true},
   {id:4,user:"France",flag:"🇫🇷",text:"La France plaide pour une approche équilibrée respectant les positions de toutes les délégations.",time:Date.now()-720000,hasFloor:true},
  ]);
- const [input,setInput] = useState("");
- const [handRaised,setHandRaised] = useState(false);
- const [hasFloor,setHasFloor] = useState(false);
- const [timerActive,setTimerActive] = useState(false);
- const [speakerTime,setSpeakerTime] = useState(180);
- const [votes,setVotes] = useState<{pour:number;contre:number;abstention:number}>({pour:0,contre:0,abstention:0});
- const [myVote,setMyVote] = useState<string|null>(null);
- const chatRef = useRef<HTMLDivElement>(null);
- const timerRef = useRef<ReturnType<typeof setInterval>|null>(null);
-
- const QUEUE = ["🇩🇪 Allemagne","🇧🇷 Brésil","🇮🇳 Inde","🇨🇳 Chine","🇯🇵 Japon"];
+ const [input,setInput]=useState("");
+ const [showInput,setShowInput]=useState(false);
+ const [handRaised,setHandRaised]=useState(false);
+ const [hasFloor,setHasFloor]=useState(false);
+ const [timerActive,setTimerActive]=useState(false);
+ const [speakerTime,setSpeakerTime]=useState(180);
+ const [votes,setVotes]=useState<{pour:number;contre:number;abstention:number}>({pour:0,contre:0,abstention:0});
+ const [myVote,setMyVote]=useState<string|null>(null);
+ // AI speaker simulation
+ const AI_SPEAKERS=[
+  {user:"Chine",flag:"🇨🇳",text:"La délégation chinoise souligne l'importance du respect de la souveraineté nationale dans tout processus de réforme."},
+  {user:"Allemagne",flag:"🇩🇪",text:"L'Allemagne appelle à un dialogue constructif fondé sur le droit international et les valeurs démocratiques."},
+  {user:"Brésil",flag:"🇧🇷",text:"Le Brésil estime que la voix des pays émergents doit être mieux représentée dans les instances de décision."},
+  {user:"Inde",flag:"🇮🇳",text:"L'Inde soutient une réforme équitable qui tienne compte des intérêts des nations du Sud global."},
+ ];
+ const [aiSpeaker,setAiSpeaker]=useState<{user:string;flag:string;text:string}|null>(null);
+ const chatRef=useRef<HTMLDivElement>(null);
+ const timerRef=useRef<ReturnType<typeof setInterval>|null>(null);
+ const aiTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
 
  useEffect(()=>{
   if(timerActive&&hasFloor){
    timerRef.current=setInterval(()=>{
     setSpeakerTime(t=>{
      if(t<=1){
-      setTimerActive(false);
-      setHasFloor(false);
-      setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Temps de parole écoulé pour la délégation de ${myCountry?.country||"votre pays"}. Merci.`,time:Date.now(),system:true}]);
+      setTimerActive(false);setHasFloor(false);
+      setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Temps écoulé pour la délégation de ${myCountry?.country||"votre pays"}. Merci.`,time:Date.now(),system:true}]);
       return 0;
      }
      return t-1;
     });
    },1000);
-  } else {
-   if(timerRef.current) clearInterval(timerRef.current);
-  }
+  } else {if(timerRef.current) clearInterval(timerRef.current);}
   return()=>{if(timerRef.current) clearInterval(timerRef.current);};
  },[timerActive,hasFloor,myCountry]);
+
+ // Simulate AI delegates speaking when idle
+ useEffect(()=>{
+  if(phase!=="debate"||hasFloor||handRaised) return;
+  const delay=8000+Math.random()*12000;
+  const t=setTimeout(()=>{
+   const sp=AI_SPEAKERS[Math.floor(Math.random()*AI_SPEAKERS.length)];
+   setAiSpeaker(sp);
+   ttsSpeak(`${sp.user}. ${sp.text}`);
+   const dur=sp.text.split(" ").length*350+2000;
+   aiTimerRef.current=setTimeout(()=>{
+    setAiSpeaker(null);
+    setMsgs(m=>[...m,{id:Date.now(),user:sp.user,flag:sp.flag,text:sp.text,time:Date.now(),hasFloor:true}]);
+   },dur);
+  },delay);
+  return()=>{clearTimeout(t);if(aiTimerRef.current) clearTimeout(aiTimerRef.current);};
+ },[phase,hasFloor,handRaised]);
 
  const fmtTimer=(s:number)=>`${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
 
  const sendMsg=()=>{
   if(!input.trim()||!myCountry) return;
   const m:Msg={id:Date.now(),user:myCountry.country,flag:myCountry.flag,text:input.trim(),time:Date.now(),hasFloor};
-  setMsgs(p=>[...p,m]);
-  setInput("");
-  haptic();
+  setMsgs(p=>[...p,m]);setInput("");setShowInput(false);haptic();
   setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
  };
 
@@ -6903,16 +6957,20 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   haptic();
   if(handRaised){setHandRaised(false);return;}
   setHandRaised(true);
+  ttsSpeak(`La délégation de ${myCountry?.country} demande la parole.`);
   setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La délégation de ${myCountry?.country} demande la parole. Vous êtes ajouté(e) à la file.`,time:Date.now(),system:true}]);
  };
 
  const takeFloor=()=>{
-  haptic();
-  setHasFloor(true);
-  setHandRaised(false);
-  setTimerActive(true);
-  setSpeakerTime(180);
+  haptic();setHasFloor(true);setHandRaised(false);setTimerActive(true);setSpeakerTime(180);
+  ttsSpeak(`La parole est à la délégation de ${myCountry?.country}. Vous disposez de 3 minutes.`);
   setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La parole est à la délégation de ${myCountry?.country}. Vous disposez de 3 minutes.`,time:Date.now(),system:true}]);
+ };
+
+ const yieldFloor=()=>{
+  haptic();setHasFloor(false);setTimerActive(false);
+  ttsSpeak(`La délégation de ${myCountry?.country} cède la parole.`);
+  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La délégation de ${myCountry?.country} cède la parole.`,time:Date.now(),system:true}]);
  };
 
  const castVote=(v:string)=>{
@@ -6923,103 +6981,119 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  };
 
  const filteredCountries=ALL_UN_COUNTRIES.filter(c=>
-  c.country.toLowerCase().includes(countrySearch.toLowerCase())||
-  c.id.includes(countrySearch.toLowerCase())
+  c.country.toLowerCase().includes(countrySearch.toLowerCase())||c.id.includes(countrySearch.toLowerCase())
  );
 
- // ── CHAMBER VIEW (SVG horseshoe) ───────────────────
+ // ── CHAMBER SVG VIEW ────────────────────────────────
  const ChamberView=()=>{
-  const W=380,H=218;
-  const CX=W/2,CY=100;
-  const RX=148,RY=80;
+  const W=380,H=200;
+  const CX=W/2,CY=93;
+  const RX=148,RY=76;
   const countries=ALL_UN_COUNTRIES.slice(0,Math.min(sim.participants,20));
   const N=countries.length;
   const presIdx=Math.floor(N/2);
+  const activeSpeaker=hasFloor?myCountry?.country:aiSpeaker?.user??
+   msgs.filter(m=>m.hasFloor&&!m.system).slice(-1)[0]?.user;
   const seats=countries.map((c,i)=>{
    const ang=(180+i*180/Math.max(N-1,1))*Math.PI/180;
    return{...c,x:CX+RX*Math.cos(ang),y:CY+RY*Math.sin(ang),isPres:i===presIdx};
   });
-  const activeSpeaker=hasFloor?myCountry?.country:msgs.filter(m=>m.hasFloor&&!m.system).slice(-1)[0]?.user;
   return(
-   <div style={{padding:"10px 12px 0"}}>
+   <div>
     <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}}>
-     {/* Background */}
-     <rect width={W} height={H} rx="12" fill={T.bg2}/>
-     {/* Chamber floor ellipse */}
-     <ellipse cx={CX} cy={CY+12} rx={170} ry={108} fill={T.surf}/>
-     <ellipse cx={CX} cy={CY+12} rx={160} ry={100} fill={T.mode==="dark"?"#0d1d35":"#dde6f5"}/>
-     {/* Horseshoe table */}
-     <ellipse cx={CX} cy={CY} rx={95} ry={53} fill={T.mode==="dark"?"#0a1e3d":"#1a3a6e"} stroke={col+"60"} strokeWidth="2"/>
-     <ellipse cx={CX} cy={CY} rx={87} ry={45} fill={T.mode==="dark"?"#071429":"#0f2855"}/>
-     {/* UN emblem */}
-     <text x={CX} y={CY+6} textAnchor="middle" fontSize="22" fill={col} opacity="0.35">🌐</text>
-     {/* Nameplate strips on table edge */}
-     <ellipse cx={CX} cy={CY} rx={95} ry={53} fill="none" stroke={col+"30"} strokeWidth="6" strokeDasharray="4 6"/>
-     {/* Seats */}
+     <rect width={W} height={H} rx="0" fill={T.bg2}/>
+     <ellipse cx={CX} cy={CY+10} rx={168} ry={103} fill={T.mode==="dark"?"#0d1d35":"#dde6f5"}/>
+     <ellipse cx={CX} cy={CY} rx={92} ry={51} fill={T.mode==="dark"?"#0a1e3d":"#1a3a6e"} stroke={col+"60"} strokeWidth="2"/>
+     <ellipse cx={CX} cy={CY} rx={85} ry={44} fill={T.mode==="dark"?"#071429":"#0f2855"}/>
+     <ellipse cx={CX} cy={CY} rx={92} ry={51} fill="none" stroke={col+"25"} strokeWidth="5" strokeDasharray="4 6"/>
+     <text x={CX} y={CY+7} textAnchor="middle" fontSize="20" fill={col} opacity="0.3">🌐</text>
      {seats.map((s,i)=>{
       const isMe=s.id===myCountry?.id;
       const isSpeaking=s.country===activeSpeaker;
       const isRaised=handRaised&&s.id===myCountry?.id;
-      const R=s.isPres?21:isMe?19:17;
-      const fill=s.isPres?"#8B691430":isMe?col+"30":isSpeaking?"#16A34A30":T.card+"80";
+      const R=s.isPres?20:isMe?19:17;
+      const fill=s.isPres?"#8B691428":isMe?col+"30":isSpeaking?"#16A34A28":T.card+"70";
       const stroke=s.isPres?"#D97706":isMe?col:isSpeaking?"#16A34A":isRaised?"#D97706":T.b2;
       const sw=isMe||isSpeaking?2.5:1.5;
       return(
        <g key={i}>
-        {isSpeaking&&<>
-         <circle cx={s.x} cy={s.y} r={R+9} fill="none" stroke="#16A34A" strokeWidth="1" opacity="0.25"/>
-         <circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke="#16A34A" strokeWidth="1.5" opacity="0.45"/>
-        </>}
-        {isMe&&!isSpeaking&&<circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke={col} strokeWidth="1" opacity="0.35"/>}
+        {isSpeaking&&<><circle cx={s.x} cy={s.y} r={R+9} fill="none" stroke="#16A34A" strokeWidth="1" opacity="0.2"/>
+        <circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke="#16A34A" strokeWidth="1.5" opacity="0.5"/></>}
+        {isMe&&!isSpeaking&&<circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke={col} strokeWidth="1" opacity="0.4"/>}
         <circle cx={s.x} cy={s.y} r={R} fill={fill} stroke={stroke} strokeWidth={sw}/>
         <text x={s.x} y={s.y+5} textAnchor="middle" fontSize={s.isPres?16:13}>{s.isPres?"🌐":s.flag}</text>
         {isRaised&&<text x={s.x+R} y={s.y-R} fontSize="9">✋</text>}
-        {(isMe||s.isPres)&&(
-         <text x={s.x} y={s.y+R+11} textAnchor="middle" fontSize="7" fill={s.isPres?"#D97706":col} fontWeight="bold">
-          {s.isPres&&!isMe?"PRÉS.":(s.country.slice(0,8).toUpperCase())}
-         </text>
-        )}
+        {(isMe||s.isPres)&&<text x={s.x} y={s.y+R+11} textAnchor="middle" fontSize="7" fill={s.isPres&&!isMe?"#D97706":col} fontWeight="bold">{s.isPres&&!isMe?"PRÉS.":(s.country.slice(0,8).toUpperCase())}</text>}
        </g>
       );
      })}
-     {/* Live speaker banner */}
-     {activeSpeaker&&(
-      <g>
-       <rect x="6" y={H-26} width={W-12} height={20} rx="5" fill="#16A34A20" stroke="#16A34A40" strokeWidth="1"/>
-       <circle cx="20" cy={H-16} r="4" fill="#16A34A"/>
-       <text x="30" y={H-11} fontSize="9" fill="#16A34A" fontWeight="bold">AU PUPITRE : {activeSpeaker.toUpperCase()}</text>
-      </g>
-     )}
-     {/* Legend */}
-     {!activeSpeaker&&(
-      <g>
-       <rect x="6" y={H-24} width={W-12} height={18} rx="4" fill={T.bg2} opacity="0.85"/>
-       <circle cx="18" cy={H-15} r="4" fill={col+"30"} stroke={col} strokeWidth="1.5"/>
-       <text x="26" y={H-11} fontSize="8" fill={T.textD}>Vous</text>
-       <circle cx="54" cy={H-15} r="4" fill="#16A34A30" stroke="#16A34A" strokeWidth="1.5"/>
-       <text x="62" y={H-11} fontSize="8" fill={T.textD}>Orateur</text>
-       <circle cx="100" cy={H-15} r="4" fill="#D9770630" stroke="#D97706" strokeWidth="1.5"/>
-       <text x="108" y={H-11} fontSize="8" fill={T.textD}>Main levée / Président</text>
-      </g>
-     )}
     </svg>
-    {/* State cards below SVG */}
-    <div style={{display:"flex",gap:8,marginTop:8,marginBottom:10}}>
-     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,padding:"8px 11px",flex:1,minWidth:0}}>
-      <p style={{color:T.muted,fontSize:8,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase" as const}}>DÉLÉGATION</p>
-      <p style={{color:T.text,fontSize:12,fontWeight:800,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{myCountry?`${myCountry.flag} ${myCountry.country}`:"—"}</p>
-     </div>
-     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,padding:"8px 11px",flex:1,minWidth:0}}>
-      <p style={{color:T.muted,fontSize:8,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase" as const}}>DÉLÉGUÉS</p>
-      <p style={{color:T.text,fontSize:12,fontWeight:800,marginTop:2}}>{sim.participants} pays</p>
-     </div>
-     {hasFloor&&(
-      <div style={{background:"#16A34A15",border:"1px solid #16A34A40",borderRadius:9,padding:"8px 11px",flex:1}}>
-       <p style={{color:"#16A34A",fontSize:8,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase" as const}}>TEMPS</p>
-       <p style={{color:"#16A34A",fontSize:12,fontWeight:900,fontFamily:"monospace",marginTop:2}}>{fmtTimer(speakerTime)}</p>
+
+    {/* SPEAKER STAGE — shows when someone has floor */}
+    {(hasFloor||aiSpeaker)&&(
+     <div style={{background:T.surf,borderTop:`2px solid ${hasFloor?"#E03535":"#16A34A"}`,padding:"14px 16px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
+       <span style={{fontSize:44,lineHeight:1,flexShrink:0}}>{hasFloor?myCountry?.flag:aiSpeaker?.flag}</span>
+       <div style={{flex:1,minWidth:0}}>
+        <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:2}}>
+         {hasFloor?"🎙️ VOUS AVEZ LA PAROLE":"🎙️ AU PUPITRE"}
+        </p>
+        <p style={{color:T.text,fontSize:16,fontWeight:900,lineHeight:1.1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>
+         {hasFloor?myCountry?.country:aiSpeaker?.user}
+        </p>
+       </div>
+       {hasFloor&&<span style={{fontFamily:"monospace",color:"#E03535",fontSize:22,fontWeight:900,flexShrink:0}}>{fmtTimer(speakerTime)}</span>}
       </div>
-     )}
-    </div>
+      <AudioWave active={true} color={hasFloor?"#E03535":"#16A34A"} bars={20} h={36}/>
+      {hasFloor&&(
+       <div style={{display:"flex",gap:8,marginTop:10}}>
+        <button onClick={yieldFloor} style={{flex:1,padding:"10px",borderRadius:9,border:"1px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>⏹ Céder la parole</button>
+        <button onClick={()=>setShowInput(s=>!s)} style={{padding:"10px 13px",borderRadius:9,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✍️</button>
+       </div>
+      )}
+      {hasFloor&&showInput&&(
+       <div style={{display:"flex",gap:7,marginTop:8}}>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Tapez votre intervention…" style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+        <button onClick={sendMsg} style={{background:col,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
+       </div>
+      )}
+     </div>
+    )}
+
+    {/* MIC CONTROLS — when idle */}
+    {!hasFloor&&!aiSpeaker&&(
+     <div style={{padding:"12px 16px",borderTop:`1px solid ${T.b1}`}}>
+      {!handRaised?(
+       <button onClick={raiseHand} style={{width:"100%",padding:"13px",borderRadius:11,border:"none",background:col,color:"#fff",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <span style={{fontSize:20}}>✋</span> Lever la main pour parler
+       </button>
+      ):(
+       <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>setHandRaised(false)} style={{flex:1,padding:"12px",borderRadius:9,border:`1px solid #D97706`,background:"#D9770620",color:"#D97706",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✋ Main levée — Annuler</button>
+        <button onClick={takeFloor} style={{flex:1,padding:"12px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🎤 Prendre la parole</button>
+       </div>
+      )}
+     </div>
+    )}
+
+    {/* Recent speeches preview */}
+    {msgs.filter(m=>!m.system).length>0&&(
+     <div style={{padding:"10px 14px 14px",borderTop:`1px solid ${T.b1}`}}>
+      <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:7}}>DERNIÈRES INTERVENTIONS</p>
+      {msgs.filter(m=>!m.system).slice(-2).map(m=>(
+       <div key={m.id} style={{display:"flex",gap:8,marginBottom:7,alignItems:"flex-start"}}>
+        <span style={{fontSize:15,flexShrink:0}}>{m.flag}</span>
+        <div style={{flex:1,minWidth:0}}>
+         <span style={{color:T.muted,fontSize:9,fontWeight:700}}>{m.user}</span>
+         <p style={{color:T.textD,fontSize:11,lineHeight:1.35,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as const}}>{m.text}</p>
+        </div>
+       </div>
+      ))}
+      <button onClick={()=>setTab("debat")} style={{width:"100%",padding:"7px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:2}}>
+       Voir le débat complet →
+      </button>
+     </div>
+    )}
    </div>
   );
  };
@@ -7052,27 +7126,27 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       </div>
      );
     })}
-    {msgs.filter(m=>!m.system).length===0&&(
-     <p style={{color:T.muted,fontSize:12,textAlign:"center" as const,marginTop:40}}>Aucune intervention pour l'instant.</p>
-    )}
+    {msgs.filter(m=>!m.system).length===0&&<p style={{color:T.muted,fontSize:12,textAlign:"center" as const,marginTop:40}}>Aucune intervention pour l'instant.</p>}
    </div>
   );
  };
 
- // Phase: country selection
+ const QUEUE=["🇩🇪 Allemagne","🇧🇷 Brésil","🇮🇳 Inde","🇨🇳 Chine","🇯🇵 Japon"];
+ const TABS:[typeof tab,string][]=[["vue","Chambre"],["debat","Débat"],["file","File"],["delegues","Délégués"],["script","Script"]];
+
  if(phase==="select") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
    <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
     <div>
-     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>ONU · SÉLECTION</span>
+     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>ONU · SÉLECTION DE DÉLÉGATION</span>
      <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic.slice(0,55)}{sim.topic.length>55?"…":""}</p>
     </div>
    </div>
    <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:12}}>
     <div style={{background:`${col}15`,border:`1px solid ${col}30`,borderRadius:12,padding:"12px 16px"}}>
      <p style={{color:col,fontSize:13,fontWeight:800}}>Choisissez votre délégation</p>
-     <p style={{color:T.textD,fontSize:12,marginTop:2}}>Vous représenterez ce pays pour toute la durée du débat.</p>
+     <p style={{color:T.textD,fontSize:12,marginTop:2}}>Vous parlerez au nom de ce pays pendant toute la séance. La simulation est <strong>audio</strong> — votre micro sera activé quand vous aurez la parole.</p>
     </div>
     <div style={{position:"relative" as const}}>
      <span style={{position:"absolute" as const,left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none" as const}}><Ic n="search" s={13} c={T.muted}/></span>
@@ -7096,7 +7170,6 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   </div>
  );
 
- // Phase: vote
  if(phase==="vote") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
    <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
@@ -7124,8 +7197,8 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      </div>
     ):(
      <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column" as const,gap:12}}>
-      <div style={{background:"#16A34A"+"15",border:`1px solid #16A34A30`,borderRadius:12,padding:14,textAlign:"center" as const}}>
-       <p style={{color:"#16A34A",fontSize:13,fontWeight:800}}>Votre vote enregistré : {myVote.toUpperCase()}</p>
+      <div style={{background:"#16A34A15",border:"1px solid #16A34A30",borderRadius:12,padding:14,textAlign:"center" as const}}>
+       <p style={{color:"#16A34A",fontSize:13,fontWeight:800}}>Votre vote : {myVote.toUpperCase()}</p>
       </div>
       {[{k:"pour",label:"POUR",c:"#16A34A",n:votes.pour+12},{k:"contre",label:"CONTRE",c:"#E03535",n:votes.contre+8},{k:"abstention",label:"ABSTENTION",c:T.muted,n:votes.abstention+3}].map(({k,label,c,n})=>(
        <div key={k} style={{display:"flex",alignItems:"center",gap:10}}>
@@ -7143,11 +7216,8 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   </div>
  );
 
- // Phase: debate
- const TABS:[typeof tab,string][]=[["vue","Chambre"],["debat","Débat"],["file","File"],["delegues","Délégués"],["script","Script"]];
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
-   {/* Header */}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
      <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
@@ -7162,9 +7232,9 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      <button onClick={()=>setPhase("vote")} style={{background:"#16A34A",color:"#fff",fontSize:10,fontWeight:800,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>VOTER</button>
     </div>
     {hasFloor&&(
-     <div style={{background:"#E03535"+"15",border:"1px solid #E0353530",borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+     <div style={{background:"#E0353515",border:"1px solid #E0353530",borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
       <span style={{width:7,height:7,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite",flexShrink:0}}/>
-      <span style={{color:"#E03535",fontSize:12,fontWeight:800,flex:1}}>Vous avez la parole — {myCountry?.flag} {myCountry?.country}</span>
+      <span style={{color:"#E03535",fontSize:12,fontWeight:800,flex:1}}>VOUS AVEZ LA PAROLE — {myCountry?.flag} {myCountry?.country}</span>
       <span style={{fontFamily:"monospace",color:"#E03535",fontSize:14,fontWeight:900}}>{fmtTimer(speakerTime)}</span>
      </div>
     )}
@@ -7178,27 +7248,8 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
    </div>
 
    <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
-    {tab==="vue"&&(
-     <div style={{flex:1,overflowY:"auto" as const}}>
-      <ChamberView/>
-      {/* Mini chat preview below chamber */}
-      <div style={{padding:"0 12px 12px"}}>
-       <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8}}>DERNIÈRES INTERVENTIONS</p>
-       {msgs.filter(m=>!m.system).slice(-3).map(m=>(
-        <div key={m.id} style={{display:"flex",gap:8,marginBottom:8,alignItems:"flex-start"}}>
-         <span style={{fontSize:16,flexShrink:0}}>{m.flag}</span>
-         <div style={{flex:1,minWidth:0}}>
-          <span style={{color:T.muted,fontSize:9,fontWeight:700}}>{m.user}</span>
-          <p style={{color:T.textD,fontSize:11,lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as const}}>{m.text}</p>
-         </div>
-        </div>
-       ))}
-       <button onClick={()=>setTab("debat")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:4}}>
-        Ouvrir le débat complet →
-       </button>
-      </div>
-     </div>
-    )}
+    {tab==="vue"&&<div style={{flex:1,overflowY:"auto" as const}}><ChamberView/></div>}
+
     {tab==="debat"&&(
      <>
       <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:7}}>
@@ -7214,29 +7265,30 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        ))}
       </div>
       <div style={{padding:"8px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-       <div style={{display:"flex",gap:7,marginBottom:7}}>
-        {!hasFloor?(
-         <button onClick={raiseHand} style={{display:"flex",alignItems:"center",gap:4,padding:"6px 11px",borderRadius:7,border:`1px solid ${handRaised?"#D97706":T.b1}`,background:handRaised?"#D97706"+"20":"transparent",color:handRaised?"#D97706":T.muted,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-          ✋ {handRaised?"Annuler":"Lever la main"}
-         </button>
-        ):(
-         <button onClick={()=>{setHasFloor(false);setTimerActive(false);}} style={{display:"flex",alignItems:"center",gap:4,padding:"6px 11px",borderRadius:7,border:"1px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-          ⏹ Céder la parole
-         </button>
-        )}
-        {handRaised&&!hasFloor&&(
-         <button onClick={takeFloor} style={{display:"flex",alignItems:"center",gap:4,padding:"6px 11px",borderRadius:7,border:"1px solid #16A34A",background:"#16A34A20",color:"#16A34A",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-          🎤 Prendre la parole
-         </button>
-        )}
-       </div>
-       <div style={{display:"flex",gap:7}}>
-        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder={hasFloor?`Parole en cours — ${myCountry?.flag} ${myCountry?.country}`:"Tapez votre message…"} style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${hasFloor?col:T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
-        <button onClick={sendMsg} style={{background:col,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
-       </div>
+       {hasFloor?(
+        <div style={{display:"flex",gap:7,marginBottom:6}}>
+         <button onClick={yieldFloor} style={{display:"flex",alignItems:"center",gap:4,padding:"7px 12px",borderRadius:7,border:"1px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>⏹ Céder</button>
+         <button onClick={()=>setShowInput(s=>!s)} style={{display:"flex",alignItems:"center",gap:4,padding:"7px 12px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✍️ {showInput?"Masquer texte":"Saisir texte"}</button>
+        </div>
+       ):(
+        <div style={{display:"flex",gap:7,marginBottom:6}}>
+         {!handRaised?<button onClick={raiseHand} style={{display:"flex",alignItems:"center",gap:5,padding:"8px 13px",borderRadius:8,border:"none",background:col,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flex:1,justifyContent:"center" as const}}>✋ Lever la main</button>
+         :<>
+          <button onClick={()=>setHandRaised(false)} style={{display:"flex",alignItems:"center",gap:4,padding:"7px 12px",borderRadius:7,border:"1px solid #D97706",background:"#D9770620",color:"#D97706",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✋ Annuler</button>
+          <button onClick={takeFloor} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center" as const,gap:5,padding:"8px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🎤 Prendre la parole</button>
+         </>}
+        </div>
+       )}
+       {(showInput||!hasFloor)&&(
+        <div style={{display:"flex",gap:7}}>
+         <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder={hasFloor?"Tapez votre intervention…":"Message optionnel (audio préféré)"} style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${hasFloor?col:T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+         <button onClick={sendMsg} style={{background:col,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
+        </div>
+       )}
       </div>
      </>
     )}
+
     {tab==="file"&&(
      <div style={{padding:"14px",flex:1,overflowY:"auto"}}>
       <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>FILE DES ORATEURS</p>
@@ -7248,15 +7300,13 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
          {i===0&&<span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>Prochain</span>}
         </div>
        ))}
-       {myCountry&&!handRaised&&(
-        <button onClick={raiseHand} style={{marginTop:4,padding:"10px",borderRadius:9,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✋ Rejoindre la file — {myCountry.flag} {myCountry.country}</button>
-       )}
+       {myCountry&&!handRaised&&<button onClick={raiseHand} style={{marginTop:4,padding:"10px",borderRadius:9,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✋ Rejoindre la file — {myCountry.flag} {myCountry.country}</button>}
       </div>
      </div>
     )}
     {tab==="delegues"&&(
      <div style={{padding:"14px",flex:1,overflowY:"auto"}}>
-      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>DÉLÉGATIONS PRÉSENTES · {sim.participants}</p>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>DÉLÉGATIONS · {sim.participants}</p>
       <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
        {ALL_UN_COUNTRIES.slice(0,sim.participants).map(c=>(
         <div key={c.id} style={{background:T.card,border:`1px solid ${myCountry?.id===c.id?col+"60":T.b1}`,borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:9}}>
@@ -7274,62 +7324,182 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  );
 }
 
-// ──────────────────────────────────────────────────
-// TRIAL ROOM — phases, rôles, discovery docs
-// ──────────────────────────────────────────────────
-type TrialPhase = "discovery"|"opening"|"case_pros"|"lunch"|"case_def"|"closing"|"deliberation"|"verdict";
-const TRIAL_PHASE_LABELS:Record<TrialPhase,string> = {discovery:"Discovery",opening:"Ouverture",case_pros:"Plaidoirie — Accusation",lunch:"Pause",case_def:"Plaidoirie — Défense",closing:"Conclusions",deliberation:"Délibération",verdict:"Verdict"};
-const TRIAL_PHASE_DURATIONS:Record<TrialPhase,string> = {discovery:"24h",opening:"10 min / partie",case_pros:"2h",lunch:"Pause",case_def:"2h",closing:"15 min / partie",deliberation:"Jury seul",verdict:"Annonce"};
+// ── TRIAL ROOM ─────────────────────────────────────────────────────
 
-type TrialRole = "judge"|"prosecutor"|"defense"|"jury"|"witness"|"spectator";
-const TRIAL_ROLE_LABELS:Record<TrialRole,string> = {judge:"Juge",prosecutor:"Procureur",defense:"Avocat de la défense",jury:"Juré",witness:"Témoin",spectator:"Observateur"};
-const TRIAL_ROLE_COLORS:Record<TrialRole,string> = {judge:"#8B4513",prosecutor:"#E03535",defense:"#1A5FD4",jury:"#7C3AED",witness:"#D97706",spectator:"#384F6A"};
+type TrialPhase="discovery"|"opening"|"case_pros"|"lunch"|"case_def"|"closing"|"deliberation"|"verdict";
+const TRIAL_PHASE_LABELS:Record<TrialPhase,string>={discovery:"Discovery",opening:"Ouverture",case_pros:"Plaidoirie — Accusation",lunch:"Pause",case_def:"Plaidoirie — Défense",closing:"Conclusions",deliberation:"Délibération",verdict:"Verdict"};
+const TRIAL_PHASE_DURATIONS:Record<TrialPhase,string>={discovery:"24h",opening:"10 min / partie",case_pros:"2h",lunch:"Pause",case_def:"2h",closing:"15 min / partie",deliberation:"Jury seul",verdict:"Annonce"};
+type TrialRole="judge"|"prosecutor"|"defense"|"jury"|"witness"|"spectator";
+const TRIAL_ROLE_LABELS:Record<TrialRole,string>={judge:"Juge",prosecutor:"Procureur",defense:"Avocat de la défense",jury:"Juré",witness:"Témoin",spectator:"Observateur"};
+const TRIAL_ROLE_COLORS:Record<TrialRole,string>={judge:"#8B4513",prosecutor:"#E03535",defense:"#1A5FD4",jury:"#7C3AED",witness:"#D97706",spectator:"#384F6A"};
 
 function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
- const col = "#8B4513";
- type SetupPhase = "role"|"trial";
- const [setup,setSetup] = useState<SetupPhase>("role");
- const [myRole,setMyRole] = useState<TrialRole|null>(null);
- const [phase,setPhase] = useState<TrialPhase>("discovery");
- const [docTab,setDocTab] = useState<"chat"|"docs">("chat");
- type Msg = {id:number;role:TrialRole|"system";user:string;text:string;time:number};
- const [msgs,setMsgs] = useState<Msg[]>([
+ const col="#8B4513";
+ type SetupPhase="role"|"trial";
+ const [setup,setSetup]=useState<SetupPhase>("role");
+ const [myRole,setMyRole]=useState<TrialRole|null>(null);
+ const [phase,setPhase]=useState<TrialPhase>("discovery");
+ const [roomTab,setRoomTab]=useState<"audience"|"docs"|"script">("audience");
+ const [hasFloor,setHasFloor]=useState(false);
+ const [speakerRole,setSpeakerRole]=useState<TrialRole|null>(null);
+ const [showInput,setShowInput]=useState(false);
+ type Msg={id:number;role:TrialRole|"system";user:string;text:string;time:number};
+ const [msgs,setMsgs]=useState<Msg[]>([
   {id:1,role:"system",user:"GREFFIER",text:`L'audience est ouverte. Affaire : « ${sim.topic} ». Toutes les parties sont invitées à prendre leur place.`,time:Date.now()-1200000},
-  {id:2,role:"judge",user:"Juge Moreau",text:"Avant de commencer, je rappelle les règles de procédure. Tout intervenant doit s'adresser à la cour avec respect. Les objections doivent être motivées.",time:Date.now()-1140000},
+  {id:2,role:"judge",user:"Juge Moreau",text:"Avant de commencer, je rappelle les règles de procédure. Tout intervenant doit s'adresser à la cour avec respect.",time:Date.now()-1140000},
   {id:3,role:"prosecutor",user:"Me. Dubois (Accusation)",text:"L'accusation est prête, Votre Honneur.",time:Date.now()-1080000},
   {id:4,role:"defense",user:"Me. Laurent (Défense)",text:"La défense est prête.",time:Date.now()-1020000},
  ]);
- const [input,setInput] = useState("");
- type DocEntry = {id:number;name:string;type:string;by:TrialRole;time:number;sealed:boolean};
- const [docs,setDocs] = useState<DocEntry[]>([
-  {id:1,name:"Rapport d'expertise comptable",type:"Exhibit A",by:"prosecutor",time:Date.now()-86400000,sealed:false},
-  {id:2,name:"Déclaration du témoin principal",type:"Déclaration",by:"prosecutor",time:Date.now()-82800000,sealed:false},
-  {id:3,name:"Alibi — relevés bancaires",type:"Exhibit B",by:"defense",time:Date.now()-79200000,sealed:false},
+ const [input,setInput]=useState("");
+ type DocEntry={id:number;name:string;type:string;by:TrialRole;time:number};
+ const [docs,setDocs]=useState<DocEntry[]>([
+  {id:1,name:"Rapport d'expertise comptable",type:"Exhibit A",by:"prosecutor",time:Date.now()-86400000},
+  {id:2,name:"Déclaration du témoin principal",type:"Déclaration",by:"prosecutor",time:Date.now()-82800000},
+  {id:3,name:"Alibi — relevés bancaires",type:"Exhibit B",by:"defense",time:Date.now()-79200000},
  ]);
- const [docName,setDocName] = useState("");
- const [docType,setDocType] = useState("Exhibit");
- const chatRef = useRef<HTMLDivElement>(null);
+ const [docName,setDocName]=useState("");
+ const [docType,setDocType]=useState("Exhibit");
+ const chatRef=useRef<HTMLDivElement>(null);
 
- const PHASES:TrialPhase[] = ["discovery","opening","case_pros","lunch","case_def","closing","deliberation","verdict"];
- const phaseIdx = PHASES.indexOf(phase);
- const nextPhase=()=>{if(phaseIdx<PHASES.length-1){const np=PHASES[phaseIdx+1];setPhase(np);setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Phase suivante : ${TRIAL_PHASE_LABELS[np]}. ${TRIAL_PHASE_DURATIONS[np]}`,time:Date.now()}]);haptic();}};
+ const PHASES:TrialPhase[]=["discovery","opening","case_pros","lunch","case_def","closing","deliberation","verdict"];
+ const phaseIdx=PHASES.indexOf(phase);
+ const nextPhase=()=>{
+  if(phaseIdx<PHASES.length-1){
+   const np=PHASES[phaseIdx+1];
+   setPhase(np);
+   setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Phase suivante : ${TRIAL_PHASE_LABELS[np]}. ${TRIAL_PHASE_DURATIONS[np]}`,time:Date.now()}]);
+   haptic();
+  }
+ };
 
  const sendMsg=()=>{
   if(!input.trim()||!myRole) return;
-  const m:Msg={id:Date.now(),role:myRole,user:`${TRIAL_ROLE_LABELS[myRole]}`,text:input.trim(),time:Date.now()};
-  setMsgs(p=>[...p,m]);
-  setInput("");
-  haptic();
+  const m:Msg={id:Date.now(),role:myRole,user:TRIAL_ROLE_LABELS[myRole],text:input.trim(),time:Date.now()};
+  setMsgs(p=>[...p,m]);setInput("");setShowInput(false);haptic();
   setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
  };
 
  const submitDoc=()=>{
   if(!docName.trim()||!myRole) return;
-  const d:DocEntry={id:Date.now(),name:docName.trim(),type:docType,by:myRole,time:Date.now(),sealed:false};
+  const d:DocEntry={id:Date.now(),name:docName.trim(),type:docType,by:myRole,time:Date.now()};
   setDocs(p=>[...p,d]);
   setDocName("");
-  setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Pièce soumise par la ${TRIAL_ROLE_LABELS[myRole||"spectator"]} : « ${d.name} » (${d.type}). Document versé au dossier.`,time:Date.now()}]);
+  setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Pièce soumise par ${TRIAL_ROLE_LABELS[myRole||"spectator"]} : « ${d.name} » (${d.type}).`,time:Date.now()}]);
   haptic();
+ };
+
+ const takeMic=()=>{
+  haptic();
+  if(hasFloor){setHasFloor(false);setSpeakerRole(null);return;}
+  if(!myRole||myRole==="spectator") return;
+  setHasFloor(true);setSpeakerRole(myRole);
+  ttsSpeak(`La parole est à ${TRIAL_ROLE_LABELS[myRole]}.`);
+  setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`${TRIAL_ROLE_LABELS[myRole]} prend la parole.`,time:Date.now()}]);
+ };
+
+ // Courtroom layout component
+ const CourtroomView=()=>{
+  const JUDGE_COL="#8B4513";
+  const PROS_COL="#E03535";
+  const DEF_COL="#1A5FD4";
+  const JUR_COL="#7C3AED";
+  const myC=myRole?TRIAL_ROLE_COLORS[myRole]:T.muted;
+
+  const RoleBox=({role,name,short,emoji,side}:{role:TrialRole,name:string,short:string,emoji:string,side?:"left"|"right"|"center"})=>{
+   const c=TRIAL_ROLE_COLORS[role];
+   const isActive=speakerRole===role;
+   const isMe=myRole===role;
+   return(
+    <div style={{flex:1,minWidth:0,background:T.card,border:`2px solid ${isMe?c:isActive?c:T.b1}`,borderRadius:12,padding:"10px 10px 8px",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,position:"relative" as const}}>
+     {isMe&&<span style={{position:"absolute" as const,top:4,right:6,background:c+"25",color:c,fontSize:7,fontWeight:900,padding:"1px 5px",borderRadius:3}}>VOUS</span>}
+     <div style={{width:40,height:40,borderRadius:"50%",background:c+"20",border:`2px solid ${isActive?c:c+"40"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{emoji}</div>
+     <p style={{color:c,fontSize:9,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const,textAlign:"center" as const,lineHeight:1.2}}>{short}</p>
+     <p style={{color:T.textD,fontSize:10,fontWeight:700,textAlign:"center" as const,lineHeight:1.2}}>{name}</p>
+     {isActive&&<AudioWave active={true} color={c} bars={8} h={22}/>}
+    </div>
+   );
+  };
+
+  return(
+   <div style={{padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
+    {/* JUDGE BENCH */}
+    <div style={{background:T.mode==="dark"?"#1a0d00":"#f5ede6",border:`2px solid ${JUDGE_COL}40`,borderRadius:14,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
+     <div style={{width:48,height:48,borderRadius:"50%",background:JUDGE_COL+"25",border:`2px solid ${speakerRole==="judge"?JUDGE_COL:JUDGE_COL+"50"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>⚖️</div>
+     <div style={{flex:1}}>
+      <p style={{color:JUDGE_COL,fontSize:10,fontWeight:900,letterSpacing:1.5,textTransform:"uppercase" as const}}>PRÉSIDENCE DU TRIBUNAL</p>
+      <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:1}}>Juge Moreau{myRole==="judge"?" (Vous)":""}</p>
+      <p style={{color:T.textD,fontSize:10,marginTop:1}}>{TRIAL_PHASE_LABELS[phase]} · {TRIAL_PHASE_DURATIONS[phase]}</p>
+     </div>
+     {speakerRole==="judge"&&<AudioWave active={true} color={JUDGE_COL} bars={6} h={28}/>}
+    </div>
+
+    {/* PROSECUTION | DEFENSE */}
+    <div style={{display:"flex",gap:10}}>
+     <RoleBox role="prosecutor" name="Me. Dubois" short="ACCUSATION" emoji="🔴"/>
+     <div style={{display:"flex",alignItems:"center",justifyContent:"center" as const,padding:"0 4px"}}>
+      <p style={{color:T.muted,fontSize:12,fontWeight:900,textAlign:"center" as const}}>VS</p>
+     </div>
+     <RoleBox role="defense" name="Me. Laurent" short="DÉFENSE" emoji="🔵"/>
+    </div>
+
+    {/* WITNESS STAND — visible when case phase */}
+    {(phase==="case_pros"||phase==="case_def")&&(
+     <div style={{background:T.card,border:`1.5px solid #D97706${speakerRole==="witness"?"":"40"}`,borderRadius:12,padding:"10px 12px",display:"flex",alignItems:"center",gap:10}}>
+      <div style={{width:36,height:36,borderRadius:"50%",background:"#D9770620",border:"1.5px solid #D9770660",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👤</div>
+      <div style={{flex:1}}>
+       <p style={{color:"#D97706",fontSize:9,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const}}>BARRE DES TÉMOINS</p>
+       <p style={{color:T.textD,fontSize:11,fontWeight:700}}>{myRole==="witness"?"Vous (Témoin)":"Témoin en attente"}</p>
+      </div>
+      {speakerRole==="witness"&&<AudioWave active={true} color="#D97706" bars={7} h={24}/>}
+     </div>
+    )}
+
+    {/* JURY BOX */}
+    <div style={{background:T.card,border:`1.5px solid ${JUR_COL}30`,borderRadius:12,padding:"10px 12px"}}>
+     <p style={{color:JUR_COL,fontSize:9,fontWeight:900,letterSpacing:1.5,textTransform:"uppercase" as const,marginBottom:6}}>JURY · 12 JURÉS{phase==="deliberation"?" — DÉLIBÉRATION EN COURS":""}</p>
+     <div style={{display:"flex",gap:5,flexWrap:"wrap" as const}}>
+      {Array.from({length:12},(_,i)=>(
+       <div key={i} style={{width:26,height:26,borderRadius:"50%",background:JUR_COL+"15",border:`1px solid ${JUR_COL}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>
+        {["👩","👨","🧑","👩‍💼","👨‍💼","🧑‍💼","👩‍🦱","👨‍🦱","👩‍🦳","👨‍🦳","🧑‍🦱","👩‍🦰"][i]}
+       </div>
+      ))}
+     </div>
+    </div>
+
+    {/* PUBLIC GALLERY */}
+    <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
+     <span style={{fontSize:16}}>👥</span>
+     <p style={{color:T.textD,fontSize:11}}>Galerie publique · <span style={{fontWeight:700}}>47 observateurs</span></p>
+    </div>
+
+    {/* MIC CONTROL */}
+    {myRole&&myRole!=="spectator"&&(
+     <div style={{paddingTop:4}}>
+      {!hasFloor?(
+       <button onClick={takeMic} style={{width:"100%",padding:"13px",borderRadius:11,border:"none",background:myC,color:"#fff",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:8}}>
+        <span style={{fontSize:18}}>🎤</span> Prendre la parole
+       </button>
+      ):(
+       <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1,background:myC+"15",border:`1.5px solid ${myC}`,borderRadius:10,padding:"10px 12px",display:"flex",alignItems:"center",gap:8}}>
+         <AudioWave active={true} color={myC} bars={10} h={28}/>
+         <span style={{color:myC,fontSize:12,fontWeight:800}}>Vous parlez…</span>
+        </div>
+        <button onClick={takeMic} style={{padding:"10px 14px",borderRadius:10,border:`1px solid #E03535`,background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>⏹</button>
+        <button onClick={()=>setShowInput(s=>!s)} style={{padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✍️</button>
+       </div>
+      )}
+      {showInput&&(
+       <div style={{display:"flex",gap:7,marginTop:8}}>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Tapez votre déclaration (optionnel)…" style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+        <button onClick={sendMsg} style={{background:myC,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
+       </div>
+      )}
+      {(myRole as string)==="spectator"&&<p style={{color:T.muted,fontSize:11,textAlign:"center" as const,marginTop:8}}>Mode observateur — vous ne pouvez pas intervenir.</p>}
+     </div>
+    )}
+   </div>
+  );
  };
 
  if(setup==="role") return(
@@ -7337,14 +7507,14 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
    <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
     <div>
-     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>PROCÈS · ASSIGNATION</span>
+     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>PROCÈS · ASSIGNATION DES RÔLES</span>
      <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic}</p>
     </div>
    </div>
    <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:10}}>
     <div style={{background:col+"15",border:`1px solid ${col}30`,borderRadius:12,padding:"12px 16px"}}>
      <p style={{color:col,fontSize:13,fontWeight:800}}>Choisissez votre rôle</p>
-     <p style={{color:T.textD,fontSize:12,marginTop:2}}>Votre rôle est définitif pour toute la durée du procès.</p>
+     <p style={{color:T.textD,fontSize:12,marginTop:2}}>La simulation est <strong>audio</strong> — votre micro s'activera selon votre rôle. Le texte est une option de repli.</p>
     </div>
     {(["judge","prosecutor","defense","jury","witness","spectator"] as TrialRole[]).map(r=>(
      <button key={r} onClick={()=>{haptic();setMyRole(r);}} style={{padding:"14px 16px",borderRadius:12,border:`2px solid ${myRole===r?TRIAL_ROLE_COLORS[r]:T.b1}`,background:myRole===r?TRIAL_ROLE_COLORS[r]+"15":T.card,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
@@ -7353,7 +7523,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       </div>
       <div style={{flex:1}}>
        <p style={{color:T.text,fontSize:13,fontWeight:800}}>{TRIAL_ROLE_LABELS[r]}</p>
-       <p style={{color:T.textD,fontSize:11,marginTop:1}}>{r==="judge"?"Préside l'audience, maintient l'ordre":r==="prosecutor"?"Présente les charges, interroge":r==="defense"?"Défend l'accusé, réfute":r==="jury"?"Délibère et rend le verdict":r==="witness"?"Témoigne sous serment":"Observe sans intervenir"}</p>
+       <p style={{color:T.textD,fontSize:11,marginTop:1}}>{r==="judge"?"Préside l'audience, maintient l'ordre":r==="prosecutor"?"Présente les charges, interroge les témoins":r==="defense"?"Défend l'accusé, réfute les charges":r==="jury"?"Délibère et rend le verdict":r==="witness"?"Témoigne sous serment":"Observe sans intervenir"}</p>
       </div>
       {myRole===r&&<Ic n="check" s={18} c={TRIAL_ROLE_COLORS[r]} w={2.5}/>}
      </button>
@@ -7369,68 +7539,58 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
-   {/* Header */}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
      <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
      <div style={{flex:1,minWidth:0}}>
       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1,flexWrap:"wrap" as const}}>
        <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>PROCÈS</span>
        {myRole&&<span style={{background:TRIAL_ROLE_COLORS[myRole]+"20",color:TRIAL_ROLE_COLORS[myRole],fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{TRIAL_ROLE_LABELS[myRole].toUpperCase()}</span>}
-       <span style={{background:col+"15",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{TRIAL_PHASE_LABELS[phase].toUpperCase()}</span>
+       <span style={{background:"#E0353515",color:"#E03535",fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3,display:"flex",alignItems:"center",gap:2}}><span style={{width:4,height:4,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>DIRECT</span>
       </div>
-      <p style={{color:T.text,fontSize:12,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+      <p style={{color:T.text,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
      </div>
-     {(myRole==="judge")&&<button onClick={nextPhase} style={{background:col,color:"#fff",fontSize:10,fontWeight:800,padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Phase +</button>}
+     {myRole==="judge"&&<button onClick={nextPhase} style={{background:col,color:"#fff",fontSize:10,fontWeight:800,padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Phase +</button>}
     </div>
-    {/* Phase progress */}
-    <div style={{display:"flex",gap:3,marginBottom:6}}>
+    <div style={{display:"flex",gap:2,marginBottom:6}}>
      {PHASES.map((p,i)=>(
       <div key={p} style={{flex:1,height:3,borderRadius:2,background:i<phaseIdx?"#16A34A":i===phaseIdx?col:T.b1,transition:"background .3s"}}/>
      ))}
     </div>
     <div style={{display:"flex",gap:5}}>
-     {(["chat","docs"] as const).map(t=>(
-      <button key={t} onClick={()=>setDocTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${docTab===t?col:T.b1}`,background:docTab===t?col+"15":"transparent",color:docTab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-       {t==="chat"?"Audience":"Dossier ("+docs.length+")"}
+     {(["audience","docs","script"] as const).map(t=>(
+      <button key={t} onClick={()=>setRoomTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${roomTab===t?col:T.b1}`,background:roomTab===t?col+"15":"transparent",color:roomTab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+       {t==="audience"?"Salle":t==="docs"?`Dossier (${docs.length})`:"Script"}
       </button>
      ))}
     </div>
    </div>
 
    <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
-    {docTab==="chat"&&(
-     <>
-      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:7}}>
-       {msgs.map(m=>(
-        <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:1,alignItems:m.role===myRole?"flex-end":"flex-start" as const}}>
-         {m.role!=="system"&&<div style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:TRIAL_ROLE_COLORS[m.role as TrialRole]||T.muted,display:"inline-block"}}/><span style={{color:T.muted,fontSize:10}}>{m.user}</span></div>}
-         <div style={{maxWidth:"82%",padding:"7px 11px",borderRadius:11,background:m.role==="system"?T.bg2:m.role===myRole?col+"25":T.card,border:`1px solid ${m.role==="system"?T.b1:T.b1}`}}>
-          <p style={{color:m.role==="system"?T.muted:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
+    {roomTab==="audience"&&(
+     <div style={{flex:1,overflowY:"auto"}}>
+      <CourtroomView/>
+      {msgs.filter(m=>m.role!=="system").length>0&&(
+       <div style={{padding:"0 14px 14px",borderTop:`1px solid ${T.b1}`,marginTop:4}}>
+        <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8}}>DERNIÈRES DÉCLARATIONS</p>
+        {msgs.filter(m=>m.role!=="system").slice(-2).map(m=>(
+         <div key={m.id} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:7}}>
+          <div style={{width:8,height:8,borderRadius:"50%",background:TRIAL_ROLE_COLORS[m.role as TrialRole]||T.muted,marginTop:3,flexShrink:0}}/>
+          <div>
+           <span style={{color:T.muted,fontSize:9,fontWeight:700}}>{m.user}</span>
+           <p style={{color:T.textD,fontSize:11,lineHeight:1.35}}>{m.text.slice(0,120)}{m.text.length>120?"…":""}</p>
+          </div>
          </div>
-        </div>
-       ))}
-      </div>
-      <div style={{padding:"8px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-       {phase==="deliberation"&&myRole==="jury"?(
-        <div style={{display:"flex",gap:8}}>
-         <button onClick={()=>{setPhase("verdict");haptic();setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:"Le jury a rendu son verdict. L'audience reprend.",time:Date.now()}]);}} style={{flex:1,padding:"11px",borderRadius:9,border:"none",background:"#E03535",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>COUPABLE</button>
-         <button onClick={()=>{setPhase("verdict");haptic();setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:"Le jury a rendu son verdict. L'audience reprend.",time:Date.now()}]);}} style={{flex:1,padding:"11px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>NON COUPABLE</button>
-        </div>
-       ):(
-        <div style={{display:"flex",gap:7}}>
-         <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder={myRole==="judge"?"Parole du juge…":myRole==="spectator"?"Mode observateur — vous ne pouvez pas intervenir":"Votre déclaration…"} disabled={myRole==="spectator"||phase==="deliberation"} style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",opacity:myRole==="spectator"?.5:1}}/>
-         <button onClick={sendMsg} disabled={myRole==="spectator"} style={{background:col,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,opacity:myRole==="spectator"?.4:1}}><Ic n="send" s={15} c="#fff"/></button>
-        </div>
-       )}
-      </div>
-     </>
+        ))}
+       </div>
+      )}
+     </div>
     )}
-    {docTab==="docs"&&(
+    {roomTab==="docs"&&(
      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
       <div style={{background:col+"12",border:`1px solid ${col}25`,borderRadius:10,padding:"10px 13px"}}>
        <p style={{color:col,fontSize:12,fontWeight:800}}>Phase : {TRIAL_PHASE_LABELS[phase]}</p>
-       <p style={{color:T.textD,fontSize:11,marginTop:2}}>{phase==="discovery"?"Échangez vos pièces avant le début du procès. Délai 24h. Aucune modification après soumission.":"Documents versés au dossier — consultables par toutes les parties."}</p>
+       <p style={{color:T.textD,fontSize:11,marginTop:2}}>{phase==="discovery"?"Échangez vos pièces avant le procès. Délai 24h.":"Documents versés au dossier — accessibles à toutes les parties."}</p>
       </div>
       {(myRole==="prosecutor"||myRole==="defense")&&phase==="discovery"&&(
        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:12,display:"flex",flexDirection:"column" as const,gap:8}}>
@@ -7441,21 +7601,43 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
           <option>Exhibit</option><option>Déclaration</option><option>Expertise</option><option>Témoin</option>
          </select>
         </div>
-        <button onClick={submitDoc} disabled={!docName.trim()} style={{padding:"8px",borderRadius:8,border:"none",background:docName.trim()?col:"#444",color:"#fff",fontSize:12,fontWeight:800,cursor:docName.trim()?"pointer":"default",fontFamily:"inherit"}}>Soumettre (définitif)</button>
+        <button onClick={submitDoc} disabled={!docName.trim()} style={{padding:"8px",borderRadius:8,border:"none",background:docName.trim()?col:"#444",color:"#fff",fontSize:12,fontWeight:800,cursor:docName.trim()?"pointer":"default",fontFamily:"inherit"}}>Soumettre</button>
        </div>
       )}
-      <div style={{display:"flex",flexDirection:"column" as const,gap:7}}>
-       {docs.map(d=>(
-        <div key={d.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10}}>
-         <div style={{width:34,height:34,borderRadius:8,background:TRIAL_ROLE_COLORS[d.by]+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="feed" s={16} c={TRIAL_ROLE_COLORS[d.by]}/></div>
-         <div style={{flex:1}}>
-          <p style={{color:T.text,fontSize:12,fontWeight:800}}>{d.name}</p>
-          <p style={{color:T.textD,fontSize:10,marginTop:1}}>{d.type} · Soumis par {TRIAL_ROLE_LABELS[d.by]} · {timeFromTs(d.time)}</p>
-         </div>
-         <span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>VERSÉ</span>
+      {docs.map(d=>(
+       <div key={d.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:34,height:34,borderRadius:8,background:TRIAL_ROLE_COLORS[d.by]+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="feed" s={16} c={TRIAL_ROLE_COLORS[d.by]}/></div>
+        <div style={{flex:1}}>
+         <p style={{color:T.text,fontSize:12,fontWeight:800}}>{d.name}</p>
+         <p style={{color:T.textD,fontSize:10,marginTop:1}}>{d.type} · {TRIAL_ROLE_LABELS[d.by]} · {timeFromTs(d.time)}</p>
         </div>
-       ))}
-      </div>
+        <span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>VERSÉ</span>
+       </div>
+      ))}
+     </div>
+    )}
+    {roomTab==="script"&&(
+     <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>PROCÈS-VERBAL D'AUDIENCE</p>
+      {msgs.map(m=>{
+       const t=new Date(m.time).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+       const c=m.role==="system"?T.muted:TRIAL_ROLE_COLORS[m.role as TrialRole]||T.muted;
+       if(m.role==="system") return(
+        <div key={m.id} style={{marginBottom:8,paddingLeft:10,borderLeft:`2px solid ${T.b1}`}}>
+         <p style={{color:T.muted,fontSize:10,fontStyle:"italic" as const,lineHeight:1.4}}>[{t}] {m.text}</p>
+        </div>
+       );
+       return(
+        <div key={m.id} style={{marginBottom:12,background:T.card,border:`1px solid ${c}30`,borderRadius:10,padding:"10px 13px"}}>
+         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+          <div style={{width:7,height:7,borderRadius:"50%",background:c,flexShrink:0}}/>
+          <span style={{color:c,fontSize:11,fontWeight:800,flex:1}}>{m.user}</span>
+          <span style={{color:T.muted,fontSize:9}}>{t}</span>
+         </div>
+         <p style={{color:T.textD,fontSize:12,lineHeight:1.6,fontStyle:"italic" as const}}>« {m.text} »</p>
+        </div>
+       );
+      })}
      </div>
     )}
    </div>
@@ -7463,65 +7645,102 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  );
 }
 
-// ──────────────────────────────────────────────────
-// GENERAL DEBATE ROOM — Pour vs Contre, points, vote
-// ──────────────────────────────────────────────────
+// ── GENERAL DEBATE ROOM ────────────────────────────────────────────
+
 function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
- type Side = "pour"|"contre"|null;
- const [mySide,setMySide] = useState<Side>(null);
- const [setup,setSetup] = useState(true);
- type Msg = {id:number;user:string;side:Side|"system";text:string;time:number;points:number;reactions:{[k:string]:number}};
- const [msgs,setMsgs] = useState<Msg[]>([
-  {id:1,user:"MODÉRATEUR",side:"system",text:`Bienvenue dans ce débat général. Sujet : « ${sim.topic} ». L'équipe POUR ouvre le débat. Chaque argument peut recevoir des points du public (+1 par vote).`,time:Date.now()-600000,points:0,reactions:{}},
-  {id:2,user:"@marie_pour",side:"pour",text:"Je pense que c'est une évidence. Les données économiques montrent clairement que cette mesure bénéficierait à 80% de la population active.",time:Date.now()-540000,points:3,reactions:{"👏":4,"🔥":2}},
-  {id:3,user:"@thomas_contre",side:"contre",text:"Au contraire, une telle approche ne prend pas en compte les effets secondaires sur les petites entreprises qui représentent 40% de l'emploi.",time:Date.now()-480000,points:2,reactions:{"👏":2,"💪":1}},
+ type Side="pour"|"contre"|null;
+ const [mySide,setMySide]=useState<Side>(null);
+ const [setup,setSetup]=useState(true);
+ const [debTab,setDebTab]=useState<"scene"|"public"|"historique">("scene");
+ const [hasFloor,setHasFloor]=useState(false);
+ const [aiSpeaking,setAiSpeaking]=useState(false);
+ const [showInput,setShowInput]=useState(false);
+ const [myTurn,setMyTurn]=useState(true);
+ const [roundNum,setRoundNum]=useState(1);
+ type Msg={id:number;user:string;side:Side|"system";text:string;time:number;pts:number;reactions:{[k:string]:number}};
+ const [msgs,setMsgs]=useState<Msg[]>([
+  {id:1,user:"MODÉRATEUR",side:"system",text:`Bienvenue dans ce débat. Sujet : « ${sim.topic} ». L'équipe POUR ouvre le débat. Chaque argument est évalué par le public.`,time:Date.now()-600000,pts:0,reactions:{}},
+  {id:2,user:"@marie_pour",side:"pour",text:"Je pense que c'est une évidence. Les données économiques montrent que cette mesure bénéficierait à 80% de la population active.",time:Date.now()-540000,pts:3,reactions:{"👏":4,"🔥":2}},
+  {id:3,user:"@thomas_contre",side:"contre",text:"Au contraire, cette approche ignore les effets secondaires sur les PME, qui représentent 40% de l'emploi.",time:Date.now()-480000,pts:2,reactions:{"👏":2,"💪":1}},
  ]);
- const [input,setInput] = useState("");
- const [score,setScore] = useState({pour:5,contre:3});
- const [voted,setVoted] = useState<Set<number>>(new Set());
- const [reacted,setReacted] = useState<Set<number>>(new Set());
- const [showFinalVote,setShowFinalVote] = useState(false);
- const [finalVote,setFinalVote] = useState<Side>(null);
- const [finalVotes,setFinalVotes] = useState({pour:12,contre:7});
- const chatRef = useRef<HTMLDivElement>(null);
+ const [input,setInput]=useState("");
+ const [publicScore,setPublicScore]=useState({pour:52,contre:48});
+ const [finalVote,setFinalVote]=useState<Side>(null);
+ const [finalVotes,setFinalVotes]=useState({pour:12,contre:7});
+ const [voted,setVoted]=useState<Set<number>>(new Set());
+ const chatRef=useRef<HTMLDivElement>(null);
+ const aiRef=useRef<ReturnType<typeof setTimeout>|null>(null);
 
- const POUR_COL = "#1A5FD4";
- const CONTRE_COL = "#E03535";
- const sideCol = (s:Side|"system") => s==="pour"?POUR_COL:s==="contre"?CONTRE_COL:T.muted;
- const REACTIONS = ["👏","🔥","💪","🤔","❌"];
+ const POUR_COL="#1A5FD4";
+ const CONTRE_COL="#E03535";
+ const sideCol=(s:Side|"system")=>s==="pour"?POUR_COL:s==="contre"?CONTRE_COL:T.muted;
+ const myCol=sideCol(mySide);
 
- const sendMsg=()=>{
-  if(!input.trim()||!mySide) return;
-  const m:Msg={id:Date.now(),user:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",side:mySide,text:input.trim(),time:Date.now(),points:0,reactions:{}};
-  setMsgs(p=>[...p,m]);
-  setInput("");
-  haptic();
-  setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+ const JOURNALISTS=[
+  {name:"Sophie Marchand",media:"Le Monde",emoji:"📰",q:`Selon vous, quel est l'impact concret de « ${sim.topic} » sur les citoyens ordinaires ?`},
+  {name:"Jean-Paul Moreau",media:"France 24",emoji:"📺",q:`Vos opposants affirment que votre position est idéologique. Comment vous défendez-vous ?`},
+  {name:"Amina Diallo",media:"RFI",emoji:"📻",q:`Et pour les pays en développement — est-ce que cette proposition les prend en compte ?`},
+  {name:"Thomas Klein",media:"Euronews",emoji:"🌐",q:`Des experts contestent vos chiffres. Pouvez-vous citer vos sources ?`},
+  {name:"Céline Rousseau",media:"BFM TV",emoji:"📡",q:`Si vous deviez concéder un point à l'adversaire, lequel serait-ce ?`},
+ ];
+ const [jIdx,setJIdx]=useState(0);
+
+ const OPPONENT={
+  name:mySide==="pour"?"Thomas Leclerc":"Marie Dupont",
+  init:mySide==="pour"?"TL":"MD",
+  side:(mySide==="pour"?"contre":"pour") as Side,
+  col:mySide==="pour"?CONTRE_COL:POUR_COL,
+  label:mySide==="pour"?"CONTRE":"POUR",
+  resp:[
+   "Mon adversaire simplifie à l'extrême. La réalité économique est bien plus complexe et les modèles qu'il cite sont contestés.",
+   "Je remarque que vous évitez la question centrale. Les faits montrent le contraire de ce que vous affirmez.",
+   "C'est précisément le problème de cette approche — elle ne prend pas en compte les effets systémiques à long terme.",
+   "Le public mérite mieux que des arguments émotionnels. Parlons des données réelles.",
+  ]
  };
 
- const votePoint=(id:number,side:Side)=>{
+ const sendMsg=(text?:string)=>{
+  const t=text||input.trim();
+  if(!t||!mySide) return;
+  const m:Msg={id:Date.now(),user:"@vous",side:mySide,text:t,time:Date.now(),pts:0,reactions:{}};
+  setMsgs(p=>[...p,m]);
+  setInput("");setShowInput(false);setHasFloor(false);setMyTurn(false);
+  haptic();
+  // Update public score slightly for user
+  setPublicScore(s=>mySide==="pour"?{...s,pour:Math.min(95,s.pour+3)}:{...s,contre:Math.min(95,s.contre+3)});
+  setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+  // AI responds after delay
+  if(aiRef.current) clearTimeout(aiRef.current);
+  setAiSpeaking(false);
+  const delay=3500+Math.random()*3000;
+  aiRef.current=setTimeout(()=>{
+   setAiSpeaking(true);
+   const resp=OPPONENT.resp[Math.floor(Math.random()*OPPONENT.resp.length)];
+   ttsSpeak(`${OPPONENT.name}. ${resp}`);
+   const dur=resp.split(" ").length*360+2000;
+   setTimeout(()=>{
+    setAiSpeaking(false);
+    setMsgs(p=>[...p,{id:Date.now(),user:OPPONENT.name,side:OPPONENT.side,text:resp,time:Date.now(),pts:0,reactions:{}}]);
+    setPublicScore(s=>OPPONENT.side==="pour"?{...s,pour:Math.min(90,s.pour+2)}:{...s,contre:Math.min(90,s.contre+2)});
+    setMyTurn(true);
+    setRoundNum(n=>n+1);
+    setJIdx(j=>(j+1)%JOURNALISTS.length);
+    setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+   },dur);
+  },delay);
+ };
+
+ const voteMsg=(id:number,side:Side)=>{
   if(voted.has(id)) return;
   haptic();
   setVoted(s=>{const ns=new Set(s);ns.add(id);return ns;});
-  setMsgs(p=>p.map(m=>m.id===id?{...m,points:m.points+1}:m));
-  if(side==="pour") setScore(s=>({...s,pour:s.pour+1}));
-  else if(side==="contre") setScore(s=>({...s,contre:s.contre+1}));
+  setMsgs(p=>p.map(m=>m.id===id?{...m,pts:m.pts+1}:m));
+  if(side==="pour") setPublicScore(s=>({...s,pour:Math.min(95,s.pour+1)}));
+  else if(side==="contre") setPublicScore(s=>({...s,contre:Math.min(95,s.contre+1)}));
  };
 
- const addReaction=(id:number,emoji:string)=>{
-  haptic();
-  setMsgs(p=>p.map(m=>m.id===id?{...m,reactions:{...m.reactions,[emoji]:(m.reactions[emoji]||0)+1}}:m));
- };
-
- const castFinalVote=(s:Side)=>{
-  if(finalVote) return;
-  setFinalVote(s);
-  if(s==="pour") setFinalVotes(v=>({...v,pour:v.pour+1}));
-  else if(s==="contre") setFinalVotes(v=>({...v,contre:v.contre+1}));
-  haptic();
- };
-
- const total=finalVotes.pour+finalVotes.contre;
+ const total=publicScore.pour+publicScore.contre;
+ const pourPct=Math.round(publicScore.pour/total*100);
 
  if(setup) return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
@@ -7534,17 +7753,20 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
    </div>
    <div style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",padding:"24px",gap:16}}>
     <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>CHOISISSEZ VOTRE CAMP</p>
-    <p style={{color:T.text,fontSize:15,fontWeight:800,textAlign:"center" as const,lineHeight:1.4,marginBottom:8}}>« {sim.topic} »</p>
+    <p style={{color:T.text,fontSize:15,fontWeight:800,textAlign:"center" as const,lineHeight:1.4,marginBottom:4}}>« {sim.topic} »</p>
+    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",width:"100%",maxWidth:340}}>
+     <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>🎙️ Ce débat est <strong>audio</strong> — vous parlerez à tour de rôle. Un modérateur annoncera les tours. La transcription est automatique.</p>
+    </div>
     <div style={{display:"flex",gap:12,width:"100%",maxWidth:320}}>
      <button onClick={()=>{haptic();setMySide("pour");setSetup(false);}} style={{flex:1,padding:"20px 12px",borderRadius:14,border:`3px solid ${POUR_COL}`,background:POUR_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,cursor:"pointer",transition:"all .15s"}}>
       <span style={{fontSize:28}}>✅</span>
       <span style={{color:POUR_COL,fontSize:18,fontWeight:900}}>POUR</span>
-      <span style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>{score.pour} pts</span>
+      <span style={{color:T.textD,fontSize:11}}>Défendez la motion</span>
      </button>
      <button onClick={()=>{haptic();setMySide("contre");setSetup(false);}} style={{flex:1,padding:"20px 12px",borderRadius:14,border:`3px solid ${CONTRE_COL}`,background:CONTRE_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,cursor:"pointer",transition:"all .15s"}}>
       <span style={{fontSize:28}}>❌</span>
       <span style={{color:CONTRE_COL,fontSize:18,fontWeight:900}}>CONTRE</span>
-      <span style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>{score.contre} pts</span>
+      <span style={{color:T.textD,fontSize:11}}>Combattez la motion</span>
      </button>
     </div>
    </div>
@@ -7553,110 +7775,190 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
 
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
-   {/* Score header */}
+   {/* Header */}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={mySide==="pour"?POUR_COL:CONTRE_COL}/></button>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={myCol}/></button>
      <div style={{flex:1,minWidth:0}}>
       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
-       <span style={{background:sideCol(mySide)+"20",color:sideCol(mySide),fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>DÉBAT · {mySide?.toUpperCase()}</span>
-       <span style={{color:"#E03535",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>DIRECT</span>
+       <span style={{background:"#E0353515",color:"#E03535",fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3,display:"flex",alignItems:"center",gap:3}}><span style={{width:4,height:4,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>DIRECT</span>
+       <span style={{color:T.muted,fontSize:9}}>Tour {roundNum} · {myTurn?"Votre tour":"Adversaire"}</span>
       </div>
-      <p style={{color:T.text,fontSize:12,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+      <p style={{color:T.text,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
      </div>
-     <button onClick={()=>setShowFinalVote(true)} style={{background:"#7C3AED",color:"#fff",fontSize:10,fontWeight:800,padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>VOTER</button>
+     <button onClick={()=>setDebTab("public")} style={{background:myCol+"20",color:myCol,fontSize:9,fontWeight:800,padding:"4px 9px",borderRadius:6,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{pourPct}% POUR</button>
     </div>
-    {/* Scoreboard */}
-    <div style={{display:"flex",alignItems:"center",gap:8}}>
-     <div style={{flex:1,textAlign:"left" as const}}>
-      <p style={{color:POUR_COL,fontSize:11,fontWeight:800}}>POUR</p>
-      <p style={{color:POUR_COL,fontSize:22,fontWeight:900,fontFamily:"monospace"}}>{score.pour}</p>
-     </div>
-     <div style={{flex:2,background:T.b1,borderRadius:4,height:8,overflow:"hidden",position:"relative" as const}}>
-      <div style={{position:"absolute" as const,left:0,top:0,bottom:0,width:`${Math.round(score.pour/(score.pour+score.contre)*100)}%`,background:POUR_COL,transition:"width .4s ease"}}/>
-     </div>
-     <div style={{flex:1,textAlign:"right" as const}}>
-      <p style={{color:CONTRE_COL,fontSize:11,fontWeight:800}}>CONTRE</p>
-      <p style={{color:CONTRE_COL,fontSize:22,fontWeight:900,fontFamily:"monospace"}}>{score.contre}</p>
-     </div>
+    <div style={{display:"flex",gap:5}}>
+     {(["scene","public","historique"] as const).map(t=>(
+      <button key={t} onClick={()=>setDebTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${debTab===t?myCol:T.b1}`,background:debTab===t?myCol+"15":"transparent",color:debTab===t?myCol:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+       {t==="scene"?"Scène":t==="public"?"Public":"Historique"}
+      </button>
+     ))}
     </div>
    </div>
 
-   {showFinalVote?(
-    <div style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",padding:"24px",gap:16}}>
-     <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>VOTE FINAL DU PUBLIC</p>
-     <p style={{color:T.text,fontSize:14,fontWeight:800,textAlign:"center" as const,lineHeight:1.4}}>Qui a remporté ce débat ?</p>
-     {!finalVote?(
-      <div style={{display:"flex",gap:12,width:"100%",maxWidth:300}}>
-       <button onClick={()=>castFinalVote("pour")} style={{flex:1,padding:"16px",borderRadius:12,border:`2px solid ${POUR_COL}`,background:POUR_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,cursor:"pointer"}}>
-        <span style={{fontSize:24}}>✅</span><span style={{color:POUR_COL,fontSize:16,fontWeight:900}}>POUR</span>
-       </button>
-       <button onClick={()=>castFinalVote("contre")} style={{flex:1,padding:"16px",borderRadius:12,border:`2px solid ${CONTRE_COL}`,background:CONTRE_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,cursor:"pointer"}}>
-        <span style={{fontSize:24}}>❌</span><span style={{color:CONTRE_COL,fontSize:16,fontWeight:900}}>CONTRE</span>
-       </button>
-      </div>
-     ):(
-      <div style={{width:"100%",maxWidth:300,display:"flex",flexDirection:"column" as const,gap:10}}>
-       <div style={{background:sideCol(finalVote)+"15",borderRadius:12,padding:12,textAlign:"center" as const}}>
-        <p style={{color:sideCol(finalVote),fontSize:14,fontWeight:900}}>{finalVote.toUpperCase()} gagne le vote public !</p>
+   <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
+    {debTab==="scene"&&(
+     <div style={{flex:1,overflowY:"auto"}}>
+      <div style={{padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
+       {/* OPPONENT CARD */}
+       <div style={{background:T.card,border:`2px solid ${aiSpeaking?OPPONENT.col:T.b1}`,borderRadius:14,padding:"12px 14px",transition:"border-color .3s"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:aiSpeaking?10:0}}>
+         <div style={{width:46,height:46,borderRadius:"50%",background:OPPONENT.col+"20",border:`2px solid ${OPPONENT.col}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:OPPONENT.col,flexShrink:0}}>{OPPONENT.init}</div>
+         <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+           <span style={{background:OPPONENT.col+"20",color:OPPONENT.col,fontSize:9,fontWeight:900,padding:"1px 7px",borderRadius:3}}>{OPPONENT.label}</span>
+           {aiSpeaking&&<span style={{color:OPPONENT.col,fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:OPPONENT.col,display:"inline-block"}}/>PARLE</span>}
+          </div>
+          <p style={{color:T.text,fontSize:13,fontWeight:800}}>{OPPONENT.name}</p>
+         </div>
+         {!aiSpeaking&&!myTurn&&<div style={{padding:"5px 9px",borderRadius:7,background:T.bg2,border:`1px solid ${T.b1}`}}><p style={{color:T.muted,fontSize:10,fontWeight:700}}>prépare…</p></div>}
+        </div>
+        {aiSpeaking&&<AudioWave active={true} color={OPPONENT.col} bars={18} h={38}/>}
        </div>
-       {[{s:"pour" as Side,c:POUR_COL},{s:"contre" as Side,c:CONTRE_COL}].map(({s,c})=>(
-        <div key={s} style={{display:"flex",alignItems:"center",gap:10}}>
-         <span style={{color:c,fontSize:12,fontWeight:800,width:60,flexShrink:0}}>{(s||"").toUpperCase()}</span>
-         <div style={{flex:1,background:T.b1,borderRadius:4,height:10,overflow:"hidden"}}>
-          <div style={{width:`${Math.round((s==="pour"?finalVotes.pour:finalVotes.contre)/total*100)}%`,height:"100%",background:c,transition:"width .6s ease"}}/>
+
+       {/* VS SEPARATOR */}
+       <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{flex:1,height:1,background:T.b1}}/>
+        <span style={{color:T.muted,fontSize:11,fontWeight:900,padding:"3px 10px",background:T.card,border:`1px solid ${T.b1}`,borderRadius:20}}>⚡ VS ⚡</span>
+        <div style={{flex:1,height:1,background:T.b1}}/>
+       </div>
+
+       {/* USER CARD */}
+       <div style={{background:T.card,border:`2px solid ${hasFloor?myCol:T.b1}`,borderRadius:14,padding:"12px 14px",transition:"border-color .3s"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:hasFloor?10:0}}>
+         <div style={{width:46,height:46,borderRadius:"50%",background:myCol+"20",border:`2px solid ${myCol}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:myCol,flexShrink:0}}>VN</div>
+         <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+           <span style={{background:myCol+"20",color:myCol,fontSize:9,fontWeight:900,padding:"1px 7px",borderRadius:3}}>{mySide==="pour"?"POUR":"CONTRE"}</span>
+           {hasFloor&&<span style={{color:"#E03535",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>PARLE</span>}
+          </div>
+          <p style={{color:T.text,fontSize:13,fontWeight:800}}>Vous</p>
          </div>
-         <span style={{color:T.muted,fontSize:12,width:30,textAlign:"right" as const}}>{s==="pour"?finalVotes.pour:finalVotes.contre}</span>
         </div>
-       ))}
-       <p style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>Points POUR: {score.pour} · Points CONTRE: {score.contre}</p>
-       <button onClick={onBack} style={{padding:"12px",borderRadius:10,border:"none",background:sideCol(finalVote),color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Terminer</button>
-      </div>
-     )}
-     <button onClick={()=>setShowFinalVote(false)} style={{background:"none",border:`1px solid ${T.b1}`,color:T.muted,fontSize:12,fontWeight:700,padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"inherit"}}>Retour au débat</button>
-    </div>
-   ):(
-    <>
-     <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:9}}>
-      {msgs.map(m=>(
-       <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:2,alignItems:m.side===mySide?"flex-end":"flex-start" as const}}>
-        {m.side!=="system"&&(
-         <div style={{display:"flex",alignItems:"center",gap:5}}>
-          <span style={{width:8,height:8,borderRadius:"50%",background:sideCol(m.side),display:"inline-block",flexShrink:0}}/>
-          <span style={{color:T.muted,fontSize:10}}>{m.user}</span>
-          <span style={{background:sideCol(m.side)+"20",color:sideCol(m.side),fontSize:9,fontWeight:800,padding:"1px 5px",borderRadius:3}}>{(m.side||"").toUpperCase()}</span>
+        {hasFloor&&<AudioWave active={true} color={myCol} bars={18} h={38}/>}
+       </div>
+
+       {/* JOURNALIST QUESTION */}
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 12px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
+         <span style={{fontSize:16}}>{JOURNALISTS[jIdx].emoji}</span>
+         <div>
+          <p style={{color:T.text,fontSize:11,fontWeight:800}}>{JOURNALISTS[jIdx].name}</p>
+          <p style={{color:T.muted,fontSize:10}}>{JOURNALISTS[jIdx].media}</p>
          </div>
-        )}
-        <div style={{maxWidth:"84%",padding:"8px 11px",borderRadius:11,background:m.side==="system"?T.bg2:m.side===mySide?sideCol(m.side)+"25":T.card,border:`1px solid ${m.side==="system"?T.b1:sideCol(m.side)+"40"}`}}>
-         <p style={{color:m.side==="system"?T.muted:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
-         {m.points>0&&<div style={{marginTop:5,display:"flex",alignItems:"center",gap:4}}><Ic n="star" s={11} c="#D97706" w={2}/><span style={{color:"#D97706",fontSize:10,fontWeight:800}}>+{m.points} pts</span></div>}
         </div>
-        {m.side!=="system"&&(
-         <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap" as const}}>
-          {!voted.has(m.id)&&m.side!==mySide&&(
-           <button onClick={()=>votePoint(m.id,m.side as Side)} style={{background:"#D97706"+"20",border:`1px solid #D97706`,color:"#D97706",fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"inherit"}}>+1 pt</button>
-          )}
-          {Object.entries(m.reactions).map(([emoji,count])=>(
-           <button key={emoji} onClick={()=>addReaction(m.id,emoji)} style={{background:T.bg2,border:`1px solid ${T.b1}`,color:T.text,fontSize:11,padding:"2px 7px",borderRadius:5,cursor:"pointer",fontFamily:"inherit"}}>{emoji} {count}</button>
-          ))}
-          {!reacted.has(m.id)&&(
-           <div style={{display:"flex",gap:3}}>
-            {REACTIONS.map(r=>(
-             <button key={r} onClick={()=>{addReaction(m.id,r);setReacted(s=>{const ns=new Set(s);ns.add(m.id);return ns;});haptic();}} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",padding:2}}>{r}</button>
-            ))}
+        <p style={{color:T.textD,fontSize:12,lineHeight:1.5,fontStyle:"italic" as const}}>« {JOURNALISTS[jIdx].q} »</p>
+       </div>
+
+       {/* PUBLIC METER */}
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 12px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7}}>
+         <span style={{fontSize:14}}>📊</span>
+         <p style={{color:T.text,fontSize:11,fontWeight:800,flex:1}}>Réaction du public</p>
+         <span style={{color:T.muted,fontSize:10}}>{total} votes</span>
+        </div>
+        <div style={{display:"flex",borderRadius:8,overflow:"hidden",height:14}}>
+         <div style={{width:`${pourPct}%`,background:POUR_COL,transition:"width .6s ease"}}/>
+         <div style={{flex:1,background:CONTRE_COL}}/>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between" as const,marginTop:4}}>
+         <span style={{color:POUR_COL,fontSize:10,fontWeight:800}}>POUR {pourPct}%</span>
+         <span style={{color:CONTRE_COL,fontSize:10,fontWeight:800}}>{100-pourPct}% CONTRE</span>
+        </div>
+       </div>
+
+       {/* MIC CONTROLS */}
+       {myTurn&&!aiSpeaking?(
+        <div>
+         {!hasFloor?(
+          <button onClick={()=>{haptic();setHasFloor(true);}} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:myCol,color:"#fff",fontSize:15,fontWeight:900,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:8}}>
+           <span style={{fontSize:22}}>🎤</span> Prendre la parole
+          </button>
+         ):(
+          <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
+           <div style={{background:myCol+"15",border:`2px solid ${myCol}`,borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:22}}>🎤</span>
+            <div style={{flex:1}}>
+             <p style={{color:myCol,fontSize:11,fontWeight:900}}>VOUS PARLEZ</p>
+             <p style={{color:T.textD,fontSize:10}}>Parlez clairement — répondez au journaliste</p>
+            </div>
+            <button onClick={()=>setShowInput(s=>!s)} style={{padding:"5px 9px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>✍️</button>
            </div>
-          )}
+           <AudioWave active={true} color={myCol} bars={20} h={40}/>
+           <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>{setHasFloor(false);sendMsg("Je souhaite que mon argument soit évalué par le public.");}} style={{flex:1,padding:"11px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✓ Terminer l'argument</button>
+            <button onClick={()=>{setHasFloor(false);}} style={{padding:"11px 13px",borderRadius:9,border:`1px solid #E03535`,background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+           </div>
+           {showInput&&(
+            <div style={{display:"flex",gap:7}}>
+             <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(sendMsg(),setHasFloor(false))} placeholder="Tapez votre argument (optionnel)…" style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+             <button onClick={()=>{sendMsg();setHasFloor(false);}} style={{background:myCol,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><Ic n="send" s={15} c="#fff"/></button>
+            </div>
+           )}
+          </div>
+         )}
+        </div>
+       ):(
+        <div style={{padding:"12px",borderRadius:12,background:T.bg2,border:`1px solid ${T.b1}`,textAlign:"center" as const}}>
+         <p style={{color:T.muted,fontSize:12,fontWeight:700}}>{aiSpeaking?`${OPPONENT.name} parle…`:"En attente de l'adversaire…"}</p>
+        </div>
+       )}
+      </div>
+     </div>
+    )}
+
+    {debTab==="public"&&(
+     <div style={{padding:"14px",flex:1,overflowY:"auto"}}>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>RÉACTION DU PUBLIC EN DIRECT</p>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:"16px 16px",marginBottom:12}}>
+       <div style={{display:"flex",borderRadius:10,overflow:"hidden",height:20,marginBottom:8}}>
+        <div style={{width:`${pourPct}%`,background:POUR_COL,display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:6,transition:"width .6s ease"}}>
+         <span style={{color:"#fff",fontSize:9,fontWeight:900}}>{pourPct>15?`${pourPct}%`:""}</span>
+        </div>
+        <div style={{flex:1,background:CONTRE_COL,display:"flex",alignItems:"center",paddingLeft:6}}>
+         <span style={{color:"#fff",fontSize:9,fontWeight:900}}>{100-pourPct>15?`${100-pourPct}%`:""}</span>
+        </div>
+       </div>
+       <div style={{display:"flex",justifyContent:"space-between" as const}}>
+        <span style={{color:POUR_COL,fontSize:12,fontWeight:800}}>POUR · {pourPct}%</span>
+        <span style={{color:T.muted,fontSize:11}}>{total} votes</span>
+        <span style={{color:CONTRE_COL,fontSize:12,fontWeight:800}}>{100-pourPct}% · CONTRE</span>
+       </div>
+      </div>
+      {!finalVote?(
+       <div style={{display:"flex",gap:10}}>
+        <button onClick={()=>{setFinalVote("pour");setFinalVotes(v=>({...v,pour:v.pour+1}));haptic();}} style={{flex:1,padding:"14px",borderRadius:12,border:`2px solid ${POUR_COL}`,background:POUR_COL+"15",color:POUR_COL,fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>✅ POUR</button>
+        <button onClick={()=>{setFinalVote("contre");setFinalVotes(v=>({...v,contre:v.contre+1}));haptic();}} style={{flex:1,padding:"14px",borderRadius:12,border:`2px solid ${CONTRE_COL}`,background:CONTRE_COL+"15",color:CONTRE_COL,fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>❌ CONTRE</button>
+       </div>
+      ):(
+       <div style={{background:"#16A34A15",border:"1px solid #16A34A30",borderRadius:12,padding:14,textAlign:"center" as const}}>
+        <p style={{color:"#16A34A",fontSize:13,fontWeight:800}}>Vote enregistré : {finalVote.toUpperCase()} ✓</p>
+       </div>
+      )}
+     </div>
+    )}
+
+    {debTab==="historique"&&(
+     <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:8}}>
+      {msgs.map(m=>(
+       <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:2,alignItems:m.user==="@vous"?"flex-end":"flex-start" as const}}>
+        {m.side!=="system"&&<div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:6,height:6,borderRadius:"50%",background:sideCol(m.side)}}/><span style={{color:T.muted,fontSize:10}}>{m.user}</span></div>}
+        <div style={{maxWidth:"84%",padding:"8px 11px",borderRadius:12,background:m.side==="system"?T.bg2:m.user==="@vous"?myCol+"25":T.card,border:`1px solid ${m.side==="system"?T.b1:sideCol(m.side)+"40"}`}}>
+         <p style={{color:m.side==="system"?T.muted:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
+        </div>
+        {m.side!=="system"&&(
+         <div style={{display:"flex",gap:5,alignItems:"center"}}>
+          <button onClick={()=>voteMsg(m.id,m.side as Side)} style={{background:voted.has(m.id)?sideCol(m.side)+"20":"transparent",border:`1px solid ${voted.has(m.id)?sideCol(m.side):T.b1}`,borderRadius:5,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3}}>
+           <span style={{color:voted.has(m.id)?sideCol(m.side):T.muted,fontSize:9,fontWeight:700}}>+1 · {m.pts}</span>
+          </button>
          </div>
         )}
        </div>
       ))}
      </div>
-     <div style={{padding:"8px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:7}}>
-      <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder={`Argument ${mySide?.toUpperCase()}…`} style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${sideCol(mySide)}40`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
-      <button onClick={sendMsg} style={{background:sideCol(mySide),border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
-     </div>
-    </>
-   )}
+    )}
+   </div>
   </div>
  );
 }
