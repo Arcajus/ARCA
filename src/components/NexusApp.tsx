@@ -6883,7 +6883,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [phase,setPhase]=useState<Phase>("select");
  const [myCountry,setMyCountry]=useState<{id:string;flag:string;country:string}|null>(null);
  const [countrySearch,setCountrySearch]=useState("");
- const [tab,setTab]=useState<"vue"|"debat"|"file"|"delegues"|"script">("vue");
+ const [tab,setTab]=useState<"vue"|"file"|"delegues"|"script">("vue");
  type Msg={id:number;user:string;flag:string;text:string;time:number;system?:boolean;hasFloor?:boolean};
  const [msgs,setMsgs]=useState<Msg[]>([
   {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance est ouverte. Sujet : « ${sim.topic} ». Chaque délégation dispose de 2 à 5 minutes. Levez la main pour demander la parole.`,time:Date.now()-900000,system:true},
@@ -7076,24 +7076,12 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      </div>
     )}
 
-    {/* Recent speeches preview */}
-    {msgs.filter(m=>!m.system).length>0&&(
-     <div style={{padding:"10px 14px 14px",borderTop:`1px solid ${T.b1}`}}>
-      <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:7}}>DERNIÈRES INTERVENTIONS</p>
-      {msgs.filter(m=>!m.system).slice(-2).map(m=>(
-       <div key={m.id} style={{display:"flex",gap:8,marginBottom:7,alignItems:"flex-start"}}>
-        <span style={{fontSize:15,flexShrink:0}}>{m.flag}</span>
-        <div style={{flex:1,minWidth:0}}>
-         <span style={{color:T.muted,fontSize:9,fontWeight:700}}>{m.user}</span>
-         <p style={{color:T.textD,fontSize:11,lineHeight:1.35,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as const}}>{m.text}</p>
-        </div>
-       </div>
-      ))}
-      <button onClick={()=>setTab("debat")} style={{width:"100%",padding:"7px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:2}}>
-       Voir le débat complet →
-      </button>
-     </div>
-    )}
+    {/* Link to transcript */}
+    <div style={{padding:"8px 14px 12px"}}>
+     <button onClick={()=>setTab("script")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:5}}>
+      📋 Voir la transcription ({msgs.filter(m=>!m.system).length} interv.)
+     </button>
+    </div>
    </div>
   );
  };
@@ -7132,7 +7120,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  };
 
  const QUEUE=["🇩🇪 Allemagne","🇧🇷 Brésil","🇮🇳 Inde","🇨🇳 Chine","🇯🇵 Japon"];
- const TABS:[typeof tab,string][]=[["vue","Chambre"],["debat","Débat"],["file","File"],["delegues","Délégués"],["script","Script"]];
+ const TABS:[typeof tab,string][]=[["vue","Chambre"],["file","File"],["delegues","Délégués"],["script","Script"]];
 
  if(phase==="select") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
@@ -7249,45 +7237,6 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
    <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
     {tab==="vue"&&<div style={{flex:1,overflowY:"auto" as const}}><ChamberView/></div>}
-
-    {tab==="debat"&&(
-     <>
-      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:7}}>
-       {msgs.map(m=>(
-        <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:1,alignItems:m.user===myCountry?.country?"flex-end":"flex-start" as const}}>
-         {!m.system&&<span style={{color:T.muted,fontSize:10}}>{m.flag} {m.user}</span>}
-         <div style={{maxWidth:"82%",padding:"7px 11px",borderRadius:11,background:m.system?T.bg2:m.user===myCountry?.country?col+"25":T.card,border:`1px solid ${m.system?T.b1:m.hasFloor?col+"50":T.b1}`}}>
-          {m.hasFloor&&!m.system&&<div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}><span style={{width:5,height:5,borderRadius:"50%",background:col,display:"inline-block"}}/><span style={{color:col,fontSize:9,fontWeight:800}}>AU PUPITRE</span></div>}
-          <p style={{color:m.system?T.muted:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
-         </div>
-         <span style={{color:T.muted,fontSize:9}}>{timeFromTs(m.time)}</span>
-        </div>
-       ))}
-      </div>
-      <div style={{padding:"8px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-       {hasFloor?(
-        <div style={{display:"flex",gap:7,marginBottom:6}}>
-         <button onClick={yieldFloor} style={{display:"flex",alignItems:"center",gap:4,padding:"7px 12px",borderRadius:7,border:"1px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>⏹ Céder</button>
-         <button onClick={()=>setShowInput(s=>!s)} style={{display:"flex",alignItems:"center",gap:4,padding:"7px 12px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✍️ {showInput?"Masquer texte":"Saisir texte"}</button>
-        </div>
-       ):(
-        <div style={{display:"flex",gap:7,marginBottom:6}}>
-         {!handRaised?<button onClick={raiseHand} style={{display:"flex",alignItems:"center",gap:5,padding:"8px 13px",borderRadius:8,border:"none",background:col,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flex:1,justifyContent:"center" as const}}>✋ Lever la main</button>
-         :<>
-          <button onClick={()=>setHandRaised(false)} style={{display:"flex",alignItems:"center",gap:4,padding:"7px 12px",borderRadius:7,border:"1px solid #D97706",background:"#D9770620",color:"#D97706",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✋ Annuler</button>
-          <button onClick={takeFloor} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center" as const,gap:5,padding:"8px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🎤 Prendre la parole</button>
-         </>}
-        </div>
-       )}
-       {(showInput||!hasFloor)&&(
-        <div style={{display:"flex",gap:7}}>
-         <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder={hasFloor?"Tapez votre intervention…":"Message optionnel (audio préféré)"} style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${hasFloor?col:T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
-         <button onClick={sendMsg} style={{background:col,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
-        </div>
-       )}
-      </div>
-     </>
-    )}
 
     {tab==="file"&&(
      <div style={{padding:"14px",flex:1,overflowY:"auto"}}>
@@ -7570,20 +7519,11 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     {roomTab==="audience"&&(
      <div style={{flex:1,overflowY:"auto"}}>
       <CourtroomView/>
-      {msgs.filter(m=>m.role!=="system").length>0&&(
-       <div style={{padding:"0 14px 14px",borderTop:`1px solid ${T.b1}`,marginTop:4}}>
-        <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8}}>DERNIÈRES DÉCLARATIONS</p>
-        {msgs.filter(m=>m.role!=="system").slice(-2).map(m=>(
-         <div key={m.id} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:7}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:TRIAL_ROLE_COLORS[m.role as TrialRole]||T.muted,marginTop:3,flexShrink:0}}/>
-          <div>
-           <span style={{color:T.muted,fontSize:9,fontWeight:700}}>{m.user}</span>
-           <p style={{color:T.textD,fontSize:11,lineHeight:1.35}}>{m.text.slice(0,120)}{m.text.length>120?"…":""}</p>
-          </div>
-         </div>
-        ))}
-       </div>
-      )}
+      <div style={{padding:"8px 14px 14px"}}>
+       <button onClick={()=>setRoomTab("script")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:5}}>
+        📋 Procès-verbal ({msgs.filter(m=>m.role!=="system").length} déclarations)
+       </button>
+      </div>
      </div>
     )}
     {roomTab==="docs"&&(
