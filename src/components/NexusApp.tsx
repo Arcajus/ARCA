@@ -7415,7 +7415,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [setup,setSetup]=useState<SetupPhase>("role");
  const [myRole,setMyRole]=useState<TrialRole|null>(null);
  const [phase,setPhase]=useState<TrialPhase>("discovery");
- const [roomTab,setRoomTab]=useState<"audience"|"docs"|"script">("audience");
+ const [roomTab,setRoomTab]=useState<"audience"|"direct"|"docs"|"script">("audience");
  const [hasFloor,setHasFloor]=useState(false);
  const [speakerRole,setSpeakerRole]=useState<TrialRole|null>(null);
  const [showInput,setShowInput]=useState(false);
@@ -7633,10 +7633,10 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       <div key={p} style={{flex:1,height:3,borderRadius:2,background:i<phaseIdx?"#16A34A":i===phaseIdx?col:T.b1,transition:"background .3s"}}/>
      ))}
     </div>
-    <div style={{display:"flex",gap:5}}>
-     {(["audience","docs","script"] as const).map(t=>(
-      <button key={t} onClick={()=>setRoomTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${roomTab===t?col:T.b1}`,background:roomTab===t?col+"15":"transparent",color:roomTab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-       {t==="audience"?"Salle":t==="docs"?`Dossier (${docs.length})`:"Script"}
+    <div style={{display:"flex",gap:5,overflowX:"auto" as const}}>
+     {(["audience","direct","docs","script"] as const).map(t=>(
+      <button key={t} onClick={()=>setRoomTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${roomTab===t?col:T.b1}`,background:roomTab===t?col+"15":"transparent",color:roomTab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0,whiteSpace:"nowrap" as const}}>
+       {t==="audience"?"Salle":t==="direct"?"🔴 En direct":t==="docs"?`Dossier (${docs.length})`:"Script"}
       </button>
      ))}
     </div>
@@ -7653,6 +7653,116 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       </div>
      </div>
     )}
+    {roomTab==="direct"&&(()=>{
+     const PROS_COL="#E03535";const DEF_COL="#1A5FD4";const JUR_COL="#7C3AED";
+     const prosMsgs=msgs.filter(m=>m.role==="prosecutor");
+     const defMsgs=msgs.filter(m=>m.role==="defense");
+     const prosScore=prosMsgs.length*10+docs.filter(d=>d.by==="prosecutor").length*15;
+     const defScore=defMsgs.length*10+docs.filter(d=>d.by==="defense").length*15;
+     const total=prosScore+defScore||1;
+     const prosP=Math.round(prosScore/total*100);
+     const defP=100-prosP;
+     const phaseGuilt:Record<TrialPhase,number>={discovery:50,opening:48,case_pros:58,lunch:56,case_def:44,closing:50,deliberation:52,verdict:55};
+     const guiltCount=Math.round((phaseGuilt[phase]||50)/100*12);
+     const recentArgs=msgs.filter(m=>m.role!=="system").slice(-4);
+     return(
+      <div style={{flex:1,overflowY:"auto" as const,padding:"14px",display:"flex",flexDirection:"column" as const,gap:12}}>
+       {/* Case header */}
+       <div style={{background:col+"15",border:`1.5px solid ${col}40`,borderRadius:12,padding:"12px 14px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between" as const,marginBottom:4}}>
+         <span style={{color:col,fontSize:9,fontWeight:900,letterSpacing:2}}>TRIBUNAL CORRECTIONNEL</span>
+         <span style={{background:"#E0353515",color:"#E03535",fontSize:8,fontWeight:900,padding:"2px 6px",borderRadius:3,display:"flex",alignItems:"center",gap:3}}>
+          <span style={{width:4,height:4,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>DIRECT
+         </span>
+        </div>
+        <p style={{color:T.text,fontSize:12,fontWeight:800,lineHeight:1.4}}>{sim.topic}</p>
+        <p style={{color:T.textD,fontSize:10,marginTop:2}}>Affaire N° 2026/TC/01 · {sim.participants} participants</p>
+       </div>
+       {/* Phase tracker */}
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
+        <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:8}}>DÉROULEMENT DE L'AUDIENCE</p>
+        {PHASES.map((p,i)=>(
+         <div key={p} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<PHASES.length-1?5:0}}>
+          <div style={{width:16,height:16,borderRadius:"50%",background:i<phaseIdx?"#16A34A":i===phaseIdx?col:T.b1,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+           {i<phaseIdx&&<span style={{fontSize:8,color:"#fff",fontWeight:900}}>✓</span>}
+           {i===phaseIdx&&<span style={{width:6,height:6,borderRadius:"50%",background:"#fff",display:"inline-block"}}/>}
+          </div>
+          <p style={{color:i===phaseIdx?T.text:i<phaseIdx?"#16A34A":T.muted,fontSize:11,fontWeight:i===phaseIdx?800:600,flex:1}}>{TRIAL_PHASE_LABELS[p]}</p>
+          {i===phaseIdx&&<span style={{background:col+"20",color:col,fontSize:8,fontWeight:900,padding:"1px 5px",borderRadius:3,flexShrink:0}}>EN COURS</span>}
+         </div>
+        ))}
+       </div>
+       {/* Advantage bar */}
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
+        <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:8}}>AVANTAGE JUDICIAIRE EN DIRECT</p>
+        <div style={{display:"flex",justifyContent:"space-between" as const,marginBottom:5}}>
+         <span style={{color:PROS_COL,fontSize:11,fontWeight:800}}>🔴 Accusation {prosP}%</span>
+         <span style={{color:DEF_COL,fontSize:11,fontWeight:800}}>{defP}% Défense 🔵</span>
+        </div>
+        <div style={{height:12,borderRadius:6,background:T.b1,overflow:"hidden",display:"flex"}}>
+         <div style={{width:`${prosP}%`,background:PROS_COL,transition:"width .5s ease"}}/>
+         <div style={{flex:1,background:DEF_COL,transition:"width .5s ease"}}/>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between" as const,marginTop:5}}>
+         <span style={{color:T.muted,fontSize:9}}>{docs.filter(d=>d.by==="prosecutor").length} pièces · {prosMsgs.length} interv.</span>
+         <span style={{color:T.muted,fontSize:9}}>{defMsgs.length} interv. · {docs.filter(d=>d.by==="defense").length} pièces</span>
+        </div>
+       </div>
+       {/* Jury sentiment */}
+       <div style={{background:T.card,border:`1px solid ${JUR_COL}30`,borderRadius:12,padding:"12px 14px"}}>
+        <p style={{color:JUR_COL,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:8}}>SENTIMENT DU JURY (ESTIMÉ)</p>
+        <div style={{display:"flex",gap:3,marginBottom:8}}>
+         {(["👩","👨","🧑","👩‍💼","👨‍💼","🧑‍💼","👩‍🦱","👨‍🦱","👩‍🦳","👨‍🦳","🧑‍🦱","👩‍🦰"] as const).map((em,i)=>(
+          <div key={i} style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",gap:2}}>
+           <span style={{fontSize:14}}>{em}</span>
+           <div style={{width:8,height:8,borderRadius:"50%",background:i<guiltCount?PROS_COL:DEF_COL}}/>
+          </div>
+         ))}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between" as const,padding:"6px 10px",background:T.bg2,borderRadius:8}}>
+         <span style={{color:PROS_COL,fontSize:11,fontWeight:800}}>🔴 Coupable : {guiltCount}/12</span>
+         <span style={{color:DEF_COL,fontSize:11,fontWeight:800}}>🔵 Non coupable : {12-guiltCount}/12</span>
+        </div>
+       </div>
+       {/* Recent declarations */}
+       {recentArgs.length>0&&(
+        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
+         <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:8}}>DERNIÈRES DÉCLARATIONS</p>
+         {recentArgs.map(m=>{
+          const c=TRIAL_ROLE_COLORS[m.role as TrialRole]||T.muted;
+          return(
+           <div key={m.id} style={{marginBottom:8,paddingLeft:8,borderLeft:`2px solid ${c}`}}>
+            <p style={{color:c,fontSize:9,fontWeight:900,marginBottom:1}}>{m.user.toUpperCase()}</p>
+            <p style={{color:T.textD,fontSize:11,lineHeight:1.4,fontStyle:"italic" as const}}>« {m.text.length>80?m.text.slice(0,80)+"…":m.text} »</p>
+           </div>
+          );
+         })}
+        </div>
+       )}
+       {/* Evidence */}
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
+        <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:8}}>PIÈCES À CONVICTION ({docs.length})</p>
+        {docs.slice(-5).map((d,i)=>{
+         const c=TRIAL_ROLE_COLORS[d.by];
+         return(
+          <div key={d.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<docs.slice(-5).length-1?8:0,paddingBottom:i<docs.slice(-5).length-1?8:0,borderBottom:i<docs.slice(-5).length-1?`1px solid ${T.b1}`:"none"}}>
+           <div style={{width:28,height:28,borderRadius:7,background:c+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13}}>📄</div>
+           <div style={{flex:1}}>
+            <p style={{color:T.text,fontSize:11,fontWeight:700}}>{d.name}</p>
+            <p style={{color:T.textD,fontSize:9}}>{d.type} · {TRIAL_ROLE_LABELS[d.by]}</p>
+           </div>
+           <span style={{background:"#16A34A20",color:"#16A34A",fontSize:8,fontWeight:900,padding:"1px 5px",borderRadius:3,flexShrink:0}}>VERSÉ</span>
+          </div>
+         );
+        })}
+        {docs.length===0&&<p style={{color:T.muted,fontSize:11,textAlign:"center" as const}}>Aucune pièce versée</p>}
+       </div>
+       <button onClick={()=>setRoomTab("audience")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+        ← Retour à la salle d'audience
+       </button>
+      </div>
+     );
+    })()}
     {roomTab==="docs"&&(
      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
       <div style={{background:col+"12",border:`1px solid ${col}25`,borderRadius:10,padding:"10px 13px"}}>
