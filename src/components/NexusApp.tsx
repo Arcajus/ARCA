@@ -6549,137 +6549,739 @@ function SimCard({s,T,onJoin,highlight}:{s:SimRoom;T:Theme;onJoin:()=>void;highl
  );
 }
 
-function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
- type RoomTab = "room"|"queue"|"participants"|"docs";
- const [tab,setTab] = useState<RoomTab>("room");
- type ChatMsg = {id:number;user:string;text:string;time:number;system?:boolean};
- const [msgs,setMsgs] = useState<ChatMsg[]>([
-  {id:1,user:"SYSTÈME",text:`Bienvenue dans la salle de simulation. Sujet : "${sim.topic}". Bonne chance à tous.`,time:Date.now()-600000,system:true},
-  {id:2,user:"@mod_pierre",text:"Rappel des règles : respectez le temps de parole, attendez votre tour.",time:Date.now()-540000},
-  {id:3,user:"@claire_fr",text:"Prêt(e). Je souhaite ouvrir sur la question de la représentativité.",time:Date.now()-480000},
+
+// ──────────────────────────────────────────────────
+// UN DEBATE ROOM — 193 pays, timer, vote résolution
+// ──────────────────────────────────────────────────
+const ALL_UN_COUNTRIES = [
+ {id:"fr",flag:"🇫🇷",country:"France"},
+ {id:"us",flag:"🇺🇸",country:"États-Unis"},
+ {id:"ru",flag:"🇷🇺",country:"Russie"},
+ {id:"cn",flag:"🇨🇳",country:"Chine"},
+ {id:"uk",flag:"🇬🇧",country:"Royaume-Uni"},
+ {id:"de",flag:"🇩🇪",country:"Allemagne"},
+ {id:"jp",flag:"🇯🇵",country:"Japon"},
+ {id:"br",flag:"🇧🇷",country:"Brésil"},
+ {id:"in",flag:"🇮🇳",country:"Inde"},
+ {id:"za",flag:"🇿🇦",country:"Afrique du Sud"},
+ {id:"dz",flag:"🇩🇿",country:"Algérie"},
+ {id:"ar",flag:"🇦🇷",country:"Argentine"},
+ {id:"au",flag:"🇦🇺",country:"Australie"},
+ {id:"at",flag:"🇦🇹",country:"Autriche"},
+ {id:"be",flag:"🇧🇪",country:"Belgique"},
+ {id:"ca",flag:"🇨🇦",country:"Canada"},
+ {id:"cl",flag:"🇨🇱",country:"Chili"},
+ {id:"co",flag:"🇨🇴",country:"Colombie"},
+ {id:"hr",flag:"🇭🇷",country:"Croatie"},
+ {id:"cz",flag:"🇨🇿",country:"République Tchèque"},
+ {id:"dk",flag:"🇩🇰",country:"Danemark"},
+ {id:"eg",flag:"🇪🇬",country:"Égypte"},
+ {id:"et",flag:"🇪🇹",country:"Éthiopie"},
+ {id:"fi",flag:"🇫🇮",country:"Finlande"},
+ {id:"gh",flag:"🇬🇭",country:"Ghana"},
+ {id:"gr",flag:"🇬🇷",country:"Grèce"},
+ {id:"hu",flag:"🇭🇺",country:"Hongrie"},
+ {id:"id",flag:"🇮🇩",country:"Indonésie"},
+ {id:"ir",flag:"🇮🇷",country:"Iran"},
+ {id:"iq",flag:"🇮🇶",country:"Irak"},
+ {id:"ie",flag:"🇮🇪",country:"Irlande"},
+ {id:"il",flag:"🇮🇱",country:"Israël"},
+ {id:"it",flag:"🇮🇹",country:"Italie"},
+ {id:"ke",flag:"🇰🇪",country:"Kenya"},
+ {id:"mx",flag:"🇲🇽",country:"Mexique"},
+ {id:"ma",flag:"🇲🇦",country:"Maroc"},
+ {id:"ng",flag:"🇳🇬",country:"Nigéria"},
+ {id:"no",flag:"🇳🇴",country:"Norvège"},
+ {id:"pk",flag:"🇵🇰",country:"Pakistan"},
+ {id:"pe",flag:"🇵🇪",country:"Pérou"},
+ {id:"ph",flag:"🇵🇭",country:"Philippines"},
+ {id:"pl",flag:"🇵🇱",country:"Pologne"},
+ {id:"pt",flag:"🇵🇹",country:"Portugal"},
+ {id:"ro",flag:"🇷🇴",country:"Roumanie"},
+ {id:"sa",flag:"🇸🇦",country:"Arabie Saoudite"},
+ {id:"sn",flag:"🇸🇳",country:"Sénégal"},
+ {id:"rs",flag:"🇷🇸",country:"Serbie"},
+ {id:"sg",flag:"🇸🇬",country:"Singapour"},
+ {id:"es",flag:"🇪🇸",country:"Espagne"},
+ {id:"se",flag:"🇸🇪",country:"Suède"},
+ {id:"ch",flag:"🇨🇭",country:"Suisse"},
+ {id:"tn",flag:"🇹🇳",country:"Tunisie"},
+ {id:"tr",flag:"🇹🇷",country:"Turquie"},
+ {id:"ua",flag:"🇺🇦",country:"Ukraine"},
+ {id:"ae",flag:"🇦🇪",country:"Émirats arabes unis"},
+ {id:"ve",flag:"🇻🇪",country:"Venezuela"},
+ {id:"vn",flag:"🇻🇳",country:"Viêt Nam"},
+];
+
+function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const col = "#1A5FD4";
+ type Phase = "select"|"debate"|"vote";
+ const [phase,setPhase] = useState<Phase>("select");
+ const [myCountry,setMyCountry] = useState<{id:string;flag:string;country:string}|null>(null);
+ const [countrySearch,setCountrySearch] = useState("");
+ const [tab,setTab] = useState<"salle"|"file"|"participants">("salle");
+ type Msg = {id:number;user:string;flag:string;text:string;time:number;system?:boolean;hasFloor?:boolean};
+ const [msgs,setMsgs] = useState<Msg[]>([
+  {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance est ouverte. Le Conseil est saisi du point suivant : « ${sim.topic} ». Je rappelle les règles : chaque délégation dispose de 2 à 5 minutes de temps de parole. Veuillez lever la main pour demander la parole.`,time:Date.now()-900000,system:true},
+  {id:2,user:"États-Unis",flag:"🇺🇸",text:"La délégation des États-Unis souhaite ouvrir le débat. Nous rappelons notre position ferme en faveur d'une réforme ambitieuse.",time:Date.now()-840000,hasFloor:true},
+  {id:3,user:"Russie",flag:"🇷🇺",text:"La Russie s'oppose catégoriquement à toute modification unilatérale des structures fondamentales du Conseil.",time:Date.now()-780000,hasFloor:true},
+  {id:4,user:"France",flag:"🇫🇷",text:"La France plaide pour une approche équilibrée respectant les positions de toutes les délégations.",time:Date.now()-720000,hasFloor:true},
  ]);
  const [input,setInput] = useState("");
  const [handRaised,setHandRaised] = useState(false);
+ const [hasFloor,setHasFloor] = useState(false);
+ const [timer,setTimer] = useState(0);
+ const [timerActive,setTimerActive] = useState(false);
+ const [speakerTime,setSpeakerTime] = useState(180);
+ const [votes,setVotes] = useState<{pour:number;contre:number;abstention:number}>({pour:0,contre:0,abstention:0});
+ const [myVote,setMyVote] = useState<string|null>(null);
  const chatRef = useRef<HTMLDivElement>(null);
- const handle = typeof window!=="undefined"?localStorage.getItem("nexus_handle")||"@vous":"@vous";
- const col = SIM_TYPE_COLORS[sim.type];
+ const timerRef = useRef<ReturnType<typeof setInterval>|null>(null);
 
- const QUEUE = ["@marie_ru","@thomas_cn","@claire_fr","@omar_uk"];
- const PARTICIPANTS = [
-  {h:"@marie_ru",country:"🇷🇺 Russie",role:"Délégué"},
-  {h:"@thomas_cn",country:"🇨🇳 Chine",role:"Délégué"},
-  {h:"@claire_fr",country:"🇫🇷 France",role:"Délégué"},
-  {h:"@omar_uk",country:"🇬🇧 Royaume-Uni",role:"Délégué"},
-  {h:handle,country:"🇩🇪 Allemagne",role:"Délégué"},
- ];
+ const QUEUE = ["🇩🇪 Allemagne","🇧🇷 Brésil","🇮🇳 Inde","🇨🇳 Chine","🇯🇵 Japon"];
 
- const sendMsg = ()=>{
-  if(!input.trim()) return;
-  const newMsg:ChatMsg={id:Date.now(),user:handle,text:input.trim(),time:Date.now()};
-  setMsgs(m=>[...m,newMsg]);
+ useEffect(()=>{
+  if(timerActive&&hasFloor){
+   timerRef.current=setInterval(()=>{
+    setSpeakerTime(t=>{
+     if(t<=1){
+      setTimerActive(false);
+      setHasFloor(false);
+      setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Temps de parole écoulé pour la délégation de ${myCountry?.country||"votre pays"}. Merci.`,time:Date.now(),system:true}]);
+      return 0;
+     }
+     return t-1;
+    });
+   },1000);
+  } else {
+   if(timerRef.current) clearInterval(timerRef.current);
+  }
+  return()=>{if(timerRef.current) clearInterval(timerRef.current);};
+ },[timerActive,hasFloor,myCountry]);
+
+ const fmtTimer=(s:number)=>`${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
+
+ const sendMsg=()=>{
+  if(!input.trim()||!myCountry) return;
+  const m:Msg={id:Date.now(),user:myCountry.country,flag:myCountry.flag,text:input.trim(),time:Date.now(),hasFloor};
+  setMsgs(p=>[...p,m]);
   setInput("");
   haptic();
   setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
  };
 
- const roomTabs = (["room","queue","participants",...(sim.type==="proces"?["docs" as RoomTab]:[])] as RoomTab[]);
+ const raiseHand=()=>{
+  haptic();
+  if(handRaised){setHandRaised(false);return;}
+  setHandRaised(true);
+  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La délégation de ${myCountry?.country} demande la parole. Vous êtes ajouté(e) à la file.`,time:Date.now(),system:true}]);
+ };
 
- return(
+ const takeFloor=()=>{
+  haptic();
+  setHasFloor(true);
+  setHandRaised(false);
+  setTimerActive(true);
+  setSpeakerTime(180);
+  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La parole est à la délégation de ${myCountry?.country}. Vous disposez de 3 minutes.`,time:Date.now(),system:true}]);
+ };
+
+ const castVote=(v:string)=>{
+  if(myVote) return;
+  setMyVote(v);
+  setVotes(prev=>({...prev,[v]:prev[v as keyof typeof prev]+1}));
+  haptic();
+ };
+
+ const filteredCountries=ALL_UN_COUNTRIES.filter(c=>
+  c.country.toLowerCase().includes(countrySearch.toLowerCase())||
+  c.id.includes(countrySearch.toLowerCase())
+ );
+
+ // Phase: country selection
+ if(phase==="select") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
-   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
-     <div style={{flex:1}}>
-      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>{SIM_TYPE_LABELS[sim.type]}</span>
-       <span style={{color:"#E03535",fontSize:9,fontWeight:800,background:"#E0353520",padding:"2px 7px",borderRadius:4,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>EN DIRECT</span>
-      </div>
-      <p style={{color:T.text,fontSize:13,fontWeight:800,lineHeight:1.2}}>{sim.topic.length>50?sim.topic.slice(0,50)+"…":sim.topic}</p>
-     </div>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
+    <div>
+     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>ONU · SÉLECTION</span>
+     <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic.slice(0,55)}{sim.topic.length>55?"…":""}</p>
     </div>
-    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
-     {roomTabs.map(t=>(
-      <button key={t} onClick={()=>setTab(t)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${tab===t?col:T.b1}`,background:tab===t?col+"15":"transparent",color:tab===t?col:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
-       {t==="room"?"Salle":t==="queue"?"File":t==="participants"?"Participants":"Documents"}
+   </div>
+   <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:12}}>
+    <div style={{background:`${col}15`,border:`1px solid ${col}30`,borderRadius:12,padding:"12px 16px"}}>
+     <p style={{color:col,fontSize:13,fontWeight:800}}>Choisissez votre délégation</p>
+     <p style={{color:T.textD,fontSize:12,marginTop:2}}>Vous représenterez ce pays pour toute la durée du débat.</p>
+    </div>
+    <div style={{position:"relative" as const}}>
+     <span style={{position:"absolute" as const,left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none" as const}}><Ic n="search" s={13} c={T.muted}/></span>
+     <input value={countrySearch} onChange={e=>setCountrySearch(e.target.value)} placeholder="Rechercher un pays…" style={{width:"100%",padding:"8px 10px 8px 30px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box" as const}}/>
+    </div>
+    <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
+     {filteredCountries.map(c=>(
+      <button key={c.id} onClick={()=>{haptic();setMyCountry(c);}} style={{padding:"10px 14px",borderRadius:10,border:`2px solid ${myCountry?.id===c.id?col:T.b1}`,background:myCountry?.id===c.id?col+"15":T.card,display:"flex",alignItems:"center",gap:10,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
+       <span style={{fontSize:22,lineHeight:1}}>{c.flag}</span>
+       <span style={{color:T.text,fontSize:13,fontWeight:700,flex:1}}>{c.country}</span>
+       {myCountry?.id===c.id&&<Ic n="check" s={16} c={col} w={2.5}/>}
       </button>
      ))}
     </div>
    </div>
-   <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
-    {tab==="room"&&(
-     <>
-      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:8}}>
-       {msgs.map(m=>(
-        <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:2,alignItems:m.user===handle?"flex-end":"flex-start" as const}}>
-         {!m.system&&<span style={{color:T.muted,fontSize:10,marginBottom:1}}>{m.user}</span>}
-         <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:12,background:m.system?T.bg2:m.user===handle?T.blueG:T.card,border:`1px solid ${m.system?T.b1:m.user===handle?T.blueB+"40":T.b1}`}}>
-          <p style={{color:m.system?T.muted:T.text,fontSize:13,lineHeight:1.5}}>{m.text}</p>
-         </div>
-         <span style={{color:T.muted,fontSize:9}}>{timeFromTs(m.time)}</span>
-        </div>
-       ))}
-      </div>
-      <div style={{padding:"10px 16px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-       <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <button onClick={()=>{haptic();setHandRaised(r=>!r);}} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:8,border:`1px solid ${handRaised?"#D97706":T.b1}`,background:handRaised?"#D97706"+"20":"transparent",color:handRaised?"#D97706":T.muted,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-         ✋ {handRaised?"Main levée":"Lever la main"}
-        </button>
-       </div>
-       <div style={{display:"flex",gap:8}}>
-        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Tapez votre message…" style={{flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
-        <button onClick={sendMsg} style={{background:T.blueB,border:"none",borderRadius:10,width:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={16} c="#fff"/></button>
-       </div>
-      </div>
-     </>
-    )}
-    {tab==="queue"&&(
-     <div style={{padding:"16px",flex:1,overflowY:"auto"}}>
-      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>FILE D&apos;ATTENTE · {QUEUE.length} en attente</p>
-      <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
-       {QUEUE.map((q,i)=>(
-        <div key={q} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
-         <span style={{width:24,height:24,borderRadius:"50%",background:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:T.blueB,flexShrink:0}}>{i+1}</span>
-         <span style={{color:T.text,fontSize:13,fontWeight:700,flex:1}}>{q}</span>
-         {i===0&&<span style={{background:"#16A34A"+"20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:4}}>À venir</span>}
-        </div>
-       ))}
-       <button onClick={()=>{haptic();setHandRaised(true);}} style={{marginTop:8,padding:"10px",borderRadius:10,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>+ Rejoindre la file d&apos;attente</button>
-      </div>
+   <div style={{padding:"12px 16px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+    <button onClick={()=>{if(myCountry){haptic();setPhase("debate");}}} disabled={!myCountry} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:myCountry?col:"#333",color:"#fff",fontSize:14,fontWeight:800,cursor:myCountry?"pointer":"default",fontFamily:"inherit"}}>
+     {myCountry?`Rejoindre en tant que ${myCountry.flag} ${myCountry.country}`:"Sélectionnez un pays"}
+    </button>
+   </div>
+  </div>
+ );
+
+ // Phase: vote
+ if(phase==="vote") return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
+    <div>
+     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>ONU · VOTE DE RÉSOLUTION</span>
+     <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic.slice(0,55)}{sim.topic.length>55?"…":""}</p>
+    </div>
+   </div>
+   <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column" as const,gap:16,alignItems:"center",justifyContent:"center"}}>
+    <div style={{textAlign:"center" as const,marginBottom:8}}>
+     <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>VOTE DE RÉSOLUTION</p>
+     <p style={{color:T.text,fontSize:16,fontWeight:800,lineHeight:1.4,marginBottom:4}}>Le Conseil vote sur :</p>
+     <p style={{color:col,fontSize:14,fontWeight:700,lineHeight:1.4,fontStyle:"italic"}}>« {sim.topic} »</p>
+    </div>
+    {!myVote?(
+     <div style={{display:"flex",flexDirection:"column" as const,gap:10,width:"100%",maxWidth:320}}>
+      {([["pour","✅","POUR","#16A34A"],["contre","❌","CONTRE","#E03535"],["abstention","⬜","ABSTENTION",T.muted]] as const).map(([v,emoji,label,c])=>(
+       <button key={v} onClick={()=>castVote(v)} style={{padding:"14px",borderRadius:12,border:`2px solid ${c}30`,background:c+"15",display:"flex",alignItems:"center",gap:12,cursor:"pointer",transition:"all .15s",fontFamily:"inherit"}}>
+        <span style={{fontSize:24}}>{emoji}</span>
+        <span style={{color:c,fontSize:16,fontWeight:900,flex:1,textAlign:"left" as const}}>{label}</span>
+        <span style={{color:c,fontSize:12,fontWeight:700}}>{myCountry?.flag} {myCountry?.country}</span>
+       </button>
+      ))}
      </div>
-    )}
-    {tab==="participants"&&(
-     <div style={{padding:"16px",flex:1,overflowY:"auto"}}>
-      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>PARTICIPANTS · {sim.participants}</p>
-      <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
-       {PARTICIPANTS.map(p=>(
-        <div key={p.h} style={{background:T.card,border:`1px solid ${p.h===handle?T.blueB+"40":T.b1}`,borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
-         <div style={{width:34,height:34,borderRadius:"50%",background:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:T.blueB,flexShrink:0}}>{p.h.replace("@","").slice(0,2).toUpperCase()}</div>
-         <div style={{flex:1}}>
-          <p style={{color:T.text,fontSize:13,fontWeight:700}}>{p.h}{p.h===handle&&" (vous)"}</p>
-          <p style={{color:T.textD,fontSize:11}}>{p.country} · {p.role}</p>
-         </div>
+    ):(
+     <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column" as const,gap:12}}>
+      <div style={{background:"#16A34A"+"15",border:`1px solid #16A34A30`,borderRadius:12,padding:14,textAlign:"center" as const}}>
+       <p style={{color:"#16A34A",fontSize:13,fontWeight:800}}>Votre vote enregistré : {myVote.toUpperCase()}</p>
+      </div>
+      {[{k:"pour",label:"POUR",c:"#16A34A",n:votes.pour+12},{k:"contre",label:"CONTRE",c:"#E03535",n:votes.contre+8},{k:"abstention",label:"ABSTENTION",c:T.muted,n:votes.abstention+3}].map(({k,label,c,n})=>(
+       <div key={k} style={{display:"flex",alignItems:"center",gap:10}}>
+        <span style={{color:c,fontSize:12,fontWeight:800,width:80,flexShrink:0}}>{label}</span>
+        <div style={{flex:1,background:T.b1,borderRadius:4,height:12,overflow:"hidden"}}>
+         <div style={{width:`${Math.round(n/(votes.pour+votes.contre+votes.abstention+23)*100)}%`,height:"100%",background:c,borderRadius:4,transition:"width .6s ease"}}/>
         </div>
-       ))}
-      </div>
-     </div>
-    )}
-    {tab==="docs"&&(
-     <div style={{padding:"16px",flex:1,overflowY:"auto"}}>
-      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>DISCOVERY · Documents</p>
-      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:16,marginBottom:12}}>
-       <p style={{color:T.text,fontSize:13,fontWeight:800,marginBottom:4}}>Phase Discovery</p>
-       <p style={{color:T.textD,fontSize:12,lineHeight:1.5}}>Les avocats des deux parties échangent leurs pièces. Délai : 24h. Les documents soumis sont définitifs.</p>
-       <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,background:"#D97706"+"15",borderRadius:8,padding:"6px 10px"}}>
-        <Ic n="cal" s={13} c="#D97706"/>
-        <span style={{color:"#D97706",fontSize:11,fontWeight:800}}>Délai : 18h 30min restantes</span>
+        <span style={{color:T.muted,fontSize:12,width:24,textAlign:"right" as const}}>{n}</span>
        </div>
-      </div>
-      <button style={{width:"100%",padding:"10px",borderRadius:10,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>+ Soumettre un document</button>
+      ))}
+      <button onClick={onBack} style={{marginTop:8,padding:"12px",borderRadius:10,border:"none",background:col,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Terminer la session</button>
      </div>
     )}
    </div>
   </div>
  );
+
+ // Phase: debate
+ return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {/* Header */}
+   <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
+     <div style={{flex:1,minWidth:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
+       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>ONU</span>
+       <span style={{color:"#E03535",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>DIRECT</span>
+       {myCountry&&<span style={{fontSize:12}}>{myCountry.flag}</span>}
+      </div>
+      <p style={{color:T.text,fontSize:12,fontWeight:800,lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+     </div>
+     <button onClick={()=>setPhase("vote")} style={{background:"#16A34A",color:"#fff",fontSize:10,fontWeight:800,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>VOTER</button>
+    </div>
+    {/* Timer bar when user has floor */}
+    {hasFloor&&(
+     <div style={{background:`#E03535`+"15",border:`1px solid #E0353530`,borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+      <span style={{width:7,height:7,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite",flexShrink:0}}/>
+      <span style={{color:"#E03535",fontSize:12,fontWeight:800,flex:1}}>Vous avez la parole — {myCountry?.flag} {myCountry?.country}</span>
+      <span style={{fontFamily:"monospace",color:"#E03535",fontSize:14,fontWeight:900}}>{fmtTimer(speakerTime)}</span>
+     </div>
+    )}
+    <div style={{display:"flex",gap:5}}>
+     {(["salle","file","participants"] as const).map(t=>(
+      <button key={t} onClick={()=>setTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${tab===t?col:T.b1}`,background:tab===t?col+"15":"transparent",color:tab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+       {t==="salle"?"Salle":t==="file"?"File ("+QUEUE.length+")":"Participants"}
+      </button>
+     ))}
+    </div>
+   </div>
+
+   <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
+    {tab==="salle"&&(
+     <>
+      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:7}}>
+       {msgs.map(m=>(
+        <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:1,alignItems:m.user===myCountry?.country?"flex-end":"flex-start" as const}}>
+         {!m.system&&<span style={{color:T.muted,fontSize:10}}>{m.flag} {m.user}</span>}
+         <div style={{maxWidth:"82%",padding:"7px 11px",borderRadius:11,background:m.system?T.bg2:m.user===myCountry?.country?col+"25":T.card,border:`1px solid ${m.system?T.b1:m.hasFloor?col+"50":T.b1}`}}>
+          {m.hasFloor&&!m.system&&<div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}><span style={{width:5,height:5,borderRadius:"50%",background:col,display:"inline-block"}}/>  <span style={{color:col,fontSize:9,fontWeight:800}}>AU PUPITRE</span></div>}
+          <p style={{color:m.system?T.muted:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
+         </div>
+         <span style={{color:T.muted,fontSize:9}}>{timeFromTs(m.time)}</span>
+        </div>
+       ))}
+      </div>
+      <div style={{padding:"8px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+       <div style={{display:"flex",gap:7,marginBottom:7}}>
+        {!hasFloor?(
+         <button onClick={raiseHand} style={{display:"flex",alignItems:"center",gap:4,padding:"6px 11px",borderRadius:7,border:`1px solid ${handRaised?"#D97706":T.b1}`,background:handRaised?"#D97706"+"20":"transparent",color:handRaised?"#D97706":T.muted,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+          ✋ {handRaised?"Annuler":"Lever la main"}
+         </button>
+        ):(
+         <button onClick={()=>{setHasFloor(false);setTimerActive(false);}} style={{display:"flex",alignItems:"center",gap:4,padding:"6px 11px",borderRadius:7,border:"1px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+          ⏹ Céder la parole
+         </button>
+        )}
+        {handRaised&&!hasFloor&&(
+         <button onClick={takeFloor} style={{display:"flex",alignItems:"center",gap:4,padding:"6px 11px",borderRadius:7,border:"1px solid #16A34A",background:"#16A34A20",color:"#16A34A",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+          🎤 Prendre la parole
+         </button>
+        )}
+       </div>
+       <div style={{display:"flex",gap:7}}>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder={hasFloor?`Parole en cours — ${myCountry?.flag} ${myCountry?.country}`:"Tapez votre message…"} style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${hasFloor?col:T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+        <button onClick={sendMsg} style={{background:col,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
+       </div>
+      </div>
+     </>
+    )}
+    {tab==="file"&&(
+     <div style={{padding:"14px",flex:1,overflowY:"auto"}}>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>FILE DES ORATEURS</p>
+      <div style={{display:"flex",flexDirection:"column" as const,gap:7}}>
+       {QUEUE.map((q,i)=>(
+        <div key={q} style={{background:T.card,border:`1px solid ${i===0?col:T.b1}`,borderRadius:9,padding:"10px 13px",display:"flex",alignItems:"center",gap:9}}>
+         <span style={{width:22,height:22,borderRadius:"50%",background:i===0?col:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#fff",flexShrink:0}}>{i+1}</span>
+         <span style={{color:T.text,fontSize:13,fontWeight:700,flex:1}}>{q}</span>
+         {i===0&&<span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>Prochain</span>}
+        </div>
+       ))}
+       {myCountry&&!handRaised&&(
+        <button onClick={raiseHand} style={{marginTop:4,padding:"10px",borderRadius:9,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✋ Rejoindre la file — {myCountry.flag} {myCountry.country}</button>
+       )}
+      </div>
+     </div>
+    )}
+    {tab==="participants"&&(
+     <div style={{padding:"14px",flex:1,overflowY:"auto"}}>
+      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>DÉLÉGATIONS PRÉSENTES · {sim.participants}</p>
+      <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
+       {ALL_UN_COUNTRIES.slice(0,sim.participants).map(c=>(
+        <div key={c.id} style={{background:T.card,border:`1px solid ${myCountry?.id===c.id?col+"60":T.b1}`,borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:9}}>
+         <span style={{fontSize:18}}>{c.flag}</span>
+         <span style={{color:T.text,fontSize:12,fontWeight:700,flex:1}}>{c.country}</span>
+         {myCountry?.id===c.id&&<span style={{background:col+"20",color:col,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>Vous</span>}
+        </div>
+       ))}
+      </div>
+     </div>
+    )}
+   </div>
+  </div>
+ );
+}
+
+// ──────────────────────────────────────────────────
+// TRIAL ROOM — phases, rôles, discovery docs
+// ──────────────────────────────────────────────────
+type TrialPhase = "discovery"|"opening"|"case_pros"|"lunch"|"case_def"|"closing"|"deliberation"|"verdict";
+const TRIAL_PHASE_LABELS:Record<TrialPhase,string> = {discovery:"Discovery",opening:"Ouverture",case_pros:"Plaidoirie — Accusation",lunch:"Pause",case_def:"Plaidoirie — Défense",closing:"Conclusions",deliberation:"Délibération",verdict:"Verdict"};
+const TRIAL_PHASE_DURATIONS:Record<TrialPhase,string> = {discovery:"24h",opening:"10 min / partie",case_pros:"2h",lunch:"Pause",case_def:"2h",closing:"15 min / partie",deliberation:"Jury seul",verdict:"Annonce"};
+
+type TrialRole = "judge"|"prosecutor"|"defense"|"jury"|"witness"|"spectator";
+const TRIAL_ROLE_LABELS:Record<TrialRole,string> = {judge:"Juge",prosecutor:"Procureur",defense:"Avocat de la défense",jury:"Juré",witness:"Témoin",spectator:"Observateur"};
+const TRIAL_ROLE_COLORS:Record<TrialRole,string> = {judge:"#8B4513",prosecutor:"#E03535",defense:"#1A5FD4",jury:"#7C3AED",witness:"#D97706",spectator:"#384F6A"};
+
+function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const col = "#8B4513";
+ type SetupPhase = "role"|"trial";
+ const [setup,setSetup] = useState<SetupPhase>("role");
+ const [myRole,setMyRole] = useState<TrialRole|null>(null);
+ const [phase,setPhase] = useState<TrialPhase>("discovery");
+ const [docTab,setDocTab] = useState<"chat"|"docs">("chat");
+ type Msg = {id:number;role:TrialRole|"system";user:string;text:string;time:number};
+ const [msgs,setMsgs] = useState<Msg[]>([
+  {id:1,role:"system",user:"GREFFIER",text:`L'audience est ouverte. Affaire : « ${sim.topic} ». Toutes les parties sont invitées à prendre leur place.`,time:Date.now()-1200000},
+  {id:2,role:"judge",user:"Juge Moreau",text:"Avant de commencer, je rappelle les règles de procédure. Tout intervenant doit s'adresser à la cour avec respect. Les objections doivent être motivées.",time:Date.now()-1140000},
+  {id:3,role:"prosecutor",user:"Me. Dubois (Accusation)",text:"L'accusation est prête, Votre Honneur.",time:Date.now()-1080000},
+  {id:4,role:"defense",user:"Me. Laurent (Défense)",text:"La défense est prête.",time:Date.now()-1020000},
+ ]);
+ const [input,setInput] = useState("");
+ type DocEntry = {id:number;name:string;type:string;by:TrialRole;time:number;sealed:boolean};
+ const [docs,setDocs] = useState<DocEntry[]>([
+  {id:1,name:"Rapport d'expertise comptable",type:"Exhibit A",by:"prosecutor",time:Date.now()-86400000,sealed:false},
+  {id:2,name:"Déclaration du témoin principal",type:"Déclaration",by:"prosecutor",time:Date.now()-82800000,sealed:false},
+  {id:3,name:"Alibi — relevés bancaires",type:"Exhibit B",by:"defense",time:Date.now()-79200000,sealed:false},
+ ]);
+ const [docName,setDocName] = useState("");
+ const [docType,setDocType] = useState("Exhibit");
+ const chatRef = useRef<HTMLDivElement>(null);
+
+ const PHASES:TrialPhase[] = ["discovery","opening","case_pros","lunch","case_def","closing","deliberation","verdict"];
+ const phaseIdx = PHASES.indexOf(phase);
+ const nextPhase=()=>{if(phaseIdx<PHASES.length-1){const np=PHASES[phaseIdx+1];setPhase(np);setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Phase suivante : ${TRIAL_PHASE_LABELS[np]}. ${TRIAL_PHASE_DURATIONS[np]}`,time:Date.now()}]);haptic();}};
+
+ const sendMsg=()=>{
+  if(!input.trim()||!myRole) return;
+  const m:Msg={id:Date.now(),role:myRole,user:`${TRIAL_ROLE_LABELS[myRole]}`,text:input.trim(),time:Date.now()};
+  setMsgs(p=>[...p,m]);
+  setInput("");
+  haptic();
+  setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+ };
+
+ const submitDoc=()=>{
+  if(!docName.trim()||!myRole) return;
+  const d:DocEntry={id:Date.now(),name:docName.trim(),type:docType,by:myRole,time:Date.now(),sealed:false};
+  setDocs(p=>[...p,d]);
+  setDocName("");
+  setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Pièce soumise par la ${TRIAL_ROLE_LABELS[myRole||"spectator"]} : « ${d.name} » (${d.type}). Document versé au dossier.`,time:Date.now()}]);
+  haptic();
+ };
+
+ if(setup==="role") return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
+    <div>
+     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>PROCÈS · ASSIGNATION</span>
+     <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic}</p>
+    </div>
+   </div>
+   <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:10}}>
+    <div style={{background:col+"15",border:`1px solid ${col}30`,borderRadius:12,padding:"12px 16px"}}>
+     <p style={{color:col,fontSize:13,fontWeight:800}}>Choisissez votre rôle</p>
+     <p style={{color:T.textD,fontSize:12,marginTop:2}}>Votre rôle est définitif pour toute la durée du procès.</p>
+    </div>
+    {(["judge","prosecutor","defense","jury","witness","spectator"] as TrialRole[]).map(r=>(
+     <button key={r} onClick={()=>{haptic();setMyRole(r);}} style={{padding:"14px 16px",borderRadius:12,border:`2px solid ${myRole===r?TRIAL_ROLE_COLORS[r]:T.b1}`,background:myRole===r?TRIAL_ROLE_COLORS[r]+"15":T.card,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
+      <div style={{width:38,height:38,borderRadius:10,background:TRIAL_ROLE_COLORS[r]+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+       <Ic n={r==="judge"?"scale":r==="prosecutor"?"flag":r==="defense"?"shield":r==="jury"?"users":r==="witness"?"user":"feed"} s={18} c={TRIAL_ROLE_COLORS[r]}/>
+      </div>
+      <div style={{flex:1}}>
+       <p style={{color:T.text,fontSize:13,fontWeight:800}}>{TRIAL_ROLE_LABELS[r]}</p>
+       <p style={{color:T.textD,fontSize:11,marginTop:1}}>{r==="judge"?"Préside l'audience, maintient l'ordre":r==="prosecutor"?"Présente les charges, interroge":r==="defense"?"Défend l'accusé, réfute":r==="jury"?"Délibère et rend le verdict":r==="witness"?"Témoigne sous serment":"Observe sans intervenir"}</p>
+      </div>
+      {myRole===r&&<Ic n="check" s={18} c={TRIAL_ROLE_COLORS[r]} w={2.5}/>}
+     </button>
+    ))}
+   </div>
+   <div style={{padding:"12px 16px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+    <button onClick={()=>{if(myRole){haptic();setSetup("trial");}}} disabled={!myRole} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:myRole?TRIAL_ROLE_COLORS[myRole]:"#333",color:"#fff",fontSize:14,fontWeight:800,cursor:myRole?"pointer":"default",fontFamily:"inherit"}}>
+     {myRole?`Entrer comme ${TRIAL_ROLE_LABELS[myRole]}`:"Sélectionnez un rôle"}
+    </button>
+   </div>
+  </div>
+ );
+
+ return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {/* Header */}
+   <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
+     <div style={{flex:1,minWidth:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1,flexWrap:"wrap" as const}}>
+       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>PROCÈS</span>
+       {myRole&&<span style={{background:TRIAL_ROLE_COLORS[myRole]+"20",color:TRIAL_ROLE_COLORS[myRole],fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{TRIAL_ROLE_LABELS[myRole].toUpperCase()}</span>}
+       <span style={{background:col+"15",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{TRIAL_PHASE_LABELS[phase].toUpperCase()}</span>
+      </div>
+      <p style={{color:T.text,fontSize:12,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+     </div>
+     {(myRole==="judge")&&<button onClick={nextPhase} style={{background:col,color:"#fff",fontSize:10,fontWeight:800,padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Phase +</button>}
+    </div>
+    {/* Phase progress */}
+    <div style={{display:"flex",gap:3,marginBottom:6}}>
+     {PHASES.map((p,i)=>(
+      <div key={p} style={{flex:1,height:3,borderRadius:2,background:i<phaseIdx?"#16A34A":i===phaseIdx?col:T.b1,transition:"background .3s"}}/>
+     ))}
+    </div>
+    <div style={{display:"flex",gap:5}}>
+     {(["chat","docs"] as const).map(t=>(
+      <button key={t} onClick={()=>setDocTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${docTab===t?col:T.b1}`,background:docTab===t?col+"15":"transparent",color:docTab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+       {t==="chat"?"Audience":"Dossier ("+docs.length+")"}
+      </button>
+     ))}
+    </div>
+   </div>
+
+   <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
+    {docTab==="chat"&&(
+     <>
+      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:7}}>
+       {msgs.map(m=>(
+        <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:1,alignItems:m.role===myRole?"flex-end":"flex-start" as const}}>
+         {m.role!=="system"&&<div style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:TRIAL_ROLE_COLORS[m.role as TrialRole]||T.muted,display:"inline-block"}}/><span style={{color:T.muted,fontSize:10}}>{m.user}</span></div>}
+         <div style={{maxWidth:"82%",padding:"7px 11px",borderRadius:11,background:m.role==="system"?T.bg2:m.role===myRole?col+"25":T.card,border:`1px solid ${m.role==="system"?T.b1:T.b1}`}}>
+          <p style={{color:m.role==="system"?T.muted:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
+         </div>
+        </div>
+       ))}
+      </div>
+      <div style={{padding:"8px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+       {phase==="deliberation"&&myRole==="jury"?(
+        <div style={{display:"flex",gap:8}}>
+         <button onClick={()=>{setPhase("verdict");haptic();setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:"Le jury a rendu son verdict. L'audience reprend.",time:Date.now()}]);}} style={{flex:1,padding:"11px",borderRadius:9,border:"none",background:"#E03535",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>COUPABLE</button>
+         <button onClick={()=>{setPhase("verdict");haptic();setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:"Le jury a rendu son verdict. L'audience reprend.",time:Date.now()}]);}} style={{flex:1,padding:"11px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>NON COUPABLE</button>
+        </div>
+       ):(
+        <div style={{display:"flex",gap:7}}>
+         <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder={myRole==="judge"?"Parole du juge…":myRole==="spectator"?"Mode observateur — vous ne pouvez pas intervenir":"Votre déclaration…"} disabled={myRole==="spectator"||phase==="deliberation"} style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",opacity:myRole==="spectator"?.5:1}}/>
+         <button onClick={sendMsg} disabled={myRole==="spectator"} style={{background:col,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,opacity:myRole==="spectator"?.4:1}}><Ic n="send" s={15} c="#fff"/></button>
+        </div>
+       )}
+      </div>
+     </>
+    )}
+    {docTab==="docs"&&(
+     <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
+      <div style={{background:col+"12",border:`1px solid ${col}25`,borderRadius:10,padding:"10px 13px"}}>
+       <p style={{color:col,fontSize:12,fontWeight:800}}>Phase : {TRIAL_PHASE_LABELS[phase]}</p>
+       <p style={{color:T.textD,fontSize:11,marginTop:2}}>{phase==="discovery"?"Échangez vos pièces avant le début du procès. Délai 24h. Aucune modification après soumission.":"Documents versés au dossier — consultables par toutes les parties."}</p>
+      </div>
+      {(myRole==="prosecutor"||myRole==="defense")&&phase==="discovery"&&(
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:12,display:"flex",flexDirection:"column" as const,gap:8}}>
+        <p style={{color:T.text,fontSize:12,fontWeight:800}}>Soumettre une pièce</p>
+        <div style={{display:"flex",gap:7}}>
+         <input value={docName} onChange={e=>setDocName(e.target.value)} placeholder="Nom du document…" style={{flex:1,padding:"7px 10px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+         <select value={docType} onChange={e=>setDocType(e.target.value)} style={{padding:"7px 10px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}>
+          <option>Exhibit</option><option>Déclaration</option><option>Expertise</option><option>Témoin</option>
+         </select>
+        </div>
+        <button onClick={submitDoc} disabled={!docName.trim()} style={{padding:"8px",borderRadius:8,border:"none",background:docName.trim()?col:"#444",color:"#fff",fontSize:12,fontWeight:800,cursor:docName.trim()?"pointer":"default",fontFamily:"inherit"}}>Soumettre (définitif)</button>
+       </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column" as const,gap:7}}>
+       {docs.map(d=>(
+        <div key={d.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10}}>
+         <div style={{width:34,height:34,borderRadius:8,background:TRIAL_ROLE_COLORS[d.by]+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="feed" s={16} c={TRIAL_ROLE_COLORS[d.by]}/></div>
+         <div style={{flex:1}}>
+          <p style={{color:T.text,fontSize:12,fontWeight:800}}>{d.name}</p>
+          <p style={{color:T.textD,fontSize:10,marginTop:1}}>{d.type} · Soumis par {TRIAL_ROLE_LABELS[d.by]} · {timeFromTs(d.time)}</p>
+         </div>
+         <span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>VERSÉ</span>
+        </div>
+       ))}
+      </div>
+     </div>
+    )}
+   </div>
+  </div>
+ );
+}
+
+// ──────────────────────────────────────────────────
+// GENERAL DEBATE ROOM — Pour vs Contre, points, vote
+// ──────────────────────────────────────────────────
+function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ type Side = "pour"|"contre"|null;
+ const [mySide,setMySide] = useState<Side>(null);
+ const [setup,setSetup] = useState(true);
+ type Msg = {id:number;user:string;side:Side|"system";text:string;time:number;points:number;reactions:{[k:string]:number}};
+ const [msgs,setMsgs] = useState<Msg[]>([
+  {id:1,user:"MODÉRATEUR",side:"system",text:`Bienvenue dans ce débat général. Sujet : « ${sim.topic} ». L'équipe POUR ouvre le débat. Chaque argument peut recevoir des points du public (+1 par vote).`,time:Date.now()-600000,points:0,reactions:{}},
+  {id:2,user:"@marie_pour",side:"pour",text:"Je pense que c'est une évidence. Les données économiques montrent clairement que cette mesure bénéficierait à 80% de la population active.",time:Date.now()-540000,points:3,reactions:{"👏":4,"🔥":2}},
+  {id:3,user:"@thomas_contre",side:"contre",text:"Au contraire, une telle approche ne prend pas en compte les effets secondaires sur les petites entreprises qui représentent 40% de l'emploi.",time:Date.now()-480000,points:2,reactions:{"👏":2,"💪":1}},
+ ]);
+ const [input,setInput] = useState("");
+ const [score,setScore] = useState({pour:5,contre:3});
+ const [voted,setVoted] = useState<Set<number>>(new Set());
+ const [reacted,setReacted] = useState<Set<number>>(new Set());
+ const [showFinalVote,setShowFinalVote] = useState(false);
+ const [finalVote,setFinalVote] = useState<Side>(null);
+ const [finalVotes,setFinalVotes] = useState({pour:12,contre:7});
+ const chatRef = useRef<HTMLDivElement>(null);
+
+ const POUR_COL = "#1A5FD4";
+ const CONTRE_COL = "#E03535";
+ const sideCol = (s:Side|"system") => s==="pour"?POUR_COL:s==="contre"?CONTRE_COL:T.muted;
+ const REACTIONS = ["👏","🔥","💪","🤔","❌"];
+
+ const sendMsg=()=>{
+  if(!input.trim()||!mySide) return;
+  const m:Msg={id:Date.now(),user:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",side:mySide,text:input.trim(),time:Date.now(),points:0,reactions:{}};
+  setMsgs(p=>[...p,m]);
+  setInput("");
+  haptic();
+  setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+ };
+
+ const votePoint=(id:number,side:Side)=>{
+  if(voted.has(id)) return;
+  haptic();
+  setVoted(s=>{const ns=new Set(s);ns.add(id);return ns;});
+  setMsgs(p=>p.map(m=>m.id===id?{...m,points:m.points+1}:m));
+  if(side==="pour") setScore(s=>({...s,pour:s.pour+1}));
+  else if(side==="contre") setScore(s=>({...s,contre:s.contre+1}));
+ };
+
+ const addReaction=(id:number,emoji:string)=>{
+  haptic();
+  setMsgs(p=>p.map(m=>m.id===id?{...m,reactions:{...m.reactions,[emoji]:(m.reactions[emoji]||0)+1}}:m));
+ };
+
+ const castFinalVote=(s:Side)=>{
+  if(finalVote) return;
+  setFinalVote(s);
+  if(s==="pour") setFinalVotes(v=>({...v,pour:v.pour+1}));
+  else if(s==="contre") setFinalVotes(v=>({...v,contre:v.contre+1}));
+  haptic();
+ };
+
+ const total=finalVotes.pour+finalVotes.contre;
+
+ if(setup) return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={POUR_COL}/></button>
+    <div>
+     <span style={{background:POUR_COL+"20",color:POUR_COL,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>DÉBAT · CHOIX DU CAMP</span>
+     <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic}</p>
+    </div>
+   </div>
+   <div style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",padding:"24px",gap:16}}>
+    <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>CHOISISSEZ VOTRE CAMP</p>
+    <p style={{color:T.text,fontSize:15,fontWeight:800,textAlign:"center" as const,lineHeight:1.4,marginBottom:8}}>« {sim.topic} »</p>
+    <div style={{display:"flex",gap:12,width:"100%",maxWidth:320}}>
+     <button onClick={()=>{haptic();setMySide("pour");setSetup(false);}} style={{flex:1,padding:"20px 12px",borderRadius:14,border:`3px solid ${POUR_COL}`,background:POUR_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,cursor:"pointer",transition:"all .15s"}}>
+      <span style={{fontSize:28}}>✅</span>
+      <span style={{color:POUR_COL,fontSize:18,fontWeight:900}}>POUR</span>
+      <span style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>{score.pour} pts</span>
+     </button>
+     <button onClick={()=>{haptic();setMySide("contre");setSetup(false);}} style={{flex:1,padding:"20px 12px",borderRadius:14,border:`3px solid ${CONTRE_COL}`,background:CONTRE_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,cursor:"pointer",transition:"all .15s"}}>
+      <span style={{fontSize:28}}>❌</span>
+      <span style={{color:CONTRE_COL,fontSize:18,fontWeight:900}}>CONTRE</span>
+      <span style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>{score.contre} pts</span>
+     </button>
+    </div>
+   </div>
+  </div>
+ );
+
+ return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {/* Score header */}
+   <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={mySide==="pour"?POUR_COL:CONTRE_COL}/></button>
+     <div style={{flex:1,minWidth:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
+       <span style={{background:sideCol(mySide)+"20",color:sideCol(mySide),fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>DÉBAT · {mySide?.toUpperCase()}</span>
+       <span style={{color:"#E03535",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>DIRECT</span>
+      </div>
+      <p style={{color:T.text,fontSize:12,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+     </div>
+     <button onClick={()=>setShowFinalVote(true)} style={{background:"#7C3AED",color:"#fff",fontSize:10,fontWeight:800,padding:"5px 9px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>VOTER</button>
+    </div>
+    {/* Scoreboard */}
+    <div style={{display:"flex",alignItems:"center",gap:8}}>
+     <div style={{flex:1,textAlign:"left" as const}}>
+      <p style={{color:POUR_COL,fontSize:11,fontWeight:800}}>POUR</p>
+      <p style={{color:POUR_COL,fontSize:22,fontWeight:900,fontFamily:"monospace"}}>{score.pour}</p>
+     </div>
+     <div style={{flex:2,background:T.b1,borderRadius:4,height:8,overflow:"hidden",position:"relative" as const}}>
+      <div style={{position:"absolute" as const,left:0,top:0,bottom:0,width:`${Math.round(score.pour/(score.pour+score.contre)*100)}%`,background:POUR_COL,transition:"width .4s ease"}}/>
+     </div>
+     <div style={{flex:1,textAlign:"right" as const}}>
+      <p style={{color:CONTRE_COL,fontSize:11,fontWeight:800}}>CONTRE</p>
+      <p style={{color:CONTRE_COL,fontSize:22,fontWeight:900,fontFamily:"monospace"}}>{score.contre}</p>
+     </div>
+    </div>
+   </div>
+
+   {showFinalVote?(
+    <div style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",padding:"24px",gap:16}}>
+     <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>VOTE FINAL DU PUBLIC</p>
+     <p style={{color:T.text,fontSize:14,fontWeight:800,textAlign:"center" as const,lineHeight:1.4}}>Qui a remporté ce débat ?</p>
+     {!finalVote?(
+      <div style={{display:"flex",gap:12,width:"100%",maxWidth:300}}>
+       <button onClick={()=>castFinalVote("pour")} style={{flex:1,padding:"16px",borderRadius:12,border:`2px solid ${POUR_COL}`,background:POUR_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,cursor:"pointer"}}>
+        <span style={{fontSize:24}}>✅</span><span style={{color:POUR_COL,fontSize:16,fontWeight:900}}>POUR</span>
+       </button>
+       <button onClick={()=>castFinalVote("contre")} style={{flex:1,padding:"16px",borderRadius:12,border:`2px solid ${CONTRE_COL}`,background:CONTRE_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,cursor:"pointer"}}>
+        <span style={{fontSize:24}}>❌</span><span style={{color:CONTRE_COL,fontSize:16,fontWeight:900}}>CONTRE</span>
+       </button>
+      </div>
+     ):(
+      <div style={{width:"100%",maxWidth:300,display:"flex",flexDirection:"column" as const,gap:10}}>
+       <div style={{background:sideCol(finalVote)+"15",borderRadius:12,padding:12,textAlign:"center" as const}}>
+        <p style={{color:sideCol(finalVote),fontSize:14,fontWeight:900}}>{finalVote.toUpperCase()} gagne le vote public !</p>
+       </div>
+       {[{s:"pour" as Side,c:POUR_COL},{s:"contre" as Side,c:CONTRE_COL}].map(({s,c})=>(
+        <div key={s} style={{display:"flex",alignItems:"center",gap:10}}>
+         <span style={{color:c,fontSize:12,fontWeight:800,width:60,flexShrink:0}}>{(s||"").toUpperCase()}</span>
+         <div style={{flex:1,background:T.b1,borderRadius:4,height:10,overflow:"hidden"}}>
+          <div style={{width:`${Math.round((s==="pour"?finalVotes.pour:finalVotes.contre)/total*100)}%`,height:"100%",background:c,transition:"width .6s ease"}}/>
+         </div>
+         <span style={{color:T.muted,fontSize:12,width:30,textAlign:"right" as const}}>{s==="pour"?finalVotes.pour:finalVotes.contre}</span>
+        </div>
+       ))}
+       <p style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>Points POUR: {score.pour} · Points CONTRE: {score.contre}</p>
+       <button onClick={onBack} style={{padding:"12px",borderRadius:10,border:"none",background:sideCol(finalVote),color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Terminer</button>
+      </div>
+     )}
+     <button onClick={()=>setShowFinalVote(false)} style={{background:"none",border:`1px solid ${T.b1}`,color:T.muted,fontSize:12,fontWeight:700,padding:"7px 16px",borderRadius:8,cursor:"pointer",fontFamily:"inherit"}}>Retour au débat</button>
+    </div>
+   ):(
+    <>
+     <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:9}}>
+      {msgs.map(m=>(
+       <div key={m.id} style={{display:"flex",flexDirection:"column" as const,gap:2,alignItems:m.side===mySide?"flex-end":"flex-start" as const}}>
+        {m.side!=="system"&&(
+         <div style={{display:"flex",alignItems:"center",gap:5}}>
+          <span style={{width:8,height:8,borderRadius:"50%",background:sideCol(m.side),display:"inline-block",flexShrink:0}}/>
+          <span style={{color:T.muted,fontSize:10}}>{m.user}</span>
+          <span style={{background:sideCol(m.side)+"20",color:sideCol(m.side),fontSize:9,fontWeight:800,padding:"1px 5px",borderRadius:3}}>{(m.side||"").toUpperCase()}</span>
+         </div>
+        )}
+        <div style={{maxWidth:"84%",padding:"8px 11px",borderRadius:11,background:m.side==="system"?T.bg2:m.side===mySide?sideCol(m.side)+"25":T.card,border:`1px solid ${m.side==="system"?T.b1:sideCol(m.side)+"40"}`}}>
+         <p style={{color:m.side==="system"?T.muted:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
+         {m.points>0&&<div style={{marginTop:5,display:"flex",alignItems:"center",gap:4}}><Ic n="star" s={11} c="#D97706" w={2}/><span style={{color:"#D97706",fontSize:10,fontWeight:800}}>+{m.points} pts</span></div>}
+        </div>
+        {m.side!=="system"&&(
+         <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap" as const}}>
+          {!voted.has(m.id)&&m.side!==mySide&&(
+           <button onClick={()=>votePoint(m.id,m.side as Side)} style={{background:"#D97706"+"20",border:`1px solid #D97706`,color:"#D97706",fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:5,cursor:"pointer",fontFamily:"inherit"}}>+1 pt</button>
+          )}
+          {Object.entries(m.reactions).map(([emoji,count])=>(
+           <button key={emoji} onClick={()=>addReaction(m.id,emoji)} style={{background:T.bg2,border:`1px solid ${T.b1}`,color:T.text,fontSize:11,padding:"2px 7px",borderRadius:5,cursor:"pointer",fontFamily:"inherit"}}>{emoji} {count}</button>
+          ))}
+          {!reacted.has(m.id)&&(
+           <div style={{display:"flex",gap:3}}>
+            {REACTIONS.map(r=>(
+             <button key={r} onClick={()=>{addReaction(m.id,r);setReacted(s=>{const ns=new Set(s);ns.add(m.id);return ns;});haptic();}} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",padding:2}}>{r}</button>
+            ))}
+           </div>
+          )}
+         </div>
+        )}
+       </div>
+      ))}
+     </div>
+     <div style={{padding:"8px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:7}}>
+      <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder={`Argument ${mySide?.toUpperCase()}…`} style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${sideCol(mySide)}40`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+      <button onClick={sendMsg} style={{background:sideCol(mySide),border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
+     </div>
+    </>
+   )}
+  </div>
+ );
+}
+
+function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ if(sim.type==="onu") return <UNDebateRoom T={T} sim={sim} onBack={onBack}/>;
+ if(sim.type==="proces") return <TrialRoom T={T} sim={sim} onBack={onBack}/>;
+ return <GeneralDebateRoom T={T} sim={sim} onBack={onBack}/>;
 }
 
 function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
