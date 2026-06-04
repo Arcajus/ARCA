@@ -7527,6 +7527,19 @@ type TrialType="correctionnel"|"assises"|"civil";
 type TrialPhase="p1"|"p2"|"p3"|"p4"|"p5"|"p6"|"p7"|"p8";
 type TrialRole="president"|"assesseur"|"procureur"|"avocat_gen"|"prevenu"|"avocat_def"|"partie_civile"|"avocat_pc"|"jure"|"temoin"|"demandeur"|"defendeur"|"public";
 
+interface DossierPiece {
+ id:string; numero:number; titre:string; contenu:string;
+ type:"pv"|"expertise"|"temoignage"|"document"|"declaration";
+ rolesAccessibles:TrialRole[];
+}
+interface GeneratedDossier {
+ qualification:string; articleCode:string; peinesEncourues:string; aggravantes:string[];
+ prevenuNom:string; prevenuProfil:string; victimeNom:string; victimeProfil:string;
+ chronologie:string[]; pieces:DossierPiece[];
+ positionProcureur:string; positionDefense:string; positionPartieCivile:string|null;
+ objectifs:Partial<Record<TrialRole,string>>;
+}
+
 const TRIAL_TYPE_LABELS:Record<TrialType,string>={correctionnel:"Tribunal Correctionnel",assises:"Cour d'Assises",civil:"Tribunal Civil"};
 const TRIAL_TYPE_COLORS:Record<TrialType,string>={correctionnel:"#8B4513",assises:"#7C3AED",civil:"#1A5FD4"};
 const TRIAL_TYPE_DESC:Record<TrialType,string>={
@@ -7743,6 +7756,32 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [docName,setDocName]=useState("");
  const [docType,setDocType]=useState("Pièce");
  const chatRef=useRef<HTMLDivElement>(null);
+ const [dossier,setDossier]=useState<GeneratedDossier|null>(null);
+ const [dossierLoading,setDossierLoading]=useState(false);
+ const [dossierErr,setDossierErr]=useState<string|null>(null);
+ const [expandedPiece,setExpandedPiece]=useState<string|null>(null);
+
+ useEffect(()=>{
+  const cacheKey=`nexus_dossier_${sim.id}`;
+  const cached=localStorage.getItem(cacheKey);
+  if(cached){try{setDossier(JSON.parse(cached));return;}catch{}}
+  setDossierLoading(true);
+  setDossierErr(null);
+  fetch("/api/generate-dossier",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({topic:sim.topic,trialType:trialType||sim.trialType||"correctionnel"}),
+  })
+  .then(r=>r.json())
+  .then(data=>{
+   if(data.error){setDossierErr(data.error.message||"Erreur inconnue");}
+   else if(data.dossier){setDossier(data.dossier as GeneratedDossier);try{localStorage.setItem(cacheKey,JSON.stringify(data.dossier));}catch{}}
+   else{setDossierErr("Réponse inattendue du serveur.");}
+  })
+  .catch(e=>setDossierErr(String(e)))
+  .finally(()=>setDossierLoading(false));
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[sim.id,sim.topic]);
 
  const PHASES:TrialPhase[]=["p1","p2","p3","p4","p5","p6","p7","p8"];
  const phaseIdx=PHASES.indexOf(phase);
@@ -8237,32 +8276,166 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     })()}
     {roomTab==="docs"&&(
      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
-      <div style={{background:col+"12",border:`1px solid ${col}25`,borderRadius:10,padding:"10px 13px"}}>
-       <p style={{color:col,fontSize:12,fontWeight:800}}>Phase : {phaseLabel(phase)}</p>
-       <p style={{color:T.textD,fontSize:11,marginTop:2}}>Documents versés au dossier — accessibles à toutes les parties.</p>
-      </div>
-      {myRole&&myRole!=="public"&&myRole!=="jure"&&(
-       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:12,display:"flex",flexDirection:"column" as const,gap:8}}>
-        <p style={{color:T.text,fontSize:12,fontWeight:800}}>Verser une pièce au dossier</p>
-        <div style={{display:"flex",gap:7}}>
-         <input value={docName} onChange={e=>setDocName(e.target.value)} placeholder="Nom du document…" style={{flex:1,padding:"7px 10px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
-         <select value={docType} onChange={e=>setDocType(e.target.value)} style={{padding:"7px 10px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}>
-          <option>Pièce</option><option>Expertise</option><option>Déclaration</option><option>Témoignage</option><option>Constat</option>
-         </select>
-        </div>
-        <button onClick={submitDoc} disabled={!docName.trim()} style={{padding:"8px",borderRadius:8,border:"none",background:docName.trim()?col:"#444",color:"#fff",fontSize:12,fontWeight:800,cursor:docName.trim()?"pointer":"default",fontFamily:"inherit"}}>Verser au dossier</button>
+      {/* ── LOADING ── */}
+      {dossierLoading&&(
+       <div style={{display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",padding:"40px 20px",gap:14}}>
+        <div style={{width:44,height:44,borderRadius:"50%",border:`3px solid ${col}30`,borderTop:`3px solid ${col}`,animation:"spin 1s linear infinite"}}/>
+        <p style={{color:T.muted,fontSize:12,fontWeight:700}}>Génération du dossier en cours…</p>
+        <p style={{color:T.textD,fontSize:10,textAlign:"center" as const}}>Gemini analyse l'affaire et prépare les pièces judiciaires.</p>
        </div>
       )}
-      {docs.map(d=>(
-       <div key={d.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10}}>
-        <div style={{width:34,height:34,borderRadius:8,background:TRIAL_ROLE_COLORS[d.by]+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="feed" s={16} c={TRIAL_ROLE_COLORS[d.by]}/></div>
-        <div style={{flex:1}}>
-         <p style={{color:T.text,fontSize:12,fontWeight:800}}>{d.name}</p>
-         <p style={{color:T.textD,fontSize:10,marginTop:1}}>{d.type} · {getRoleLabel(d.by,trialType)} · {timeFromTs(d.time)}</p>
-        </div>
-        <span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>VERSÉ</span>
+      {/* ── ERROR ── */}
+      {!dossierLoading&&dossierErr&&(
+       <div style={{background:"#EF444415",border:"1px solid #EF444440",borderRadius:10,padding:"14px",display:"flex",flexDirection:"column" as const,gap:10,alignItems:"center"}}>
+        <p style={{color:"#EF4444",fontSize:12,fontWeight:800}}>Erreur de génération</p>
+        <p style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>{dossierErr}</p>
+        <button onClick={()=>{setDossierErr(null);setDossierLoading(true);fetch("/api/generate-dossier",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:sim.topic,trialType:trialType||sim.trialType||"correctionnel"})}).then(r=>r.json()).then(data=>{if(data.dossier){setDossier(data.dossier as GeneratedDossier);try{localStorage.setItem(`nexus_dossier_${sim.id}`,JSON.stringify(data.dossier));}catch{}}else{setDossierErr(data.error?.message||"Erreur");}}).catch(e=>setDossierErr(String(e))).finally(()=>setDossierLoading(false));}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:col,color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Réessayer</button>
        </div>
-      ))}
+      )}
+      {/* ── DOSSIER CONTENT ── */}
+      {!dossierLoading&&!dossierErr&&dossier&&(()=>{
+       const pieceTypeLabel=(t:DossierPiece["type"])=>t==="pv"?"P-V":t==="expertise"?"EXPERTISE":t==="temoignage"?"TÉMOIGNAGE":t==="document"?"DOCUMENT":"DÉCLARATION";
+       const pieceTypeColor=(t:DossierPiece["type"])=>t==="pv"?"#E03535":t==="expertise"?"#7C3AED":t==="temoignage"?"#16A34A":t==="document"?"#1A5FD4":"#D97706";
+       const myRoleC=myRole?TRIAL_ROLE_COLORS[myRole]:col;
+       const isRestricted=myRole==="jure"||myRole==="public";
+       const visiblePieces=myRole?dossier.pieces.filter(p=>p.rolesAccessibles.includes(myRole!)):dossier.pieces;
+       const myPosition=myRole==="procureur"||myRole==="avocat_gen"?dossier.positionProcureur:myRole==="avocat_def"||myRole==="defendeur"?dossier.positionDefense:myRole==="partie_civile"||myRole==="avocat_pc"||myRole==="demandeur"?dossier.positionPartieCivile:null;
+       return(
+        <>
+         {/* JURY / PUBLIC RESTRICTION */}
+         {isRestricted&&(
+          <div style={{background:myRoleC+"12",border:`1.5px solid ${myRoleC}40`,borderRadius:12,padding:"16px",textAlign:"center" as const}}>
+           <p style={{fontSize:22,marginBottom:8}}>⚖️</p>
+           <p style={{color:myRoleC,fontSize:12,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6}}>{myRole==="jure"?"Juré·e":"Public"} — Accès restreint</p>
+           <p style={{color:T.textD,fontSize:12,lineHeight:1.6}}>Vous découvrez les faits uniquement pendant l'audience. Consulter le dossier à l'avance compromettrait votre impartialité.</p>
+          </div>
+         )}
+         {!isRestricted&&(
+          <>
+           {/* SECTION PROCÉDURE */}
+           <div style={{background:"#D97706"+"12",border:`1px solid #D97706"30"`,borderRadius:10,padding:"12px 14px"}}>
+            <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8}}>PROCÉDURE</p>
+            <p style={{color:T.text,fontSize:13,fontWeight:900,marginBottom:3}}>{dossier.qualification}</p>
+            <p style={{color:T.muted,fontSize:10,marginBottom:6}}>{dossier.articleCode}</p>
+            <p style={{color:T.textD,fontSize:11,marginBottom:8}}>Peines encourues : <span style={{color:T.text,fontWeight:700}}>{dossier.peinesEncourues}</span></p>
+            {dossier.aggravantes.length>0&&(
+             <div style={{display:"flex",flexWrap:"wrap" as const,gap:5}}>
+              {dossier.aggravantes.map((a,i)=>(
+               <span key={i} style={{background:"#EF444420",color:"#EF4444",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>{a}</span>
+              ))}
+             </div>
+            )}
+           </div>
+           {/* SECTION ACTEURS */}
+           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px"}}>
+             <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:5}}>PRÉVENU</p>
+             <p style={{color:T.text,fontSize:12,fontWeight:900,marginBottom:4}}>{dossier.prevenuNom}</p>
+             <p style={{color:T.textD,fontSize:10,lineHeight:1.5}}>{dossier.prevenuProfil}</p>
+            </div>
+            <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px"}}>
+             <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:5}}>VICTIME</p>
+             <p style={{color:T.text,fontSize:12,fontWeight:900,marginBottom:4}}>{dossier.victimeNom||"—"}</p>
+             <p style={{color:T.textD,fontSize:10,lineHeight:1.5}}>{dossier.victimeProfil||"Aucune victime directe identifiée."}</p>
+            </div>
+           </div>
+           {/* SECTION CHRONOLOGIE */}
+           <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px 14px"}}>
+            <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>CHRONOLOGIE DES FAITS</p>
+            {dossier.chronologie.map((e,i)=>(
+             <div key={i} style={{display:"flex",gap:10,marginBottom:i<dossier.chronologie.length-1?8:0,paddingBottom:i<dossier.chronologie.length-1?8:0,borderBottom:i<dossier.chronologie.length-1?`1px solid ${T.b1}`:"none"}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:col,marginTop:4,flexShrink:0}}/>
+              <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{e}</p>
+             </div>
+            ))}
+           </div>
+           {/* SECTION PIÈCES */}
+           <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px 14px"}}>
+            <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:4}}>PIÈCES DU DOSSIER</p>
+            <p style={{color:T.textD,fontSize:10,marginBottom:10}}>{myRole?`Pièces accessibles à ton rôle (${visiblePieces.length}/${dossier.pieces.length})`:`Toutes les pièces (${dossier.pieces.length})`}</p>
+            {visiblePieces.length===0&&<p style={{color:T.muted,fontSize:11,textAlign:"center" as const,padding:"10px 0"}}>Aucune pièce accessible à ton rôle à ce stade.</p>}
+            {visiblePieces.map((piece,i)=>{
+             const isExpanded=expandedPiece===piece.id;
+             const tc=pieceTypeColor(piece.type);
+             return(
+              <div key={piece.id} style={{marginBottom:i<visiblePieces.length-1?8:0}}>
+               <button onClick={()=>setExpandedPiece(isExpanded?null:piece.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:9,background:isExpanded?tc+"10":T.bg2,border:`1px solid ${isExpanded?tc+"50":T.b1}`,borderRadius:isExpanded?"8px 8px 0 0":8,padding:"9px 11px",cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
+                <div style={{width:26,height:26,borderRadius:6,background:tc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                 <span style={{color:tc,fontSize:10,fontWeight:900}}>#{piece.numero}</span>
+                </div>
+                <p style={{color:T.text,fontSize:11,fontWeight:700,flex:1,minWidth:0}}>{piece.titre}</p>
+                <span style={{background:tc+"20",color:tc,fontSize:8,fontWeight:900,padding:"2px 6px",borderRadius:3,flexShrink:0}}>{pieceTypeLabel(piece.type)}</span>
+                <span style={{color:T.muted,fontSize:11,flexShrink:0}}>{isExpanded?"▲":"▼"}</span>
+               </button>
+               {isExpanded&&(
+                <div style={{background:tc+"08",border:`1px solid ${tc}30`,borderTop:"none",borderRadius:"0 0 8px 8px",padding:"10px 13px"}}>
+                 <p style={{color:T.textD,fontSize:11,lineHeight:1.7,fontStyle:"italic" as const}}>{piece.contenu}</p>
+                </div>
+               )}
+              </div>
+             );
+            })}
+           </div>
+           {/* SECTION TON RÔLE */}
+           {myRole&&(myPosition||dossier.objectifs[myRole])&&(
+            <div style={{background:myRoleC+"12",border:`1.5px solid ${myRoleC}40`,borderRadius:10,padding:"12px 14px"}}>
+             <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8}}>TON RÔLE</p>
+             {myPosition&&(
+              <>
+               <p style={{color:myRoleC,fontSize:9,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:4}}>TA POSITION</p>
+               <p style={{color:T.textD,fontSize:11,lineHeight:1.6,marginBottom:10}}>{myPosition}</p>
+              </>
+             )}
+             {dossier.objectifs[myRole]&&(
+              <>
+               <p style={{color:myRoleC,fontSize:9,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:4}}>TON OBJECTIF</p>
+               <p style={{color:T.textD,fontSize:11,lineHeight:1.6}}>{dossier.objectifs[myRole]}</p>
+              </>
+             )}
+            </div>
+           )}
+          </>
+         )}
+         {/* ── SEPARATOR ── */}
+         <div style={{display:"flex",alignItems:"center",gap:10,padding:"4px 0"}}>
+          <div style={{flex:1,height:1,background:T.b1}}/>
+          <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1,whiteSpace:"nowrap" as const}}>— PIÈCES VERSÉES EN AUDIENCE —</p>
+          <div style={{flex:1,height:1,background:T.b1}}/>
+         </div>
+         {/* ── FORM VERSER PIÈCE ── */}
+         {myRole&&myRole!=="public"&&myRole!=="jure"&&(
+          <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:12,display:"flex",flexDirection:"column" as const,gap:8}}>
+           <p style={{color:T.text,fontSize:12,fontWeight:800}}>Verser une pièce au dossier</p>
+           <div style={{display:"flex",gap:7}}>
+            <input value={docName} onChange={e=>setDocName(e.target.value)} placeholder="Nom du document…" style={{flex:1,padding:"7px 10px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+            <select value={docType} onChange={e=>setDocType(e.target.value)} style={{padding:"7px 10px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}>
+             <option>Pièce</option><option>Expertise</option><option>Déclaration</option><option>Témoignage</option><option>Constat</option>
+            </select>
+           </div>
+           <button onClick={submitDoc} disabled={!docName.trim()} style={{padding:"8px",borderRadius:8,border:"none",background:docName.trim()?col:"#444",color:"#fff",fontSize:12,fontWeight:800,cursor:docName.trim()?"pointer":"default",fontFamily:"inherit"}}>Verser au dossier</button>
+          </div>
+         )}
+         {/* ── DOCS LIST ── */}
+         {docs.map(d=>(
+          <div key={d.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10}}>
+           <div style={{width:34,height:34,borderRadius:8,background:TRIAL_ROLE_COLORS[d.by]+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="feed" s={16} c={TRIAL_ROLE_COLORS[d.by]}/></div>
+           <div style={{flex:1}}>
+            <p style={{color:T.text,fontSize:12,fontWeight:800}}>{d.name}</p>
+            <p style={{color:T.textD,fontSize:10,marginTop:1}}>{d.type} · {getRoleLabel(d.by,trialType)} · {timeFromTs(d.time)}</p>
+           </div>
+           <span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>VERSÉ</span>
+          </div>
+         ))}
+        </>
+       );
+      })()}
+      {/* ── EMPTY STATE WHEN NO DOSSIER AND NOT LOADING ── */}
+      {!dossierLoading&&!dossierErr&&!dossier&&(
+       <div style={{background:col+"12",border:`1px solid ${col}25`,borderRadius:10,padding:"10px 13px"}}>
+        <p style={{color:col,fontSize:12,fontWeight:800}}>Phase : {phaseLabel(phase)}</p>
+        <p style={{color:T.textD,fontSize:11,marginTop:2}}>Documents versés au dossier — accessibles à toutes les parties.</p>
+       </div>
+      )}
      </div>
     )}
     {roomTab==="script"&&(
