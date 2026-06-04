@@ -6943,6 +6943,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [myCountry,setMyCountry]=useState<{id:string;flag:string;country:string}|null>(hasPremium?null:randomCountry);
  const [countrySearch,setCountrySearch]=useState("");
  const [tab,setTab]=useState<"vue"|"dossier"|"file"|"delegues"|"script"|"procedure">("vue");
+ const [scriptPhase,setScriptPhase]=useState<TrialPhase|null>(null);
  type Msg={id:number;user:string;flag:string;text:string;time:number;system?:boolean;hasFloor?:boolean};
  const [msgs,setMsgs]=useState<Msg[]>([
   {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance est ouverte. Sujet : « ${sim.topic} ». Chaque délégation dispose de 2 à 5 minutes. Levez la main pour demander la parole.`,time:Date.now()-900000,system:true},
@@ -7453,32 +7454,63 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     {tab==="script"&&<TranscriptView/>}
     {tab==="procedure"&&(
      <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
-      <div style={{display:"flex",flexDirection:"column" as const,gap:10}}>
-       <div style={{background:col+"12",border:`1px solid ${col}30`,borderRadius:12,padding:"12px 14px"}}>
-        <p style={{color:col,fontSize:11,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const,marginBottom:3}}>Simulation ONU · Comment ça marche</p>
-        <p style={{color:T.textD,fontSize:12,lineHeight:1.5}}>Tu représentes un pays. Tu t'exprimes au nom de ta délégation selon les règles de procédure onusienne.</p>
-       </div>
-       {[
-        {step:"1",who:"Président de séance",action:"Ouvre la session et lit la résolution en débat. Écoute son discours d'ouverture.",col:"#8B4513"},
-        {step:"2",who:"Liste des orateurs",action:"Chaque pays peut s'inscrire pour prendre la parole. Utilise le bouton micro → tu rejoins la file d'attente.",col:"#1A5FD4"},
-        {step:"3",who:"Ton tour de parole",action:"3 minutes maximum. Expose la position de ton pays sur la résolution. Soit concret et diplomatique.",col:col},
-        {step:"4",who:"Droits de réponse",action:"Après l'intervention d'un autre pays, tu peux demander un droit de réponse (30 sec). Réfute ou clarifie.",col:"#7C3AED"},
-        {step:"5",who:"Déclarations d'explication de vote",action:"Avant le vote final, chaque pays explique sa position et son intention de vote.",col:"#D97706"},
-        {step:"6",who:"Vote sur la résolution",action:"Pour / Contre / Abstention. Le résultat est affiché en temps réel. Ton vote reflète la politique de ton pays.",col:"#16A34A"},
-       ].map(s=>(
-        <div key={s.step} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-         <div style={{width:26,height:26,borderRadius:"50%",background:s.col+"20",border:`1.5px solid ${s.col}50`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <span style={{color:s.col,fontSize:10,fontWeight:900}}>{s.step}</span>
-         </div>
-         <div style={{flex:1,background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"9px 12px"}}>
-          <p style={{color:s.col,fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:.5,marginBottom:3}}>{s.who}</p>
-          <p style={{color:T.text,fontSize:12,lineHeight:1.5}}>{s.action}</p>
+      <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
+       {myCountry&&(
+        <div style={{background:col+"15",border:`1.5px solid ${col}50`,borderRadius:12,padding:"10px 14px",display:"flex",gap:10,alignItems:"center"}}>
+         <span style={{fontSize:28,flexShrink:0}}>{myCountry.flag}</span>
+         <div>
+          <p style={{color:col,fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1}}>Ta délégation</p>
+          <p style={{color:T.text,fontSize:14,fontWeight:800}}>{myCountry.country}</p>
          </div>
         </div>
-       ))}
-       <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px"}}>
+       )}
+       <p style={{color:T.muted,fontSize:10,fontWeight:700,textAlign:"center" as const}}>Appuie sur une étape pour voir le script exact</p>
+       {[
+        {id:"1",label:"Ouverture de session",col:"#8B4513",tip:"Écoute attentivement — le Président pose le cadre du débat.",lines:["(Tu n'as pas la parole à cette étape. Tu écoutes debout ou assis selon l'usage de ta simulation.)","(Le Président de séance ouvre la session et présente la résolution soumise au débat.)"]},
+        {id:"2",label:"Inscription sur la liste des orateurs",col:"#1A5FD4",tip:"C'est maintenant que tu lèves la main pour prendre la parole — fais-le tôt pour ne pas attendre.",lines:["Monsieur le Président, la délégation de "+((myCountry?.country)||"[ton pays]")+" demande à s'inscrire sur la liste des orateurs.","(Appuie sur le bouton micro pour rejoindre la file d'attente.)"]},
+        {id:"3",label:"Ton discours de délégation",col:col,tip:"3 minutes maximum. Structure : position → 2 arguments → proposition. Parle à la 3e personne.",lines:["Monsieur le Président,","La délégation de "+((myCountry?.country)||"[ton pays]")+" tient à exprimer sa position sur la résolution soumise à cette assemblée.","[ARGUMENT 1] Notre délégation rappelle que [fait géopolitique pertinent lié à votre pays].","[ARGUMENT 2] De plus, "+((myCountry?.country)||"[ton pays]")+" considère que [position sur la résolution].","En conséquence, notre délégation [soutient/s'oppose à/appelle à l'amendement de] cette résolution.","Monsieur le Président, je vous remercie."]},
+        {id:"4",label:"Droit de réponse",col:"#7C3AED",tip:"30 secondes max. Très court — réfute un point précis, ne recommence pas ton discours.",lines:["Monsieur le Président, la délégation de "+((myCountry?.country)||"[ton pays]")+" demande un droit de réponse.","(Attendre l'accord du Président)","La délégation de "+((myCountry?.country)||"[ton pays]")+" tient à rectifier les propos de la délégation de [pays]. Il est inexact d'affirmer que [point contesté]. La réalité est que [contre-argument factuel en 1 phrase].","Je vous remercie, Monsieur le Président."]},
+        {id:"5",label:"Explication de vote",col:"#D97706",tip:"Avant le vote. Explique pourquoi tu votes Pour, Contre, ou tu t'abstiens.",lines:["Monsieur le Président,","Avant le vote, la délégation de "+((myCountry?.country)||"[ton pays]")+" souhaite expliquer sa position.","[Si POUR] Notre délégation votera en faveur de cette résolution car elle répond aux intérêts légitimes de [ton pays] et de la communauté internationale.","[Si CONTRE] Notre délégation ne peut soutenir cette résolution dans sa rédaction actuelle car [raison précise fondée sur la doctrine de ton pays].","[Si ABSTENTION] Notre délégation s'abstiendra, considérant que cette résolution ne prend pas suffisamment en compte [préoccupation spécifique].","Je vous remercie."]},
+        {id:"6",label:"Vote sur la résolution",col:"#16A34A",tip:"POUR / CONTRE / ABSTENTION. Ton vote doit refléter la doctrine officielle de ton pays.",lines:["(Tu votes en appuyant sur le bouton correspondant.)","[POUR] La délégation de "+((myCountry?.country)||"[ton pays]")+" vote POUR.","[CONTRE] La délégation de "+((myCountry?.country)||"[ton pays]")+" vote CONTRE.","[ABSTENTION] La délégation de "+((myCountry?.country)||"[ton pays]")+" s'abstient."]},
+       ].map((s,si)=>{
+        const isOpen=scriptPhase===(("s"+s.id) as TrialPhase);
+        return(
+         <div key={s.id}>
+          <button onClick={()=>setScriptPhase(isOpen?null:("s"+s.id) as TrialPhase)} style={{width:"100%",display:"flex",gap:10,alignItems:"center",background:isOpen?s.col+"12":T.card,border:`1.5px solid ${isOpen?s.col:T.b1}`,borderRadius:isOpen?"12px 12px 0 0":12,padding:"10px 12px",cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
+           <div style={{width:28,height:28,borderRadius:"50%",background:s.col+"20",border:`2px solid ${s.col}50`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <span style={{color:s.col,fontSize:10,fontWeight:900}}>{s.id}</span>
+           </div>
+           <div style={{flex:1}}>
+            <p style={{color:T.text,fontSize:11,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:.3}}>{s.label}</p>
+           </div>
+           <span style={{color:T.muted,fontSize:12}}>{isOpen?"▲":"▼"}</span>
+          </button>
+          {isOpen&&(
+           <div style={{background:T.bg,border:`1.5px solid ${s.col}`,borderTop:"none",borderRadius:"0 0 12px 12px",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
+            <div style={{background:s.col+"12",border:`1px solid ${s.col}40`,borderRadius:10,padding:"10px 12px"}}>
+             <p style={{color:s.col,fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6}}>🎤 Ce que tu dis</p>
+             {s.lines.map((line,li)=>(
+              <div key={li} style={{marginBottom:li<s.lines.length-1?8:0}}>
+               {line.startsWith("(")||line.startsWith("[")||line.startsWith("→")?(
+                <p style={{color:T.muted,fontSize:11,fontStyle:"italic" as const,lineHeight:1.5}}>{line}</p>
+               ):(
+                <p style={{color:T.text,fontSize:13,lineHeight:1.6,fontWeight:500}}>« {line} »</p>
+               )}
+              </div>
+             ))}
+            </div>
+            <div style={{background:"#D97706"+"12",borderRadius:8,padding:"8px 11px",display:"flex",gap:8,alignItems:"flex-start"}}>
+             <span style={{fontSize:14,flexShrink:0}}>💡</span>
+             <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{s.tip}</p>
+            </div>
+           </div>
+          )}
+         </div>
+        );
+       })}
+       <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px",marginTop:2}}>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,marginBottom:4}}>PROTOCOLE DIPLOMATIQUE</p>
-        <p style={{color:T.textD,fontSize:11,lineHeight:1.6}}>• Parle à la 3e personne : "Ma délégation estime que…"{"\n"}• Adresse-toi au Président de séance, pas aux autres pays directement{"\n"}• Reste dans la position officielle de ton pays{"\n"}• Le langage est formel : pas d'émotion, que des arguments factuels</p>
+        <p style={{color:T.textD,fontSize:11,lineHeight:1.7}}>• Parle toujours à la 3e personne : "Ma délégation estime que…"{"\n"}• Adresse-toi au Président de séance, jamais aux autres pays directement{"\n"}• Reste dans la position officielle de ton pays{"\n"}• Le langage est formel : remplace "je veux" par "notre délégation souhaite"</p>
        </div>
       </div>
      </div>
@@ -7546,12 +7578,157 @@ const TRIAL_ROLE_LABELS:Partial<Record<TrialRole,string>>={};
 const TRIAL_PHASE_LABELS:Partial<Record<TrialPhase,string>>={};
 const TRIAL_PHASE_DURATIONS:Partial<Record<TrialPhase,string>>={};
 
+type RoleScript={lines:{text:string;stage?:boolean}[];tip:string};
+type TrialScripts=Record<TrialType,Partial<Record<TrialPhase,Partial<Record<TrialRole,RoleScript>>>>>;
+
+const TRIAL_SCRIPTS:TrialScripts={
+ correctionnel:{
+  p1:{
+   president:{lines:[{text:"Levez-vous."},{text:"L'audience est ouverte."},{text:"Greffière, veuillez appeler l'affaire."},{text:"Monsieur Martin, veuillez vous lever. Déclinez votre identité."},{text:"Avez-vous un conseil ?"},{text:"Veuillez vous asseoir."}],tip:"Tu es debout, à l'estrade. Ton ton est grave et solennel. Tu parles lentement."},
+   procureur:{lines:[{text:"Présent pour le ministère public, Monsieur le Président.",stage:false}],tip:"Tu te lèves brièvement pour confirmer ta présence, puis tu te rassieds."},
+   prevenu:{lines:[{text:"Je m'appelle [Prénom] Martin, né le [date] à [ville], demeurant [adresse]."},{text:"Oui, Monsieur le Président, je suis assisté de Maître Laurent."}],tip:"Reste debout jusqu'à ce qu'on te dise de t'asseoir. Parle clairement."},
+   avocat_def:{lines:[{text:"Maître Laurent pour la défense, Monsieur le Président."}],tip:"Tu te lèves, tu énonces ton nom et ta fonction, tu te rassieds."},
+   public:{lines:[{text:"(Tu n'as pas la parole — tu observes en silence)",stage:true}],tip:"Aucune réaction visible n'est tolérée dans le public."},
+  },
+  p2:{
+   president:{lines:[{text:"Monsieur le Procureur, vous avez la parole."},{text:"Avez-vous compris les faits qui vous sont reprochés, Monsieur Martin ?"}],tip:"Tu accordes la parole au procureur puis tu questionnes le prévenu après la lecture."},
+   procureur:{lines:[{text:"Monsieur le Président,"},{text:"Il est reproché à M. Martin d'avoir, en qualité d'élu local, reçu des avantages en échange de marchés publics."},{text:"Ces faits constituent le délit de corruption passive, prévu à l'article 432-11 du Code pénal."}],tip:"Tu lis les charges clairement, sans émotion. C'est un acte formel, pas un réquisitoire."},
+   prevenu:{lines:[{text:"Oui, Monsieur le Président, j'ai compris."},{text:"Je conteste formellement ces faits."}],tip:"Court. Tu confirmes avoir entendu. La défense vient plus tard."},
+   avocat_def:{lines:[{text:"(Tu prends des notes — pas encore ta parole)",stage:true}],tip:"Écoute chaque mot du procureur pour préparer ta contre-argumentation."},
+  },
+  p3:{
+   president:{lines:[{text:"Monsieur Martin, vous n'êtes pas tenu de répondre à mes questions."},{text:"Reconnaissez-vous les faits ?"},{text:"Monsieur le Procureur, vous avez la parole."},{text:"Maître, souhaitez-vous intervenir ?"}],tip:"Tu interroges avec neutralité totale. Tu accordes la parole à chaque partie."},
+   prevenu:{lines:[{text:"Non, Monsieur le Président, je ne reconnais pas ces faits."},{text:"Je n'ai jamais reçu de contrepartie en échange de mes décisions."},{text:"Je souhaite consulter mon conseil avant de répondre à cette question."}],tip:"Tu peux refuser de répondre à n'importe quelle question. C'est ton droit absolu."},
+   procureur:{lines:[{text:"Monsieur le Président, j'ai une question pour le prévenu."},{text:"Monsieur Martin, comment expliquez-vous ce virement de 45 000 euros sur votre compte, huit jours après l'attribution du marché ?"}],tip:"Attends la permission du Président avant de prendre la parole."},
+   avocat_def:{lines:[{text:"Monsieur le Président, je souhaite intervenir."},{text:"Mon client a fourni toutes les explications nécessaires. Les pièces justificatives seront versées en phase d'expertise."}],tip:"Tu protèges ton client. Interviens dès que le procureur surenchérit ou dénature les faits."},
+  },
+  p4:{
+   president:{lines:[{text:"À la barre !"},{text:"Monsieur [Nom], jurez-vous de dire la vérité, toute la vérité, rien que la vérité ?"},{text:"Levez la main droite et dites : Je le jure."},{text:"Maître, vous avez la parole pour interroger le témoin."},{text:"Monsieur le Procureur, vos questions."}],tip:"Tu appelles le témoin, tu reçois son serment, puis tu accordes la parole aux avocats."},
+   temoin:{lines:[{text:"Je le jure."},{text:"(En réponse) J'affirme que [fait que tu as personnellement constaté]."},{text:"Je précise que je n'ai pas personnellement assisté à [ce que tu n'as pas vu]."}],tip:"Sous serment. Ne dis que ce que tu as vu ou entendu directement. Ne spécule pas."},
+   avocat_def:{lines:[{text:"Monsieur le Président, j'ai des questions pour ce témoin."},{text:"Monsieur, avez-vous personnellement constaté un acte de corruption ? Oui ou non ?"},{text:"N'est-il pas exact que vous n'étiez pas présent au moment des faits ?"}],tip:"Pose des questions fermées pour démontrer l'absence de preuve directe."},
+   procureur:{lines:[{text:"Monsieur le Président, j'ai également des questions."},{text:"Monsieur, avez-vous eu connaissance de réunions entre M. Martin et BTP Dubois en dehors du cadre officiel ?"}],tip:"Cherche à établir un faisceau d'indices qui relient le prévenu aux faits."},
+  },
+  p5:{
+   procureur:{lines:[{text:"Monsieur le Président, je verse au dossier la pièce numéro 3."},{text:"Il s'agit du relevé bancaire de M. Martin, faisant apparaître un virement de 45 000 euros le 12 mars, huit jours après l'attribution du marché."}],tip:"Numérote chaque pièce. Explique en une phrase ce qu'elle prouve."},
+   avocat_def:{lines:[{text:"Monsieur le Président, la défense conteste la valeur probante de cette pièce."},{text:"Je verse au dossier sous la cote D-1 un acte notarié établissant que ce virement correspond à un héritage familial."}],tip:"Tu déposes tes pièces pour réfuter celles du parquet. Cote-les D-1, D-2, etc."},
+   president:{lines:[{text:"La pièce est enregistrée au dossier."},{text:"Avez-vous d'autres éléments à verser ?"}],tip:"Tu supervises le dépôt. Le greffier enregistre chaque pièce."},
+  },
+  p6:{
+   president:{lines:[{text:"Monsieur le Procureur, vos réquisitions."},{text:"(Après) Maître, la parole est à la défense pour ses plaidoiries."}],tip:"Tu présides. Tu ne commentes pas les réquisitions du parquet."},
+   procureur:{lines:[{text:"Monsieur le Président, Madame, Monsieur,"},{text:"Les faits de corruption passive sont établis avec certitude."},{text:"En considération de la gravité des faits et de l'absence de tout regret exprimé,"},{text:"le ministère public requiert trois ans d'emprisonnement dont dix-huit mois avec sursis,"},{text:"cinquante mille euros d'amende, et cinq ans d'inéligibilité."},{text:"Je vous remercie."}],tip:"Tu es debout, face au tribunal. Ton ton est ferme. Marque des pauses entre les réquisitions."},
+   prevenu:{lines:[{text:"(Tu écoutes debout, sans réagir)",stage:true}],tip:"Maîtrise ton expression. Ta réaction est observée par les juges."},
+  },
+  p7:{
+   president:{lines:[{text:"Maître, vous avez la parole."},{text:"Monsieur Martin, souhaitez-vous avoir le dernier mot ?"},{text:"(Après) Le tribunal va délibérer. L'audience est suspendue."}],tip:"Tu donnes la parole à la défense, puis le dernier mot au prévenu, puis tu suspends."},
+   avocat_def:{lines:[{text:"Monsieur le Président, Madame, Monsieur,"},{text:"Aucune preuve directe de corruption n'a été apportée."},{text:"Aucun témoin. Aucun enregistrement. Aucun aveu."},{text:"Le doute doit profiter à l'accusé."},{text:"Je vous demande d'acquitter Monsieur Martin."},{text:"Merci."}],tip:"Parle debout, regarde les juges. Marque des pauses sur les mots forts."},
+   prevenu:{lines:[{text:"Monsieur le Président, je souhaite avoir le dernier mot."},{text:"Je n'ai commis aucun acte de corruption."},{text:"Je vous demande, en votre âme et conscience, de me renvoyer des fins de la poursuite."}],tip:"Le dernier mot t'appartient toujours. Sois sobre et sincère."},
+  },
+  p8:{
+   president:{lines:[{text:"Levez-vous."},{text:"Le tribunal a délibéré."},{text:"Par ces motifs, le tribunal correctionnel, statuant publiquement et contradictoirement :"},{text:"[Coupable] Déclare Monsieur Martin coupable. Le condamne à deux ans d'emprisonnement avec sursis et trente mille euros d'amende."},{text:"[Relaxe] Déclare Monsieur Martin non coupable. Le renvoie des fins de la poursuite."},{text:"L'audience est levée."},{text:"Veuillez vous asseoir."}],tip:"Lis lentement. C'est le moment le plus solennel. Articule chaque mot du dispositif."},
+   prevenu:{lines:[{text:"(Tu écoutes debout, sans interrompre)",stage:true},{text:"[Si relaxe] Merci, Monsieur le Président."},{text:"[Si condamné] (Tu gardes le silence — tu as 10 jours pour faire appel)",stage:true}],tip:"Reste digne quelle que soit la décision."},
+   avocat_def:{lines:[{text:"[Si condamné] Monsieur le Président, mon client déclare vouloir interjeter appel."},{text:"[Si relaxe] La défense prend acte de cette décision."}],tip:"Tu peux signifier l'appel immédiatement à l'audience."},
+   procureur:{lines:[{text:"[Si relaxe] Le parquet se réserve le droit de faire appel."},{text:"[Si condamné] Le parquet prend acte du jugement."}],tip:"Le parquet aussi peut faire appel si la peine est insuffisante."},
+  },
+ },
+ assises:{
+  p1:{
+   president:{lines:[{text:"Levez-vous."},{text:"La Cour d'assises est constituée. L'audience est ouverte."},{text:"Monsieur Martin, déclinez votre état civil."},{text:"Avez-vous un avocat pour vous assister ?"},{text:"Veuillez vous asseoir."}],tip:"La Cour d'assises est plus solennelle que le correctionnel. Les crimes jugés sont les plus graves."},
+   assesseur:{lines:[{text:"(Tu siège aux côtés du Président. Tu n'interviens pas à cette phase)",stage:true}],tip:"Tu poseras des questions aux moments opportuns désignés par le Président."},
+   avocat_gen:{lines:[{text:"Présent pour le ministère public, Monsieur le Président."}],tip:"Court. Tu te lèves, tu confirmes ta présence."},
+   prevenu:{lines:[{text:"Je m'appelle [Prénom] Martin, né le [date] à [ville], demeurant [adresse]."},{text:"Oui, Monsieur le Président, Maître Laurent assure ma défense."}],tip:"C'est une Cour d'assises — les peines peuvent être très lourdes. Reste calme et digne."},
+   jure:{lines:[{text:"(Tu écoutes l'ouverture. Tu ne prends pas la parole)",stage:true}],tip:"Tu seras interrogé sur ta capacité à juger sans parti-pris lors de la constitution du jury."},
+  },
+  p2:{
+   avocat_gen:{lines:[{text:"Monsieur le Président, Mesdames et Messieurs les jurés,"},{text:"L'accusation reproche à Monsieur Martin d'avoir commis [le crime] le [date]."},{text:"Ces faits constituent le crime de [qualification] prévu à l'article [X] du Code pénal,"},{text:"puni de [X] années de réclusion criminelle."},{text:"L'accusation apportera la preuve de ces faits au cours des débats."}],tip:"Tu t'adresses aussi aux jurés — parle simplement, sans jargon technique."},
+   president:{lines:[{text:"Monsieur Martin, avez-vous compris les faits qui vous sont reprochés ?"}],tip:"Formule obligatoire. L'accusé doit confirmer avoir compris l'acte d'accusation."},
+   prevenu:{lines:[{text:"Oui, Monsieur le Président."},{text:"Je conteste formellement et catégoriquement ces accusations."}],tip:"Court. La défense vient plus tard."},
+   jure:{lines:[{text:"(Tu écoutes attentivement l'acte d'accusation)",stage:true}],tip:"Mémorise les faits — tu délibéreras sur leur réalité."},
+  },
+  p3:{
+   president:{lines:[{text:"Monsieur Martin, vous avez le droit absolu de garder le silence."},{text:"Reconnaissez-vous les faits ?"},{text:"Monsieur l'Avocat général, vos questions."},{text:"Maître, vous avez la parole."}],tip:"Tu maintiens la neutralité totale. Tu es le garant du procès équitable."},
+   prevenu:{lines:[{text:"Monsieur le Président, Mesdames et Messieurs les jurés,"},{text:"Je nie catégoriquement les faits qui me sont reprochés."},{text:"Je n'étais pas présent sur les lieux au moment des faits."},{text:"Je demande à la Cour de respecter ma présomption d'innocence."}],tip:"Tu t'adresses aussi aux jurés — ce sont eux qui décident. Garde ton calme."},
+   avocat_gen:{lines:[{text:"Monsieur le Président, j'ai une question pour l'accusé."},{text:"Monsieur Martin, votre alibi repose sur un seul témoignage. Comment expliquez-vous que votre téléphone ait borné à 800 mètres de la scène à l'heure des faits ?"}],tip:"Attends la permission du Président. Pose des questions précises et factuelles."},
+   avocat_def:{lines:[{text:"Monsieur le Président, je souhaite rectifier."},{text:"Les éléments invoqués par le parquet seront contestés en phase d'expertise."}],tip:"Interviens pour protéger ton client dès que nécessaire."},
+   jure:{lines:[{text:"(Tu écoutes. Tu peux prendre des notes)",stage:true},{text:"Monsieur le Président, je souhaite poser une question à l'accusé : [ta question]."}],tip:"En Cour d'assises, les jurés peuvent poser des questions via le Président."},
+  },
+  p4:{
+   president:{lines:[{text:"À la barre !"},{text:"Monsieur [Nom], jurez-vous de dire la vérité, toute la vérité, rien que la vérité ?"},{text:"Levez la main droite et dites : Je le jure."},{text:"Monsieur l'Avocat général, vos questions."},{text:"Maître, vos questions."}],tip:"Le serment en assises est particulièrement solennel — un faux témoignage est un crime."},
+   temoin:{lines:[{text:"Je le jure."},{text:"J'affirme que [fait que tu as personnellement constaté]."},{text:"Je n'ai pas personnellement assisté à [ce que tu n'as pas vu]."}],tip:"Ne dis que ce que tu as vu ou entendu directement. Sous serment en Cour d'assises."},
+   avocat_gen:{lines:[{text:"Monsieur le Président, j'ai des questions."},{text:"Monsieur, lors de votre déposition en instruction, vous avez déclaré [X]. Confirmez-vous ces déclarations aujourd'hui ?"}],tip:"Tu peux confronter le témoin à ses déclarations d'instruction si elles diffèrent."},
+   avocat_def:{lines:[{text:"Monsieur le Président, j'ai des questions."},{text:"Monsieur, avez-vous personnellement vu l'accusé sur les lieux ? Oui ou non ?"},{text:"N'est-il pas exact que votre déposition initiale différait de ce que vous venez de dire ?"}],tip:"Cherche les contradictions entre les déclarations actuelles et celles de l'instruction."},
+   jure:{lines:[{text:"Monsieur le Président, je souhaite poser une question au témoin : [ta question factuelle]."}],tip:"Pose des questions qui t'aident à former ta conviction personnelle."},
+  },
+  p5:{
+   avocat_gen:{lines:[{text:"Monsieur le Président, je verse au dossier la pièce numéro [X]."},{text:"Il s'agit de [description précise], qui établit [ce qu'elle prouve]."}],tip:"Présente chaque pièce clairement. Explique en une phrase ce qu'elle démontre."},
+   avocat_def:{lines:[{text:"Monsieur le Président, la défense conteste les conclusions de cette expertise."},{text:"Je verse une contre-expertise sous la cote D-[X], qui démontre que [conclusion contradictoire]."}],tip:"Tu as le droit de produire ta propre expertise. C'est souvent déterminant."},
+   jure:{lines:[{text:"(Tu prends des notes sur les éléments matériels)",stage:true}],tip:"Ces pièces seront au cœur de ton délibéré."},
+  },
+  p6:{
+   avocat_gen:{lines:[{text:"Monsieur le Président, Mesdames et Messieurs les jurés,"},{text:"Les faits sont établis. Les expertises, les témoignages et les preuves matérielles convergent."},{text:"En considération de la gravité exceptionnelle des faits,"},{text:"le ministère public requiert la réclusion criminelle à [X] années."},{text:"Je vous remercie."}],tip:"Tu t'adresses en priorité aux jurés. Parle simplement — ce sont des citoyens ordinaires."},
+   president:{lines:[{text:"(Tu écoutes sans intervenir)"},{text:"(Après) La parole est à la défense."}],tip:"Tu ne commentes pas les réquisitions. Tu passes la parole à la défense."},
+   jure:{lines:[{text:"(Tu écoutes la peine demandée par le parquet)",stage:true}],tip:"Mémorise la peine requise — tu en délibéreras."},
+  },
+  p7:{
+   avocat_def:{lines:[{text:"Monsieur le Président, Mesdames et Messieurs les jurés,"},{text:"Vous allez délibérer de la liberté d'un homme."},{text:"Les preuves présentées ne constituent pas une certitude — elles laissent subsister un doute."},{text:"Et le doute doit profiter à l'accusé. C'est le fondement de notre droit."},{text:"Je vous demande d'acquitter Monsieur Martin."},{text:"Merci."}],tip:"Adresse-toi aux jurés. La plaidoirie en assises est plus humaine qu'en correctionnel."},
+   prevenu:{lines:[{text:"Monsieur le Président, Mesdames et Messieurs les jurés,"},{text:"Je suis innocent."},{text:"Je n'ai pas commis ce crime. Je vous en fais le serment."},{text:"Je vous fais confiance pour rendre la justice."}],tip:"Le dernier mot de l'accusé est un moment fort. Regarde les jurés dans les yeux."},
+   jure:{lines:[{text:"(Tu écoutes la plaidoirie. Tu prends tes dernières notes avant le délibéré)",stage:true}],tip:"Reste objectif. Ta décision doit être fondée sur les preuves, pas les émotions."},
+  },
+  p8:{
+   president:{lines:[{text:"Levez-vous."},{text:"La Cour et le jury ont délibéré."},{text:"Sur la question de culpabilité : [Oui/Non], à la majorité."},{text:"[Coupable] La Cour condamne Monsieur Martin à [X] années de réclusion criminelle."},{text:"[Acquitté] La Cour acquitte Monsieur Martin et ordonne sa libération immédiate."},{text:"L'audience est levée."},{text:"Veuillez vous asseoir."}],tip:"Tu lis le verdict lentement. C'est l'acte le plus solennel du droit pénal français."},
+   prevenu:{lines:[{text:"(Tu écoutes debout, sans interrompre)",stage:true},{text:"[Si acquitté] Merci, Monsieur le Président."},{text:"[Si condamné] (Tu gardes le silence — pourvoi en cassation sous 10 jours)",stage:true}],tip:"En assises, pas d'appel ordinaire — seulement un pourvoi en cassation."},
+   jure:{lines:[{text:"(Ta mission est accomplie. Tu ne peux pas divulguer le contenu des délibérations)",stage:true}],tip:"Le secret du délibéré est une obligation légale permanente."},
+  },
+ },
+ civil:{
+  p1:{
+   president:{lines:[{text:"Levez-vous."},{text:"L'audience est ouverte."},{text:"Greffière, veuillez appeler l'affaire."},{text:"Monsieur Bernard, vous êtes le demandeur. Confirmez votre identité."},{text:"Monsieur Dupont, vous êtes le défendeur. Êtes-vous assisté ?"},{text:"Veuillez vous asseoir."}],tip:"Le ton au civil est moins dramatique qu'au pénal — c'est un litige entre particuliers."},
+   demandeur:{lines:[{text:"Oui, Monsieur le Président. Je suis Bernard [Prénom], demandeur."},{text:"Je suis ici pour obtenir [réparation / exécution du contrat / remboursement] de la part de Monsieur Dupont."}],tip:"Court. L'exposé complet vient en phase 2."},
+   defendeur:{lines:[{text:"Oui, Monsieur le Président. Je suis assisté de Maître Laurent."},{text:"Je conteste la demande de Monsieur Bernard dans son intégralité."}],tip:"Court. Ta défense se développe en phase 3."},
+  },
+  p2:{
+   demandeur:{lines:[{text:"Monsieur le Président,"},{text:"Le [date], j'ai conclu avec Monsieur Dupont un contrat portant sur [objet] pour [X] euros."},{text:"Monsieur Dupont n'a pas exécuté ses obligations : [description du manquement]."},{text:"Je subis un préjudice direct de [X] euros, dont je demande réparation."},{text:"Je verse au dossier les pièces P-1 à P-[X] : le contrat, les mises en demeure, et le justificatif de préjudice."}],tip:"Expose les faits chronologiquement. Montre que tu as tenté de résoudre le litige à l'amiable."},
+   avocat_pc:{lines:[{text:"Monsieur le Président, puis-je ajouter une précision ?"},{text:"[Précision factuelle importante pour compléter l'exposé de ton client]"}],tip:"Tu soutiens et complètes l'exposé de ton client si nécessaire."},
+   president:{lines:[{text:"Maître, souhaitez-vous répondre immédiatement ou en phase 3 ?"},{text:"Bien. Monsieur Dupont, vous aurez la parole ensuite."}],tip:"Tu gères la parole et veilles à l'équilibre des débats."},
+  },
+  p3:{
+   defendeur:{lines:[{text:"Monsieur le Président,"},{text:"Monsieur Bernard présente les faits de manière inexacte."},{text:"J'ai exécuté mes obligations dans les délais convenus. La preuve en est [argument]."},{text:"Sa demande est infondée et je vous demande de la rejeter intégralement."}],tip:"Contredis point par point les affirmations du demandeur. Appuie-toi sur tes pièces."},
+   avocat_def:{lines:[{text:"Monsieur le Président, le demandeur ne rapporte pas la preuve du manquement allégué."},{text:"Je verse au dossier les pièces D-1 à D-[X] : accusé de réception, compte-rendu de livraison, correspondances."}],tip:"La charge de la preuve incombe au demandeur. Montre que cette preuve fait défaut."},
+   president:{lines:[{text:"Avez-vous d'autres observations, Maître ?"},{text:"Bien. Nous allons entendre les témoins."}],tip:"Tu passes à la phase suivante une fois les exposés terminés."},
+  },
+  p4:{
+   president:{lines:[{text:"À la barre !"},{text:"Monsieur [Nom], jurez-vous de dire la vérité, toute la vérité, rien que la vérité ?"},{text:"Levez la main droite et dites : Je le jure."},{text:"Maître, vos questions."},{text:"Monsieur le Président... (accorder la parole à l'autre partie)"}],tip:"Même procédure de serment qu'au pénal."},
+   temoin:{lines:[{text:"Je le jure."},{text:"J'ai été présent lors de [fait] et je peux confirmer que [ce que tu as constaté]."},{text:"Je précise que [nuance ou limite de ton témoignage]."}],tip:"Ne dis que ce que tu as personnellement constaté. Ne te prononce pas sur ce que tu n'as pas vu."},
+   avocat_pc:{lines:[{text:"Monsieur le Président, j'ai des questions."},{text:"Monsieur, avez-vous vous-même constaté la livraison, ou en avez-vous seulement été informé ?"}],tip:"Tes questions visent à établir la réalité du manquement."},
+   avocat_def:{lines:[{text:"Monsieur le Président, j'ai également des questions."},{text:"Monsieur, n'est-il pas exact que vous n'étiez pas présent au moment précis de la livraison ?"}],tip:"Tu cherches à limiter la portée du témoignage adverse."},
+  },
+  p5:{
+   avocat_pc:{lines:[{text:"Monsieur le Président, je verse la pièce P-[X] : le rapport d'expertise évaluant le préjudice de Monsieur Bernard à [X] euros."}],tip:"L'expertise quantifie le préjudice — elle est souvent déterminante pour les dommages et intérêts."},
+   avocat_def:{lines:[{text:"Monsieur le Président, la défense conteste cette expertise."},{text:"Je produis une contre-expertise sous la cote D-[X], qui démontre que [conclusion contradictoire]."}],tip:"Tu as le droit de produire ta propre expertise en réponse."},
+   president:{lines:[{text:"La pièce est enregistrée."},{text:"Y a-t-il d'autres éléments à verser avant les plaidoiries ?"}],tip:"Tu supervises le dépôt. Ensuite viennent les plaidoiries."},
+  },
+  p6:{
+   avocat_pc:{lines:[{text:"Monsieur le Président,"},{text:"Monsieur Bernard a subi un préjudice réel, documenté, directement imputable à Monsieur Dupont."},{text:"Je sollicite la condamnation de Monsieur Dupont à payer [X] euros en principal,"},{text:"assortis des intérêts légaux et de [X] euros au titre de l'article 700."},{text:"Je vous remercie."}],tip:"Structure ta plaidoirie : les faits, le droit applicable, la demande précise chiffrée."},
+   president:{lines:[{text:"(Tu écoutes. Après) Maître pour la défense, vous avez la parole."}],tip:"Tu gères l'ordre des plaidoiries."},
+  },
+  p7:{
+   avocat_def:{lines:[{text:"Monsieur le Président,"},{text:"Monsieur Bernard n'a pas rapporté la preuve du manquement allégué."},{text:"Les pièces versées démontrent que Monsieur Dupont a exécuté ses obligations."},{text:"À titre subsidiaire, le préjudice invoqué est largement surévalué."},{text:"Je demande le rejet intégral des prétentions de Monsieur Bernard."}],tip:"Si tu ne peux pas nier le manquement, essaie au moins de minorer le préjudice."},
+   president:{lines:[{text:"L'affaire est mise en délibéré."},{text:"Le jugement sera rendu le [date]."},{text:"L'audience est levée."}],tip:"Au civil, le jugement est souvent rendu plusieurs semaines après l'audience."},
+  },
+  p8:{
+   president:{lines:[{text:"Levez-vous."},{text:"Le tribunal a rendu son délibéré."},{text:"[Pour le demandeur] Condamne Monsieur Dupont à payer [X] euros à Monsieur Bernard."},{text:"[Pour le défendeur] Déboute Monsieur Bernard de l'intégralité de ses demandes."},{text:"Le condamne aux entiers dépens."},{text:"L'audience est levée."}],tip:"Lis lentement. Au civil, le jugement peut être rendu en l'absence des parties."},
+   demandeur:{lines:[{text:"[Si favorable] Merci, Monsieur le Président."},{text:"[Si débouté] (Tu as 30 jours pour faire appel)",stage:true}],tip:"Le délai d'appel est d'un mois en matière civile."},
+   defendeur:{lines:[{text:"[Si condamné] Mon avocat formera appel dans les délais légaux."},{text:"[Si favorable] Nous prenons acte du jugement."}],tip:"L'appel suspend l'exécution provisoire, sauf si le tribunal l'a expressément ordonnée."},
+  },
+ },
+};
+
 function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  type SetupPhase="type"|"role"|"trial";
  const [setup,setSetup]=useState<SetupPhase>(sim.trialType?"role":"type");
  const [trialType,setTrialType]=useState<TrialType|null>(sim.trialType||null);
  const [myRole,setMyRole]=useState<TrialRole|null>(null);
  const [phase,setPhase]=useState<TrialPhase>("p1");
+ const [scriptPhase,setScriptPhase]=useState<TrialPhase|null>(null);
  const [roomTab,setRoomTab]=useState<"audience"|"direct"|"docs"|"script"|"procedure">("audience");
  const [hasFloor,setHasFloor]=useState(false);
  const [speakerRole,setSpeakerRole]=useState<TrialRole|null>(null);
@@ -8113,44 +8290,103 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     )}
     {roomTab==="procedure"&&trialType&&(
      <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
-      <div style={{display:"flex",flexDirection:"column" as const,gap:10}}>
-       <div style={{background:col+"12",border:`1px solid ${col}30`,borderRadius:12,padding:"12px 14px"}}>
-        <p style={{color:col,fontSize:11,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const,marginBottom:3}}>{TRIAL_TYPE_LABELS[trialType]} · Déroulement</p>
-        {myRole&&<p style={{color:T.text,fontSize:13,lineHeight:1.5}}>Ton rôle : <strong style={{color:TRIAL_ROLE_COLORS[myRole]}}>{getRoleLabel(myRole,trialType)}</strong> — {getRoleDesc(myRole,trialType)}</p>}
-       </div>
+      <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
+       {/* Role reminder */}
+       {myRole&&(
+        <div style={{background:TRIAL_ROLE_COLORS[myRole]+"18",border:`1.5px solid ${TRIAL_ROLE_COLORS[myRole]}50`,borderRadius:12,padding:"10px 14px",display:"flex",gap:10,alignItems:"center"}}>
+         <div style={{width:34,height:34,borderRadius:"50%",background:TRIAL_ROLE_COLORS[myRole]+"25",border:`2px solid ${TRIAL_ROLE_COLORS[myRole]}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:16}}>⚖️</div>
+         <div>
+          <p style={{color:TRIAL_ROLE_COLORS[myRole],fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1}}>{TRIAL_TYPE_LABELS[trialType]} · Ton rôle</p>
+          <p style={{color:T.text,fontSize:13,fontWeight:800}}>{getRoleLabel(myRole,trialType)}</p>
+         </div>
+        </div>
+       )}
+       <p style={{color:T.muted,fontSize:10,fontWeight:700,textAlign:"center" as const}}>Appuie sur une phase pour voir le script exact</p>
        {(Object.entries(PHASE_LABELS[trialType]) as [TrialPhase,string][]).map(([p,label],i)=>{
         const isCurrent=phase===p;
         const isPast=PHASES.indexOf(p)<phaseIdx;
+        const isOpen=scriptPhase===p;
         const pCol=isPast?"#16A34A":isCurrent?col:T.b1;
-        const whoSpeaks:Partial<Record<TrialPhase,string>>={
-         p1:trialType==="assises"?"Président + Greffier (tirage jury)":trialType==="civil"?"Greffier + Président":"Greffier + Président",
-         p2:trialType==="assises"?"Avocat général":"Procureur / Greffier",
-         p3:trialType==="civil"?"Demandeur (expose sa demande)":trialType==="assises"?"Président interroge l'accusé·e":"Président + Procureur interrogent le prévenu·e",
-         p4:"Témoin·s à la barre — toutes les parties peuvent interroger",
-         p5:"Experts / Techniciens — dépôt de pièces au greffe",
-         p6:trialType==="civil"?"Avocat du demandeur plaide":trialType==="assises"?"Avocat général requiert une peine":"Procureur requiert une peine",
-         p7:trialType==="civil"?"Avocat du défendeur plaide":"Avocat de la défense plaide — dernier mot au prévenu·e",
-         p8:trialType==="assises"?"Jury délibère (huis clos) puis verdict du Président":"Délibéré du tribunal — lecture du jugement",
-        };
+        const myScript=myRole?TRIAL_SCRIPTS[trialType]?.[p]?.[myRole]:undefined;
+        const hasScript=!!myScript;
         return(
-         <div key={p} style={{display:"flex",gap:10,alignItems:"flex-start",opacity:isPast?0.6:1}}>
-          <div style={{width:28,height:28,borderRadius:"50%",background:isCurrent?col+"25":isPast?"#16A34A20":T.bg2,border:`1.5px solid ${pCol}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-           {isPast?<span style={{fontSize:12}}>✓</span>:<span style={{color:isCurrent?col:T.muted,fontSize:10,fontWeight:900}}>{i+1}</span>}
-          </div>
-          <div style={{flex:1,background:isCurrent?col+"08":T.card,border:`1px solid ${isCurrent?col+"50":T.b1}`,borderRadius:10,padding:"9px 12px"}}>
-           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-            <p style={{color:isCurrent?col:isPast?"#16A34A":T.textD,fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:.5}}>{label}</p>
-            {isCurrent&&<span style={{background:col+"25",color:col,fontSize:8,fontWeight:900,padding:"1px 5px",borderRadius:3}}>EN COURS</span>}
-            <span style={{color:T.muted,fontSize:9,marginLeft:"auto"}}>{PHASE_DURATIONS[p]}</span>
+         <div key={p}>
+          <button onClick={()=>setScriptPhase(isOpen?null:p)} style={{width:"100%",display:"flex",gap:10,alignItems:"center",background:isOpen?col+"12":isCurrent?col+"08":T.card,border:`1.5px solid ${isOpen?col:isCurrent?col+"50":T.b1}`,borderRadius:isOpen?"12px 12px 0 0":12,padding:"10px 12px",cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
+           <div style={{width:28,height:28,borderRadius:"50%",background:isCurrent?col+"25":isPast?"#16A34A20":T.bg2,border:`2px solid ${pCol}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            {isPast?<span style={{fontSize:13}}>✓</span>:<span style={{color:isCurrent?col:T.muted,fontSize:10,fontWeight:900}}>{i+1}</span>}
            </div>
-           <p style={{color:T.text,fontSize:11,lineHeight:1.5}}>{whoSpeaks[p]||"—"}</p>
-          </div>
+           <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap" as const}}>
+             <p style={{color:isCurrent?col:isPast?"#16A34A":T.text,fontSize:11,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:.5}}>{label}</p>
+             {isCurrent&&<span style={{background:col+"30",color:col,fontSize:8,fontWeight:900,padding:"1px 5px",borderRadius:3}}>EN COURS</span>}
+             {hasScript&&!isOpen&&<span style={{background:TRIAL_ROLE_COLORS[myRole!]+"20",color:TRIAL_ROLE_COLORS[myRole!],fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:3}}>Script dispo</span>}
+            </div>
+            <p style={{color:T.muted,fontSize:9,marginTop:1}}>{PHASE_DURATIONS[p]}</p>
+           </div>
+           <span style={{color:T.muted,fontSize:12,flexShrink:0}}>{isOpen?"▲":"▼"}</span>
+          </button>
+          {isOpen&&(
+           <div style={{background:T.bg,border:`1.5px solid ${col}`,borderTop:"none",borderRadius:"0 0 12px 12px",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:12}}>
+            {myScript?(
+             <>
+              <div style={{background:TRIAL_ROLE_COLORS[myRole!]+"12",border:`1px solid ${TRIAL_ROLE_COLORS[myRole!]}40`,borderRadius:10,padding:"10px 12px"}}>
+               <p style={{color:TRIAL_ROLE_COLORS[myRole!],fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6}}>🎤 Ton script — {getRoleLabel(myRole!,trialType)}</p>
+               {myScript.lines.map((line,li)=>(
+                <div key={li} style={{marginBottom:li<myScript.lines.length-1?8:0}}>
+                 {line.stage?(
+                  <p style={{color:T.muted,fontSize:11,fontStyle:"italic" as const,lineHeight:1.5}}>{line.text}</p>
+                 ):(
+                  <p style={{color:T.text,fontSize:13,lineHeight:1.6,fontWeight:500}}>« {line.text} »</p>
+                 )}
+                </div>
+               ))}
+              </div>
+              <div style={{background:"#D97706"+"12",border:`1px solid #D97706"40"`,borderRadius:8,padding:"8px 11px",display:"flex",gap:8,alignItems:"flex-start"}}>
+               <span style={{fontSize:14,flexShrink:0}}>💡</span>
+               <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{myScript.tip}</p>
+              </div>
+             </>
+            ):(
+             <div style={{textAlign:"center" as const,padding:"16px 0"}}>
+              <p style={{color:T.muted,fontSize:12}}>Ton rôle n'intervient pas activement à cette phase.</p>
+              <p style={{color:T.muted,fontSize:11,marginTop:4}}>Écoute et prends des notes.</p>
+             </div>
+            )}
+            {/* Scripts des autres rôles clés */}
+            {(()=>{
+             const others=TRIAL_ROLES_BY_TYPE[trialType].filter(r=>r!==myRole&&TRIAL_SCRIPTS[trialType]?.[p]?.[r]);
+             if(!others.length) return null;
+             return(
+              <div>
+               <p style={{color:T.muted,fontSize:9,fontWeight:800,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6}}>Ce que disent les autres</p>
+               <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
+                {others.slice(0,3).map(r=>{
+                 const sc=TRIAL_SCRIPTS[trialType]?.[p]?.[r];
+                 if(!sc) return null;
+                 const rc=TRIAL_ROLE_COLORS[r];
+                 return(
+                  <div key={r} style={{background:T.card,border:`1px solid ${rc}30`,borderRadius:8,padding:"8px 10px"}}>
+                   <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:rc}}/>
+                    <p style={{color:rc,fontSize:9,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:.5}}>{getRoleLabel(r,trialType)}</p>
+                   </div>
+                   <p style={{color:T.textD,fontSize:11,lineHeight:1.5,fontStyle:"italic" as const}}>{sc.lines[0].stage?sc.lines[0].text:`« ${sc.lines[0].text} »`}</p>
+                   {sc.lines.length>1&&<p style={{color:T.muted,fontSize:10,marginTop:2}}>+{sc.lines.length-1} ligne{sc.lines.length>2?"s":""}…</p>}
+                  </div>
+                 );
+                })}
+               </div>
+              </div>
+             );
+            })()}
+           </div>
+          )}
          </div>
         );
        })}
-       <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px"}}>
+       <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px",marginTop:2}}>
         <p style={{color:T.muted,fontSize:10,fontWeight:800,marginBottom:4}}>RÈGLES D'AUDIENCE</p>
-        <p style={{color:T.textD,fontSize:11,lineHeight:1.6}}>• Ne parle que quand le Président te donne la parole{"\n"}• Appelle le juge "Monsieur le Président" ou "Madame la Présidente"{"\n"}• Le prévenu/accusé a toujours le droit au silence{"\n"}• Les témoins jurent de dire la vérité ("Je jure de dire la vérité, toute la vérité, rien que la vérité")</p>
+        <p style={{color:T.textD,fontSize:11,lineHeight:1.7}}>• Ne parle que quand le Président te donne la parole{"\n"}• Appelle le juge "Monsieur le Président" ou "Madame la Présidente"{"\n"}• Le prévenu/accusé a toujours le droit au silence{"\n"}• Les témoins jurent de dire la vérité, toute la vérité, rien que la vérité</p>
        </div>
       </div>
      </div>
