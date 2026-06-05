@@ -8475,7 +8475,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
          </div>
         </div>
        )}
-       <p style={{color:T.muted,fontSize:10,fontWeight:700,textAlign:"center" as const}}>Appuie sur une phase pour voir le script exact</p>
+       <p style={{color:T.muted,fontSize:10,fontWeight:700,textAlign:"center" as const}}>Script personnalisé — appuie sur une phase pour voir tes répliques exactes</p>
        {(Object.entries(PHASE_LABELS[trialType]) as [TrialPhase,string][]).map(([p,label],i)=>{
         const isCurrent=phase===p;
         const isPast=PHASES.indexOf(p)<phaseIdx;
@@ -8493,7 +8493,8 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
             <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap" as const}}>
              <p style={{color:isCurrent?col:isPast?"#16A34A":T.text,fontSize:11,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:.5}}>{label}</p>
              {isCurrent&&<span style={{background:col+"30",color:col,fontSize:8,fontWeight:900,padding:"1px 5px",borderRadius:3}}>EN COURS</span>}
-             {hasScript&&!isOpen&&<span style={{background:TRIAL_ROLE_COLORS[myRole!]+"20",color:TRIAL_ROLE_COLORS[myRole!],fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:3}}>Script dispo</span>}
+             {hasScript&&!isOpen&&<span style={{background:TRIAL_ROLE_COLORS[myRole!]+"20",color:TRIAL_ROLE_COLORS[myRole!],fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:3}}>Mes répliques</span>}
+             {!hasScript&&<span style={{background:T.bg2,color:T.muted,fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3}}>Tu écoutes</span>}
             </div>
             <p style={{color:T.muted,fontSize:9,marginTop:1}}>{PHASE_DURATIONS[p]}</p>
            </div>
@@ -8526,33 +8527,6 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
               <p style={{color:T.muted,fontSize:11,marginTop:4}}>Écoute et prends des notes.</p>
              </div>
             )}
-            {/* Scripts des autres rôles clés */}
-            {(()=>{
-             const others=TRIAL_ROLES_BY_TYPE[trialType].filter(r=>r!==myRole&&TRIAL_SCRIPTS[trialType]?.[p]?.[r]);
-             if(!others.length) return null;
-             return(
-              <div>
-               <p style={{color:T.muted,fontSize:9,fontWeight:800,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6}}>Ce que disent les autres</p>
-               <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
-                {others.slice(0,3).map(r=>{
-                 const sc=TRIAL_SCRIPTS[trialType]?.[p]?.[r];
-                 if(!sc) return null;
-                 const rc=TRIAL_ROLE_COLORS[r];
-                 return(
-                  <div key={r} style={{background:T.card,border:`1px solid ${rc}30`,borderRadius:8,padding:"8px 10px"}}>
-                   <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4}}>
-                    <div style={{width:6,height:6,borderRadius:"50%",background:rc}}/>
-                    <p style={{color:rc,fontSize:9,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:.5}}>{getRoleLabel(r,trialType)}</p>
-                   </div>
-                   <p style={{color:T.textD,fontSize:11,lineHeight:1.5,fontStyle:"italic" as const}}>{sc.lines[0].stage?sc.lines[0].text:`« ${sc.lines[0].text} »`}</p>
-                   {sc.lines.length>1&&<p style={{color:T.muted,fontSize:10,marginTop:2}}>+{sc.lines.length-1} ligne{sc.lines.length>2?"s":""}…</p>}
-                  </div>
-                 );
-                })}
-               </div>
-              </div>
-             );
-            })()}
            </div>
           )}
          </div>
