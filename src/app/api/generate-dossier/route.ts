@@ -151,7 +151,11 @@ Réponds UNIQUEMENT avec un objet JSON valide respectant exactement ce schéma (
     "defendeur": "Objectif du défendeur : rejeter les demandes adverses",
     "assesseur": "Objectif du juge assesseur : contribuer à la décision de la Cour",
     "public": "Objectif du public : observer l'audience"
-  }
+  },
+  "jurisprudence": [
+    {"ref": "Cass. crim., JJ mois AAAA, n°XX-XXXXX", "titre": "Nom de l'arrêt ou de la décision", "resume": "2 phrases sur la décision et son lien direct avec cette affaire"},
+    {"ref": "CEDH ou Cass. crim., JJ mois AAAA, n°XX-XXXXX", "titre": "Nom court", "resume": "2 phrases"}
+  ]
 }
 
 RÈGLES IMPORTANTES :
@@ -161,6 +165,7 @@ RÈGLES IMPORTANTES :
 - Les pièces de type "declaration" (du prévenu) incluent "prevenu", president, procureur, avocat_gen, avocat_def
 - Les rôles "jure" et "public" n'ont accès à AUCUNE pièce en avance — ils découvrent tout pendant l'audience
 - Génère entre 5 et 7 pièces diversifiées selon la nature de l'affaire
+- Génère exactement 2 entrées de jurisprudence (arrêts Cour de cassation chambre criminelle ou CEDH) thématiquement liées à l'affaire
 - Tous les textes doivent être en français, réalistes et juridiquement cohérents
 - Réponds UNIQUEMENT avec le JSON, sans aucun texte additionnel`;
 

@@ -486,6 +486,16 @@ const TRIAL_TOPICS = [
  "Corruption judiciaire — magistrat mis en cause",
  "Exploitation de mineurs en ligne",
 ];
+const AN_TOPICS = [
+ "Réforme des retraites — Report de l'âge légal à 64 ans",
+ "Projet de loi immigration — contrôle des frontières",
+ "Loi sur l'intelligence artificielle et responsabilité",
+ "Réforme du baccalauréat général",
+ "Projet de loi logement — encadrement des loyers",
+ "Loi sur la transition énergétique",
+ "Réforme de la justice — cours criminelles départementales",
+ "Loi santé — lutte contre les déserts médicaux",
+];
 const JOBS = [
  {title:"Chargé de mission diplomatique",co:"Ministère des Affaires étrangères",tags:["Paris","CDI","Bac+5"]},
  {title:"Analyste géopolitique senior",co:"Institut Français des Relations Internationales",tags:["Paris","CDI","Recherche"]},
@@ -6782,7 +6792,7 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
 // ──────────────────────────────────────────────────
 // SIMULATIONS TAB
 // ──────────────────────────────────────────────────
-type SimType = "onu"|"proces"|"debat";
+type SimType = "onu"|"proces"|"debat"|"assemblee";
 type SimStatus = "upcoming"|"open"|"live"|"closed";
 interface SimRoom {id:string;type:SimType;topic:string;status:SimStatus;scheduled:number;participants:number;maxParticipants:number;moderator:string;room:number;trialType?:TrialType;}
 
@@ -6794,11 +6804,12 @@ const MOCK_SIMS:SimRoom[] = [
  {id:"s7",type:"proces",topic:"Viol — affaire Dumont c. Ministère",status:"upcoming",scheduled:Date.now()+86400000*2,participants:3,maxParticipants:12,moderator:"@juge_sophie",room:1,trialType:"assises"},
  {id:"s5",type:"debat",topic:"L'intelligence artificielle va-t-elle détruire l'emploi ?",status:"open",scheduled:Date.now()+3600000,participants:8,maxParticipants:20,moderator:"@mod_sofia",room:1},
  {id:"s6",type:"debat",topic:"Faut-il taxer les milliardaires ?",status:"live",scheduled:Date.now()-1800000,participants:16,maxParticipants:20,moderator:"@mod_jean",room:1},
+ {id:"s8",type:"assemblee",topic:"Réforme des retraites — Report de l'âge légal à 64 ans",status:"upcoming",scheduled:Date.now()+86400000*3,participants:5,maxParticipants:30,moderator:"@mod_claire",room:1},
 ];
 
-const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat"};
-const SIM_TYPE_COLORS:Record<SimType,string> = {onu:"#1A5FD4",proces:"#8B4513",debat:"#E03535"};
-const SIM_TYPE_ICONS:Record<SimType,string> = {onu:"globe",proces:"scale",debat:"users"};
+const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat",assemblee:"AN"};
+const SIM_TYPE_COLORS:Record<SimType,string> = {onu:"#1A5FD4",proces:"#8B4513",debat:"#E03535",assemblee:"#16A34A"};
+const SIM_TYPE_ICONS:Record<SimType,string> = {onu:"globe",proces:"scale",debat:"users",assemblee:"landmark"};
 const SIM_STATUS_LABELS:Record<SimStatus,string> = {upcoming:"À venir",open:"Inscriptions ouvertes",live:"EN DIRECT",closed:"Terminé"};
 
 function fmtSimDate(ts:number){const d=new Date(ts);return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
@@ -6807,6 +6818,21 @@ function msUntilStr(ts:number){const diff=ts-Date.now();if(diff<0)return"En cour
 function SimCard({s,T,onJoin,highlight}:{s:SimRoom;T:Theme;onJoin:()=>void;highlight?:boolean}) {
  const col = SIM_TYPE_COLORS[s.type];
  const statusColors:Record<SimStatus,string> = {upcoming:T.muted,open:"#16A34A",live:"#E03535",closed:T.muted};
+ const [notifSet,setNotifSet] = useState(typeof window!=="undefined"&&localStorage.getItem(`nexus_notif_${s.id}`)==="true");
+ const setReminder=(e:React.MouseEvent)=>{
+  e.stopPropagation();
+  haptic();
+  if(!("Notification" in window)){alert("Notifications non supportées par ce navigateur.");return;}
+  Notification.requestPermission().then(perm=>{
+   if(perm!=="granted")return;
+   const ms=s.scheduled-15*60*1000-Date.now();
+   if(ms>0){
+    setTimeout(()=>{new Notification(`🔔 Ta simulation commence dans 15 min`,{body:`${SIM_TYPE_LABELS[s.type]} — ${s.topic}`,icon:"/favicon.ico"});},ms);
+    localStorage.setItem(`nexus_notif_${s.id}`,"true");
+    setNotifSet(true);
+   }
+  });
+ };
  return(
   <div style={{background:T.card,border:`2px solid ${highlight?col:T.b1}`,borderRadius:14,padding:16,position:"relative" as const,overflow:"hidden"}}>
    {highlight&&<div style={{position:"absolute" as const,top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${col},${col}80)`}}/>}
@@ -6825,11 +6851,18 @@ function SimCard({s,T,onJoin,highlight}:{s:SimRoom;T:Theme;onJoin:()=>void;highl
     <div style={{display:"flex",alignItems:"center",gap:4}}><Ic n="cal" s={12} c={T.muted}/><span style={{color:T.muted,fontSize:11}}>{fmtSimDate(s.scheduled)}</span></div>
     <span style={{color:statusColors[s.status],fontSize:10,fontWeight:800,background:statusColors[s.status]+"15",padding:"2px 8px",borderRadius:4}}>{SIM_STATUS_LABELS[s.status]}</span>
    </div>
-   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-    <span style={{color:T.muted,fontSize:11}}>Modérateur : {s.moderator}</span>
-    <button onClick={onJoin} style={{background:s.status==="live"?col:T.blueG,color:s.status==="live"?"#fff":T.blueB,fontSize:12,fontWeight:800,padding:"7px 14px",borderRadius:8,border:`1px solid ${s.status==="live"?col:T.blueB}`,cursor:"pointer",fontFamily:"inherit"}}>
-     {s.status==="live"?"Rejoindre →":"S'inscrire"}
-    </button>
+   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+    <span style={{color:T.muted,fontSize:11,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>Modérateur : {s.moderator}</span>
+    <div style={{display:"flex",gap:6,flexShrink:0}}>
+     {s.status==="upcoming"&&(
+      <button onClick={setReminder} style={{background:notifSet?"#16A34A15":T.bg2,color:notifSet?"#16A34A":T.muted,fontSize:11,fontWeight:700,padding:"7px 10px",borderRadius:8,border:`1px solid ${notifSet?"#16A34A30":T.b1}`,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+       {notifSet?"🔔":"⏰"}
+      </button>
+     )}
+     <button onClick={onJoin} style={{background:s.status==="live"?col:T.blueG,color:s.status==="live"?"#fff":T.blueB,fontSize:12,fontWeight:800,padding:"7px 14px",borderRadius:8,border:`1px solid ${s.status==="live"?col:T.blueB}`,cursor:"pointer",fontFamily:"inherit"}}>
+      {s.status==="live"?"Rejoindre →":"S'inscrire"}
+     </button>
+    </div>
    </div>
   </div>
  );
@@ -7538,6 +7571,7 @@ interface GeneratedDossier {
  chronologie:string[]; pieces:DossierPiece[];
  positionProcureur:string; positionDefense:string; positionPartieCivile:string|null;
  objectifs:Partial<Record<TrialRole,string>>;
+ jurisprudence?:{ref:string;titre:string;resume:string}[];
 }
 
 const TRIAL_TYPE_LABELS:Record<TrialType,string>={correctionnel:"Tribunal Correctionnel",assises:"Cour d'Assises",civil:"Tribunal Civil"};
@@ -8396,6 +8430,19 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
            )}
           </>
          )}
+         {/* ── JURISPRUDENCE ── */}
+         {dossier.jurisprudence&&dossier.jurisprudence.length>0&&(
+          <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px 14px"}}>
+           <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>JURISPRUDENCE APPLICABLE</p>
+           {dossier.jurisprudence.map((j,i)=>(
+            <div key={i} style={{marginBottom:i<(dossier.jurisprudence?.length??0)-1?10:0,paddingBottom:i<(dossier.jurisprudence?.length??0)-1?10:0,borderBottom:i<(dossier.jurisprudence?.length??0)-1?`1px solid ${T.b1}`:"none"}}>
+             <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1,marginBottom:3}}>{j.ref}</p>
+             <p style={{color:T.text,fontSize:11,fontWeight:700,marginBottom:4}}>{j.titre}</p>
+             <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{j.resume}</p>
+            </div>
+           ))}
+          </div>
+         )}
          {/* ── SEPARATOR ── */}
          <div style={{display:"flex",alignItems:"center",gap:10,padding:"4px 0"}}>
           <div style={{flex:1,height:1,background:T.b1}}/>
@@ -8895,9 +8942,366 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
  );
 }
 
+// ── ASSEMBLÉE NATIONALE ──────────────────────────────────────────
+type ANRole="president_an"|"ministre"|"rapporteur"|"depute_maj"|"depute_opp";
+type ANPhase="ouverture"|"discussion_gen"|"examen_art"|"amendements"|"explications"|"vote_final"|"49_3";
+interface GeneratedDossierAN {
+ titre:string;exposeMotifs:string;
+ articles:{numero:number;titre:string;texte:string}[];
+ amendements:{numero:number;auteur:string;article:number;objet:string}[];
+ positionGouvernement:string;positionMajoritaire:string;positionOpposition:string;
+ jurisprudenceCC:{ref:string;titre:string;resume:string}[];
+ objectifs:Partial<Record<ANRole,string>>;
+}
+const AN_ROLE_LABELS:Record<ANRole,string>={president_an:"Président·e de l'AN",ministre:"Ministre",rapporteur:"Rapporteur·rice",depute_maj:"Député·e Majorité",depute_opp:"Député·e Opposition"};
+const AN_ROLE_COLORS:Record<ANRole,string>={president_an:"#1A5FD4",ministre:"#7C3AED",rapporteur:"#16A34A",depute_maj:"#D97706",depute_opp:"#E03535"};
+const AN_PHASE_LABELS:Record<ANPhase,string>={ouverture:"Ouverture",discussion_gen:"Discussion générale",examen_art:"Examen des articles",amendements:"Amendements",explications:"Explications de vote",vote_final:"Vote solennel","49_3":"Article 49.3"};
+const AN_PHASES:ANPhase[]=["ouverture","discussion_gen","examen_art","amendements","explications","vote_final","49_3"];
+const AN_ROLES:ANRole[]=["president_an","ministre","rapporteur","depute_maj","depute_opp"];
+type ANScriptLine={text:string;stage?:boolean};
+type ANScript={lines:ANScriptLine[];tip:string};
+const AN_SCRIPTS:Record<ANPhase,Partial<Record<ANRole,ANScript>>>={
+ ouverture:{
+  president_an:{lines:[{text:"(L'huissier frappe 3 coups — tout le monde se lève)",stage:true},{text:"La séance est ouverte."},{text:"L'ordre du jour appelle la discussion, en première lecture, du projet de loi relatif à [sujet]."},{text:"La parole est à Monsieur le Ministre pour présenter le texte."}],tip:"Trois coups de maillet = ouverture solennelle. Vous présidez depuis le perchoir. Ton ton est neutre et solennel."},
+  ministre:{lines:[{text:"Monsieur le Président, mesdames et messieurs les députés,"},{text:"Le Gouvernement vous présente ce projet de loi dont l'objet est [objet précis]."},{text:"Ce texte répond à une urgence nationale : [contexte et enjeux]."},{text:"Il repose sur trois piliers : [mesure 1], [mesure 2], [mesure 3]."},{text:"Je vous invite à l'adopter dans l'intérêt du pays."}],tip:"Installez-vous au banc des ministres. Soyez bref, clair, politique. Vous défendez un texte, pas un idéal."},
+  rapporteur:{lines:[{text:"Monsieur le Président, la commission des lois a examiné ce texte et l'a adopté."},{text:"La commission a introduit [nombre] amendements techniques."},{text:"La commission est favorable à l'adoption du texte dans sa rédaction issue des travaux."}],tip:"Le rapporteur est la mémoire technique du texte. Tu parles au nom de la commission, pas de ton groupe politique."},
+ },
+ discussion_gen:{
+  president_an:{lines:[{text:"Dans la discussion générale, la parole est aux groupes politiques."},{text:"(Premier groupe) La parole est au groupe [nom]. Vous disposez de 2 minutes.",stage:true},{text:"(Après chaque discours) Merci. La parole est au groupe [suivant].",stage:true},{text:"La discussion générale est close."}],tip:"Respectez scrupuleusement les temps de parole. Un coup de maillet pour couper si dépassement."},
+  depute_maj:{lines:[{text:"Monsieur le Président, Monsieur le Ministre, mes chers collègues,"},{text:"Notre groupe [nom] votera ce texte avec conviction."},{text:"[ARGUMENT 1 — chiffre ou fait concret qui soutient le projet de loi]"},{text:"[ARGUMENT 2 — impact positif pour les citoyens]"},{text:"Nous faisons confiance au Gouvernement pour appliquer cette réforme avec discernement."},{text:"Je vous remercie."}],tip:"Structure : soutien → 2 arguments → appel au vote. Maximum 2 minutes. Regardez l'hémicycle."},
+  depute_opp:{lines:[{text:"Monsieur le Président, Monsieur le Ministre, mes chers collègues,"},{text:"Notre groupe [nom] s'oppose vigoureusement à ce texte."},{text:"[CRITIQUE 1 — faille juridique, sociale ou économique]"},{text:"[CRITIQUE 2 — alternative proposée par l'opposition]"},{text:"Ce texte est [trop précipité / anticonstitutionnel / injuste] et nous voterons contre."},{text:"Je vous remercie."}],tip:"Incisif : critique précise + alternative concrète + annonce du vote. Regardez le Ministre en face. Deux minutes max."},
+  ministre:{lines:[{text:"(Le ministre écoute les discours et prend des notes)",stage:true},{text:"Monsieur le Président, je tiens à répondre brièvement aux remarques."},{text:"[Réfutation de la principale critique avec des chiffres ou arguments de droit]"}],tip:"Prenez des notes pendant les discours. Répondez après tous les groupes — une courte réponse globale."},
+ },
+ examen_art:{
+  president_an:{lines:[{text:"Nous en venons à l'examen des articles."},{text:"Sur l'article 1er, la parole est au rapporteur."},{text:"(Après le rapporteur) Le Gouvernement a-t-il des observations ?",stage:true},{text:"Je mets aux voix l'article 1er. L'article 1er est adopté / rejeté."}],tip:"Article par article : rapporteur → ministre → intervenants → vote. Strict."},
+  rapporteur:{lines:[{text:"L'article 1er pose le principe général du texte : [explication technique]."},{text:"La commission l'a adopté sans modification / avec l'amendement n°[X]."},{text:"Je vous invite à l'adopter."}],tip:"Pour chaque article : contenu + position commission + recommandation. Précis et neutre."},
+  ministre:{lines:[{text:"Le Gouvernement est favorable à l'article 1er. Il constitue le cœur du dispositif."},{text:"[Clarification technique si nécessaire]"}],tip:"Bref sur chaque article. Réservez votre énergie pour la cohérence globale."},
+  depute_maj:{lines:[{text:"Notre groupe soutient l'article 1er. [Raison courte]."},{text:"Nous voterons pour."}],tip:"30 secondes max par article. Dites clairement pour ou contre."},
+  depute_opp:{lines:[{text:"Notre groupe est opposé à l'article 1er car [raison précise]."},{text:"Nous présenterons un amendement de suppression."},{text:"Nous voterons contre."}],tip:"Annoncez vos amendements ici. Soyez précis dans vos critiques techniques."},
+ },
+ amendements:{
+  president_an:{lines:[{text:"Sur l'article [X], j'ai été saisi de [N] amendements."},{text:"L'amendement n°[Y], présenté par [auteur], vise à [objet]."},{text:"La parole est à l'auteur pour le défendre."},{text:"Quel est l'avis de la commission ?"},{text:"Quel est l'avis du Gouvernement ?"},{text:"Je mets aux voix l'amendement n°[Y]. L'amendement est adopté / rejeté."}],tip:"Procédure stricte : présentation → avis commission → avis gouvernement → vote."},
+  rapporteur:{lines:[{text:"La commission est favorable à cet amendement car [raison technique]."},{text:"(ou) La commission est défavorable. Contraire à l'esprit du texte.",stage:true}],tip:"Favorable ou défavorable. Justifie brièvement. Ton avis influence fortement le vote."},
+  ministre:{lines:[{text:"Le Gouvernement est favorable à cet amendement."},{text:"(ou) Le Gouvernement s'en remet à la sagesse de l'Assemblée.",stage:true},{text:"(ou) Le Gouvernement est défavorable. Risque constitutionnel.",stage:true}],tip:"Trois options : favorable / sagesse (neutre) / défavorable. Évitez 'sagesse' si vous avez une position claire."},
+  depute_maj:{lines:[{text:"Monsieur le Président, je défends l'amendement n°[X] au nom du groupe [nom]."},{text:"Cet amendement vise à [objectif précis] afin de [bénéfice concret]."},{text:"Je vous invite à l'adopter."}],tip:"30 secondes max. Objet + bénéfice concret."},
+  depute_opp:{lines:[{text:"Monsieur le Président, l'amendement n°[X] propose la suppression de l'article [Y]."},{text:"En effet, cet article porte atteinte à [droit fondamental / principe constitutionnel]."},{text:"Je vous invite à adopter cet amendement de suppression."}],tip:"Amendements de suppression = arme principale. Argument constitutionnel ou de fond."},
+ },
+ explications:{
+  president_an:{lines:[{text:"Avant le vote solennel, chaque groupe peut donner une explication de vote."},{text:"La parole est au groupe [X] pour 1 minute."},{text:"(Après tous les groupes) Les explications de vote sont terminées.",stage:true}],tip:"1 minute stricte par groupe. Sonnez si dépassement."},
+  depute_maj:{lines:[{text:"Notre groupe votera pour ce texte."},{text:"[Raison principale + résultat positif attendu]"}],tip:"Annonce du vote + 1 argument fort. Très court."},
+  depute_opp:{lines:[{text:"Notre groupe votera contre / s'abstiendra sur ce texte."},{text:"[Raison principale]"},{text:"Nous avons décidé de saisir le Conseil constitutionnel.",stage:true}],tip:"Annonce du vote + démarche post-vote. Annoncez le recours CC si l'argument constitutionnel est solide."},
+  ministre:{lines:[{text:"(Le ministre écoute les explications de vote)",stage:true},{text:"Le Gouvernement prend acte du vote et s'engage à mettre en œuvre ce texte rapidement."}],tip:"Sobre. Le débat est terminé. C'est l'Assemblée qui décide."},
+  rapporteur:{lines:[{text:"Je remercie l'ensemble des groupes pour la qualité des débats."},{text:"Ce texte est le fruit d'un travail rigoureux. Je fais confiance à l'Assemblée."}],tip:"Neutralité et élégance pour clore le débat technique."},
+ },
+ vote_final:{
+  president_an:{lines:[{text:"Nous allons procéder au vote sur l'ensemble du projet de loi."},{text:"Ce scrutin est public, à la demande du Gouvernement."},{text:"(Ouverture du vote — levée de main ou vote électronique)",stage:true},{text:"Le vote est clos."},{text:"Ont voté pour : [X]. Ont voté contre : [Y]. Abstentions : [Z]."},{text:"Le projet de loi est adopté. / Le projet de loi n'est pas adopté.",stage:true},{text:"La séance est levée."}],tip:"Lisez les résultats solennellement. Un coup de maillet pour lever la séance. Moment le plus solennel."},
+  depute_maj:{lines:[{text:"(Vote POUR — lève la main)",stage:true},{text:"Le groupe [nom] vote POUR ce texte."}],tip:"Vote pour. Félicitez le Gouvernement après si le texte passe."},
+  depute_opp:{lines:[{text:"(Vote CONTRE — lève la main)",stage:true},{text:"Le groupe [nom] vote CONTRE ce texte."}],tip:"Vote contre. Annoncez immédiatement votre démarche (saisine CC, motion de censure)."},
+  ministre:{lines:[{text:"(Le ministre se lève quand les résultats sont annoncés)",stage:true},{text:"Je remercie la représentation nationale pour l'adoption de ce texte essentiel."}],tip:"Dignité absolue. Que le texte passe ou échoue, sobre et respectueux."},
+  rapporteur:{lines:[{text:"(Vote selon la position de la commission)",stage:true},{text:"Je me félicite du travail collectif qui a conduit à ce vote."}],tip:"Vote selon la commission. Remerciez tous les participants."},
+ },
+ "49_3":{
+  ministre:{lines:[{text:"Monsieur le Président, en application de l'article 49, alinéa 3 de la Constitution,"},{text:"le Premier ministre engage la responsabilité du Gouvernement sur le vote du projet de loi."},{text:"Le texte est considéré comme adopté sauf si une motion de censure est déposée dans les 24 heures."}],tip:"Le 49.3 fait adopter le texte sans vote. L'opposition peut répondre par une motion de censure."},
+  president_an:{lines:[{text:"Je prends acte de l'engagement de responsabilité du Gouvernement sur ce texte."},{text:"Les groupes ont 24 heures pour déposer une motion de censure."},{text:"(Si motion déposée) Elle sera examinée dans 48 heures.",stage:true},{text:"(Si pas de motion) Aucune motion déposée. Le projet de loi est adopté.",stage:true}],tip:"Constatez, actez, laissez la procédure s'appliquer. Votre rôle est institutionnel."},
+  depute_opp:{lines:[{text:"(Réaction debout, opposition visible)",stage:true},{text:"Monsieur le Président, notre groupe dépose immédiatement une motion de censure !"},{text:"Le Gouvernement fuit le débat démocratique. C'est un déni de parlementarisme !"}],tip:"Moment dramatique ! La motion doit être signée par au moins 1/10 des députés. Incarnez l'indignation."},
+  depute_maj:{lines:[{text:"(Reste assis — soutien au Gouvernement)",stage:true},{text:"Le 49.3 est un droit constitutionnel. Face à l'obstruction, le Gouvernement prend ses responsabilités."}],tip:"Défendez le 49.3 en termes constitutionnels."},
+ },
+};
+
+function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
+ const col="#16A34A";
+ const [myRole,setMyRole]=useState<ANRole|null>(null);
+ const [setupDone,setSetupDone]=useState(false);
+ const [phase,setPhase]=useState<ANPhase>("ouverture");
+ const [tab,setTab]=useState<"chambre"|"dossier"|"script"|"procedure">("chambre");
+ const [msgs,setMsgs]=useState<{id:number;role:"user"|"system";user:string;text:string;time:number}[]>([]);
+ const [input,setInput]=useState("");
+ const [dossierAN,setDossierAN]=useState<GeneratedDossierAN|null>(null);
+ const [dossierLoading,setDossierLoading]=useState(false);
+ const [dossierErr,setDossierErr]=useState<string|null>(null);
+ const [expandedArt,setExpandedArt]=useState<number|null>(null);
+ const [expandedAmend,setExpandedAmend]=useState<number|null>(null);
+ const [openPhase,setOpenPhase]=useState<ANPhase|null>(null);
+ const chatRef=useRef<HTMLDivElement>(null);
+
+ useEffect(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;},[msgs]);
+
+ const loadDossier=()=>{
+  const cacheKey=`nexus_dossier_an_${sim.id}`;
+  const cached=localStorage.getItem(cacheKey);
+  if(cached){try{setDossierAN(JSON.parse(cached));return;}catch{}}
+  setDossierLoading(true);setDossierErr(null);
+  fetch("/api/generate-legis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:sim.topic})})
+  .then(r=>r.json())
+  .then(data=>{
+   if(data.error){setDossierErr(data.error.message||"Erreur");}
+   else if(data.dossier){setDossierAN(data.dossier as GeneratedDossierAN);try{localStorage.setItem(cacheKey,JSON.stringify(data.dossier));}catch{}}
+   else setDossierErr("Réponse inattendue.");
+  })
+  .catch(e=>setDossierErr(String(e))).finally(()=>setDossierLoading(false));
+ };
+
+ useEffect(()=>{
+  if(setupDone&&tab==="dossier"&&!dossierAN&&!dossierLoading)loadDossier();
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[setupDone,tab]);
+
+ const send=()=>{
+  if(!input.trim()||!myRole)return;
+  haptic();
+  setMsgs(p=>[...p,{id:Date.now(),role:"user",user:AN_ROLE_LABELS[myRole],text:input.trim(),time:Date.now()}]);
+  setInput("");
+ };
+
+ const advancePhase=()=>{
+  haptic();
+  const idx=AN_PHASES.indexOf(phase);
+  if(idx<AN_PHASES.length-1){
+   const next=AN_PHASES[idx+1];
+   setPhase(next);
+   setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"SÉANCE",text:`━━ ${AN_PHASE_LABELS[next].toUpperCase()} ━━`,time:Date.now()}]);
+  }
+ };
+
+ if(!setupDone){
+  return(
+   <div style={{minHeight:"100vh",background:T.bg,padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:16}}>
+    <div style={{display:"flex",alignItems:"center",gap:10}}>
+     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
+     <div>
+      <p style={{color:col,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>ASSEMBLÉE NATIONALE</p>
+      <h2 style={{color:T.text,fontSize:17,fontWeight:800,lineHeight:1.2}}>{sim.topic}</h2>
+     </div>
+    </div>
+    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
+     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>CHOISIR TON RÔLE</p>
+     <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
+      {AN_ROLES.map(r=>{
+       const rc=AN_ROLE_COLORS[r];
+       const desc=r==="president_an"?"Préside l'hémicycle — garant du règlement":r==="ministre"?"Défend le texte au nom du Gouvernement":r==="rapporteur"?"Analyse le texte en commission":r==="depute_maj"?"Soutient le texte — groupe gouvernemental":"S'oppose au texte — motion de censure possible";
+       return(
+        <button key={r} onClick={()=>setMyRole(r)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,border:`2px solid ${myRole===r?rc:T.b1}`,background:myRole===r?rc+"12":"transparent",cursor:"pointer",textAlign:"left" as const,transition:"all .15s",fontFamily:"inherit"}}>
+         <div style={{width:36,height:36,borderRadius:8,background:rc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="users" s={18} c={rc}/></div>
+         <div style={{flex:1}}>
+          <p style={{color:myRole===r?rc:T.text,fontSize:13,fontWeight:800}}>{AN_ROLE_LABELS[r]}</p>
+          <p style={{color:T.muted,fontSize:10,marginTop:2}}>{desc}</p>
+         </div>
+         {myRole===r&&<div style={{width:20,height:20,borderRadius:"50%",background:rc,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="check" s={12} c="#fff"/></div>}
+        </button>
+       );
+      })}
+     </div>
+    </div>
+    {myRole&&(
+     <button onClick={()=>{haptic();setSetupDone(true);setMsgs([{id:Date.now(),role:"system",user:"SÉANCE",text:"━━ OUVERTURE DE SÉANCE ━━",time:Date.now()},{id:Date.now()+1,role:"system",user:"SÉANCE",text:`Projet de loi : « ${sim.topic} ». Vous incarnez le rôle de ${AN_ROLE_LABELS[myRole!]}.`,time:Date.now()+100}]);}} style={{padding:"14px",borderRadius:12,border:"none",background:col,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Entrer dans l&apos;hémicycle →</button>
+    )}
+   </div>
+  );
+ }
+
+ const myScript=myRole?AN_SCRIPTS[phase]?.[myRole]:undefined;
+ const phaseIdx=AN_PHASES.indexOf(phase);
+
+ return(
+  <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" as const}}>
+   <div style={{background:T.surf,borderBottom:`1px solid ${T.b1}`,padding:"10px 16px",position:"sticky" as const,top:0,zIndex:10}}>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={T.muted}/></button>
+     <div style={{flex:1,minWidth:0}}>
+      <p style={{color:col,fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const}}>AN — {AN_ROLE_LABELS[myRole!]}</p>
+      <p style={{color:T.text,fontSize:13,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+     </div>
+     <div style={{background:col+"15",border:`1px solid ${col}40`,borderRadius:8,padding:"4px 10px",flexShrink:0}}>
+      <p style={{color:col,fontSize:9,fontWeight:800}}>{AN_PHASE_LABELS[phase]}</p>
+     </div>
+    </div>
+    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
+     {(["chambre","dossier","script","procedure"] as const).map(t=>(
+      <button key={t} onClick={()=>setTab(t)} style={{padding:"5px 11px",borderRadius:6,border:`1px solid ${tab===t?col:T.b1}`,background:tab===t?col+"15":"transparent",color:tab===t?col:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0,whiteSpace:"nowrap" as const}}>{t==="chambre"?"Hémicycle":t==="dossier"?"Dossier":t==="script"?"Script":"Procédure"}</button>
+     ))}
+    </div>
+   </div>
+
+   {tab==="chambre"&&(
+    <div style={{flex:1,display:"flex",flexDirection:"column" as const}}>
+     <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:8}}>
+      {msgs.map(m=>(
+       <div key={m.id} style={{display:"flex",flexDirection:"column" as const,alignItems:m.role==="system"?"center":"flex-start"}}>
+        {m.role==="system"
+         ?<p style={{color:T.muted,fontSize:10,fontWeight:700,padding:"4px 12px",background:T.bg2,borderRadius:20}}>{m.text}</p>
+         :<div style={{maxWidth:"82%"}}>
+           <p style={{color:m.user===AN_ROLE_LABELS[myRole!]?col:T.muted,fontSize:9,fontWeight:800,marginBottom:3}}>{m.user}</p>
+           <div style={{background:m.user===AN_ROLE_LABELS[myRole!]?col+"15":T.card,border:`1px solid ${m.user===AN_ROLE_LABELS[myRole!]?col+"40":T.b1}`,borderRadius:10,padding:"8px 12px"}}>
+            <p style={{color:T.text,fontSize:13,lineHeight:1.5}}>{m.text}</p>
+           </div>
+          </div>
+        }
+       </div>
+      ))}
+     </div>
+     <div style={{borderTop:`1px solid ${T.b1}`,padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:8,background:T.surf}}>
+      {myRole==="president_an"&&(
+       <button onClick={advancePhase} disabled={phaseIdx>=AN_PHASES.length-1} style={{padding:"8px",borderRadius:8,border:`1px solid ${col}40`,background:col+"15",color:col,fontSize:11,fontWeight:800,cursor:phaseIdx<AN_PHASES.length-1?"pointer":"default",fontFamily:"inherit"}}>
+        Phase suivante → {phaseIdx<AN_PHASES.length-1?AN_PHASE_LABELS[AN_PHASES[phaseIdx+1]]:"(fin de séance)"}
+       </button>
+      )}
+      <div style={{display:"flex",gap:8}}>
+       <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder={`Prise de parole — ${AN_ROLE_LABELS[myRole!]}…`} style={{flex:1,padding:"10px 13px",borderRadius:9,border:`1.5px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+       <button onClick={send} disabled={!input.trim()} style={{padding:"10px 16px",borderRadius:9,border:"none",background:input.trim()?col:"#444",color:"#fff",fontSize:13,fontWeight:800,cursor:input.trim()?"pointer":"default",fontFamily:"inherit"}}>↑</button>
+      </div>
+     </div>
+    </div>
+   )}
+
+   {tab==="dossier"&&(
+    <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:12}}>
+     {dossierLoading&&<div style={{display:"flex",flexDirection:"column" as const,alignItems:"center",padding:"40px 0",gap:12}}><div style={{width:32,height:32,borderRadius:"50%",border:`3px solid ${col}`,borderTop:"3px solid transparent",animation:"spin .8s linear infinite"}}/><p style={{color:T.muted,fontSize:12,fontWeight:700}}>Génération du dossier législatif…</p></div>}
+     {!dossierLoading&&dossierErr&&(
+      <div style={{textAlign:"center" as const,padding:"30px 0"}}>
+       <p style={{color:T.textD,fontSize:12,marginBottom:12}}>{dossierErr}</p>
+       <button onClick={()=>{setDossierErr(null);loadDossier();}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:col,color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Réessayer</button>
+      </div>
+     )}
+     {!dossierLoading&&!dossierErr&&dossierAN&&(()=>{
+      const rc=myRole?AN_ROLE_COLORS[myRole]:col;
+      return(
+       <>
+        <div style={{background:col+"12",border:`1px solid ${col}30`,borderRadius:10,padding:"12px 14px"}}>
+         <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>PROJET DE LOI</p>
+         <p style={{color:T.text,fontSize:14,fontWeight:900,marginBottom:8}}>{dossierAN.titre}</p>
+         <p style={{color:T.textD,fontSize:11,lineHeight:1.6}}>{dossierAN.exposeMotifs}</p>
+        </div>
+        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px 14px"}}>
+         <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>ARTICLES DU TEXTE</p>
+         {dossierAN.articles.map((art,i)=>(
+          <div key={art.numero} style={{marginBottom:i<dossierAN.articles.length-1?8:0}}>
+           <button onClick={()=>setExpandedArt(expandedArt===art.numero?null:art.numero)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:expandedArt===art.numero?col+"10":T.bg2,border:`1px solid ${expandedArt===art.numero?col+"40":T.b1}`,borderRadius:expandedArt===art.numero?"7px 7px 0 0":7,padding:"9px 11px",cursor:"pointer",textAlign:"left" as const,fontFamily:"inherit"}}>
+            <span style={{color:col,fontSize:10,fontWeight:900,background:col+"20",padding:"2px 7px",borderRadius:4,flexShrink:0}}>Art. {art.numero}</span>
+            <span style={{color:T.text,fontSize:11,fontWeight:700,flex:1}}>{art.titre}</span>
+            <span style={{color:T.muted,fontSize:11}}>{expandedArt===art.numero?"▲":"▼"}</span>
+           </button>
+           {expandedArt===art.numero&&<div style={{background:col+"08",border:`1px solid ${col}30`,borderTop:"none",borderRadius:"0 0 7px 7px",padding:"10px 13px"}}><p style={{color:T.textD,fontSize:11,lineHeight:1.7,fontStyle:"italic" as const}}>{art.texte}</p></div>}
+          </div>
+         ))}
+        </div>
+        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px 14px"}}>
+         <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>AMENDEMENTS DÉPOSÉS</p>
+         {dossierAN.amendements.map((am,i)=>(
+          <div key={am.numero} style={{marginBottom:i<dossierAN.amendements.length-1?8:0}}>
+           <button onClick={()=>setExpandedAmend(expandedAmend===am.numero?null:am.numero)} style={{width:"100%",display:"flex",alignItems:"center",gap:8,background:expandedAmend===am.numero?"#E0353510":T.bg2,border:`1px solid ${expandedAmend===am.numero?"#E0353540":T.b1}`,borderRadius:expandedAmend===am.numero?"7px 7px 0 0":7,padding:"9px 11px",cursor:"pointer",textAlign:"left" as const,fontFamily:"inherit"}}>
+            <span style={{color:"#E03535",fontSize:10,fontWeight:900,background:"#E0353520",padding:"2px 7px",borderRadius:4,flexShrink:0}}>#{am.numero}</span>
+            <span style={{color:T.text,fontSize:11,fontWeight:700,flex:1}}>{am.objet}</span>
+            <span style={{color:T.muted,fontSize:10,flexShrink:0}}>art. {am.article}</span>
+            <span style={{color:T.muted,fontSize:11}}>{expandedAmend===am.numero?"▲":"▼"}</span>
+           </button>
+           {expandedAmend===am.numero&&<div style={{background:"#E0353508",border:"1px solid #E0353530",borderTop:"none",borderRadius:"0 0 7px 7px",padding:"10px 13px"}}><p style={{color:T.muted,fontSize:10,marginBottom:2}}>Par <strong style={{color:T.text}}>{am.auteur}</strong> — sur l&apos;article {am.article}</p></div>}
+          </div>
+         ))}
+        </div>
+        <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
+         {[{label:"Gouvernement",pos:dossierAN.positionGouvernement,c:"#7C3AED"},{label:"Majorité",pos:dossierAN.positionMajoritaire,c:"#D97706"},{label:"Opposition",pos:dossierAN.positionOpposition,c:"#E03535"}].map(item=>(
+          <div key={item.label} style={{background:item.c+"10",border:`1px solid ${item.c}30`,borderRadius:10,padding:"10px 13px"}}>
+           <p style={{color:item.c,fontSize:9,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const,marginBottom:5}}>POSITION {item.label.toUpperCase()}</p>
+           <p style={{color:T.textD,fontSize:11,lineHeight:1.6}}>{item.pos}</p>
+          </div>
+         ))}
+        </div>
+        {dossierAN.jurisprudenceCC.length>0&&(
+         <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px 14px"}}>
+          <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>JURISPRUDENCE DU CONSEIL CONSTITUTIONNEL</p>
+          {dossierAN.jurisprudenceCC.map((j,i)=>(
+           <div key={i} style={{marginBottom:i<dossierAN.jurisprudenceCC.length-1?10:0,paddingBottom:i<dossierAN.jurisprudenceCC.length-1?10:0,borderBottom:i<dossierAN.jurisprudenceCC.length-1?`1px solid ${T.b1}`:"none"}}>
+            <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1,marginBottom:3}}>{j.ref}</p>
+            <p style={{color:T.text,fontSize:11,fontWeight:700,marginBottom:4}}>{j.titre}</p>
+            <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{j.resume}</p>
+           </div>
+          ))}
+         </div>
+        )}
+        {myRole&&dossierAN.objectifs[myRole]&&(
+         <div style={{background:rc+"12",border:`1.5px solid ${rc}40`,borderRadius:10,padding:"12px 14px"}}>
+          <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>TON OBJECTIF — {AN_ROLE_LABELS[myRole].toUpperCase()}</p>
+          <p style={{color:T.textD,fontSize:11,lineHeight:1.6}}>{dossierAN.objectifs[myRole]}</p>
+         </div>
+        )}
+       </>
+      );
+     })()}
+    </div>
+   )}
+
+   {tab==="script"&&(
+    <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:10}}>
+     <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>SCRIPT — {myRole?AN_ROLE_LABELS[myRole]:""}</p>
+     <p style={{color:T.textD,fontSize:11}}>Phase actuelle : <span style={{color:col,fontWeight:700}}>{AN_PHASE_LABELS[phase]}</span></p>
+     {myScript?(
+      <div style={{background:T.card,border:`2px solid ${myRole?AN_ROLE_COLORS[myRole]:col}40`,borderRadius:12,padding:14,display:"flex",flexDirection:"column" as const,gap:8}}>
+       <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const}}>{AN_PHASE_LABELS[phase]}</p>
+       {myScript.lines.map((line,i)=>(
+        <div key={i}>{line.stage?<p style={{color:T.muted,fontSize:11,fontStyle:"italic" as const,lineHeight:1.5}}>{line.text}</p>:<p style={{color:T.text,fontSize:13,lineHeight:1.6,fontWeight:500}}>« {line.text} »</p>}</div>
+       ))}
+       <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.b1}`}}>
+        <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1,marginBottom:4}}>CONSEIL</p>
+        <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{myScript.tip}</p>
+       </div>
+      </div>
+     ):(
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:16,textAlign:"center" as const}}>
+       <p style={{color:T.muted,fontSize:12}}>Pas de script pour cette phase.</p>
+       <p style={{color:T.textD,fontSize:11,marginTop:6}}>Tu écoutes et observes.</p>
+      </div>
+     )}
+    </div>
+   )}
+
+   {tab==="procedure"&&(
+    <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:10}}>
+     <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:2}}>PROCÉDURE LÉGISLATIVE</p>
+     <p style={{color:T.textD,fontSize:11,marginBottom:4}}>Script personnalisé — appuie sur une phase pour voir tes répliques exactes</p>
+     {AN_PHASES.map((p,i)=>{
+      const hasScript=!!(myRole&&AN_SCRIPTS[p]?.[myRole]);
+      const isActive=p===phase;
+      const isDone=AN_PHASES.indexOf(p)<phaseIdx;
+      const isOpen=openPhase===p;
+      const pScript=myRole?AN_SCRIPTS[p]?.[myRole]:undefined;
+      return(
+       <div key={p} style={{borderRadius:10,overflow:"hidden",border:`1.5px solid ${isActive?col:T.b1}`,opacity:isDone?.6:1}}>
+        <button onClick={()=>setOpenPhase(isOpen?null:p)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",background:isActive?col+"12":T.card,cursor:"pointer",textAlign:"left" as const,border:"none",fontFamily:"inherit"}}>
+         <div style={{width:24,height:24,borderRadius:"50%",background:isActive?col:isDone?"#16A34A":T.bg2,border:`2px solid ${isActive?col:isDone?"#16A34A":T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          {isDone?<Ic n="check" s={11} c="#fff"/>:<span style={{color:isActive?"#fff":T.muted,fontSize:9,fontWeight:800}}>{i+1}</span>}
+         </div>
+         <p style={{color:isActive?col:T.text,fontSize:12,fontWeight:800,flex:1}}>{AN_PHASE_LABELS[p]}</p>
+         {hasScript&&!isOpen&&<span style={{background:AN_ROLE_COLORS[myRole!]+"20",color:AN_ROLE_COLORS[myRole!],fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:3,flexShrink:0}}>Mes répliques</span>}
+         {!hasScript&&<span style={{background:T.bg2,color:T.muted,fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,flexShrink:0}}>Tu écoutes</span>}
+         <span style={{color:T.muted,fontSize:11}}>{isOpen?"▲":"▼"}</span>
+        </button>
+        {isOpen&&(
+         <div style={{padding:"12px 14px",background:T.bg2,borderTop:`1px solid ${T.b1}`,display:"flex",flexDirection:"column" as const,gap:6}}>
+          {pScript?(
+           <>
+            {pScript.lines.map((line,li)=>(
+             <div key={li}>{line.stage?<p style={{color:T.muted,fontSize:11,fontStyle:"italic" as const,lineHeight:1.5}}>{line.text}</p>:<p style={{color:T.text,fontSize:13,lineHeight:1.6,fontWeight:500}}>« {line.text} »</p>}</div>
+            ))}
+            <p style={{color:T.muted,fontSize:10,lineHeight:1.5,marginTop:4,paddingTop:6,borderTop:`1px solid ${T.b1}`,fontStyle:"italic" as const}}>💡 {pScript.tip}</p>
+           </>
+          ):(
+           <p style={{color:T.muted,fontSize:11,fontStyle:"italic" as const}}>Pas de script pour ce rôle à cette phase. Tu écoutes et observes.</p>
+          )}
+         </div>
+        )}
+       </div>
+      );
+     })}
+    </div>
+   )}
+  </div>
+ );
+}
+
 function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  if(sim.type==="onu") return <UNDebateRoom T={T} sim={sim} onBack={onBack}/>;
  if(sim.type==="proces") return <TrialRoom T={T} sim={sim} onBack={onBack}/>;
+ if(sim.type==="assemblee") return <AssembleeRoom T={T} sim={sim} onBack={onBack}/>;
  return <GeneralDebateRoom T={T} sim={sim} onBack={onBack}/>;
 }
 
@@ -8917,7 +9321,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
 
  const createSim = () => {
   if(!createTopic.trim()||!createDate) return;
-  const ns:SimRoom = {id:`s${Date.now()}`,type:createType,topic:createTopic,status:"upcoming",scheduled:new Date(createDate).getTime(),participants:1,maxParticipants:createType==="onu"?193:createType==="proces"?12:20,moderator:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",room:1};
+  const ns:SimRoom = {id:`s${Date.now()}`,type:createType,topic:createTopic,status:"upcoming",scheduled:new Date(createDate).getTime(),participants:1,maxParticipants:createType==="onu"?193:createType==="proces"?12:createType==="assemblee"?30:20,moderator:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",room:1};
   setSims(p=>[ns,...p]);
   setView("hub");
   setCreateTopic("");
@@ -8938,8 +9342,8 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
    </div>
    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column" as const,gap:12}}>
     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>TYPE DE SIMULATION</p>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-     {(["debat","onu","proces"] as SimType[]).map(t=>(
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+     {(["debat","onu","proces","assemblee"] as SimType[]).map(t=>(
       <button key={t} onClick={()=>setCreateType(t)} style={{padding:"12px 6px",borderRadius:10,border:`2px solid ${createType===t?SIM_TYPE_COLORS[t]:T.b1}`,background:createType===t?SIM_TYPE_COLORS[t]+"15":"transparent",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,cursor:"pointer",transition:"all .15s"}}>
        <Ic n={SIM_TYPE_ICONS[t]} s={20} c={createType===t?SIM_TYPE_COLORS[t]:T.muted}/>
        <span style={{color:createType===t?SIM_TYPE_COLORS[t]:T.muted,fontSize:11,fontWeight:800}}>{SIM_TYPE_LABELS[t]}</span>
@@ -8947,10 +9351,10 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
      ))}
     </div>
     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginTop:4}}>SUJET <span style={{color:SIM_TYPE_COLORS[createType],fontSize:9}}>(libre — écrivez votre propre sujet)</span></p>
-    <textarea value={createTopic} onChange={e=>setCreateTopic(e.target.value)} placeholder={createType==="onu"?"Ex : Cessez-le-feu immédiat à Gaza…":createType==="proces"?"Ex : Affaire de corruption ministérielle…":"Ex : Le revenu universel est-il une utopie ?"} rows={3} style={{padding:"10px 12px",borderRadius:8,border:`1.5px solid ${createTopic.trim()?SIM_TYPE_COLORS[createType]:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none",transition:"border-color .2s"}}/>
+    <textarea value={createTopic} onChange={e=>setCreateTopic(e.target.value)} placeholder={createType==="onu"?"Ex : Cessez-le-feu immédiat à Gaza…":createType==="proces"?"Ex : Affaire de corruption ministérielle…":createType==="assemblee"?"Ex : Projet de loi sur la réforme des retraites…":"Ex : Le revenu universel est-il une utopie ?"} rows={3} style={{padding:"10px 12px",borderRadius:8,border:`1.5px solid ${createTopic.trim()?SIM_TYPE_COLORS[createType]:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none",transition:"border-color .2s"}}/>
     <p style={{color:T.muted,fontSize:9,marginTop:-6}}>ou choisissez un sujet suggéré :</p>
     <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
-     {(createType==="onu"?UN_TOPICS:createType==="proces"?TRIAL_TOPICS:DEBATE_CATEGORIES[0].topics).slice(0,6).map(s=>(
+     {(createType==="onu"?UN_TOPICS:createType==="proces"?TRIAL_TOPICS:createType==="assemblee"?AN_TOPICS:DEBATE_CATEGORIES[0].topics).slice(0,6).map(s=>(
       <button key={s} onClick={()=>setCreateTopic(s)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${createTopic===s?SIM_TYPE_COLORS[createType]:T.b1}`,background:createTopic===s?SIM_TYPE_COLORS[createType]+"15":T.bg2,color:createTopic===s?SIM_TYPE_COLORS[createType]:T.textD,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{s}</button>
      ))}
     </div>
@@ -8960,7 +9364,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
      <span style={{fontSize:16,flexShrink:0}}>✅</span>
      <div>
       <p style={{color:"#16A34A",fontSize:12,fontWeight:800}}>Accès NEXUS MODÉRATEUR actif</p>
-      <p style={{color:T.textD,fontSize:11,marginTop:2}}>{createType==="onu"?"Jusqu'à 193 délégations · Non-abonnés auront un pays aléatoire":createType==="proces"?"Discovery (24h) → Procès complet · Rôles assignés":"2 équipes · Points · Vote public final"}</p>
+      <p style={{color:T.textD,fontSize:11,marginTop:2}}>{createType==="onu"?"Jusqu'à 193 délégations · Non-abonnés auront un pays aléatoire":createType==="proces"?"Discovery (24h) → Procès complet · Rôles assignés":createType==="assemblee"?"5 rôles · Hémicycle complet · 49.3 disponible":"2 équipes · Points · Vote public final"}</p>
      </div>
     </div>
     <button onClick={createSim} disabled={!createTopic.trim()||!createDate} style={{padding:"13px",borderRadius:10,border:"none",background:createTopic.trim()&&createDate?SIM_TYPE_COLORS[createType]:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:createTopic.trim()&&createDate?"pointer":"default",fontFamily:"inherit"}}>Créer la simulation</button>
@@ -8980,7 +9384,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
     </button>
    </div>
    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
-    {(["all","debat","onu","proces"] as const).map(f=>{
+    {(["all","debat","onu","proces","assemblee"] as const).map(f=>{
      const col=f==="all"?T.blueB:SIM_TYPE_COLORS[f as SimType];
      return <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 13px",borderRadius:6,border:`1px solid ${filter===f?col:T.b1}`,background:filter===f?col+"15":"transparent",color:filter===f?col:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",whiteSpace:"nowrap" as const}}>{f==="all"?"Tout":SIM_TYPE_LABELS[f as SimType]}</button>;
     })}
