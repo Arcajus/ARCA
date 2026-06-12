@@ -6792,7 +6792,7 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
 // ──────────────────────────────────────────────────
 // SIMULATIONS TAB
 // ──────────────────────────────────────────────────
-type SimType = "onu"|"proces"|"debat"|"assemblee";
+type SimType = "onu"|"proces"|"debat"|"assemblee"|"conseil"|"presse";
 type SimStatus = "upcoming"|"open"|"live"|"closed";
 interface SimRoom {id:string;type:SimType;topic:string;status:SimStatus;scheduled:number;participants:number;maxParticipants:number;moderator:string;room:number;trialType?:TrialType;}
 
@@ -6806,11 +6806,13 @@ const MOCK_SIMS:SimRoom[] = [
  {id:"s6",type:"debat",topic:"Faut-il taxer les milliardaires ?",status:"live",scheduled:Date.now()-1800000,participants:16,maxParticipants:20,moderator:"@mod_jean",room:1},
  {id:"s8",type:"assemblee",topic:"Réforme des retraites — Report de l'âge légal à 64 ans",status:"upcoming",scheduled:Date.now()+86400000*3,participants:5,maxParticipants:30,moderator:"@mod_claire",room:1},
  {id:"s9",type:"assemblee",topic:"Projet de loi immigration — contrôle des frontières",status:"live",scheduled:Date.now()-1800000,participants:5,maxParticipants:30,moderator:"@mod_elise",room:1},
+ {id:"s10",type:"conseil",topic:"Résolution d'urgence — conflit armé au Moyen-Orient",status:"live",scheduled:Date.now()-900000,participants:6,maxParticipants:15,moderator:"@mod_un",room:1},
+ {id:"s11",type:"presse",topic:"Conférence de presse — bilan du sommet du G7",status:"open",scheduled:Date.now()+3600000*2,participants:3,maxParticipants:8,moderator:"@mod_press",room:1},
 ];
 
-const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat",assemblee:"AN"};
-const SIM_TYPE_COLORS:Record<SimType,string> = {onu:"#1A5FD4",proces:"#8B4513",debat:"#E03535",assemblee:"#16A34A"};
-const SIM_TYPE_ICONS:Record<SimType,string> = {onu:"globe",proces:"scale",debat:"users",assemblee:"landmark"};
+const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat",assemblee:"AN",conseil:"Conseil Sécu.",presse:"Conf. Presse"};
+const SIM_TYPE_COLORS:Record<SimType,string> = {onu:"#1A5FD4",proces:"#8B4513",debat:"#E03535",assemblee:"#16A34A",conseil:"#0E7490",presse:"#7C3AED"};
+const SIM_TYPE_ICONS:Record<SimType,string> = {onu:"globe",proces:"scale",debat:"users",assemblee:"landmark",conseil:"shield",presse:"mic"};
 const SIM_STATUS_LABELS:Record<SimStatus,string> = {upcoming:"À venir",open:"Inscriptions ouvertes",live:"EN DIRECT",closed:"Terminé"};
 
 function fmtSimDate(ts:number){const d=new Date(ts);return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
@@ -9041,7 +9043,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
  const [setupDone,setSetupDone]=useState(false);
  const [phase,setPhase]=useState<ANPhase>("ouverture");
  const [tab,setTab]=useState<"chambre"|"dossier"|"script"|"procedure">("chambre");
- const [msgs,setMsgs]=useState<{id:number;role:"user"|"system";user:string;text:string;time:number}[]>([]);
+ const [msgs,setMsgs]=useState<{id:number;role:"user"|"system"|"ai";user:string;text:string;time:number}[]>([]);
  const [input,setInput]=useState("");
  const [dossierAN,setDossierAN]=useState<GeneratedDossierAN|null>(null);
  const [dossierLoading,setDossierLoading]=useState(false);
@@ -9092,11 +9094,40 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[setupDone,tab]);
 
- const send=()=>{
+ const [aiAN,setAiAN]=useState(true);
+ const [feedbackAN,setFeedbackAN]=useState<string|null>(null);
+ const [fbLoading,setFbLoading]=useState(false);
+ const [showFeedback,setShowFeedback]=useState(false);
+ const userMsgsAN=React.useRef<string[]>([]);
+
+ const send=async()=>{
   if(!input.trim()||!myRole)return;
   haptic();
-  setMsgs(p=>[...p,{id:Date.now(),role:"user",user:AN_ROLE_LABELS[myRole],text:input.trim(),time:Date.now()}]);
+  const txt=input.trim();
+  userMsgsAN.current=[...userMsgsAN.current,txt];
+  setMsgs(p=>[...p,{id:Date.now(),role:"user",user:AN_ROLE_LABELS[myRole],text:txt,time:Date.now()}]);
   setInput("");
+  if(!aiAN)return;
+  const opposingRole:ANRole=myRole==="depute_maj"?"depute_opp":myRole==="depute_opp"?"depute_maj":myRole==="ministre"?"depute_opp":myRole==="rapporteur"?"depute_opp":"depute_maj";
+  try{
+   const sp=`Tu es ${AN_ROLE_LABELS[opposingRole]} à l'Assemblée nationale française. Phase : ${AN_PHASE_LABELS[phase]}. Texte débattu : "${sim.topic}". ${myRole==="depute_maj"?"Oppose-toi vigoureusement en 1-2 phrases à cette déclaration":myRole==="depute_opp"?"Défends le texte en 1-2 phrases":`Réponds en 1-2 phrases en tant que ${AN_ROLE_LABELS[opposingRole]}`} : "${txt}". En français.`;
+   const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
+   const data=await res.json();
+   const aiText=data?.content||`${AN_ROLE_LABELS[opposingRole]} prend note de cet argument.`;
+   setMsgs(p=>[...p,{id:Date.now(),role:"ai",user:AN_ROLE_LABELS[opposingRole],text:aiText,time:Date.now()}]);
+  }catch{/* silent */}
+ };
+
+ const getFeedback=async()=>{
+  if(fbLoading||userMsgsAN.current.length===0)return;
+  setFbLoading(true);setShowFeedback(true);
+  try{
+   const sp=`Tu es un expert en rhétorique parlementaire française. Évalue la performance de ce député/ministre lors de la session sur "${sim.topic}". Ses interventions : ${userMsgsAN.current.map((m,i)=>`${i+1}. "${m}"`).join(" ")}. Donne un feedback constructif en 3-4 phrases : points forts, axes d'amélioration, et une note globale /20.`;
+   const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
+   const data=await res.json();
+   setFeedbackAN(data?.content||"Session enregistrée. Continue à pratiquer !");
+  }catch{setFeedbackAN("Impossible d'obtenir le feedback. Réessaie.");}
+  setFbLoading(false);
  };
 
  const advancePhase=()=>{
@@ -9338,10 +9369,26 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
         ))}
        </div>
       )}
+      <div style={{display:"flex",gap:6,marginBottom:4}}>
+       <button onClick={()=>setAiAN(a=>!a)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${aiAN?"#16A34A40":T.b1}`,background:aiAN?"#16A34A15":"transparent",color:aiAN?"#16A34A":T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>🤖 Adversaire IA {aiAN?"ON":"OFF"}</button>
+       <button onClick={getFeedback} disabled={fbLoading||userMsgsAN.current.length===0} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>📊 Mon feedback</button>
+      </div>
       <div style={{display:"flex",gap:8}}>
        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder={`Prise de parole — ${AN_ROLE_LABELS[myRole!]}…`} style={{flex:1,padding:"10px 13px",borderRadius:9,border:`1.5px solid ${input.trim()?col:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",transition:"border-color .2s"}}/>
        <button onClick={send} disabled={!input.trim()} style={{padding:"10px 16px",borderRadius:9,border:"none",background:input.trim()?`linear-gradient(135deg,#0D3B0D,${col})`:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:input.trim()?"pointer":"default",fontFamily:"inherit"}}>↑</button>
       </div>
+     </div>
+    </div>
+   )}
+   {showFeedback&&(
+    <div style={{position:"absolute" as const,inset:0,zIndex:200,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"flex-end"}}>
+     <div style={{width:"100%",background:T.surf,borderRadius:"18px 18px 0 0",padding:"20px 20px 32px",maxHeight:"60vh",overflowY:"auto"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+       <p style={{color:T.text,fontSize:16,fontWeight:800}}>📊 Feedback de performance</p>
+       <button onClick={()=>setShowFeedback(false)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,fontSize:20}}>✕</button>
+      </div>
+      {fbLoading&&<div style={{display:"flex",justifyContent:"center",padding:"20px"}}><div style={{width:28,height:28,borderRadius:"50%",border:`3px solid ${col}`,borderTop:"3px solid transparent",animation:"spin .8s linear infinite"}}/></div>}
+      {feedbackAN&&!fbLoading&&<p style={{color:T.text,fontSize:13,lineHeight:1.7}}>{feedbackAN}</p>}
      </div>
     </div>
    )}
@@ -9491,10 +9538,317 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
  );
 }
 
+// ── CONSEIL DE SÉCURITÉ ONU ────────────────────────────────────────
+const CS_P5=[{name:"États-Unis",flag:"🇺🇸"},{name:"Chine",flag:"🇨🇳"},{name:"Russie",flag:"🇷🇺"},{name:"France",flag:"🇫🇷"},{name:"Royaume-Uni",flag:"🇬🇧"}];
+const CS_ELECTED=[{name:"Brésil",flag:"🇧🇷"},{name:"Japon",flag:"🇯🇵"},{name:"Inde",flag:"🇮🇳"},{name:"Allemagne",flag:"🇩🇪"},{name:"Afrique du Sud",flag:"🇿🇦"},{name:"Émirats arabes unis",flag:"🇦🇪"},{name:"Équateur",flag:"🇪🇨"},{name:"Malte",flag:"🇲🇹"},{name:"Mozambique",flag:"🇲🇿"},{name:"Suisse",flag:"🇨🇭"}];
+const CS_ALL=[...CS_P5,...CS_ELECTED];
+
+function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const col="#0E7490";
+ type CSMember={name:string;flag:string};
+ const [myCountry,setMyCountry]=useState<CSMember|null>(null);
+ const [setupDone,setSetupDone]=useState(false);
+ type Msg={id:number;country:string;flag:string;text:string;time:number;isVeto?:boolean;isAI?:boolean};
+ const [msgs,setMsgs]=useState<Msg[]>([
+  {id:1,country:"SECRÉTARIAT",flag:"🇺🇳",text:`Le Conseil de sécurité est convoqué en urgence concernant : « ${sim.topic} ». La parole est ouverte.`,time:Date.now()-300000},
+ ]);
+ const [input,setInput]=useState("");
+ const [aiThinking,setAiThinking]=useState(false);
+ const [votes,setVotes]=useState<Record<string,boolean>>({});
+ const [showVote,setShowVote]=useState(false);
+ const [vetoed,setVetoed]=useState<string|null>(null);
+ const [resolution,setResolution]=useState("");
+ const chatRef=React.useRef<HTMLDivElement>(null);
+ const isP5=myCountry?CS_P5.some(c=>c.name===myCountry.name):false;
+ const isPour=myCountry?votes[myCountry.name]===true:false;
+
+ const sendMsg=async()=>{
+  if(!input.trim()||!myCountry||aiThinking)return;
+  const txt=input.trim();
+  setInput("");haptic();
+  const m:Msg={id:Date.now(),country:myCountry.name,flag:myCountry.flag,text:txt,time:Date.now()};
+  setMsgs(p=>[...p,m]);
+  setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+  setAiThinking(true);
+  try{
+   const opposingCountry=CS_ALL.filter(c=>c.name!==myCountry.name)[Math.floor(Math.random()*14)];
+   const sp=`Tu es ${opposingCountry.name} (${opposingCountry.flag}) au Conseil de sécurité de l'ONU. Sujet débattu : "${sim.topic}". Réponds brièvement en 1-2 phrases au discours de ${myCountry.name} : "${txt}". Sois diplomatique mais défends ta position nationale. En français.`;
+   const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
+   const data=await res.json();
+   const aiText=data?.content||`${opposingCountry.name} prend note de la position de ${myCountry.name} et souhaite approfondir les consultations.`;
+   setMsgs(p=>[...p,{id:Date.now(),country:opposingCountry.name,flag:opposingCountry.flag,text:aiText,time:Date.now(),isAI:true}]);
+   setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+  }catch{/* silent */}
+  setAiThinking(false);
+ };
+
+ const doVeto=()=>{
+  if(!myCountry||!isP5)return;
+  setVetoed(myCountry.name);
+  setMsgs(p=>[...p,{id:Date.now(),country:myCountry.name,flag:myCountry.flag,text:`🚫 VETO — ${myCountry.name} oppose son droit de veto. Cette résolution est bloquée.`,time:Date.now(),isVeto:true}]);
+  setShowVote(false);
+  haptic();
+ };
+
+ const voteFor=()=>{
+  if(!myCountry)return;
+  setVotes(v=>({...v,[myCountry.name]:true}));haptic();
+ };
+ const voteAgainst=()=>{
+  if(!myCountry)return;
+  setVotes(v=>({...v,[myCountry.name]:false}));haptic();
+ };
+ const totalPour=Object.values(votes).filter(Boolean).length;
+ const adopted=totalPour>=9&&!vetoed;
+
+ if(!setupDone) return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%",background:T.bg}}>
+   <div style={{background:"linear-gradient(180deg,#0A1F4E 0%,#0D2654 100%)",padding:"20px 20px 24px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+     <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
+     <div><span style={{background:"#0E749020",color:"#67E8F9",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3,letterSpacing:1}}>🇺🇳 CONSEIL DE SÉCURITÉ</span><p style={{color:"#fff",fontSize:15,fontWeight:800,marginTop:4}}>{sim.topic}</p></div>
+    </div>
+   </div>
+   <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,marginBottom:12}}>CHOISIR TA DÉLÉGATION</p>
+    <p style={{color:T.muted,fontSize:9,fontWeight:700,marginBottom:8}}>MEMBRES PERMANENTS (droit de veto)</p>
+    {CS_P5.map(c=>(
+     <button key={c.name} onClick={()=>setMyCountry(c)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`2px solid ${myCountry?.name===c.name?col:T.b1}`,background:myCountry?.name===c.name?col+"15":T.card,cursor:"pointer",marginBottom:6,fontFamily:"inherit",textAlign:"left" as const}}>
+      <span style={{fontSize:24}}>{c.flag}</span>
+      <div><p style={{color:T.text,fontSize:13,fontWeight:800}}>{c.name}</p><p style={{color:"#E03535",fontSize:10}}>Membre permanent · Droit de veto</p></div>
+      {myCountry?.name===c.name&&<div style={{marginLeft:"auto",width:20,height:20,borderRadius:"50%",background:col,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="check" s={11} c="#fff"/></div>}
+     </button>
+    ))}
+    <p style={{color:T.muted,fontSize:9,fontWeight:700,marginTop:10,marginBottom:8}}>MEMBRES ÉLUS (2 ans)</p>
+    {CS_ELECTED.map(c=>(
+     <button key={c.name} onClick={()=>setMyCountry(c)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:10,border:`2px solid ${myCountry?.name===c.name?col:T.b1}`,background:myCountry?.name===c.name?col+"15":T.card,cursor:"pointer",marginBottom:6,fontFamily:"inherit",textAlign:"left" as const}}>
+      <span style={{fontSize:24}}>{c.flag}</span>
+      <div><p style={{color:T.text,fontSize:13,fontWeight:800}}>{c.name}</p><p style={{color:T.muted,fontSize:10}}>Membre élu</p></div>
+      {myCountry?.name===c.name&&<div style={{marginLeft:"auto",width:20,height:20,borderRadius:"50%",background:col,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="check" s={11} c="#fff"/></div>}
+     </button>
+    ))}
+    <button onClick={()=>{if(myCountry)setSetupDone(true);}} disabled={!myCountry} style={{width:"100%",marginTop:10,padding:"13px",borderRadius:10,border:"none",background:myCountry?col:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:myCountry?"pointer":"default",fontFamily:"inherit"}}>Entrer dans la salle du Conseil →</button>
+   </div>
+  </div>
+ );
+
+ return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%",background:T.bg}}>
+   <div style={{background:"linear-gradient(180deg,#0A1F4E 0%,#0D2654 100%)",padding:"12px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+    <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
+    <div style={{flex:1}}>
+     <div style={{display:"flex",alignItems:"center",gap:6}}>
+      <span style={{background:"#0E749020",color:"#67E8F9",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>🇺🇳 CONSEIL DE SÉCURITÉ</span>
+      {isP5&&<span style={{background:"#E0353520",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>⚡ DROIT DE VETO</span>}
+     </div>
+     <p style={{color:"#fff",fontSize:13,fontWeight:700,marginTop:3,lineHeight:1.3}}>{sim.topic}</p>
+    </div>
+    <div style={{textAlign:"right" as const,flexShrink:0}}>
+     <p style={{color:"#67E8F9",fontSize:10,fontWeight:800}}>{myCountry?.flag} {myCountry?.name}</p>
+     <p style={{color:"rgba(255,255,255,.5)",fontSize:9}}>15 membres</p>
+    </div>
+   </div>
+   {vetoed&&<div style={{background:"#E0353515",borderBottom:"1px solid #E0353540",padding:"8px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}><span style={{fontSize:14}}>🚫</span><p style={{color:"#E03535",fontSize:11,fontWeight:800}}>Résolution bloquée — Veto de {vetoed}</p></div>}
+   {adopted&&<div style={{background:"#16A34A15",borderBottom:"1px solid #16A34A40",padding:"8px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}><span style={{fontSize:14}}>✅</span><p style={{color:"#16A34A",fontSize:11,fontWeight:800}}>Résolution adoptée ! {totalPour}/15 votes pour</p></div>}
+   <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:8}}>
+    {msgs.map(m=>(
+     <div key={m.id} style={{display:"flex",flexDirection:"column" as const,alignItems:m.country===myCountry?.name?"flex-end":"flex-start",gap:3}}>
+      <div style={{display:"flex",alignItems:"center",gap:5,flexDirection:m.country===myCountry?.name?"row-reverse" as const:"row"}}>
+       <span style={{fontSize:16}}>{m.flag}</span>
+       <p style={{color:T.muted,fontSize:9,fontWeight:800}}>{m.country}</p>
+      </div>
+      <div style={{maxWidth:"85%",padding:"9px 12px",borderRadius:10,background:m.isVeto?"#E0353520":m.country===myCountry?.name?col+"25":T.card,border:`1px solid ${m.isVeto?"#E03535":m.country===myCountry?.name?col:T.b1}40`}}>
+       <p style={{color:m.isVeto?"#E03535":T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
+      </div>
+     </div>
+    ))}
+    {aiThinking&&<div style={{display:"flex",alignItems:"center",gap:6,opacity:.6}}><span style={{fontSize:14}}>🇺🇳</span><div style={{background:T.card,borderRadius:10,padding:"8px 12px"}}><p style={{color:T.muted,fontSize:11}}>rédaction en cours…</p></div></div>}
+   </div>
+   <div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",flexDirection:"column" as const,gap:8}}>
+    {!showVote?(
+     <div style={{display:"flex",gap:7}}>
+      <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Votre déclaration au Conseil…" style={{flex:1,padding:"9px 12px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+      <button onClick={sendMsg} disabled={aiThinking} style={{background:col,border:"none",borderRadius:9,width:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
+      <button onClick={()=>setShowVote(true)} style={{padding:"9px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>🗳 Vote</button>
+     </div>
+    ):(
+     <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+       <p style={{color:T.text,fontSize:12,fontWeight:800}}>🗳 Soumettre une résolution</p>
+       <button onClick={()=>setShowVote(false)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,fontSize:16}}>✕</button>
+      </div>
+      <input value={resolution} onChange={e=>setResolution(e.target.value)} placeholder="Objet de la résolution (optionnel)…" style={{padding:"8px 11px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+      <div style={{display:"flex",gap:6}}>
+       <button onClick={voteFor} style={{flex:1,padding:"9px",borderRadius:9,border:`2px solid ${isPour?"#16A34A":T.b1}`,background:isPour?"#16A34A20":T.bg2,color:isPour?"#16A34A":T.text,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✅ POUR ({totalPour})</button>
+       <button onClick={voteAgainst} style={{flex:1,padding:"9px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>❌ CONTRE</button>
+       {isP5&&!vetoed&&<button onClick={doVeto} style={{padding:"9px 13px",borderRadius:9,border:"2px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>🚫 VETO</button>}
+      </div>
+      <p style={{color:T.muted,fontSize:10}}>9 votes minimum requis · Tout veto d'un P5 bloque la résolution</p>
+     </div>
+    )}
+   </div>
+  </div>
+ );
+}
+
+// ── CONFÉRENCE DE PRESSE ───────────────────────────────────────────
+const PRESSE_PERSONAS=[
+ {name:"Le Monde",flag:"📰",style:"analytique et exigeant"},
+ {name:"BFMTV",flag:"📺",style:"direct et agressif"},
+ {name:"AFP",flag:"📡",style:"factuel et précis"},
+ {name:"The Guardian",flag:"🇬🇧",style:"critique et perspicace"},
+ {name:"Reuters",flag:"🌐",style:"neutre et factuel"},
+ {name:"Libération",flag:"🗞",style:"progressiste et provocateur"},
+ {name:"Le Figaro",flag:"📄",style:"conservateur et rigoureux"},
+];
+
+function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const col="#7C3AED";
+ const [myTitle,setMyTitle]=useState("");
+ const [setupDone,setSetupDone]=useState(false);
+ type PresseMsg={id:number;who:string;flag:string;text:string;isQuestion?:boolean;score?:number;feedback?:string};
+ const [msgs,setMsgs]=useState<PresseMsg[]>([]);
+ const [input,setInput]=useState("");
+ const [aiThinking,setAiThinking]=useState(false);
+ const [qIdx,setQIdx]=useState(0);
+ const [scores,setScores]=useState<number[]>([]);
+ const [done,setDone]=useState(false);
+ const chatRef=React.useRef<HTMLDivElement>(null);
+ const TITLES=["Ministre","Porte-parole du gouvernement","Premier ministre","Directeur·rice de cabinet","Secrétaire d'État"];
+
+ const startConference=()=>{
+  if(!myTitle)return;
+  setSetupDone(true);
+  const q=PRESSE_PERSONAS[0];
+  setMsgs([{id:Date.now(),who:q.name,flag:q.flag,text:askQuestion(0),isQuestion:true}]);
+ };
+
+ function askQuestion(idx:number):string{
+  const persona=PRESSE_PERSONAS[idx];
+  const questions=[
+   `${persona.name} : Pouvez-vous nous préciser les mesures concrètes que le gouvernement entend prendre concernant « ${sim.topic} » ?`,
+   `${persona.name} : Certains experts critiquent vivement cette approche. Comment répondez-vous à ces critiques ?`,
+   `${persona.name} : Quel est l'impact financier de ces décisions pour les citoyens ?`,
+   `${persona.name} : Avez-vous consulté les partenaires sociaux avant de prendre cette décision ?`,
+   `${persona.name} : L'opposition parle d'un échec total. Que leur répondez-vous ?`,
+   `${persona.name} : Quand les Français verront-ils des résultats concrets ?`,
+   `${persona.name} : Une dernière question — avez-vous des regrets sur la gestion de ce dossier ?`,
+  ];
+  return questions[idx]||`${persona.name} : Merci pour vos réponses.`;
+ }
+
+ const sendAnswer=async()=>{
+  if(!input.trim()||aiThinking||done)return;
+  const txt=input.trim();
+  setInput("");haptic();
+  setMsgs(p=>[...p,{id:Date.now(),who:myTitle,flag:"🎙",text:txt}]);
+  setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+  setAiThinking(true);
+  let evalScore=12;
+  let evalFeedback="";
+  try{
+   const sp=`Tu es un expert en communication politique. Évalue cette réponse de conférence de presse (sujet: "${sim.topic}"): "${txt}"\n\nRéponds UNIQUEMENT avec un JSON: {"score": <entier 0-20>, "feedback": "<1 phrase de feedback constructif>"}`;
+   const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
+   const data=await res.json();
+   const parsed=JSON.parse(data?.content||"{}");
+   evalScore=Math.min(20,Math.max(0,parsed.score||12));
+   evalFeedback=parsed.feedback||"Réponse acceptable.";
+  }catch{evalFeedback="Réponse enregistrée.";}
+  const newScores=[...scores,evalScore];
+  setScores(newScores);
+  setMsgs(p=>[...p,{id:Date.now(),who:"ÉVALUATION",flag:"⭐",text:evalFeedback,score:evalScore}]);
+  setAiThinking(false);
+  const nextIdx=qIdx+1;
+  setQIdx(nextIdx);
+  if(nextIdx>=PRESSE_PERSONAS.length){
+   setDone(true);
+   setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),100);
+  }else{
+   setTimeout(()=>{
+    const q=PRESSE_PERSONAS[nextIdx];
+    setMsgs(p=>[...p,{id:Date.now(),who:q.name,flag:q.flag,text:askQuestion(nextIdx),isQuestion:true}]);
+    setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+   },1200);
+  }
+ };
+
+ const totalScore=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+ const scoreColor=totalScore>=16?"#16A34A":totalScore>=12?"#D97706":"#E03535";
+
+ if(!setupDone) return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%",background:T.bg}}>
+   <div style={{background:`linear-gradient(135deg,#3B0764 0%,#7C3AED 100%)`,padding:"20px 20px 24px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+     <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
+     <div><span style={{background:"rgba(255,255,255,.15)",color:"#fff",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3}}>🎙 CONFÉRENCE DE PRESSE</span><p style={{color:"#fff",fontSize:15,fontWeight:800,marginTop:4}}>{sim.topic}</p></div>
+    </div>
+    <div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"12px 14px"}}>
+     <p style={{color:"rgba(255,255,255,.8)",fontSize:11,lineHeight:1.6}}>7 journalistes · Évaluation IA en temps réel · Score /20 final</p>
+    </div>
+   </div>
+   <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
+    <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,marginBottom:12}}>VOTRE TITRE</p>
+    <div style={{display:"flex",flexDirection:"column" as const,gap:8,marginBottom:16}}>
+     {TITLES.map(t=>(
+      <button key={t} onClick={()=>setMyTitle(t)} style={{padding:"11px 14px",borderRadius:10,border:`2px solid ${myTitle===t?col:T.b1}`,background:myTitle===t?col+"15":T.card,color:myTitle===t?col:T.text,fontSize:13,fontWeight:myTitle===t?800:500,cursor:"pointer",fontFamily:"inherit",textAlign:"left" as const}}>{t}</button>
+     ))}
+    </div>
+    <div style={{background:col+"12",border:`1px solid ${col}30`,borderRadius:10,padding:"10px 14px",marginBottom:16}}>
+     <p style={{color:col,fontSize:11,fontWeight:800,marginBottom:4}}>💡 Conseils</p>
+     <p style={{color:T.textD,fontSize:11,lineHeight:1.6}}>Soyez clair, concis et confiant. Évitez les réponses évasives. Préparez-vous à des questions difficiles sur « {sim.topic} ».</p>
+    </div>
+    <button onClick={startConference} disabled={!myTitle} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:myTitle?col:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:myTitle?"pointer":"default",fontFamily:"inherit"}}>🎙 Commencer la conférence de presse</button>
+   </div>
+  </div>
+ );
+
+ return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%",background:T.bg}}>
+   <div style={{background:`linear-gradient(135deg,#3B0764 0%,#7C3AED 100%)`,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+    <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
+    <div style={{flex:1}}>
+     <span style={{background:"rgba(255,255,255,.15)",color:"#fff",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>🎙 CONFÉRENCE DE PRESSE</span>
+     <p style={{color:"#fff",fontSize:13,fontWeight:700,marginTop:3}}>{sim.topic}</p>
+    </div>
+    <div style={{textAlign:"right" as const,flexShrink:0}}>
+     {scores.length>0&&<p style={{color:"#fff",fontSize:12,fontWeight:800}}>Score : <span style={{color:done?scoreColor+"ee":"#fff"}}>{totalScore}/20</span></p>}
+     <p style={{color:"rgba(255,255,255,.6)",fontSize:9}}>{qIdx}/{PRESSE_PERSONAS.length} questions</p>
+    </div>
+   </div>
+   {done&&(
+    <div style={{background:scoreColor+"15",borderBottom:`1px solid ${scoreColor}40`,padding:"10px 16px",flexShrink:0}}>
+     <p style={{color:scoreColor,fontSize:13,fontWeight:800}}>Conférence terminée — Score final : {totalScore}/20</p>
+     <p style={{color:T.textD,fontSize:11,marginTop:2}}>{totalScore>=16?"Excellente performance ! Vous maîtrisez l'exercice.":totalScore>=12?"Bonne performance. Quelques axes d'amélioration.":"Performance insuffisante. Travaillez vos prises de parole."}</p>
+    </div>
+   )}
+   <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:8}}>
+    {msgs.map(m=>(
+     <div key={m.id} style={{display:"flex",flexDirection:"column" as const,alignItems:m.who===myTitle?"flex-end":"flex-start",gap:3}}>
+      {m.who!==myTitle&&<div style={{display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:14}}>{m.flag}</span><p style={{color:T.muted,fontSize:9,fontWeight:800}}>{m.who}</p></div>}
+      <div style={{maxWidth:"88%",padding:"9px 12px",borderRadius:10,background:m.who==="ÉVALUATION"?scoreColor+"15":m.isQuestion?"#7C3AED15":m.who===myTitle?col+"25":T.card,border:`1px solid ${m.who==="ÉVALUATION"?scoreColor:m.isQuestion?col:m.who===myTitle?col:T.b1}30`}}>
+       {m.score!==undefined&&<p style={{color:scoreColor,fontSize:10,fontWeight:800,marginBottom:4}}>⭐ {m.score}/20</p>}
+       <p style={{color:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
+      </div>
+     </div>
+    ))}
+    {aiThinking&&<div style={{display:"flex",alignItems:"center",gap:6,opacity:.6}}><span style={{fontSize:14}}>⭐</span><div style={{background:T.card,borderRadius:10,padding:"8px 12px"}}><p style={{color:T.muted,fontSize:11}}>évaluation en cours…</p></div></div>}
+   </div>
+   {!done&&(
+    <div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:7}}>
+     <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendAnswer()} placeholder="Votre réponse à la presse…" style={{flex:1,padding:"9px 12px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+     <button onClick={sendAnswer} disabled={aiThinking||!input.trim()} style={{background:aiThinking?"#444":col,border:"none",borderRadius:9,width:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:aiThinking?"default":"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
+    </div>
+   )}
+  </div>
+ );
+}
+
 function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  if(sim.type==="onu") return <UNDebateRoom T={T} sim={sim} onBack={onBack}/>;
  if(sim.type==="proces") return <TrialRoom T={T} sim={sim} onBack={onBack}/>;
  if(sim.type==="assemblee") return <AssembleeRoom T={T} sim={sim} onBack={onBack}/>;
+ if(sim.type==="conseil") return <ConseilSecuriteRoom T={T} sim={sim} onBack={onBack}/>;
+ if(sim.type==="presse") return <ConfPresseRoom T={T} sim={sim} onBack={onBack}/>;
  return <GeneralDebateRoom T={T} sim={sim} onBack={onBack}/>;
 }
 
@@ -9514,7 +9868,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
 
  const createSim = () => {
   if(!createTopic.trim()||!createDate) return;
-  const ns:SimRoom = {id:`s${Date.now()}`,type:createType,topic:createTopic,status:"upcoming",scheduled:new Date(createDate).getTime(),participants:1,maxParticipants:createType==="onu"?193:createType==="proces"?12:createType==="assemblee"?30:20,moderator:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",room:1};
+  const ns:SimRoom = {id:`s${Date.now()}`,type:createType,topic:createTopic,status:"upcoming",scheduled:new Date(createDate).getTime(),participants:1,maxParticipants:createType==="onu"?193:createType==="proces"?12:createType==="assemblee"?30:createType==="conseil"?15:createType==="presse"?8:20,moderator:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",room:1};
   setSims(p=>[ns,...p]);
   setView("hub");
   setCreateTopic("");
@@ -9535,8 +9889,8 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
    </div>
    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column" as const,gap:12}}>
     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>TYPE DE SIMULATION</p>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-     {(["debat","onu","proces","assemblee"] as SimType[]).map(t=>(
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+     {(["debat","onu","proces","assemblee","conseil","presse"] as SimType[]).map(t=>(
       <button key={t} onClick={()=>setCreateType(t)} style={{padding:"12px 6px",borderRadius:10,border:`2px solid ${createType===t?SIM_TYPE_COLORS[t]:T.b1}`,background:createType===t?SIM_TYPE_COLORS[t]+"15":"transparent",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,cursor:"pointer",transition:"all .15s"}}>
        <Ic n={SIM_TYPE_ICONS[t]} s={20} c={createType===t?SIM_TYPE_COLORS[t]:T.muted}/>
        <span style={{color:createType===t?SIM_TYPE_COLORS[t]:T.muted,fontSize:11,fontWeight:800}}>{SIM_TYPE_LABELS[t]}</span>
@@ -9544,10 +9898,10 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
      ))}
     </div>
     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginTop:4}}>SUJET <span style={{color:SIM_TYPE_COLORS[createType],fontSize:9}}>(libre — écrivez votre propre sujet)</span></p>
-    <textarea value={createTopic} onChange={e=>setCreateTopic(e.target.value)} placeholder={createType==="onu"?"Ex : Cessez-le-feu immédiat à Gaza…":createType==="proces"?"Ex : Affaire de corruption ministérielle…":createType==="assemblee"?"Ex : Projet de loi sur la réforme des retraites…":"Ex : Le revenu universel est-il une utopie ?"} rows={3} style={{padding:"10px 12px",borderRadius:8,border:`1.5px solid ${createTopic.trim()?SIM_TYPE_COLORS[createType]:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none",transition:"border-color .2s"}}/>
+    <textarea value={createTopic} onChange={e=>setCreateTopic(e.target.value)} placeholder={createType==="onu"?"Ex : Cessez-le-feu immédiat à Gaza…":createType==="proces"?"Ex : Affaire de corruption ministérielle…":createType==="assemblee"?"Ex : Projet de loi sur la réforme des retraites…":createType==="conseil"?"Ex : Résolution d'urgence sur la crise au Sahel…":createType==="presse"?"Ex : Conférence de presse — bilan du sommet G7…":"Ex : Le revenu universel est-il une utopie ?"} rows={3} style={{padding:"10px 12px",borderRadius:8,border:`1.5px solid ${createTopic.trim()?SIM_TYPE_COLORS[createType]:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none",transition:"border-color .2s"}}/>
     <p style={{color:T.muted,fontSize:9,marginTop:-6}}>ou choisissez un sujet suggéré :</p>
     <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
-     {(createType==="onu"?UN_TOPICS:createType==="proces"?TRIAL_TOPICS:createType==="assemblee"?AN_TOPICS:DEBATE_CATEGORIES[0].topics).slice(0,6).map(s=>(
+     {(createType==="onu"?UN_TOPICS:createType==="proces"?TRIAL_TOPICS:createType==="assemblee"?AN_TOPICS:createType==="conseil"?["Cessez-le-feu au Moyen-Orient","Sanctions contre la Russie","Aide humanitaire au Soudan","Opération de paix en RDC","Cybersécurité mondiale","Crise climatique — urgence sécuritaire"]:createType==="presse"?["Bilan du sommet du G7","Réforme des retraites","Plan de relance économique","Accord de paix historique","Budget 2026","Crise migratoire"]:DEBATE_CATEGORIES[0].topics).slice(0,6).map(s=>(
       <button key={s} onClick={()=>setCreateTopic(s)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${createTopic===s?SIM_TYPE_COLORS[createType]:T.b1}`,background:createTopic===s?SIM_TYPE_COLORS[createType]+"15":T.bg2,color:createTopic===s?SIM_TYPE_COLORS[createType]:T.textD,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{s}</button>
      ))}
     </div>
@@ -9557,7 +9911,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
      <span style={{fontSize:16,flexShrink:0}}>✅</span>
      <div>
       <p style={{color:"#16A34A",fontSize:12,fontWeight:800}}>Accès NEXUS MODÉRATEUR actif</p>
-      <p style={{color:T.textD,fontSize:11,marginTop:2}}>{createType==="onu"?"Jusqu'à 193 délégations · Non-abonnés auront un pays aléatoire":createType==="proces"?"Discovery (24h) → Procès complet · Rôles assignés":createType==="assemblee"?"5 rôles · Hémicycle complet · 49.3 disponible":"2 équipes · Points · Vote public final"}</p>
+      <p style={{color:T.textD,fontSize:11,marginTop:2}}>{createType==="onu"?"Jusqu'à 193 délégations · Non-abonnés auront un pays aléatoire":createType==="proces"?"Discovery (24h) → Procès complet · Rôles assignés":createType==="assemblee"?"5 rôles · Hémicycle complet · 49.3 disponible":createType==="conseil"?"15 membres · 5 P5 avec droit de veto · Résolutions votées":createType==="presse"?"7 journalistes · Évaluation IA temps réel · Score /20":"2 équipes · Points · Vote public final"}</p>
      </div>
     </div>
     <button onClick={createSim} disabled={!createTopic.trim()||!createDate} style={{padding:"13px",borderRadius:10,border:"none",background:createTopic.trim()&&createDate?SIM_TYPE_COLORS[createType]:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:createTopic.trim()&&createDate?"pointer":"default",fontFamily:"inherit"}}>Créer la simulation</button>
@@ -9577,7 +9931,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
     </button>
    </div>
    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
-    {(["all","debat","onu","proces","assemblee"] as const).map(f=>{
+    {(["all","debat","onu","proces","assemblee","conseil","presse"] as const).map(f=>{
      const col=f==="all"?T.blueB:SIM_TYPE_COLORS[f as SimType];
      return <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 13px",borderRadius:6,border:`1px solid ${filter===f?col:T.b1}`,background:filter===f?col+"15":"transparent",color:filter===f?col:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",whiteSpace:"nowrap" as const}}>{f==="all"?"Tout":SIM_TYPE_LABELS[f as SimType]}</button>;
     })}
