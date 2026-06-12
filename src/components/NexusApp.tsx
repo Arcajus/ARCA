@@ -9868,7 +9868,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
 
  const createSim = () => {
   if(!createTopic.trim()||!createDate) return;
-  const ns:SimRoom = {id:`s${Date.now()}`,type:createType,topic:createTopic,status:"upcoming",scheduled:new Date(createDate).getTime(),participants:1,maxParticipants:createType==="onu"?193:createType==="proces"?12:createType==="assemblee"?30:createType==="conseil"?15:createType==="presse"?8:20,moderator:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",room:1};
+  const ns:SimRoom = {id:`s${Date.now()}`,type:createType,topic:createTopic,status:"upcoming",scheduled:new Date(createDate).getTime(),participants:1,maxParticipants:createType==="onu"?193:createType==="proces"?12:createType==="assemblee"?30:createType==="conseil"?15:1,moderator:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",room:1};
   setSims(p=>[ns,...p]);
   setView("hub");
   setCreateTopic("");
