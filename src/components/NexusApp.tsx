@@ -6806,12 +6806,12 @@ const MOCK_SIMS:SimRoom[] = [
  {id:"s6",type:"debat",topic:"Faut-il taxer les milliardaires ?",status:"live",scheduled:Date.now()-1800000,participants:16,maxParticipants:20,moderator:"@mod_jean",room:1},
  {id:"s8",type:"assemblee",topic:"Réforme des retraites — Report de l'âge légal à 64 ans",status:"upcoming",scheduled:Date.now()+86400000*3,participants:5,maxParticipants:30,moderator:"@mod_claire",room:1},
  {id:"s9",type:"assemblee",topic:"Projet de loi immigration — contrôle des frontières",status:"live",scheduled:Date.now()-1800000,participants:5,maxParticipants:30,moderator:"@mod_elise",room:1},
- {id:"s10",type:"conseil",topic:"Résolution d'urgence — conflit armé au Moyen-Orient",status:"live",scheduled:Date.now()-900000,participants:6,maxParticipants:15,moderator:"@mod_un",room:1},
- {id:"s11",type:"presse",topic:"Conférence de presse — bilan du sommet du G7",status:"open",scheduled:Date.now()+3600000*2,participants:3,maxParticipants:8,moderator:"@mod_press",room:1},
+ {id:"s10",type:"conseil",topic:"Cessez-le-feu immédiat en Palestine — Résolution d'urgence",status:"live",scheduled:Date.now()-900000,participants:5,maxParticipants:15,moderator:"@pdt_cs",room:1},
+ {id:"s11",type:"presse",topic:"Conférence de presse du Ministre de l'Intérieur — réforme de la police",status:"upcoming",scheduled:Date.now()+86400000*2,participants:1,maxParticipants:1,moderator:"@journaliste_ia",room:1},
 ];
 
-const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat",assemblee:"AN",conseil:"Conseil Sécu.",presse:"Conf. Presse"};
-const SIM_TYPE_COLORS:Record<SimType,string> = {onu:"#1A5FD4",proces:"#8B4513",debat:"#E03535",assemblee:"#16A34A",conseil:"#0E7490",presse:"#7C3AED"};
+const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat",assemblee:"AN",conseil:"CS ONU",presse:"Presse"};
+const SIM_TYPE_COLORS:Record<SimType,string> = {onu:"#1A5FD4",proces:"#8B4513",debat:"#E03535",assemblee:"#16A34A",conseil:"#0E4D8F",presse:"#C2410C"};
 const SIM_TYPE_ICONS:Record<SimType,string> = {onu:"globe",proces:"scale",debat:"users",assemblee:"landmark",conseil:"shield",presse:"mic"};
 const SIM_STATUS_LABELS:Record<SimStatus,string> = {upcoming:"À venir",open:"Inscriptions ouvertes",live:"EN DIRECT",closed:"Terminé"};
 
