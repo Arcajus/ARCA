@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 // THEMES 
 const DARK = {
@@ -6805,6 +6805,7 @@ const MOCK_SIMS:SimRoom[] = [
  {id:"s5",type:"debat",topic:"L'intelligence artificielle va-t-elle détruire l'emploi ?",status:"open",scheduled:Date.now()+3600000,participants:8,maxParticipants:20,moderator:"@mod_sofia",room:1},
  {id:"s6",type:"debat",topic:"Faut-il taxer les milliardaires ?",status:"live",scheduled:Date.now()-1800000,participants:16,maxParticipants:20,moderator:"@mod_jean",room:1},
  {id:"s8",type:"assemblee",topic:"Réforme des retraites — Report de l'âge légal à 64 ans",status:"upcoming",scheduled:Date.now()+86400000*3,participants:5,maxParticipants:30,moderator:"@mod_claire",room:1},
+ {id:"s9",type:"assemblee",topic:"Projet de loi immigration — contrôle des frontières",status:"live",scheduled:Date.now()-1800000,participants:5,maxParticipants:30,moderator:"@mod_elise",room:1},
 ];
 
 const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat",assemblee:"AN"};
@@ -9008,8 +9009,34 @@ const AN_SCRIPTS:Record<ANPhase,Partial<Record<ANRole,ANScript>>>={
  },
 };
 
+// Pre-computed hemicycle seat positions (cx=156, cy=165, rows r=52/74/96)
+const HEMI_SEATS:(readonly[number,number,"maj"|"opp"])[]=(()=>{
+ const cx=156,cy=165;
+ const rows=[{r:52,n:9},{r:74,n:12},{r:96,n:16}];
+ const out:(readonly[number,number,"maj"|"opp"])[]=[];
+ rows.forEach(({r,n})=>{
+  for(let i=0;i<n;i++){
+   const t=Math.PI*(0.86-0.72*i/(n-1));
+   out.push([Math.round(cx+r*Math.cos(t)),Math.round(cy-r*Math.sin(t)),i<Math.ceil(n/2)?"maj":"opp"] as const);
+  }
+ });
+ return out;
+})();
+
+const AN_LIVE_SCRIPT:{delay:number;role:ANRole;text:string}[]=[
+ {delay:800,role:"president_an",text:"La séance est ouverte. L'ordre du jour appelle la discussion, en première lecture, du projet de loi relatif au contrôle de l'immigration et de l'asile."},
+ {delay:5000,role:"ministre",text:"Monsieur le Président, mesdames et messieurs les députés — ce texte vise à maîtriser les flux migratoires tout en garantissant une protection digne aux personnes ayant vocation à rester sur notre territoire. Il s'agit d'un équilibre exigeant mais nécessaire."},
+ {delay:11000,role:"rapporteur",text:"La commission des lois a adopté ce texte par 23 voix pour, 19 contre, 4 abstentions. Elle a introduit 6 amendements de précision, notamment sur la procédure d'asile en zone frontalière."},
+ {delay:16000,role:"depute_maj",text:"Notre groupe Renaissance votera ce texte avec conviction. Les chiffres sont sans appel : 142 000 OQTF non exécutées en 2023. Ce texte redonne à l'État les moyens de faire respecter ses décisions dans le droit."},
+ {delay:22000,role:"depute_opp",text:"Notre groupe s'oppose fermement. L'article 3 remet en cause le regroupement familial et viole l'article 8 de la Convention européenne des droits de l'homme ! Nous déposerons un amendement de suppression."},
+ {delay:28000,role:"ministre",text:"Monsieur le Président, l'article 3 a été rédigé en concertation avec le Conseil d'État. Il demeure dans les limites fixées par la jurisprudence constitutionnelle — décision n°2011-631 DC du 9 juin 2011."},
+ {delay:34000,role:"president_an",text:"La discussion générale est close. Nous passons à l'examen des articles. Sur l'article 1er, la parole est au rapporteur."},
+ {delay:38000,role:"rapporteur",text:"L'article 1er pose le principe général du dispositif : il clarifie les conditions d'éloignement des personnes en situation irrégulière. La commission l'a adopté sans modification. Je vous invite à l'adopter."},
+];
+
 function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
  const col="#16A34A";
+ const isLive=sim.status==="live";
  const [myRole,setMyRole]=useState<ANRole|null>(null);
  const [setupDone,setSetupDone]=useState(false);
  const [phase,setPhase]=useState<ANPhase>("ouverture");
@@ -9024,7 +9051,26 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
  const [openPhase,setOpenPhase]=useState<ANPhase|null>(null);
  const chatRef=useRef<HTMLDivElement>(null);
 
+ const [speakingRole,setSpeakingRole]=useState<ANRole|null>(null);
+ const [votes,setVotes]=useState<{pour:number;contre:number;abst:number}|null>(null);
+
  useEffect(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;},[msgs]);
+
+ // Live mode auto-play
+ useEffect(()=>{
+  if(!isLive||!setupDone)return;
+  const ts:ReturnType<typeof setTimeout>[]=[];
+  AN_LIVE_SCRIPT.forEach(({delay,role,text})=>{
+   const t=setTimeout(()=>{
+    setSpeakingRole(role);
+    setMsgs(p=>[...p,{id:Date.now()+delay,role:"user",user:AN_ROLE_LABELS[role],text,time:Date.now()}]);
+    setTimeout(()=>setSpeakingRole(null),2500);
+   },delay);
+   ts.push(t);
+  });
+  return()=>ts.forEach(clearTimeout);
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[setupDone,isLive]);
 
  const loadDossier=()=>{
   const cacheKey=`nexus_dossier_an_${sim.id}`;
@@ -9065,89 +9111,236 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
 
  if(!setupDone){
   return(
-   <div style={{minHeight:"100vh",background:T.bg,padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:16}}>
-    <div style={{display:"flex",alignItems:"center",gap:10}}>
-     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.blueB}/></button>
-     <div>
-      <p style={{color:col,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>ASSEMBLÉE NATIONALE</p>
-      <h2 style={{color:T.text,fontSize:17,fontWeight:800,lineHeight:1.2}}>{sim.topic}</h2>
+   <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" as const}}>
+    {/* Setup header */}
+    <div style={{background:"linear-gradient(180deg,#0A1F4E 0%,#0D2654 100%)",padding:"20px 20px 28px"}}>
+     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+      <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
+      <div style={{flex:1}}>
+       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+        <span style={{background:"#C9A22720",color:"#C9A227",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3,letterSpacing:1,border:"1px solid #C9A22730"}}>🏛 ASSEMBLÉE NATIONALE</span>
+        {isLive&&<span style={{background:"#E0353520",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3,border:"1px solid #E0353540",display:"flex",alignItems:"center",gap:4}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>EN DIRECT</span>}
+       </div>
+       <h2 style={{color:"#fff",fontSize:16,fontWeight:800,lineHeight:1.3}}>{sim.topic}</h2>
+      </div>
      </div>
+     {/* Hemicycle mini-preview */}
+     <svg viewBox="0 0 312 90" style={{width:"100%",display:"block",borderRadius:8,overflow:"hidden"}}>
+      <rect width="312" height="90" fill="#071530"/>
+      {HEMI_SEATS.map(([x,y,grp],i)=>(
+       <circle key={i} cx={x} cy={y} r={3} fill={grp==="maj"?"#D97706":"#E03535"} opacity={0.7}/>
+      ))}
+      <rect x="126" y="3" width="60" height="18" rx="3" fill="#0E2A55" stroke="#1A5FD4" strokeWidth="1"/>
+      <text x="156" y="15" textAnchor="middle" fill="#C9A227" fontSize="7" fontWeight="bold" fontFamily="system-ui,sans-serif">PERCHOIR</text>
+      <rect x="131" y="80" width="50" height="10" rx="2" fill="#1A3F7A"/>
+      <text x="156" y="88" textAnchor="middle" fill="#C9A227" fontSize="6" fontFamily="system-ui,sans-serif">TRIBUNE</text>
+      <text x="65" y="83" textAnchor="middle" fill="#D97706" fontSize="8" fontFamily="system-ui,sans-serif">Majorité</text>
+      <text x="247" y="83" textAnchor="middle" fill="#E03535" fontSize="8" fontFamily="system-ui,sans-serif">Opposition</text>
+     </svg>
     </div>
-    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
-     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:12}}>CHOISIR TON RÔLE</p>
-     <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
-      {AN_ROLES.map(r=>{
-       const rc=AN_ROLE_COLORS[r];
-       const desc=r==="president_an"?"Préside l'hémicycle — garant du règlement":r==="ministre"?"Défend le texte au nom du Gouvernement":r==="rapporteur"?"Analyse le texte en commission":r==="depute_maj"?"Soutient le texte — groupe gouvernemental":"S'oppose au texte — motion de censure possible";
-       return(
-        <button key={r} onClick={()=>setMyRole(r)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,border:`2px solid ${myRole===r?rc:T.b1}`,background:myRole===r?rc+"12":"transparent",cursor:"pointer",textAlign:"left" as const,transition:"all .15s",fontFamily:"inherit"}}>
-         <div style={{width:36,height:36,borderRadius:8,background:rc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="users" s={18} c={rc}/></div>
-         <div style={{flex:1}}>
-          <p style={{color:myRole===r?rc:T.text,fontSize:13,fontWeight:800}}>{AN_ROLE_LABELS[r]}</p>
-          <p style={{color:T.muted,fontSize:10,marginTop:2}}>{desc}</p>
-         </div>
-         {myRole===r&&<div style={{width:20,height:20,borderRadius:"50%",background:rc,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="check" s={12} c="#fff"/></div>}
-        </button>
-       );
-      })}
-     </div>
+    <div style={{flex:1,padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:12}}>
+     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>CHOISIR TON RÔLE</p>
+     {AN_ROLES.map(r=>{
+      const rc=AN_ROLE_COLORS[r];
+      const desc=r==="president_an"?"Préside l'hémicycle depuis le perchoir — garant du règlement":r==="ministre"?"Défend le texte au nom du Gouvernement au banc des ministres":r==="rapporteur"?"Porte les travaux de la commission des lois":r==="depute_maj"?"Soutient le texte — groupe gouvernemental":"S'oppose au texte — peut déposer une motion de censure";
+      return(
+       <button key={r} onClick={()=>setMyRole(r)} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 14px",borderRadius:12,border:`2px solid ${myRole===r?rc:T.b1}`,background:myRole===r?rc+"12":T.card,cursor:"pointer",textAlign:"left" as const,transition:"all .15s",fontFamily:"inherit"}}>
+        <div style={{width:42,height:42,borderRadius:10,background:rc+"20",border:`1.5px solid ${rc}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+         <Ic n={r==="president_an"?"crown":r==="ministre"?"briefcase":r==="rapporteur"?"book":"users"} s={20} c={rc}/>
+        </div>
+        <div style={{flex:1}}>
+         <p style={{color:myRole===r?rc:T.text,fontSize:13,fontWeight:800,marginBottom:2}}>{AN_ROLE_LABELS[r]}</p>
+         <p style={{color:T.muted,fontSize:10,lineHeight:1.4}}>{desc}</p>
+        </div>
+        {myRole===r&&<div style={{width:22,height:22,borderRadius:"50%",background:rc,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="check" s={13} c="#fff"/></div>}
+       </button>
+      );
+     })}
+     {myRole&&(
+      <button onClick={()=>{
+       haptic();setSetupDone(true);
+       setMsgs([
+        {id:1,role:"system",user:"SÉANCE",text:"━━ SÉANCE OUVERTE ━━",time:Date.now()},
+        {id:2,role:"system",user:"SÉANCE",text:`${sim.topic} · Vous incarnez : ${AN_ROLE_LABELS[myRole!]}`,time:Date.now()+50},
+       ]);
+      }} style={{marginTop:4,padding:"15px",borderRadius:12,border:"none",background:`linear-gradient(135deg,#0D3B0D,${col})`,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px #16A34A30"}}>
+       Entrer dans l&apos;hémicycle →
+      </button>
+     )}
     </div>
-    {myRole&&(
-     <button onClick={()=>{haptic();setSetupDone(true);setMsgs([{id:Date.now(),role:"system",user:"SÉANCE",text:"━━ OUVERTURE DE SÉANCE ━━",time:Date.now()},{id:Date.now()+1,role:"system",user:"SÉANCE",text:`Projet de loi : « ${sim.topic} ». Vous incarnez le rôle de ${AN_ROLE_LABELS[myRole!]}.`,time:Date.now()+100}]);}} style={{padding:"14px",borderRadius:12,border:"none",background:col,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Entrer dans l&apos;hémicycle →</button>
-    )}
    </div>
   );
  }
 
  const myScript=myRole?AN_SCRIPTS[phase]?.[myRole]:undefined;
  const phaseIdx=AN_PHASES.indexOf(phase);
+ const roleColor=(name:string)=>{
+  const entry=Object.entries(AN_ROLE_LABELS).find(([,v])=>v===name);
+  return entry?AN_ROLE_COLORS[entry[0] as ANRole]:"#888";
+ };
+ const getRoleFromName=(name:string):ANRole|null=>{
+  const entry=Object.entries(AN_ROLE_LABELS).find(([,v])=>v===name);
+  return entry?(entry[0] as ANRole):null;
+ };
 
  return(
   <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" as const}}>
-   <div style={{background:T.surf,borderBottom:`1px solid ${T.b1}`,padding:"10px 16px",position:"sticky" as const,top:0,zIndex:10}}>
-    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={T.muted}/></button>
-     <div style={{flex:1,minWidth:0}}>
-      <p style={{color:col,fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const}}>AN — {AN_ROLE_LABELS[myRole!]}</p>
-      <p style={{color:T.text,fontSize:13,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+   {/* Header */}
+   <div style={{background:"linear-gradient(180deg,#0A1F4E 0%,#0D2654 100%)",position:"sticky" as const,top:0,zIndex:10,boxShadow:"0 2px 12px rgba(0,0,0,.3)"}}>
+    <div style={{padding:"10px 16px 8px"}}>
+     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+      <button onClick={onBack} style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",borderRadius:7,padding:"5px 7px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={17} c="#fff"/></button>
+      <div style={{flex:1,minWidth:0}}>
+       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}>
+        <span style={{color:"#C9A227",fontSize:8,fontWeight:800,letterSpacing:1}}>🏛 AN</span>
+        <span style={{color:"rgba(255,255,255,.4)",fontSize:8}}>·</span>
+        <span style={{background:AN_ROLE_COLORS[myRole!]+"30",color:AN_ROLE_COLORS[myRole!],fontSize:8,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{AN_ROLE_LABELS[myRole!]}</span>
+        {isLive&&<span style={{display:"flex",alignItems:"center",gap:3,background:"#E0353520",color:"#E03535",fontSize:8,fontWeight:800,padding:"1px 6px",borderRadius:3,border:"1px solid #E0353440"}}><span style={{width:4,height:4,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>LIVE</span>}
+       </div>
+       <p style={{color:"#fff",fontSize:12,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+      </div>
      </div>
-     <div style={{background:col+"15",border:`1px solid ${col}40`,borderRadius:8,padding:"4px 10px",flexShrink:0}}>
-      <p style={{color:col,fontSize:9,fontWeight:800}}>{AN_PHASE_LABELS[phase]}</p>
+     {/* Phase progress */}
+     <div style={{display:"flex",alignItems:"center",gap:2,marginBottom:8,overflowX:"auto",paddingBottom:2}}>
+      {AN_PHASES.map((p,i)=>{
+       const done=i<phaseIdx,active=i===phaseIdx;
+       return(
+        <React.Fragment key={p}>
+         {i>0&&<div style={{flex:1,height:1,background:done?"#C9A22760":"rgba(255,255,255,.1)",minWidth:4}}/>}
+         <div style={{width:20,height:20,borderRadius:"50%",background:active?"#C9A227":done?"#C9A22750":"rgba(255,255,255,.08)",border:`1.5px solid ${active?"#C9A227":done?"#C9A22760":"rgba(255,255,255,.15)"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          {done?<Ic n="check" s={9} c="#C9A227"/>:<span style={{color:active?"#0A1F4E":"rgba(255,255,255,.5)",fontSize:8,fontWeight:800}}>{i+1}</span>}
+         </div>
+        </React.Fragment>
+       );
+      })}
      </div>
+     <p style={{color:"rgba(255,255,255,.6)",fontSize:9,fontWeight:700,letterSpacing:.5}}>Phase {phaseIdx+1}/7 — {AN_PHASE_LABELS[phase]}</p>
     </div>
-    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
+    {/* Tabs */}
+    <div style={{display:"flex",borderTop:"1px solid rgba(255,255,255,.08)"}}>
      {(["chambre","dossier","script","procedure"] as const).map(t=>(
-      <button key={t} onClick={()=>setTab(t)} style={{padding:"5px 11px",borderRadius:6,border:`1px solid ${tab===t?col:T.b1}`,background:tab===t?col+"15":"transparent",color:tab===t?col:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0,whiteSpace:"nowrap" as const}}>{t==="chambre"?"Hémicycle":t==="dossier"?"Dossier":t==="script"?"Script":"Procédure"}</button>
+      <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:"9px 4px",border:"none",borderBottom:`2px solid ${tab===t?"#C9A227":"transparent"}`,background:"transparent",color:tab===t?"#C9A227":"rgba(255,255,255,.45)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap" as const,transition:"all .15s"}}>
+       {t==="chambre"?"Hémicycle":t==="dossier"?"Dossier":t==="script"?"Script":"Procédure"}
+      </button>
      ))}
     </div>
    </div>
 
    {tab==="chambre"&&(
     <div style={{flex:1,display:"flex",flexDirection:"column" as const}}>
-     <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:8}}>
-      {msgs.map(m=>(
-       <div key={m.id} style={{display:"flex",flexDirection:"column" as const,alignItems:m.role==="system"?"center":"flex-start"}}>
-        {m.role==="system"
-         ?<p style={{color:T.muted,fontSize:10,fontWeight:700,padding:"4px 12px",background:T.bg2,borderRadius:20}}>{m.text}</p>
-         :<div style={{maxWidth:"82%"}}>
-           <p style={{color:m.user===AN_ROLE_LABELS[myRole!]?col:T.muted,fontSize:9,fontWeight:800,marginBottom:3}}>{m.user}</p>
-           <div style={{background:m.user===AN_ROLE_LABELS[myRole!]?col+"15":T.card,border:`1px solid ${m.user===AN_ROLE_LABELS[myRole!]?col+"40":T.b1}`,borderRadius:10,padding:"8px 12px"}}>
-            <p style={{color:T.text,fontSize:13,lineHeight:1.5}}>{m.text}</p>
-           </div>
-          </div>
-        }
-       </div>
-      ))}
+     {/* Hemicycle visual */}
+     <div style={{background:"#071530",margin:"0",overflow:"hidden",flexShrink:0}}>
+      <svg viewBox="0 0 312 140" style={{width:"100%",display:"block"}}>
+       <defs>
+        <radialGradient id="hgrd" cx="50%" cy="100%" r="80%">
+         <stop offset="0%" stopColor="#0E2244"/>
+         <stop offset="100%" stopColor="#060F20"/>
+        </radialGradient>
+       </defs>
+       <rect width="312" height="140" fill="url(#hgrd)"/>
+       {/* Floor arc */}
+       <path d="M20,139 A136,136 0 0,1 292,139" fill="none" stroke="#1A3F7A" strokeWidth="1.5" opacity="0.5"/>
+       {/* All seats */}
+       {HEMI_SEATS.map(([x,y,grp],i)=>{
+        const isMe=myRole&&((grp==="maj"&&(myRole==="depute_maj"||myRole==="ministre"||myRole==="rapporteur"))||(grp==="opp"&&myRole==="depute_opp"));
+        const isSpeaking=speakingRole&&((grp==="maj"&&(speakingRole==="depute_maj"||speakingRole==="ministre"||speakingRole==="rapporteur"||speakingRole==="president_an"))||(grp==="opp"&&speakingRole==="depute_opp"));
+        return(
+         <circle key={i} cx={x} cy={y} r={isSpeaking?5.5:isMe?5:4}
+          fill={grp==="maj"?"#D97706":"#E03535"}
+          opacity={isSpeaking?1:isMe?.9:.55}
+          style={isSpeaking?{filter:"drop-shadow(0 0 4px #fff8)"}:{}}/>
+        );
+       })}
+       {/* Perchoir */}
+       <rect x="118" y="3" width="76" height="24" rx="4" fill="#0D2244" stroke="#1A5FD4" strokeWidth="1.5"/>
+       <text x="156" y="11" textAnchor="middle" fill="#C9A227" fontSize="6.5" fontWeight="bold" fontFamily="system-ui,sans-serif">PERCHOIR</text>
+       <text x="156" y="21" textAnchor="middle" fill="rgba(255,255,255,.5)" fontSize="6" fontFamily="system-ui,sans-serif">Président de l&apos;Assemblée nationale</text>
+       {/* President highlight */}
+       {(myRole==="president_an"||speakingRole==="president_an")&&(
+        <rect x="118" y="3" width="76" height="24" rx="4" fill="none" stroke="#C9A227" strokeWidth="1.5" strokeDasharray="4,3" opacity={speakingRole==="president_an"?1:.6}/>
+       )}
+       {/* Tribune */}
+       <rect x="133" y="126" width="46" height="13" rx="3" fill="#1A3F7A"/>
+       <text x="156" y="136" textAnchor="middle" fill="#C9A227" fontSize="6.5" fontFamily="system-ui,sans-serif" fontWeight="bold">TRIBUNE</text>
+       {/* Banc ministres */}
+       <rect x="18" y="124" width="52" height="13" rx="3" fill="#7C3AED18" stroke="#7C3AED40" strokeWidth="1"/>
+       <text x="44" y="133.5" textAnchor="middle" fill="#7C3AED" fontSize="6" fontFamily="system-ui,sans-serif">Banc ministres</text>
+       {(myRole==="ministre"||speakingRole==="ministre")&&<rect x="18" y="124" width="52" height="13" rx="3" fill="none" stroke="#7C3AED" strokeWidth="1.5" strokeDasharray="3,2" opacity={speakingRole==="ministre"?1:.7}/>}
+       {/* Group labels */}
+       <text x="62" y="120" textAnchor="middle" fill="#D97706" fontSize="8" fontWeight="bold" fontFamily="system-ui,sans-serif" opacity="0.9">Majorité</text>
+       <text x="250" y="120" textAnchor="middle" fill="#E03535" fontSize="8" fontWeight="bold" fontFamily="system-ui,sans-serif" opacity="0.9">Opposition</text>
+       {/* Center line */}
+       <line x1="156" y1="28" x2="156" y2="136" stroke="rgba(255,255,255,.06)" strokeWidth="1" strokeDasharray="3,4"/>
+       {/* Speaking indicator */}
+       {speakingRole&&(
+        <g>
+         <rect x="90" y="55" width="132" height="22" rx="5" fill="#C9A22720" stroke="#C9A22740" strokeWidth="1"/>
+         <text x="156" y="67" textAnchor="middle" fill="#C9A227" fontSize="8" fontWeight="bold" fontFamily="system-ui,sans-serif">🎤 {AN_ROLE_LABELS[speakingRole]}</text>
+        </g>
+       )}
+      </svg>
      </div>
+     {/* Chat */}
+     <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:8}}>
+      {msgs.map(m=>{
+       const isMe=m.user===AN_ROLE_LABELS[myRole!];
+       const rColor=roleColor(m.user);
+       const rRole=getRoleFromName(m.user);
+       return(
+        <div key={m.id} style={{display:"flex",flexDirection:"column" as const,alignItems:m.role==="system"?"center":"flex-start"}}>
+         {m.role==="system"
+          ?<div style={{display:"flex",alignItems:"center",gap:8,width:"100%"}}><div style={{flex:1,height:1,background:T.b1}}/><p style={{color:T.muted,fontSize:9,fontWeight:800,padding:"3px 10px",background:T.bg2,borderRadius:12,whiteSpace:"nowrap" as const}}>{m.text}</p><div style={{flex:1,height:1,background:T.b1}}/></div>
+          :<div style={{maxWidth:"88%"}}>
+            <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4}}>
+             <div style={{width:16,height:16,borderRadius:"50%",background:rColor+"25",border:`1.5px solid ${rColor}50`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Ic n={rRole==="president_an"?"crown":rRole==="ministre"?"briefcase":rRole==="rapporteur"?"book":"users"} s={9} c={rColor}/>
+             </div>
+             <span style={{color:rColor,fontSize:9,fontWeight:800,letterSpacing:.3}}>{m.user}</span>
+             {isMe&&<span style={{color:T.muted,fontSize:8}}>· Vous</span>}
+            </div>
+            <div style={{background:isMe?`${col}18`:T.card,border:`1px solid ${isMe?col+"40":T.b1}`,borderRadius:isMe?"10px 10px 3px 10px":"10px 10px 10px 3px",padding:"9px 13px"}}>
+             <p style={{color:T.text,fontSize:13,lineHeight:1.55}}>{m.text}</p>
+            </div>
+           </div>
+         }
+        </div>
+       );
+      })}
+      {speakingRole&&speakingRole!==myRole&&(
+       <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:AN_ROLE_COLORS[speakingRole]+"12",border:`1px solid ${AN_ROLE_COLORS[speakingRole]}30`,borderRadius:8}}>
+        <div style={{display:"flex",gap:2}}>{[0,1,2].map(i=><div key={i} style={{width:4,height:4,borderRadius:"50%",background:AN_ROLE_COLORS[speakingRole],animation:`pulse ${.8+i*.2}s ease infinite`}}/>)}</div>
+        <p style={{color:AN_ROLE_COLORS[speakingRole],fontSize:11,fontWeight:700}}>{AN_ROLE_LABELS[speakingRole]} prend la parole…</p>
+       </div>
+      )}
+     </div>
+     {/* Input area */}
      <div style={{borderTop:`1px solid ${T.b1}`,padding:"10px 14px",display:"flex",flexDirection:"column" as const,gap:8,background:T.surf}}>
       {myRole==="president_an"&&(
-       <button onClick={advancePhase} disabled={phaseIdx>=AN_PHASES.length-1} style={{padding:"8px",borderRadius:8,border:`1px solid ${col}40`,background:col+"15",color:col,fontSize:11,fontWeight:800,cursor:phaseIdx<AN_PHASES.length-1?"pointer":"default",fontFamily:"inherit"}}>
-        Phase suivante → {phaseIdx<AN_PHASES.length-1?AN_PHASE_LABELS[AN_PHASES[phaseIdx+1]]:"(fin de séance)"}
+       <button onClick={advancePhase} disabled={phaseIdx>=AN_PHASES.length-1} style={{padding:"8px 12px",borderRadius:8,border:`1px solid #C9A22740`,background:"linear-gradient(135deg,#0A1F4E,#0D2654)",color:"#C9A227",fontSize:11,fontWeight:800,cursor:phaseIdx<AN_PHASES.length-1?"pointer":"default",fontFamily:"inherit",textAlign:"left" as const}}>
+        ▶ Passer à la phase suivante : {phaseIdx<AN_PHASES.length-1?AN_PHASE_LABELS[AN_PHASES[phaseIdx+1]]:"(séance levée)"}
        </button>
       )}
+      {phase==="vote_final"&&!votes&&(
+       <div style={{display:"flex",gap:6}}>
+        <button onClick={()=>{haptic();setVotes({pour:289,contre:247,abst:21});setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"RÉSULTATS",text:"VOTE SOLENNEL — Pour : 289 · Contre : 247 · Abstentions : 21 → LE PROJET DE LOI EST ADOPTÉ",time:Date.now()}]);}} style={{flex:1,padding:"8px",borderRadius:7,border:"1px solid #16A34A40",background:"#16A34A15",color:"#16A34A",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✅ Voter POUR</button>
+        <button onClick={()=>{haptic();setVotes({pour:247,contre:289,abst:21});setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"RÉSULTATS",text:"VOTE SOLENNEL — Pour : 247 · Contre : 289 · Abstentions : 21 → LE PROJET DE LOI EST REJETÉ",time:Date.now()}]);}} style={{flex:1,padding:"8px",borderRadius:7,border:"1px solid #E0353540",background:"#E0353515",color:"#E03535",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>❌ Voter CONTRE</button>
+       </div>
+      )}
+      {votes&&(
+       <div style={{background:T.bg2,borderRadius:8,padding:"8px 12px"}}>
+        <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1,marginBottom:6}}>RÉSULTATS DU SCRUTIN PUBLIC</p>
+        {[{label:"Pour",v:votes.pour,c:"#16A34A"},{label:"Contre",v:votes.contre,c:"#E03535"},{label:"Abstentions",v:votes.abst,c:"#888"}].map(({label,v,c})=>(
+         <div key={label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+          <span style={{color:c,fontSize:10,fontWeight:800,width:70}}>{label}</span>
+          <div style={{flex:1,height:6,background:T.b1,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",background:c,borderRadius:3,width:`${v/5.77}%`}}/></div>
+          <span style={{color:T.text,fontSize:11,fontWeight:700,width:30,textAlign:"right" as const}}>{v}</span>
+         </div>
+        ))}
+       </div>
+      )}
       <div style={{display:"flex",gap:8}}>
-       <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder={`Prise de parole — ${AN_ROLE_LABELS[myRole!]}…`} style={{flex:1,padding:"10px 13px",borderRadius:9,border:`1.5px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
-       <button onClick={send} disabled={!input.trim()} style={{padding:"10px 16px",borderRadius:9,border:"none",background:input.trim()?col:"#444",color:"#fff",fontSize:13,fontWeight:800,cursor:input.trim()?"pointer":"default",fontFamily:"inherit"}}>↑</button>
+       <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder={`Prise de parole — ${AN_ROLE_LABELS[myRole!]}…`} style={{flex:1,padding:"10px 13px",borderRadius:9,border:`1.5px solid ${input.trim()?col:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",transition:"border-color .2s"}}/>
+       <button onClick={send} disabled={!input.trim()} style={{padding:"10px 16px",borderRadius:9,border:"none",background:input.trim()?`linear-gradient(135deg,#0D3B0D,${col})`:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:input.trim()?"pointer":"default",fontFamily:"inherit"}}>↑</button>
       </div>
      </div>
     </div>
