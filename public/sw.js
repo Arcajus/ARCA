@@ -1,8 +1,9 @@
-const CACHE = "nexus-v11";
+const CACHE = "nexus-v12";
 const STATIC = [
-  "/ARCA/",
-  "/ARCA/manifest.json",
-  "/ARCA/icons/icon-192.png",
+  "/",
+  "/manifest.json",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
 ];
 
 self.addEventListener("install", (e) => {
