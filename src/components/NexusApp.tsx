@@ -6982,24 +6982,28 @@ const ttsSpeak=(text:string)=>{
 
 // ── UN DEBATE ROOM ────────────────────────────────────────────────
 
+const MUN_COMMITTEES=[
+ {id:"UA",  name:"Union Africaine",         icon:"🌍",col:"#D97706",desc:"Paix et sécurité continentale · CAPU",          hint:"Crise au Sahel, gouvernance, migrations"},
+ {id:"GA1", name:"1ère Commission (GA)",     icon:"🔰",col:"#1A5FD4",desc:"Désarmement & sécurité internationale",          hint:"Armes, cybersécurité, non-prolifération"},
+ {id:"CS",  name:"Conseil de Sécurité",      icon:"🛡️",col:"#E03535",desc:"Maintien de la paix · P5 avec droit de veto", hint:"Conflits armés, sanctions, résolutions"},
+ {id:"CDH", name:"Droits de l'Homme",        icon:"⚖️",col:"#7C3AED",desc:"47 membres · Protection des droits fondamentaux",hint:"Droits humains, libertés, crises humanitaires"},
+ {id:"ECOSOC",name:"ECOSOC",                 icon:"📊",col:"#16A34A",desc:"Questions économiques et sociales",              hint:"Développement durable, inégalités, ODD"},
+ {id:"SPEC",name:"Comité Spécial",           icon:"⚡",col:"#0E7490",desc:"Commission d'urgence · Session extraordinaire",  hint:"Thème émergent, crise mondiale"},
+];
+type MUNPhase="committee"|"select"|"debate"|"vote"|"feedback";
+
 function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const col="#1A5FD4";
  const hasPremium=typeof window!=="undefined"&&(localStorage.getItem("nexus_premium")==="true"||localStorage.getItem("nexus_mod")==="true");
- // Non-premium: skip country selection, assign randomly
  const randomCountry=ALL_UN_COUNTRIES[Math.floor(Math.random()*Math.min(sim.participants,ALL_UN_COUNTRIES.length))];
- type Phase="select"|"debate"|"vote";
- const [phase,setPhase]=useState<Phase>(hasPremium?"select":"debate");
+ const [phase,setPhase]=useState<MUNPhase>("committee");
+ const [committee,setCommittee]=useState<typeof MUN_COMMITTEES[0]|null>(null);
  const [myCountry,setMyCountry]=useState<{id:string;flag:string;country:string}|null>(hasPremium?null:randomCountry);
  const [countrySearch,setCountrySearch]=useState("");
- const [tab,setTab]=useState<"vue"|"dossier"|"file"|"delegues"|"script"|"procedure">("vue");
+ const [tab,setTab]=useState<"vue"|"dossier"|"file"|"delegues"|"resolution"|"procedure">("vue");
  const [scriptPhase,setScriptPhase]=useState<TrialPhase|null>(null);
  type Msg={id:number;user:string;flag:string;text:string;time:number;system?:boolean;hasFloor?:boolean};
- const [msgs,setMsgs]=useState<Msg[]>([
-  {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance est ouverte. Sujet : « ${sim.topic} ». Chaque délégation dispose de 2 à 5 minutes. Levez la main pour demander la parole.`,time:Date.now()-900000,system:true},
-  {id:2,user:"États-Unis",flag:"🇺🇸",text:"La délégation des États-Unis souhaite ouvrir le débat. Nous rappelons notre position ferme en faveur d'une réforme ambitieuse.",time:Date.now()-840000,hasFloor:true},
-  {id:3,user:"Russie",flag:"🇷🇺",text:"La Russie s'oppose catégoriquement à toute modification unilatérale des structures fondamentales du Conseil.",time:Date.now()-780000,hasFloor:true},
-  {id:4,user:"France",flag:"🇫🇷",text:"La France plaide pour une approche équilibrée respectant les positions de toutes les délégations.",time:Date.now()-720000,hasFloor:true},
- ]);
+ const [msgs,setMsgs]=useState<Msg[]>([]);
  const [input,setInput]=useState("");
  const [showInput,setShowInput]=useState(false);
  const [handRaised,setHandRaised]=useState(false);
@@ -7008,25 +7012,50 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [speakerTime,setSpeakerTime]=useState(180);
  const [votes,setVotes]=useState<{pour:number;contre:number;abstention:number}>({pour:0,contre:0,abstention:0});
  const [myVote,setMyVote]=useState<string|null>(null);
- // AI speaker simulation
- const AI_SPEAKERS=[
-  {user:"Chine",flag:"🇨🇳",text:"La délégation chinoise souligne l'importance du respect de la souveraineté nationale dans tout processus de réforme."},
-  {user:"Allemagne",flag:"🇩🇪",text:"L'Allemagne appelle à un dialogue constructif fondé sur le droit international et les valeurs démocratiques."},
-  {user:"Brésil",flag:"🇧🇷",text:"Le Brésil estime que la voix des pays émergents doit être mieux représentée dans les instances de décision."},
-  {user:"Inde",flag:"🇮🇳",text:"L'Inde soutient une réforme équitable qui tienne compte des intérêts des nations du Sud global."},
- ];
- const [aiSpeaker,setAiSpeaker]=useState<{user:string;flag:string;text:string}|null>(null);
+ const [aiLoading,setAiLoading]=useState(false);
+ const [positionPaper,setPositionPaper]=useState("");
+ const [draftResolution,setDraftResolution]=useState("");
+ const [firstSpeech,setFirstSpeech]=useState(true);
+ const [gsl,setGsl]=useState<{country:string;flag:string;done:boolean}[]>([
+  {country:"États-Unis",flag:"🇺🇸",done:false},
+  {country:"Chine",flag:"🇨🇳",done:false},
+  {country:"Allemagne",flag:"🇩🇪",done:false},
+  {country:"Brésil",flag:"🇧🇷",done:false},
+  {country:"Inde",flag:"🇮🇳",done:false},
+ ]);
+ const [caucus,setCaucus]=useState<{type:"modere"|"non-modere";topic:string;totalTime:number;remaining:number}|null>(null);
+ const [showCaucusModal,setShowCaucusModal]=useState(false);
+ const [caucusType,setCaucusType]=useState<"modere"|"non-modere">("modere");
+ const [caucusTopic,setCaucusTopic]=useState("");
+ const [caucusTime,setCaucusTime]=useState(15);
+ const [feedback,setFeedback]=useState<string|null>(null);
+ const [feedbackLoading,setFeedbackLoading]=useState(false);
+ const userSpeeches=useRef<string[]>([]);
  const chatRef=useRef<HTMLDivElement>(null);
  const timerRef=useRef<ReturnType<typeof setInterval>|null>(null);
- const aiTimerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const caucusRef=useRef<ReturnType<typeof setInterval>|null>(null);
+ const acCol=committee?.col||col;
 
+ // Init messages on debate start
+ useEffect(()=>{
+  if(phase==="debate"&&msgs.length===0){
+   const cm=committee||MUN_COMMITTEES[0];
+   setMsgs([
+    {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance du ${cm.name} est ouverte. Point à l'ordre du jour : « ${sim.topic} ». Nous procédons à l'ouverture de la Liste Générale des Orateurs (GSL).`,time:Date.now()-900000,system:true},
+    {id:2,user:"PRÉSIDENT",flag:"🌐",text:"Les délégations souhaitant prendre la parole sont priées de s'inscrire. Chaque discours est limité à 3 minutes. Les délégations peuvent proposer des caucus à tout moment.",time:Date.now()-840000,system:true},
+   ]);
+  }
+ },[phase]);
+
+ // Speaker timer
  useEffect(()=>{
   if(timerActive&&hasFloor){
    timerRef.current=setInterval(()=>{
     setSpeakerTime(t=>{
      if(t<=1){
       setTimerActive(false);setHasFloor(false);
-      setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Temps écoulé pour la délégation de ${myCountry?.country||"votre pays"}. Merci.`,time:Date.now(),system:true}]);
+      setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Temps écoulé pour la délégation de ${myCountry?.country||"votre pays"}. La parole revient à la présidence.`,time:Date.now(),system:true}]);
+      if(myCountry) setGsl(g=>g.map(s=>s.country===myCountry.country?{...s,done:true}:s));
       return 0;
      }
      return t-1;
@@ -7036,57 +7065,94 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   return()=>{if(timerRef.current) clearInterval(timerRef.current);};
  },[timerActive,hasFloor,myCountry]);
 
- // Simulate AI delegates speaking when idle
+ // Caucus countdown
  useEffect(()=>{
-  if(phase!=="debate"||hasFloor||handRaised) return;
-  const delay=8000+Math.random()*12000;
-  const t=setTimeout(()=>{
-   const sp=AI_SPEAKERS[Math.floor(Math.random()*AI_SPEAKERS.length)];
-   setAiSpeaker(sp);
-   ttsSpeak(`${sp.user}. ${sp.text}`);
-   const dur=sp.text.split(" ").length*350+2000;
-   aiTimerRef.current=setTimeout(()=>{
-    setAiSpeaker(null);
-    setMsgs(m=>[...m,{id:Date.now(),user:sp.user,flag:sp.flag,text:sp.text,time:Date.now(),hasFloor:true}]);
-   },dur);
-  },delay);
-  return()=>{clearTimeout(t);if(aiTimerRef.current) clearTimeout(aiTimerRef.current);};
- },[phase,hasFloor,handRaised]);
+  if(!caucus||caucus.remaining<=0) return;
+  caucusRef.current=setInterval(()=>{
+   setCaucus(c=>{
+    if(!c) return null;
+    if(c.remaining<=1){
+     setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Le caucus ${c.type==="modere"?"modéré":"non-modéré"} est terminé. Reprise en séance plénière.`,time:Date.now(),system:true}]);
+     return null;
+    }
+    return {...c,remaining:c.remaining-1};
+   });
+  },1000);
+  return()=>{if(caucusRef.current) clearInterval(caucusRef.current);};
+ },[caucus?.remaining]);
 
  const fmtTimer=(s:number)=>`${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
 
- const sendMsg=()=>{
+ // Gemini AI delegate response
+ const triggerAIDelegate=async(userText:string,userCountry:string)=>{
+  setAiLoading(true);
+  const opponents=ALL_UN_COUNTRIES.filter(c=>c.country!==userCountry).slice(0,10);
+  const aiC=opponents[Math.floor(Math.random()*opponents.length)];
+  const cm=committee||MUN_COMMITTEES[0];
+  const prompt=`Tu es le délégué de ${aiC.country} au ${cm.name} de l'ONU. Débat sur : "${sim.topic}".\nLa délégation de ${userCountry} vient de déclarer : "${userText}"\nRédige une intervention MUN de 2-3 phrases en français, commençant par "Monsieur le Président,". Protocole strict : 3e personne ("notre délégation"), réponds à ce qui vient d'être dit, défends la position de ${aiC.country}, conclus par une position claire.`;
+  try{
+   const r=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+   if(r.ok){const d=await r.json();const txt=d.text||d.response||"";if(txt)setMsgs(m=>[...m,{id:Date.now(),user:aiC.country,flag:aiC.flag,text:txt,time:Date.now(),hasFloor:true}]);}
+  }catch{}
+  setAiLoading(false);
+ };
+
+ const sendMsg=async()=>{
   if(!input.trim()||!myCountry) return;
-  const m:Msg={id:Date.now(),user:myCountry.country,flag:myCountry.flag,text:input.trim(),time:Date.now(),hasFloor};
+  const txt=input.trim();
+  const isFirst=firstSpeech;
+  if(isFirst) setFirstSpeech(false);
+  userSpeeches.current=[...userSpeeches.current,txt];
+  const m:Msg={id:Date.now(),user:myCountry.country,flag:myCountry.flag,text:isFirst&&positionPaper?`[Paper] ${positionPaper}\n\n${txt}`:txt,time:Date.now(),hasFloor};
   setMsgs(p=>[...p,m]);setInput("");setShowInput(false);haptic();
   setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+  await triggerAIDelegate(txt,myCountry.country);
  };
 
  const raiseHand=()=>{
   haptic();
   if(handRaised){setHandRaised(false);return;}
   setHandRaised(true);
-  ttsSpeak(`La délégation de ${myCountry?.country} demande la parole.`);
-  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La délégation de ${myCountry?.country} demande la parole. Vous êtes ajouté(e) à la file.`,time:Date.now(),system:true}]);
+  setGsl(g=>{if(g.find(s=>s.country===myCountry?.country)) return g;return [...g,{country:myCountry!.country,flag:myCountry!.flag,done:false}];});
+  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La délégation de ${myCountry?.country} est inscrite à la Liste Générale des Orateurs.`,time:Date.now(),system:true}]);
  };
 
  const takeFloor=()=>{
   haptic();setHasFloor(true);setHandRaised(false);setTimerActive(true);setSpeakerTime(180);
-  ttsSpeak(`La parole est à la délégation de ${myCountry?.country}. Vous disposez de 3 minutes.`);
   setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La parole est à la délégation de ${myCountry?.country}. Vous disposez de 3 minutes.`,time:Date.now(),system:true}]);
  };
 
  const yieldFloor=()=>{
   haptic();setHasFloor(false);setTimerActive(false);
-  ttsSpeak(`La délégation de ${myCountry?.country} cède la parole.`);
+  if(myCountry) setGsl(g=>g.map(s=>s.country===myCountry.country?{...s,done:true}:s));
   setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La délégation de ${myCountry?.country} cède la parole.`,time:Date.now(),system:true}]);
  };
 
  const castVote=(v:string)=>{
   if(myVote) return;
-  setMyVote(v);
-  setVotes(prev=>({...prev,[v]:prev[v as keyof typeof prev]+1}));
+  setMyVote(v);setVotes(prev=>({...prev,[v]:prev[v as keyof typeof prev]+1}));haptic();
+ };
+
+ const startCaucus=()=>{
+  setShowCaucusModal(false);
+  const totalSecs=caucusTime*60;
+  setCaucus({type:caucusType,topic:caucusTopic||sim.topic,totalTime:totalSecs,remaining:totalSecs});
+  setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Motion adoptée : caucus ${caucusType==="modere"?"modéré":"non-modéré"} de ${caucusTime} min sur : « ${caucusTopic||sim.topic} »${caucusType==="non-modere"?" — Les délégués peuvent maintenant se consulter librement.":""}`,time:Date.now(),system:true}]);
   haptic();
+ };
+
+ const getFeedback=async()=>{
+  if(feedbackLoading) return;
+  setFeedbackLoading(true);
+  const speeches=userSpeeches.current;
+  if(!speeches.length){setFeedbackLoading(false);setFeedback("Aucune intervention enregistrée. Prenez la parole pour recevoir une évaluation.");return;}
+  const cm=committee||MUN_COMMITTEES[0];
+  const prompt=`Tu es un évaluateur expert MUN (Model United Nations) pour le ${cm.name}.\nÉvalue les interventions de ${myCountry?.country} lors du débat sur : "${sim.topic}".\nInterventions :\n${speeches.map((s,i)=>`${i+1}. ${s}`).join("\n")}\nFournis une évaluation concise en français :\n- Score global /20\n- Protocole diplomatique /20\n- Force des arguments /20\n- Un conseil principal pour progresser`;
+  try{
+   const r=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+   if(r.ok){const d=await r.json();setFeedback(d.text||d.response||"Évaluation indisponible.");}
+  }catch{setFeedback("Erreur lors de l'évaluation.");}
+  setFeedbackLoading(false);
  };
 
  const filteredCountries=ALL_UN_COUNTRIES.filter(c=>
@@ -7095,111 +7161,109 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
  // ── CHAMBER SVG VIEW ────────────────────────────────
  const ChamberView=()=>{
-  const W=380,H=200;
-  const CX=W/2,CY=93;
-  const RX=148,RY=76;
+  const W=380,H=200,CX=W/2,CY=93,RX=148,RY=76;
   const countries=ALL_UN_COUNTRIES.slice(0,Math.min(sim.participants,20));
-  const N=countries.length;
-  const presIdx=Math.floor(N/2);
-  const activeSpeaker=hasFloor?myCountry?.country:aiSpeaker?.user??
-   msgs.filter(m=>m.hasFloor&&!m.system).slice(-1)[0]?.user;
-  const seats=countries.map((c,i)=>{
-   const ang=(180+i*180/Math.max(N-1,1))*Math.PI/180;
-   return{...c,x:CX+RX*Math.cos(ang),y:CY+RY*Math.sin(ang),isPres:i===presIdx};
-  });
+  const N=countries.length,presIdx=Math.floor(N/2);
+  const activeSpeaker=hasFloor?myCountry?.country:msgs.filter(m=>m.hasFloor&&!m.system).slice(-1)[0]?.user;
+  const seats=countries.map((c,i)=>{const ang=(180+i*180/Math.max(N-1,1))*Math.PI/180;return{...c,x:CX+RX*Math.cos(ang),y:CY+RY*Math.sin(ang),isPres:i===presIdx};});
   return(
    <div>
     <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}}>
      <rect width={W} height={H} rx="0" fill={T.bg2}/>
      <ellipse cx={CX} cy={CY+10} rx={168} ry={103} fill={T.mode==="dark"?"#0d1d35":"#dde6f5"}/>
-     <ellipse cx={CX} cy={CY} rx={92} ry={51} fill={T.mode==="dark"?"#0a1e3d":"#1a3a6e"} stroke={col+"60"} strokeWidth="2"/>
+     <ellipse cx={CX} cy={CY} rx={92} ry={51} fill={T.mode==="dark"?"#0a1e3d":"#1a3a6e"} stroke={acCol+"60"} strokeWidth="2"/>
      <ellipse cx={CX} cy={CY} rx={85} ry={44} fill={T.mode==="dark"?"#071429":"#0f2855"}/>
-     <ellipse cx={CX} cy={CY} rx={92} ry={51} fill="none" stroke={col+"25"} strokeWidth="5" strokeDasharray="4 6"/>
-     <text x={CX} y={CY+7} textAnchor="middle" fontSize="20" fill={col} opacity="0.3">🌐</text>
+     <ellipse cx={CX} cy={CY} rx={92} ry={51} fill="none" stroke={acCol+"25"} strokeWidth="5" strokeDasharray="4 6"/>
+     <text x={CX} y={CY+7} textAnchor="middle" fontSize="20" fill={acCol} opacity="0.3">{committee?.icon||"🌐"}</text>
      {seats.map((s,i)=>{
-      const isMe=s.id===myCountry?.id;
-      const isSpeaking=s.country===activeSpeaker;
-      const isRaised=handRaised&&s.id===myCountry?.id;
+      const isMe=s.id===myCountry?.id,isSpeaking=s.country===activeSpeaker,isRaised=handRaised&&s.id===myCountry?.id;
+      const inGSL=gsl.find(g=>g.country===s.country&&!g.done);
       const R=s.isPres?20:isMe?19:17;
-      const fill=s.isPres?"#8B691428":isMe?col+"30":isSpeaking?"#16A34A28":T.card+"70";
-      const stroke=s.isPres?"#D97706":isMe?col:isSpeaking?"#16A34A":isRaised?"#D97706":T.b2;
-      const sw=isMe||isSpeaking?2.5:1.5;
+      const fill=s.isPres?"#8B691428":isMe?acCol+"30":isSpeaking?"#16A34A28":T.card+"70";
+      const stroke=s.isPres?"#D97706":isMe?acCol:isSpeaking?"#16A34A":isRaised?"#D97706":T.b2;
       return(
        <g key={i}>
-        {isSpeaking&&<><circle cx={s.x} cy={s.y} r={R+9} fill="none" stroke="#16A34A" strokeWidth="1" opacity="0.2"/>
-        <circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke="#16A34A" strokeWidth="1.5" opacity="0.5"/></>}
-        {isMe&&!isSpeaking&&<circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke={col} strokeWidth="1" opacity="0.4"/>}
-        <circle cx={s.x} cy={s.y} r={R} fill={fill} stroke={stroke} strokeWidth={sw}/>
-        <text x={s.x} y={s.y+5} textAnchor="middle" fontSize={s.isPres?16:13}>{s.isPres?"🌐":s.flag}</text>
+        {isSpeaking&&<><circle cx={s.x} cy={s.y} r={R+9} fill="none" stroke="#16A34A" strokeWidth="1" opacity="0.2"/><circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke="#16A34A" strokeWidth="1.5" opacity="0.5"/></>}
+        {isMe&&!isSpeaking&&<circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke={acCol} strokeWidth="1" opacity="0.4"/>}
+        {inGSL&&!isSpeaking&&!isMe&&<circle cx={s.x} cy={s.y} r={R+3} fill="none" stroke="#D97706" strokeWidth="1" opacity="0.5"/>}
+        <circle cx={s.x} cy={s.y} r={R} fill={fill} stroke={stroke} strokeWidth={isMe||isSpeaking?2.5:1.5}/>
+        <text x={s.x} y={s.y+5} textAnchor="middle" fontSize={s.isPres?16:13}>{s.isPres?committee?.icon||"🌐":s.flag}</text>
         {isRaised&&<text x={s.x+R} y={s.y-R} fontSize="9">✋</text>}
-        {(isMe||s.isPres)&&<text x={s.x} y={s.y+R+11} textAnchor="middle" fontSize="7" fill={s.isPres&&!isMe?"#D97706":col} fontWeight="bold">{s.isPres&&!isMe?"PRÉS.":(s.country.slice(0,8).toUpperCase())}</text>}
+        {(isMe||s.isPres)&&<text x={s.x} y={s.y+R+11} textAnchor="middle" fontSize="7" fill={s.isPres&&!isMe?"#D97706":acCol} fontWeight="bold">{s.isPres&&!isMe?"PRÉS.":s.country.slice(0,8).toUpperCase()}</text>}
        </g>
       );
      })}
     </svg>
 
-    {/* SPEAKER STAGE — shows when someone has floor */}
-    {(hasFloor||aiSpeaker)&&(
-     <div style={{background:T.surf,borderTop:`2px solid ${hasFloor?"#E03535":"#16A34A"}`,padding:"14px 16px"}}>
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
-       <span style={{fontSize:44,lineHeight:1,flexShrink:0}}>{hasFloor?myCountry?.flag:aiSpeaker?.flag}</span>
-       <div style={{flex:1,minWidth:0}}>
-        <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:2}}>
-         {hasFloor?"🎙️ VOUS AVEZ LA PAROLE":"🎙️ AU PUPITRE"}
-        </p>
-        <p style={{color:T.text,fontSize:16,fontWeight:900,lineHeight:1.1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>
-         {hasFloor?myCountry?.country:aiSpeaker?.user}
-        </p>
-       </div>
-       {hasFloor&&<span style={{fontFamily:"monospace",color:"#E03535",fontSize:22,fontWeight:900,flexShrink:0}}>{fmtTimer(speakerTime)}</span>}
+    {/* CAUCUS BANNER */}
+    {caucus&&(
+     <div style={{background:caucus.type==="modere"?"#7C3AED15":"#D9770615",borderTop:`2px solid ${caucus.type==="modere"?"#7C3AED":"#D97706"}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+      <div style={{flex:1,minWidth:0}}>
+       <p style={{color:caucus.type==="modere"?"#7C3AED":"#D97706",fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1}}>🕐 Caucus {caucus.type==="modere"?"Modéré":"Non-Modéré"}</p>
+       <p style={{color:T.text,fontSize:11,fontWeight:700,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>«{caucus.topic}»</p>
       </div>
-      <AudioWave active={true} color={hasFloor?"#E03535":"#16A34A"} bars={20} h={36}/>
-      {hasFloor&&(
-       <div style={{display:"flex",gap:8,marginTop:10}}>
-        <button onClick={yieldFloor} style={{flex:1,padding:"10px",borderRadius:9,border:"1px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>⏹ Céder la parole</button>
-        <button onClick={()=>setShowInput(s=>!s)} style={{padding:"10px 13px",borderRadius:9,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✍️</button>
-       </div>
-      )}
-      {hasFloor&&showInput&&(
-       <div style={{display:"flex",gap:7,marginTop:8}}>
-        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Tapez votre intervention…" style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
-        <button onClick={sendMsg} style={{background:col,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
-       </div>
-      )}
+      <span style={{fontFamily:"monospace",color:caucus.type==="modere"?"#7C3AED":"#D97706",fontSize:20,fontWeight:900,flexShrink:0}}>{fmtTimer(caucus.remaining)}</span>
+      <button onClick={()=>setCaucus(null)} style={{background:"none",border:"none",color:T.muted,fontSize:14,cursor:"pointer",padding:"2px 6px"}}>✕</button>
      </div>
     )}
 
-    {/* MIC CONTROLS — when idle */}
-    {!hasFloor&&!aiSpeaker&&(
+    {/* SPEAKER STAGE */}
+    {hasFloor&&(
+     <div style={{background:T.surf,borderTop:"2px solid #E03535",padding:"14px 16px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
+       <span style={{fontSize:44,lineHeight:1,flexShrink:0}}>{myCountry?.flag}</span>
+       <div style={{flex:1,minWidth:0}}>
+        <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:2}}>🎙️ VOUS AVEZ LA PAROLE</p>
+        <p style={{color:T.text,fontSize:16,fontWeight:900,lineHeight:1.1}}>{myCountry?.country}</p>
+       </div>
+       <span style={{fontFamily:"monospace",color:"#E03535",fontSize:22,fontWeight:900,flexShrink:0}}>{fmtTimer(speakerTime)}</span>
+      </div>
+      <AudioWave active={true} color="#E03535" bars={20} h={36}/>
+      <div style={{display:"flex",gap:8,marginTop:10}}>
+       <button onClick={yieldFloor} style={{flex:1,padding:"10px",borderRadius:9,border:"1px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>⏹ Céder la parole</button>
+       <button onClick={()=>setShowInput(s=>!s)} style={{padding:"10px 13px",borderRadius:9,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✍️</button>
+      </div>
+      {showInput&&(
+       <div style={{display:"flex",gap:7,marginTop:8}}>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Monsieur le Président, notre délégation…" style={{flex:1,padding:"8px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+        <button onClick={sendMsg} disabled={aiLoading} style={{background:acCol,border:"none",borderRadius:9,width:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,opacity:aiLoading?0.5:1}}><Ic n="send" s={15} c="#fff"/></button>
+       </div>
+      )}
+      {aiLoading&&<p style={{color:T.muted,fontSize:10,marginTop:5,textAlign:"center" as const}}>Un délégué rédige sa réponse…</p>}
+     </div>
+    )}
+
+    {/* AI loading indicator */}
+    {aiLoading&&!hasFloor&&(
+     <div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,display:"flex",alignItems:"center",gap:8}}>
+      <div style={{width:8,height:8,borderRadius:"50%",background:"#16A34A",animation:"pulse 1s ease infinite",flexShrink:0}}/>
+      <p style={{color:T.muted,fontSize:11}}>Un délégué prend la parole…</p>
+     </div>
+    )}
+
+    {/* MIC CONTROLS */}
+    {!hasFloor&&!aiLoading&&(
      <div style={{padding:"12px 16px",borderTop:`1px solid ${T.b1}`}}>
       {!handRaised?(
-       <button onClick={raiseHand} style={{width:"100%",padding:"13px",borderRadius:11,border:"none",background:col,color:"#fff",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-        <span style={{fontSize:20}}>✋</span> Lever la main pour parler
+       <button onClick={raiseHand} style={{width:"100%",padding:"13px",borderRadius:11,border:"none",background:acCol,color:"#fff",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <span style={{fontSize:20}}>✋</span> S'inscrire à la Liste des Orateurs (GSL)
        </button>
       ):(
        <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>setHandRaised(false)} style={{flex:1,padding:"12px",borderRadius:9,border:`1px solid #D97706`,background:"#D9770620",color:"#D97706",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✋ Main levée — Annuler</button>
+        <button onClick={()=>setHandRaised(false)} style={{flex:1,padding:"12px",borderRadius:9,border:`1px solid #D97706`,background:"#D9770620",color:"#D97706",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✋ En attente — Annuler</button>
         <button onClick={takeFloor} style={{flex:1,padding:"12px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🎤 Prendre la parole</button>
        </div>
       )}
      </div>
     )}
 
-    {/* Random country banner for non-premium */}
-    {!hasPremium&&myCountry&&(
-     <div style={{margin:"0 12px",background:`${T.amber}15`,border:`1px solid ${T.amber}40`,borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
-      <span style={{fontSize:18,flexShrink:0}}>{myCountry.flag}</span>
-      <div style={{flex:1,minWidth:0}}>
-       <p style={{color:T.amber,fontSize:10,fontWeight:800}}>Pays attribué aléatoirement</p>
-       <p style={{color:T.textD,fontSize:11}}>{myCountry.country} · Abonnez-vous pour choisir votre délégation</p>
-      </div>
-     </div>
-    )}
-    {/* Link to transcript */}
-    <div style={{padding:"8px 14px 12px"}}>
-     <button onClick={()=>setTab("script")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:5}}>
-      📋 Voir la transcription ({msgs.filter(m=>!m.system).length} interv.)
-     </button>
+    {/* Points & Motions */}
+    <div style={{padding:"8px 12px",borderTop:`1px solid ${T.b1}`,display:"flex",gap:5,flexWrap:"wrap" as const}}>
+     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Point d'ordre — délégation de ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>⚡ Ordre</button>
+     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Point d'information accordé à ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Info</button>
+     <button onClick={()=>setShowCaucusModal(true)} style={{padding:"5px 9px",borderRadius:6,border:"1px solid #7C3AED40",background:"#7C3AED10",color:"#7C3AED",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🔄 Caucus</button>
+     <button onClick={()=>setPhase("vote")} style={{padding:"5px 9px",borderRadius:6,border:"1px solid #16A34A40",background:"#16A34A10",color:"#16A34A",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🗳️ Vote</button>
+     <button onClick={()=>{setPhase("feedback");getFeedback();}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${acCol}40`,background:acCol+"10",color:acCol,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>📊 Évaluation</button>
     </div>
    </div>
   );
@@ -7211,7 +7275,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   return(
    <div style={{padding:"14px",flex:1 as const,overflowY:"auto" as const}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,flex:1}}>TRANSCRIPTION OFFICIELLE</p>
+     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,flex:1}}>TRANSCRIPTION OFFICIELLE · {committee?.name||"ONU"}</p>
      <span style={{background:T.bg2,color:T.muted,fontSize:9,padding:"2px 8px",borderRadius:4,border:`1px solid ${T.b1}`}}>{msgs.filter(m=>!m.system).length} interv.</span>
     </div>
     {msgs.map(m=>{
@@ -7238,22 +7302,58 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   );
  };
 
- const QUEUE=["🇩🇪 Allemagne","🇧🇷 Brésil","🇮🇳 Inde","🇨🇳 Chine","🇯🇵 Japon"];
- const TABS:[typeof tab,string][]=[["vue","Chambre"],["dossier","Dossier"],["file","File"],["delegues","Délégués"],["script","Script"],["procedure","Procédure"]];
+ const TABS:[typeof tab,string][]=[["vue","Chambre"],["dossier","Dossier"],["file","GSL"],["delegues","Délégués"],["resolution","Résolution"],["procedure","Procédure"]];
+ const gslActive=gsl.filter(s=>!s.done);
 
- if(phase==="select") return(
+ // ─── COMMITTEE SELECTION ─────────────────────────────────────────
+ if(phase==="committee") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
    <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
     <div>
-     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>ONU · SÉLECTION DE DÉLÉGATION</span>
+     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>ONU · COMITÉ</span>
      <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic.slice(0,55)}{sim.topic.length>55?"…":""}</p>
     </div>
    </div>
-   <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column" as const,gap:12}}>
-    <div style={{background:`${col}15`,border:`1px solid ${col}30`,borderRadius:12,padding:"12px 16px"}}>
-     <p style={{color:col,fontSize:13,fontWeight:800}}>Choisissez votre délégation</p>
-     <p style={{color:T.textD,fontSize:12,marginTop:2}}>Vous parlerez au nom de ce pays pendant toute la séance. La simulation est <strong>audio</strong> — votre micro sera activé quand vous aurez la parole.</p>
+   <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column" as const,gap:10}}>
+    <div style={{background:`${col}15`,border:`1px solid ${col}30`,borderRadius:12,padding:"12px 16px",marginBottom:4}}>
+     <p style={{color:col,fontSize:12,fontWeight:800}}>Choisissez votre comité</p>
+     <p style={{color:T.textD,fontSize:11,marginTop:2}}>Chaque comité a ses propres règles de procédure et son contexte géopolitique.</p>
+    </div>
+    {MUN_COMMITTEES.map(c=>(
+     <button key={c.id} onClick={()=>{haptic();setCommittee(c);}} style={{padding:"12px 14px",borderRadius:12,border:`2px solid ${committee?.id===c.id?c.col:T.b1}`,background:committee?.id===c.id?c.col+"15":T.card,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
+      <span style={{fontSize:28,flexShrink:0,lineHeight:1}}>{c.icon}</span>
+      <div style={{flex:1,minWidth:0}}>
+       <p style={{color:committee?.id===c.id?c.col:T.text,fontSize:13,fontWeight:800}}>{c.name}</p>
+       <p style={{color:T.muted,fontSize:10,marginTop:1}}>{c.desc}</p>
+       <p style={{color:T.muted,fontSize:9,marginTop:1,fontStyle:"italic" as const}}>{c.hint}</p>
+      </div>
+      {committee?.id===c.id&&<Ic n="check" s={16} c={c.col} w={2.5}/>}
+     </button>
+    ))}
+   </div>
+   <div style={{padding:"12px 16px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+    <button onClick={()=>{if(committee){haptic();setPhase(hasPremium?"select":"debate");}}} disabled={!committee} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:committee?committee.col:"#333",color:"#fff",fontSize:14,fontWeight:800,cursor:committee?"pointer":"default",fontFamily:"inherit"}}>
+     {committee?`Rejoindre le ${committee.name} ${committee.icon}`:"Sélectionnez un comité"}
+    </button>
+   </div>
+  </div>
+ );
+
+ // ─── COUNTRY SELECTION ───────────────────────────────────────────
+ if(phase==="select") return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={()=>setPhase("committee")} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={acCol}/></button>
+    <div>
+     <span style={{background:acCol+"20",color:acCol,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>{committee?.icon} {committee?.name||"ONU"} · DÉLÉGATION</span>
+     <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic.slice(0,55)}{sim.topic.length>55?"…":""}</p>
+    </div>
+   </div>
+   <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column" as const,gap:10}}>
+    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
+     <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:6}}>📄 Position paper (optionnel)</p>
+     <textarea value={positionPaper} onChange={e=>setPositionPaper(e.target.value)} placeholder="Résumez la position de votre pays en 2-3 phrases (sera ajoutée à votre premier discours)…" style={{width:"100%",minHeight:65,padding:"8px 10px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:11,fontFamily:"inherit",outline:"none",resize:"vertical" as const,boxSizing:"border-box" as const}}/>
     </div>
     <div style={{position:"relative" as const}}>
      <span style={{position:"absolute" as const,left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none" as const}}><Ic n="search" s={13} c={T.muted}/></span>
@@ -7261,36 +7361,37 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     </div>
     <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
      {filteredCountries.map(c=>(
-      <button key={c.id} onClick={()=>{haptic();setMyCountry(c);}} style={{padding:"10px 14px",borderRadius:10,border:`2px solid ${myCountry?.id===c.id?col:T.b1}`,background:myCountry?.id===c.id?col+"15":T.card,display:"flex",alignItems:"center",gap:10,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
+      <button key={c.id} onClick={()=>{haptic();setMyCountry(c);}} style={{padding:"10px 14px",borderRadius:10,border:`2px solid ${myCountry?.id===c.id?acCol:T.b1}`,background:myCountry?.id===c.id?acCol+"15":T.card,display:"flex",alignItems:"center",gap:10,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
        <span style={{fontSize:22,lineHeight:1}}>{c.flag}</span>
        <span style={{color:T.text,fontSize:13,fontWeight:700,flex:1}}>{c.country}</span>
-       {myCountry?.id===c.id&&<Ic n="check" s={16} c={col} w={2.5}/>}
+       {myCountry?.id===c.id&&<Ic n="check" s={16} c={acCol} w={2.5}/>}
       </button>
      ))}
     </div>
    </div>
    <div style={{padding:"12px 16px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
-    <button onClick={()=>{if(myCountry){haptic();setPhase("debate");}}} disabled={!myCountry} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:myCountry?col:"#333",color:"#fff",fontSize:14,fontWeight:800,cursor:myCountry?"pointer":"default",fontFamily:"inherit"}}>
+    <button onClick={()=>{if(myCountry){haptic();setPhase("debate");}}} disabled={!myCountry} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:myCountry?acCol:"#333",color:"#fff",fontSize:14,fontWeight:800,cursor:myCountry?"pointer":"default",fontFamily:"inherit"}}>
      {myCountry?`Rejoindre en tant que ${myCountry.flag} ${myCountry.country}`:"Sélectionnez un pays"}
     </button>
    </div>
   </div>
  );
 
+ // ─── VOTE PHASE ──────────────────────────────────────────────────
  if(phase==="vote") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
    <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
-    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
+    <button onClick={()=>setPhase("debate")} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={acCol}/></button>
     <div>
-     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>ONU · VOTE DE RÉSOLUTION</span>
+     <span style={{background:acCol+"20",color:acCol,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>{committee?.icon} {committee?.name||"ONU"} · VOTE</span>
      <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic.slice(0,55)}{sim.topic.length>55?"…":""}</p>
     </div>
    </div>
    <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column" as const,gap:16,alignItems:"center",justifyContent:"center"}}>
     <div style={{textAlign:"center" as const,marginBottom:8}}>
      <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>VOTE DE RÉSOLUTION</p>
-     <p style={{color:T.text,fontSize:16,fontWeight:800,lineHeight:1.4,marginBottom:4}}>Le Conseil vote sur :</p>
-     <p style={{color:col,fontSize:14,fontWeight:700,lineHeight:1.4,fontStyle:"italic" as const}}>« {sim.topic} »</p>
+     <p style={{color:T.text,fontSize:16,fontWeight:800,lineHeight:1.4,marginBottom:4}}>Le Comité vote sur :</p>
+     <p style={{color:acCol,fontSize:14,fontWeight:700,lineHeight:1.4,fontStyle:"italic" as const}}>« {sim.topic} »</p>
     </div>
     {!myVote?(
      <div style={{display:"flex",flexDirection:"column" as const,gap:10,width:"100%",maxWidth:320}}>
@@ -7316,27 +7417,101 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
         <span style={{color:T.muted,fontSize:12,width:24,textAlign:"right" as const}}>{n}</span>
        </div>
       ))}
-      <button onClick={onBack} style={{marginTop:8,padding:"12px",borderRadius:10,border:"none",background:col,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Terminer la session</button>
+      <div style={{display:"flex",gap:8,marginTop:8}}>
+       <button onClick={()=>{setPhase("feedback");getFeedback();}} style={{flex:1,padding:"12px",borderRadius:9,border:"none",background:acCol,color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>📊 Mon évaluation</button>
+       <button onClick={onBack} style={{flex:1,padding:"12px",borderRadius:9,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Terminer</button>
+      </div>
      </div>
     )}
    </div>
   </div>
  );
 
+ // ─── FEEDBACK PHASE ──────────────────────────────────────────────
+ if(phase==="feedback") return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={()=>setPhase("vote")} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={acCol}/></button>
+    <div>
+     <span style={{background:acCol+"20",color:acCol,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>ÉVALUATION MUN</span>
+     <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{myCountry?.flag} {myCountry?.country}</p>
+    </div>
+   </div>
+   <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column" as const,gap:12}}>
+    <div style={{background:acCol+"15",border:`1px solid ${acCol}30`,borderRadius:12,padding:"12px 14px"}}>
+     <p style={{color:acCol,fontSize:10,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:4}}>{committee?.icon} {committee?.name}</p>
+     <p style={{color:T.text,fontSize:12,fontWeight:700,lineHeight:1.4}}>{sim.topic}</p>
+     <p style={{color:T.muted,fontSize:10,marginTop:4}}>{userSpeeches.current.length} intervention(s) enregistrée(s)</p>
+    </div>
+    {feedbackLoading?(
+     <div style={{display:"flex",flexDirection:"column" as const,alignItems:"center",gap:12,padding:"30px 0"}}>
+      <div style={{width:36,height:36,border:`3px solid ${acCol}30`,borderTop:`3px solid ${acCol}`,borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
+      <p style={{color:T.muted,fontSize:12}}>Analyse Gemini en cours…</p>
+     </div>
+    ):feedback?(
+     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"14px"}}>
+      <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:10}}>📊 Évaluation IA</p>
+      <p style={{color:T.textD,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap" as const}}>{feedback}</p>
+     </div>
+    ):(
+     <button onClick={getFeedback} style={{padding:"14px",borderRadius:12,border:`1px solid ${acCol}`,background:acCol+"15",color:acCol,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>📊 Obtenir mon évaluation</button>
+    )}
+    {userSpeeches.current.length>0&&(
+     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
+      <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8}}>Vos interventions</p>
+      {userSpeeches.current.map((s,i)=>(
+       <div key={i} style={{marginBottom:i<userSpeeches.current.length-1?10:0,paddingBottom:i<userSpeeches.current.length-1?10:0,borderBottom:i<userSpeeches.current.length-1?`1px solid ${T.b1}`:"none"}}>
+        <p style={{color:T.muted,fontSize:9,fontWeight:700,marginBottom:2}}>INTERVENTION {i+1}</p>
+        <p style={{color:T.textD,fontSize:11,lineHeight:1.5,fontStyle:"italic" as const}}>« {s} »</p>
+       </div>
+      ))}
+     </div>
+    )}
+    <button onClick={onBack} style={{padding:"11px",borderRadius:9,border:"none",background:T.bg2,color:T.muted,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Quitter la session</button>
+   </div>
+  </div>
+ );
+
+ // ─── DEBATE MAIN ─────────────────────────────────────────────────
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {/* CAUCUS MODAL */}
+   {showCaucusModal&&(
+    <div style={{position:"fixed" as const,inset:0,background:"#00000080",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+     <div style={{background:T.surf,borderRadius:"20px 20px 0 0",padding:"20px",width:"100%",maxWidth:480}}>
+      <p style={{color:T.text,fontSize:15,fontWeight:900,marginBottom:14}}>Proposer un Caucus</p>
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+       {(["modere","non-modere"] as const).map(t=>(
+        <button key={t} onClick={()=>setCaucusType(t)} style={{flex:1,padding:"10px",borderRadius:9,border:`2px solid ${caucusType===t?"#7C3AED":T.b1}`,background:caucusType===t?"#7C3AED15":"transparent",color:caucusType===t?"#7C3AED":T.muted,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+         {t==="modere"?"🎙️ Modéré":"🤝 Non-Modéré"}
+        </button>
+       ))}
+      </div>
+      <input value={caucusTopic} onChange={e=>setCaucusTopic(e.target.value)} placeholder="Sous-thème du caucus (ex: aide humanitaire d'urgence)…" style={{width:"100%",padding:"9px 11px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box" as const,marginBottom:10}}/>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+       <span style={{color:T.muted,fontSize:12,flexShrink:0}}>Durée :</span>
+       {[10,15,20,30].map(t=>(
+        <button key={t} onClick={()=>setCaucusTime(t)} style={{flex:1,padding:"7px",borderRadius:7,border:`1.5px solid ${caucusTime===t?"#7C3AED":T.b1}`,background:caucusTime===t?"#7C3AED15":"transparent",color:caucusTime===t?"#7C3AED":T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t}min</button>
+       ))}
+      </div>
+      <div style={{display:"flex",gap:8}}>
+       <button onClick={()=>setShowCaucusModal(false)} style={{flex:1,padding:"11px",borderRadius:9,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
+       <button onClick={startCaucus} style={{flex:2,padding:"11px",borderRadius:9,border:"none",background:"#7C3AED",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🔄 Lancer le caucus</button>
+      </div>
+     </div>
+    </div>
+   )}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
+     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={acCol}/></button>
      <div style={{flex:1,minWidth:0}}>
       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
-       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>ONU</span>
+       <span style={{background:acCol+"20",color:acCol,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{committee?.icon} {committee?.name||"ONU"}</span>
        <span style={{color:"#E03535",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>DIRECT</span>
        {myCountry&&<span style={{fontSize:12}}>{myCountry.flag}</span>}
       </div>
       <p style={{color:T.text,fontSize:12,fontWeight:800,lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
      </div>
-     <button onClick={()=>setPhase("vote")} style={{background:"#16A34A",color:"#fff",fontSize:10,fontWeight:800,padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>VOTER</button>
     </div>
     {hasFloor&&(
      <div style={{background:"#E0353515",border:"1px solid #E0353530",borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
@@ -7347,8 +7522,8 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     )}
     <div style={{display:"flex",gap:4,overflowX:"auto" as const}}>
      {TABS.map(([t,label])=>(
-      <button key={t} onClick={()=>setTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${tab===t?col:T.b1}`,background:tab===t?col+"15":"transparent",color:tab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0,whiteSpace:"nowrap" as const}}>
-       {label}{t==="file"?` (${QUEUE.length})`:""}
+      <button key={t} onClick={()=>setTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${tab===t?acCol:T.b1}`,background:tab===t?acCol+"15":"transparent",color:tab===t?acCol:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0,whiteSpace:"nowrap" as const}}>
+       {label}{t==="file"?` (${gslActive.length})`:""}
       </button>
      ))}
     </div>
@@ -7382,7 +7557,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
        {/* Resolution header */}
        <div style={{background:col+"12",border:`1px solid ${col}30`,borderRadius:14,padding:"14px 16px",marginBottom:12}}>
-        <p style={{color:col,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>RÉSOLUTION EN DÉLIBÉRATION · SC/RES/{new Date().getFullYear()}/0{Math.floor(Math.random()*9)+1}</p>
+        <p style={{color:acCol,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:6}}>{committee?.name||"ONU"} · SC/RES/{new Date().getFullYear()}/0{Math.floor(Math.random()*9)+1}</p>
         <p style={{color:T.text,fontSize:15,fontWeight:800,lineHeight:1.4,fontStyle:"italic" as const}}>« {sim.topic} »</p>
         <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap" as const}}>
          <span style={{background:"#E0353515",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:4,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>DÉBAT EN COURS</span>
@@ -7431,7 +7606,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
          <div key={m.id} style={{display:"flex",gap:8,marginBottom:8,paddingBottom:8,borderBottom:i<speeches.slice(-5).length-1?`1px solid ${T.b1}`:"none"}}>
           <span style={{fontSize:16,flexShrink:0}}>{m.flag}</span>
           <div style={{flex:1,minWidth:0}}>
-           <p style={{color:col,fontSize:9,fontWeight:800}}>{m.user}</p>
+           <p style={{color:acCol,fontSize:9,fontWeight:800}}>{m.user}</p>
            <p style={{color:T.textD,fontSize:11,lineHeight:1.4,fontStyle:"italic" as const}}>« {m.text.slice(0,140)}{m.text.length>140?"…":""}  »</p>
           </div>
          </div>
@@ -7473,16 +7648,31 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
     {tab==="file"&&(
      <div style={{padding:"14px",flex:1,overflowY:"auto"}}>
-      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>FILE DES ORATEURS</p>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+       <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,flex:1}}>LISTE GÉNÉRALE DES ORATEURS</p>
+       <span style={{background:T.bg2,color:T.muted,fontSize:9,padding:"2px 7px",borderRadius:4,border:`1px solid ${T.b1}`}}>{gslActive.length} en attente</span>
+      </div>
       <div style={{display:"flex",flexDirection:"column" as const,gap:7}}>
-       {QUEUE.map((q,i)=>(
-        <div key={q} style={{background:T.card,border:`1px solid ${i===0?col:T.b1}`,borderRadius:9,padding:"10px 13px",display:"flex",alignItems:"center",gap:9}}>
-         <span style={{width:22,height:22,borderRadius:"50%",background:i===0?col:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#fff",flexShrink:0}}>{i+1}</span>
-         <span style={{color:T.text,fontSize:13,fontWeight:700,flex:1}}>{q}</span>
-         {i===0&&<span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>Prochain</span>}
-        </div>
-       ))}
-       {myCountry&&!handRaised&&<button onClick={raiseHand} style={{marginTop:4,padding:"10px",borderRadius:9,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✋ Rejoindre la file — {myCountry.flag} {myCountry.country}</button>}
+       {gsl.map((q,i)=>{
+        const pos=gsl.slice(0,i).filter(s=>!s.done).length;
+        return(
+         <div key={q.country} style={{background:T.card,border:`1px solid ${!q.done&&pos===0?acCol:q.done?"transparent":T.b1}`,borderRadius:9,padding:"10px 13px",display:"flex",alignItems:"center",gap:9,opacity:q.done?0.4:1}}>
+          <span style={{width:22,height:22,borderRadius:"50%",background:q.done?"#444":pos===0?acCol:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#fff",flexShrink:0}}>{q.done?"✓":(pos+1)}</span>
+          <span style={{fontSize:16,flexShrink:0}}>{q.flag}</span>
+          <span style={{color:T.text,fontSize:13,fontWeight:700,flex:1}}>{q.country}</span>
+          {!q.done&&pos===0&&<span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>Prochain</span>}
+          {q.done&&<span style={{color:T.muted,fontSize:10}}>Terminé</span>}
+          {q.country===myCountry?.country&&!q.done&&<span style={{background:acCol+"20",color:acCol,fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:3}}>Vous</span>}
+         </div>
+        );
+       })}
+       {myCountry&&!gsl.find(s=>s.country===myCountry.country)&&(
+        <button onClick={raiseHand} style={{marginTop:4,padding:"10px",borderRadius:9,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✋ S'inscrire à la GSL — {myCountry.flag} {myCountry.country}</button>
+       )}
+      </div>
+      <div style={{marginTop:12,background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px"}}>
+       <p style={{color:T.muted,fontSize:10,fontWeight:700,marginBottom:4}}>📋 TRANSCRIPTION</p>
+       <button onClick={()=>setTab("procedure")} style={{width:"100%",padding:"7px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Voir le script MUN complet →</button>
       </div>
      </div>
     )}
@@ -7491,16 +7681,51 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:10}}>DÉLÉGATIONS · {sim.participants}</p>
       <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
        {ALL_UN_COUNTRIES.slice(0,sim.participants).map(c=>(
-        <div key={c.id} style={{background:T.card,border:`1px solid ${myCountry?.id===c.id?col+"60":T.b1}`,borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:9}}>
+        <div key={c.id} style={{background:T.card,border:`1px solid ${myCountry?.id===c.id?acCol+"60":T.b1}`,borderRadius:9,padding:"9px 13px",display:"flex",alignItems:"center",gap:9}}>
          <span style={{fontSize:18}}>{c.flag}</span>
          <span style={{color:T.text,fontSize:12,fontWeight:700,flex:1}}>{c.country}</span>
-         {myCountry?.id===c.id&&<span style={{background:col+"20",color:col,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>Vous</span>}
+         {gsl.find(s=>s.country===c.country&&!s.done)&&<span style={{background:"#D9770620",color:"#D97706",fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:3}}>GSL</span>}
+         {myCountry?.id===c.id&&<span style={{background:acCol+"20",color:acCol,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>Vous</span>}
         </div>
        ))}
       </div>
      </div>
     )}
-    {tab==="script"&&<TranscriptView/>}
+    {tab==="resolution"&&(
+     <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+       <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,flex:1}}>PROJET DE RÉSOLUTION</p>
+       <span style={{background:acCol+"20",color:acCol,fontSize:9,padding:"2px 7px",borderRadius:4}}>WP/1</span>
+      </div>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+       <p style={{color:T.textD,fontSize:12,lineHeight:1.6}}>
+        <strong>{committee?.name||"L'Assemblée Générale"}</strong>,<br/>
+        <em style={{color:T.muted,fontSize:11}}>Se réunissant en session ordinaire, ayant examiné la question relative à : «{sim.topic}»,</em>
+       </p>
+      </div>
+      <textarea
+       value={draftResolution}
+       onChange={e=>setDraftResolution(e.target.value)}
+       placeholder={"CLAUSES PRÉAMBULAIRES :\nRappelant les résolutions antérieures…\nNotant avec préoccupation que…\nReconnaissant le droit fondamental de…\nAffirmant que…\n\nCLAUSES OPÉRATOIRES :\nDemande aux États membres de…\nAppelle à la cessation immédiate de…\nEncourage la communauté internationale à…\nCondamne fermement les actes de…"}
+       style={{width:"100%",minHeight:220,padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.card,color:T.text,fontSize:11,fontFamily:"inherit",outline:"none",resize:"vertical" as const,lineHeight:1.7,boxSizing:"border-box" as const,marginBottom:10}}
+      />
+      {draftResolution&&(
+       <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:myCountry?.country||"Délégation",flag:myCountry?.flag||"🌐",text:`[DOCUMENT DE TRAVAIL WP/1 SOUMIS] La délégation de ${myCountry?.country} soumet son document de travail au ${committee?.name||"Comité"}.`,time:Date.now(),hasFloor:true}]);}} style={{width:"100%",padding:"11px",borderRadius:9,border:"none",background:acCol,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+        📤 Soumettre le document de travail
+       </button>
+      )}
+      <div style={{marginTop:10,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px"}}>
+       <p style={{color:T.muted,fontSize:10,fontWeight:700,marginBottom:4}}>TRANSCRIPTION DE LA SESSION</p>
+       <p style={{color:T.muted,fontSize:10,lineHeight:1.6}}>{msgs.filter(m=>!m.system).length} intervention(s) consignée(s)</p>
+       {msgs.filter(m=>!m.system).slice(-3).map(m=>(
+        <div key={m.id} style={{marginTop:6,paddingTop:6,borderTop:`1px solid ${T.b1}`}}>
+         <p style={{color:T.muted,fontSize:9,fontWeight:700}}>{m.flag} {m.user}</p>
+         <p style={{color:T.textD,fontSize:10,lineHeight:1.4,fontStyle:"italic" as const}}>«{m.text.slice(0,80)}{m.text.length>80?"…":""}»</p>
+        </div>
+       ))}
+      </div>
+     </div>
+    )}
     {tab==="procedure"&&(
      <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
       <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
