@@ -6243,24 +6243,26 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
  const doFetch = async(quiet=false)=>{
   if(!quiet) setLoading(true);
   setRefreshing(true);
-  let cancelled=false;
-  const articles = await fetchLiveNews(chunk=>{
-   if(cancelled) return;
-   setLiveNews(prev=>{
-    const ids=new Set(prev.map((a:LiveArticle)=>a.id));
-    const news=chunk.filter((a:LiveArticle)=>!ids.has(a.id));
-    if(news.length&&!quiet) onNewPosts(news.length);
-    return news.length?[...news,...prev].slice(0,400):prev;
-   });
-   if(!quiet) setLoading(false);
-  });
-  if(!cancelled){
-   setLiveNews(articles.length?articles:STATIC_NEWS_FALLBACK);
-   setLoading(false);
-   setRefreshing(false);
-   setLastRefresh(new Date());
+  try{
+   const res=await fetch("/api/news",{cache:"no-store"});
+   if(res.ok){
+    const data=await res.json();
+    const articles:LiveArticle[]=data.articles||[];
+    if(articles.length){
+     setLiveNews(articles.slice(0,400));
+     if(!quiet) onNewPosts(articles.length);
+    } else {
+     setLiveNews(STATIC_NEWS_FALLBACK);
+    }
+   } else {
+    setLiveNews(STATIC_NEWS_FALLBACK);
+   }
+  }catch{
+   setLiveNews(STATIC_NEWS_FALLBACK);
   }
-  return()=>{cancelled=true;};
+  setLoading(false);
+  setRefreshing(false);
+  setLastRefresh(new Date());
  };
 
  useEffect(()=>{
@@ -6661,27 +6663,32 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
   {id:"d3",title:"Accès Cairn.info — 6 mois -50% pour membres",src:"Partenaires",type:"deals" as OppTab,link:"#",time:"3j",tag:"DEAL",tagC:"#D97706"},
  ];
 
+ const fetchOpps=async()=>{
+  setLoading(true);
+  try{
+   const res=await fetch("/api/opportunities",{cache:"no-store"});
+   if(res.ok){
+    const data=await res.json();
+    const fresh=(data.items||[]) as LiveOpp[];
+    if(fresh.length){
+     setLiveOpps(prev=>{
+      const ids=new Set(prev.map(o=>o.id));
+      const news=fresh.filter(o=>!ids.has(o.id));
+      return news.length?[...news,...prev]:prev;
+     });
+    }
+   }
+  }catch{/*silent — static fallback already in state*/}
+  setLoading(false);
+  setLastRefresh(new Date());
+ };
+
  useEffect(()=>{
-  let cancelled=false;
-  (async()=>{
-   setLoading(true);
-   await fetchLiveOpps(chunk=>{
-    if(cancelled) return;
-    setLiveOpps(prev=>{
-     const ids=new Set(prev.map(o=>o.id));
-     const news=chunk.filter(o=>!ids.has(o.id));
-     return news.length?[...prev,...news]:prev;
-    });
-    setLoading(false);
-   });
-   if(!cancelled){setLoading(false);setLastRefresh(new Date());}
-  })();
-  // Refresh daily
-  const t=setInterval(()=>{
-   if(!cancelled){setLoading(true);fetchLiveOpps(chunk=>{if(!cancelled)setLiveOpps(prev=>{const ids=new Set(prev.map(o=>o.id));const news=chunk.filter(o=>!ids.has(o.id));return news.length?[...prev,...news]:prev;});}).then(()=>{if(!cancelled){setLoading(false);setLastRefresh(new Date());}});}
-  },24*60*60*1000);
-  return()=>{cancelled=true;clearInterval(t);};
- },[]);
+  fetchOpps();
+  // Refresh every 2 hours
+  const t=setInterval(fetchOpps,2*60*60*1000);
+  return()=>clearInterval(t);
+ },[]);// eslint-disable-line react-hooks/exhaustive-deps
 
  const col = COLORS[subTab];
  const q=search.toLowerCase();
@@ -6708,9 +6715,15 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
        {lastRefresh&&<span style={{color:T.muted,fontSize:10}}>· {timeSince(lastRefresh)}</span>}
       </div>
      </div>
-     <button onClick={()=>{haptic();setShowPost(s=>!s);}} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 11px",borderRadius:9,border:`1px solid ${col}`,background:col+"15",color:col,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
-      <Ic n="plus" s={13} c={col}/> Publier
-     </button>
+     <div style={{display:"flex",gap:6}}>
+      <button onClick={()=>{haptic();fetchOpps();}} disabled={loading} style={{background:loading?T.bg2:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"5px 9px",display:"flex",alignItems:"center",gap:4,cursor:"pointer",flexShrink:0}}>
+       <span style={{fontSize:12,display:"inline-block",animation:loading?"pulse 1s ease infinite":"none"}}>⟳</span>
+       <span style={{color:T.muted,fontSize:10,fontWeight:800}}>{loading?"…":"Actu"}</span>
+      </button>
+      <button onClick={()=>{haptic();setShowPost(s=>!s);}} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 11px",borderRadius:9,border:`1px solid ${col}`,background:col+"15",color:col,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+       <Ic n="plus" s={13} c={col}/> Publier
+      </button>
+     </div>
     </div>
     {/* Search */}
     <div style={{position:"relative" as const,marginBottom:10}}>
