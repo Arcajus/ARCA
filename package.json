@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:android": "BUILD_TARGET=capacitor next build",
+    "build:android": "node scripts/build-android.mjs && npx cap sync android",
     "start": "next start",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.mjs"

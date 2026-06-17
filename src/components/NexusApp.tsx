@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { apiUrl } from "@/lib/api";
 
 // THEMES 
 const DARK = {
@@ -225,7 +226,7 @@ async function speakEdge(text: string, gender: "M"|"F", onEnd?: ()=>void): Promi
   const timer = setTimeout(() => controller.abort(), 12000);
   let res: Response;
   try {
-   res = await fetch("/api/tts", {
+   res = await fetch(apiUrl("/api/tts"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text: cleanForSpeech(text).slice(0, 3000), voice }),
@@ -307,7 +308,7 @@ async function callGemini(sys:string, hist:GHist, _key:string, maxTokens=400):Pr
  const clean=sanitizeHist(hist);
  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
  const body=JSON.stringify({sys,hist:clean,maxTokens,stream:false});
- const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body});
+ const res=await fetch(apiUrl("/api/gemini"),{method:"POST",headers:{"Content-Type":"application/json"},body});
  if(!res.ok){const e=await res.text().catch(()=>"");throw new Error(`HTTP_${res.status}: ${e.slice(0,120)}`);}
  const d=await res.json();
  if(d.error) throw new Error(d.error.message||"gemini_error");
@@ -321,7 +322,7 @@ async function streamGemini(sys:string, hist:GHist, _key:string, maxTokens:numbe
  const clean=sanitizeHist(hist);
  if(!clean.length||clean[clean.length-1].role!=="user") throw new Error("invalid_hist");
  const body=JSON.stringify({sys,hist:clean,maxTokens,stream:true});
- const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body});
+ const res=await fetch(apiUrl("/api/gemini"),{method:"POST",headers:{"Content-Type":"application/json"},body});
  if(!res.ok){const e=await res.text().catch(()=>"");throw new Error(`HTTP_${res.status}: ${e.slice(0,120)}`);}
  const reader=res.body!.getReader();
  const dec=new TextDecoder();
@@ -6244,7 +6245,7 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
   if(!quiet) setLoading(true);
   setRefreshing(true);
   try{
-   const res=await fetch("/api/news",{cache:"no-store"});
+   const res=await fetch(apiUrl("/api/news"),{cache:"no-store"});
    if(res.ok){
     const data=await res.json();
     const articles:LiveArticle[]=data.articles||[];
@@ -6666,7 +6667,7 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
  const fetchOpps=async()=>{
   setLoading(true);
   try{
-   const res=await fetch("/api/opportunities",{cache:"no-store"});
+   const res=await fetch(apiUrl("/api/opportunities"),{cache:"no-store"});
    if(res.ok){
     const data=await res.json();
     const fresh=(data.items||[]) as LiveOpp[];
@@ -7080,7 +7081,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   const aiC=opponents[Math.floor(Math.random()*opponents.length)];
   const prompt=`Tu es le délégué de ${aiC.country} à l'Assemblée Générale de l'ONU. Débat sur : "${sim.topic}".\nLa délégation de ${userCountry} vient de déclarer : "${userText}"\nRédige une intervention MUN de 2-3 phrases en français, commençant par "Monsieur le Président,". Protocole strict : 3e personne ("notre délégation"), réponds à ce qui vient d'être dit, défends la position de ${aiC.country}, conclus par une position claire.`;
   try{
-   const r=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+   const r=await fetch(apiUrl("/api/gemini"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
    if(r.ok){const d=await r.json();const txt=d.text||d.response||"";if(txt)setMsgs(m=>[...m,{id:Date.now(),user:aiC.country,flag:aiC.flag,text:txt,time:Date.now(),hasFloor:true}]);}
   }catch{}
   setAiLoading(false);
@@ -7137,7 +7138,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   if(!speeches.length){setFeedbackLoading(false);setFeedback("Aucune intervention enregistrée. Prenez la parole pour recevoir une évaluation.");return;}
   const prompt=`Tu es un évaluateur expert MUN (Model United Nations) pour l'Assemblée Générale de l'ONU.\nÉvalue les interventions de ${myCountry?.country} lors du débat sur : "${sim.topic}".\nInterventions :\n${speeches.map((s,i)=>`${i+1}. ${s}`).join("\n")}\nFournis une évaluation concise en français :\n- Score global /20\n- Protocole diplomatique /20\n- Force des arguments /20\n- Un conseil principal pour progresser`;
   try{
-   const r=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+   const r=await fetch(apiUrl("/api/gemini"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
    if(r.ok){const d=await r.json();setFeedback(d.text||d.response||"Évaluation indisponible.");}
   }catch{setFeedback("Erreur lors de l'évaluation.");}
   setFeedbackLoading(false);
@@ -7995,7 +7996,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   if(cached){try{setDossier(JSON.parse(cached));return;}catch{}}
   setDossierLoading(true);
   setDossierErr(null);
-  fetch("/api/generate-dossier",{
+  fetch(apiUrl("/api/generate-dossier"),{
    method:"POST",
    headers:{"Content-Type":"application/json"},
    body:JSON.stringify({topic:sim.topic,trialType:trialType||sim.trialType||"correctionnel"}),
@@ -8517,7 +8518,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        <div style={{background:"#EF444415",border:"1px solid #EF444440",borderRadius:10,padding:"14px",display:"flex",flexDirection:"column" as const,gap:10,alignItems:"center"}}>
         <p style={{color:"#EF4444",fontSize:12,fontWeight:800}}>Erreur de génération</p>
         <p style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>{dossierErr}</p>
-        <button onClick={()=>{setDossierErr(null);setDossierLoading(true);fetch("/api/generate-dossier",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:sim.topic,trialType:trialType||sim.trialType||"correctionnel"})}).then(r=>r.json()).then(data=>{if(data.dossier){setDossier(data.dossier as GeneratedDossier);try{localStorage.setItem(`nexus_dossier_${sim.id}`,JSON.stringify(data.dossier));}catch{}}else{setDossierErr(data.error?.message||"Erreur");}}).catch(e=>setDossierErr(String(e))).finally(()=>setDossierLoading(false));}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:col,color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Réessayer</button>
+        <button onClick={()=>{setDossierErr(null);setDossierLoading(true);fetch(apiUrl("/api/generate-dossier"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:sim.topic,trialType:trialType||sim.trialType||"correctionnel"})}).then(r=>r.json()).then(data=>{if(data.dossier){setDossier(data.dossier as GeneratedDossier);try{localStorage.setItem(`nexus_dossier_${sim.id}`,JSON.stringify(data.dossier));}catch{}}else{setDossierErr(data.error?.message||"Erreur");}}).catch(e=>setDossierErr(String(e))).finally(()=>setDossierLoading(false));}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:col,color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Réessayer</button>
        </div>
       )}
       {/* ── DOSSIER CONTENT ── */}
@@ -9270,7 +9271,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
   const cached=localStorage.getItem(cacheKey);
   if(cached){try{setDossierAN(JSON.parse(cached));return;}catch{}}
   setDossierLoading(true);setDossierErr(null);
-  fetch("/api/generate-legis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:sim.topic})})
+  fetch(apiUrl("/api/generate-legis"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:sim.topic})})
   .then(r=>r.json())
   .then(data=>{
    if(data.error){setDossierErr(data.error.message||"Erreur");}
@@ -9302,7 +9303,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
   const opposingRole:ANRole=myRole==="depute_maj"?"depute_opp":myRole==="depute_opp"?"depute_maj":myRole==="ministre"?"depute_opp":myRole==="rapporteur"?"depute_opp":"depute_maj";
   try{
    const sp=`Tu es ${AN_ROLE_LABELS[opposingRole]} à l'Assemblée nationale française. Phase : ${AN_PHASE_LABELS[phase]}. Texte débattu : "${sim.topic}". ${myRole==="depute_maj"?"Oppose-toi vigoureusement en 1-2 phrases à cette déclaration":myRole==="depute_opp"?"Défends le texte en 1-2 phrases":`Réponds en 1-2 phrases en tant que ${AN_ROLE_LABELS[opposingRole]}`} : "${txt}". En français.`;
-   const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
+   const res=await fetch(apiUrl("/api/gemini"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
    const data=await res.json();
    const aiText=data?.content||`${AN_ROLE_LABELS[opposingRole]} prend note de cet argument.`;
    setMsgs(p=>[...p,{id:Date.now(),role:"ai",user:AN_ROLE_LABELS[opposingRole],text:aiText,time:Date.now()}]);
@@ -9314,7 +9315,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
   setFbLoading(true);setShowFeedback(true);
   try{
    const sp=`Tu es un expert en rhétorique parlementaire française. Évalue la performance de ce député/ministre lors de la session sur "${sim.topic}". Ses interventions : ${userMsgsAN.current.map((m,i)=>`${i+1}. "${m}"`).join(" ")}. Donne un feedback constructif en 3-4 phrases : points forts, axes d'amélioration, et une note globale /20.`;
-   const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
+   const res=await fetch(apiUrl("/api/gemini"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
    const data=await res.json();
    setFeedbackAN(data?.content||"Session enregistrée. Continue à pratiquer !");
   }catch{setFeedbackAN("Impossible d'obtenir le feedback. Réessaie.");}
@@ -9764,7 +9765,7 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
   try{
    const opposingCountry=CS_ALL.filter(c=>c.name!==myCountry.name)[Math.floor(Math.random()*14)];
    const sp=`Tu es ${opposingCountry.name} (${opposingCountry.flag}) au Conseil de sécurité de l'ONU. Sujet débattu : "${sim.topic}". Réponds brièvement en 1-2 phrases au discours de ${myCountry.name} : "${txt}". Sois diplomatique mais défends ta position nationale. En français.`;
-   const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
+   const res=await fetch(apiUrl("/api/gemini"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
    const data=await res.json();
    const aiText=data?.content||`${opposingCountry.name} prend note de la position de ${myCountry.name} et souhaite approfondir les consultations.`;
    setMsgs(p=>[...p,{id:Date.now(),country:opposingCountry.name,flag:opposingCountry.flag,text:aiText,time:Date.now(),isAI:true}]);
@@ -9939,7 +9940,7 @@ function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   let evalFeedback="";
   try{
    const sp=`Tu es un expert en communication politique. Évalue cette réponse de conférence de presse (sujet: "${sim.topic}"): "${txt}"\n\nRéponds UNIQUEMENT avec un JSON: {"score": <entier 0-20>, "feedback": "<1 phrase de feedback constructif>"}`;
-   const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
+   const res=await fetch(apiUrl("/api/gemini"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:sp}]})});
    const data=await res.json();
    const parsed=JSON.parse(data?.content||"{}");
    evalScore=Math.min(20,Math.max(0,parsed.score||12));
