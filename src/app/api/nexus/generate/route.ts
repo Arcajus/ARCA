@@ -6,11 +6,15 @@ export const maxDuration = 60;
 // Catégories couvertes par NEXUS Originals — une synthèse par catégorie et par exécution.
 const TOPICS = [
   { q: "géopolitique diplomatie international", category: "Géopolitique", color: "#1A5FD4" },
-  { q: "france politique gouvernement assemblée nationale", category: "France", color: "#E03535" },
+  { q: "france politique gouvernement assemblée nationale", category: "Politique", color: "#E03535" },
   { q: "europe union européenne parlement", category: "Europe", color: "#7C3AED" },
   { q: "économie finance marchés inflation", category: "Économie", color: "#D97706" },
   { q: "intelligence artificielle technologie", category: "Sciences & IA", color: "#0E7490" },
   { q: "climat environnement énergie", category: "Climat", color: "#16A34A" },
+  { q: "football ligue 1 champions league transferts", category: "Football", color: "#16A34A" },
+  { q: "basketball nba euroligue", category: "Basketball", color: "#EA580C" },
+  { q: "handball championnat ligue lnh", category: "Handball", color: "#9333EA" },
+  { q: "sport compétition olympique", category: "Sport", color: "#0EA5E9" },
 ];
 
 const MIN_DISTINCT_SOURCES = 3;
@@ -96,29 +100,27 @@ async function handle(req: NextRequest) {
     return NextResponse.json({ error: "GEMINI_API_KEY manquante" }, { status: 500 });
   }
 
-  const published: string[] = [];
-  const skipped: string[] = [];
-
-  for (const topic of TOPICS) {
+  const results = await Promise.all(TOPICS.map(async (topic) => {
     const headlines = await fetchHeadlines(topic.q);
     const distinctSources = new Set(headlines.map(h => h.src).filter(Boolean));
     if (distinctSources.size < MIN_DISTINCT_SOURCES) {
-      skipped.push(`${topic.category} (${distinctSources.size} sources)`);
-      continue;
+      return { ok: false as const, label: `${topic.category} (${distinctSources.size} sources)` };
     }
 
     const article = await writeArticle(topic.category, headlines, key);
     if (!article) {
-      skipped.push(`${topic.category} (génération échouée)`);
-      continue;
+      return { ok: false as const, label: `${topic.category} (génération échouée)` };
     }
 
     await sql`
       INSERT INTO nexus_articles (title, hook, body, category, tag_color, sources)
       VALUES (${article.title}, ${article.hook}, ${article.body}, ${topic.category}, ${topic.color}, ${JSON.stringify(headlines.slice(0, 6))})
     `;
-    published.push(topic.category);
-  }
+    return { ok: true as const, label: topic.category };
+  }));
+
+  const published = results.filter(r => r.ok).map(r => r.label);
+  const skipped = results.filter(r => !r.ok).map(r => r.label);
 
   return NextResponse.json({ published, skipped });
 }

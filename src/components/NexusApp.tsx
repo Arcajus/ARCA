@@ -6248,7 +6248,7 @@ const NEWS_CATS = [
  {id:"eco",label:"Économie",icon:"bar",tags:["ÉCONOMIE","ÉCO MONDE","MARCHÉS","COMMERCE","INFLATION","CRYPTO","FMI","OMC","G7/G20","LES ÉCHOS","EMPLOI"]},
  {id:"sciences",label:"Sciences & IA",icon:"zap",tags:["SCIENCE","MÉDECINE","ESPACE","IA","TECH","CYBER","SPATIAL","OMS","ARCHÉO"]},
  {id:"climat",label:"Climat",icon:"globe",tags:["CLIMAT","BIODIVERSITÉ","ÉNERGIE MONDE","EAU","ALIMENTATION","DÉVELOPPEMENT","RÉFUGIÉS"]},
- {id:"culture",label:"Culture & Sport",icon:"award",tags:["CULTURE","SPORT","HISTOIRE","HIST. FR","MÉMOIRE","ARCHÉO","MÉDIAS","RS","RELIGION","JEUNESSE","GENRE"]},
+ {id:"culture",label:"Culture & Sport",icon:"award",tags:["CULTURE","SPORT","FOOTBALL","BASKETBALL","HANDBALL","HISTOIRE","HIST. FR","MÉMOIRE","ARCHÉO","MÉDIAS","RS","RELIGION","JEUNESSE","GENRE"]},
  {id:"afrique",label:"Afrique",icon:"map",tags:["JEUNE AFRIQUE","SAHEL","MAGHREB","AF. EST","UA","RFI","DROITS","UNICEF","UNESCO"]},
  {id:"intl",label:"Monde",icon:"globe",tags:["FRANCE 24","TV5MONDE","BBC","COURRIER INT.","DW","AM. LATINE","OCÉANIE","ASIE-PAC.","MOYEN-ORIENT","DIPLOMATIE"]},
 ];
