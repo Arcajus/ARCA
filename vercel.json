@@ -3,6 +3,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
+  "crons": [
+    { "path": "/api/nexus/generate", "schedule": "0 6 * * *" }
+  ],
   "headers": [
     {
       "source": "/sw.js",

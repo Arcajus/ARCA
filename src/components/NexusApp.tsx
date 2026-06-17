@@ -1683,7 +1683,7 @@ const RSS_SOURCES = [
  {name:"Féminisme", url:G("féminisme égalité femmes droits genre"), tag:"GENRE", tagC:"#A93226"},
  {name:"Jeunesse", url:G("jeunesse lycéens étudiants génération"), tag:"JEUNESSE", tagC:"#2ECC71"},
 ];
-type LiveArticle = {id:string;title:string;src:string;tag:string;tagC:string;time:string;imgUrl:string|null;videoUrl?:string;link:string;verif?:{label:string;color:string}};
+type LiveArticle = {id:string;title:string;src:string;tag:string;tagC:string;time:string;imgUrl:string|null;videoUrl?:string;link:string;verif?:{label:string;color:string};isNexus?:boolean;hook?:string;body?:string;sources?:{title:string;link:string;src:string}[]};
 
 function getYtId(url:string):string|null{
  const m=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
@@ -6241,6 +6241,7 @@ const STATIC_NEWS_FALLBACK: LiveArticle[] = [
 
 const NEWS_CATS = [
  {id:"all",label:"Tout",icon:"globe"},
+ {id:"nexus",label:"NEXUS",icon:"award"},
  {id:"geo",label:"Géopolitique",icon:"globe",tags:["GÉOPOLITIQUE","DIPLOMATIE","CONFLITS","UKRAINE","GAZA","MOYEN-ORIENT","ONU","OTAN","USA","RUSSIE","CHINE","INDE","ASIE-PAC.","AM. LATINE","OCÉANIE","EUROPE","BALKANS","EU. EST","CAUCASE","ASIE CENT."]},
  {id:"france",label:"France",icon:"flag",tags:["POLITIQUE","PARLEMENT","ÉLYSÉE","ÉLECTIONS","SOCIÉTÉ","JUSTICE","SÉCURITÉ","IMMIGRATION","ÉDUCATION","SANTÉ","ÉCONOMIE","EMPLOI","LOGEMENT","ÉNERGIE","TRANSPORT","LE MONDE","LE FIGARO","LIBÉRATION","20 MINUTES","L'EXPRESS","LE POINT","LES ÉCHOS"]},
  {id:"europe",label:"Europe",icon:"map",tags:["EU. EST","BALKANS","CAUCASE","DROIT UE","JURIDICTIONS","OTAN","COURRIER INT.","DW"]},
@@ -6259,22 +6260,30 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
  const [cat,setCat] = useState("all");
  const [lastRefresh,setLastRefresh] = useState<Date|null>(null);
  const [refreshing,setRefreshing] = useState(false);
+ const [openArticle,setOpenArticle] = useState<LiveArticle|null>(null);
  const refreshRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 
  const doFetch = async(quiet=false)=>{
   if(!quiet) setLoading(true);
   setRefreshing(true);
   try{
-   const res=await fetch(apiUrl("/api/news"),{cache:"no-store"});
-   if(res.ok){
-    const data=await res.json();
-    const articles:LiveArticle[]=data.articles||[];
-    if(articles.length){
-     setLiveNews(articles.slice(0,400));
-     if(!quiet) onNewPosts(articles.length);
-    } else {
-     setLiveNews(STATIC_NEWS_FALLBACK);
-    }
+   const [newsRes,nexusRes]=await Promise.all([
+    fetch(apiUrl("/api/news"),{cache:"no-store"}),
+    fetch(apiUrl("/api/nexus/feed"),{cache:"no-store"}).catch(()=>null),
+   ]);
+   let articles:LiveArticle[]=[];
+   if(newsRes.ok){
+    const data=await newsRes.json();
+    articles=(data.articles||[]).map((a:LiveArticle&{pubDate?:string})=>({...a,time:makeTimeStr(a.pubDate||"")}));
+   }
+   if(nexusRes&&nexusRes.ok){
+    const nexusData=await nexusRes.json();
+    const nexusArticles:LiveArticle[]=(nexusData.articles||[]).map((a:LiveArticle)=>({...a,time:timeFromTs(new Date(String(a.time)).getTime())}));
+    articles=[...nexusArticles,...articles];
+   }
+   if(articles.length){
+    setLiveNews(articles.slice(0,400));
+    if(!quiet) onNewPosts(articles.length);
    } else {
     setLiveNews(STATIC_NEWS_FALLBACK);
    }
@@ -6297,6 +6306,7 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
  const q=search.toLowerCase();
  const filtered = liveNews.filter((a:LiveArticle)=>{
   if(q&&!a.title.toLowerCase().includes(q)&&!a.src.toLowerCase().includes(q)) return false;
+  if(cat==="nexus") return !!a.isNexus;
   if(cat!=="all"&&catDef?.tags){
    const tagMatch = catDef.tags.some(t=>a.tag.includes(t)||a.src.includes(t));
    if(!tagMatch) return false;
@@ -6360,41 +6370,52 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
     {/* Article cards */}
     {filtered.map((a:LiveArticle)=>{
      const img = a.imgUrl||getFallbackImg(a.tag,a.title);
-     return(
-      <a key={a.id} href={a.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none" as const}}>
-       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,overflow:"hidden",transition:"all .15s",cursor:"pointer"}}
-        onMouseEnter={e=>(e.currentTarget as HTMLElement).style.borderColor=a.tagC+"60"}
-        onMouseLeave={e=>(e.currentTarget as HTMLElement).style.borderColor=T.b1}>
-        {/* Image */}
-        <div style={{height:160,background:T.b1,overflow:"hidden",position:"relative" as const}}>
-         <img src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover" as const,display:"block"}} loading="lazy" onError={(e)=>{(e.target as HTMLImageElement).style.display="none";}}/>
-         {/* Source badge overlay */}
-         <div style={{position:"absolute" as const,bottom:8,left:8,background:"rgba(0,0,0,0.72)",backdropFilter:"blur(6px)",borderRadius:5,padding:"3px 8px",display:"flex",alignItems:"center",gap:5}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:a.tagC,display:"inline-block",flexShrink:0}}/>
-          <span style={{color:"#fff",fontSize:9,fontWeight:800,letterSpacing:.5}}>{a.src}</span>
-         </div>
-         {/* Category badge */}
-         <div style={{position:"absolute" as const,top:8,right:8,background:a.tagC,borderRadius:4,padding:"2px 7px"}}>
-          <span style={{color:"#fff",fontSize:9,fontWeight:800,letterSpacing:.5}}>{a.tag}</span>
-         </div>
+     const cardInner = (
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,overflow:"hidden",transition:"all .15s",cursor:"pointer"}}
+       onMouseEnter={e=>(e.currentTarget as HTMLElement).style.borderColor=a.tagC+"60"}
+       onMouseLeave={e=>(e.currentTarget as HTMLElement).style.borderColor=T.b1}>
+       {/* Image */}
+       <div style={{height:160,background:T.b1,overflow:"hidden",position:"relative" as const}}>
+        <img src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover" as const,display:"block"}} loading="lazy" onError={(e)=>{(e.target as HTMLImageElement).style.display="none";}}/>
+        {/* Source badge overlay */}
+        <div style={{position:"absolute" as const,bottom:8,left:8,background:"rgba(0,0,0,0.72)",backdropFilter:"blur(6px)",borderRadius:5,padding:"3px 8px",display:"flex",alignItems:"center",gap:5}}>
+         <span style={{width:6,height:6,borderRadius:"50%",background:a.tagC,display:"inline-block",flexShrink:0}}/>
+         <span style={{color:"#fff",fontSize:9,fontWeight:800,letterSpacing:.5}}>{a.src}</span>
         </div>
-        {/* Body */}
-        <div style={{padding:"10px 13px 12px",display:"flex",flexDirection:"column" as const,gap:6}}>
-         <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <span style={{width:5,height:5,borderRadius:"50%",background:a.tagC,display:"inline-block",flexShrink:0}}/>
-          <span style={{color:T.muted,fontSize:10,fontWeight:700}}>{a.src}</span>
-          {a.verif&&<span style={{background:a.verif.color+"22",color:a.verif.color,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3,marginLeft:2}}>{a.verif.label}</span>}
-         </div>
-         <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.4}}>{a.title}</p>
-         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{color:T.muted,fontSize:10}}>{a.time}</span>
-          <div style={{display:"flex",alignItems:"center",gap:3,color:T.blueB,marginLeft:"auto"}}>
-           <Ic n="globe" s={10} c={T.blueB}/>
-           <span style={{fontSize:10,fontWeight:700}}>Lire →</span>
-          </div>
+        {/* Category badge */}
+        <div style={{position:"absolute" as const,top:8,right:8,background:a.tagC,borderRadius:4,padding:"2px 7px"}}>
+         <span style={{color:"#fff",fontSize:9,fontWeight:800,letterSpacing:.5}}>{a.tag}</span>
+        </div>
+       </div>
+       {/* Body */}
+       <div style={{padding:"10px 13px 12px",display:"flex",flexDirection:"column" as const,gap:6}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+         <span style={{width:5,height:5,borderRadius:"50%",background:a.tagC,display:"inline-block",flexShrink:0}}/>
+         <span style={{color:T.muted,fontSize:10,fontWeight:700}}>{a.src}</span>
+         {a.verif&&<span style={{background:a.verif.color+"22",color:a.verif.color,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3,marginLeft:2}}>{a.verif.label}</span>}
+        </div>
+        {a.isNexus&&a.hook&&<p style={{color:T.muted,fontSize:11,fontWeight:600,fontStyle:"italic" as const}}>{a.hook}</p>}
+        <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.4}}>{a.title}</p>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+         <span style={{color:T.muted,fontSize:10}}>{a.time}</span>
+         <div style={{display:"flex",alignItems:"center",gap:3,color:T.blueB,marginLeft:"auto"}}>
+          <Ic n="globe" s={10} c={T.blueB}/>
+          <span style={{fontSize:10,fontWeight:700}}>Lire →</span>
          </div>
         </div>
        </div>
+      </div>
+     );
+     if(a.isNexus){
+      return(
+       <div key={a.id} onClick={()=>setOpenArticle(a)} style={{textDecoration:"none" as const}}>
+        {cardInner}
+       </div>
+      );
+     }
+     return(
+      <a key={a.id} href={a.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none" as const}}>
+       {cardInner}
       </a>
      );
     })}
@@ -6409,6 +6430,39 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
      </div>
     )}
    </div>
+
+   {/* NEXUS article reader */}
+   {openArticle&&(
+    <div onClick={()=>setOpenArticle(null)} style={{position:"fixed" as const,inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+     <div onClick={e=>e.stopPropagation()} style={{background:T.surf,borderRadius:"18px 18px 0 0",maxHeight:"85vh",width:"100%",maxWidth:520,overflowY:"auto",padding:"16px 18px 28px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+       <div style={{display:"flex",alignItems:"center",gap:6}}>
+        <span style={{background:openArticle.tagC,borderRadius:4,padding:"2px 7px"}}>
+         <span style={{color:"#fff",fontSize:9,fontWeight:800,letterSpacing:.5}}>{openArticle.tag}</span>
+        </span>
+        <span style={{color:T.muted,fontSize:10,fontWeight:700}}>NEXUS Originals · {openArticle.time}</span>
+       </div>
+       <button onClick={()=>setOpenArticle(null)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,fontSize:18,lineHeight:1,padding:4}}>✕</button>
+      </div>
+      {openArticle.hook&&<p style={{color:T.blueB,fontSize:13,fontWeight:700,fontStyle:"italic" as const,marginBottom:10}}>{openArticle.hook}</p>}
+      <h2 style={{color:T.text,fontSize:19,fontWeight:800,lineHeight:1.35,marginBottom:12}}>{openArticle.title}</h2>
+      <p style={{color:T.textD,fontSize:14,lineHeight:1.6,whiteSpace:"pre-wrap" as const,marginBottom:18}}>{openArticle.body}</p>
+      {!!openArticle.sources?.length&&(
+       <div style={{borderTop:`1px solid ${T.b1}`,paddingTop:12}}>
+        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,marginBottom:8}}>Sources ({openArticle.sources.length})</p>
+        <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
+         {openArticle.sources.map((s,i)=>(
+          <a key={i} href={s.link} target="_blank" rel="noopener noreferrer" style={{color:T.blueB,fontSize:12,textDecoration:"none" as const,display:"flex",gap:6}}>
+           <span style={{color:T.muted,fontWeight:700,flexShrink:0}}>{s.src||"Source"}</span>
+           <span style={{overflow:"hidden",textOverflow:"ellipsis" as const,whiteSpace:"nowrap" as const}}>{s.title}</span>
+          </a>
+         ))}
+        </div>
+       </div>
+      )}
+     </div>
+    </div>
+   )}
   </div>
  );
 }
