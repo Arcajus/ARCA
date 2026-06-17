@@ -36,6 +36,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# android signing — ne jamais committer le keystore ou ses identifiants
+/android/keystore.properties
+/android/*.jks
+/android/*.keystore
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

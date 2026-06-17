@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { apiUrl } from "@/lib/api";
+import { Capacitor } from "@capacitor/core";
+import { App as CapacitorApp } from "@capacitor/app";
 
 // THEMES 
 const DARK = {
@@ -5685,8 +5687,26 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}
  );
 }
 
-// PREMIUM SCREEN 
+// PREMIUM SCREEN
+// NOTE: tant que Google Play Billing n'est pas intégré (nécessite la création des
+// produits d'abonnement dans la Play Console), l'activation ci-dessous est un essai
+// local gratuit (flag localStorage) — aucun paiement réel n'est prélevé.
 function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
+ const [activated,setActivated] = useState<string|null>(null);
+ const activate = (id:string) => {
+  haptic();
+  if(id==="free") return;
+  if(id==="institution"){
+   if(typeof window!=="undefined") window.open("mailto:augustegbaguidi13@gmail.com?subject=NEXUS%20Institution","_blank");
+   return;
+  }
+  if(typeof window!=="undefined"){
+   localStorage.setItem("nexus_premium","true");
+   if(id==="mod") localStorage.setItem("nexus_mod","true");
+  }
+  setActivated(id);
+  setTimeout(()=>{setActivated(null);onBack();},1200);
+ };
  const plans = [
  {id:"free",name:"Gratuit",price:"0€",sub:"Pour toujours",features:["Observateur uniquement","Accès au fil NEWS","Accès à la Communauté","Voir les simulations en direct"],highlight:false,cta:"Plan actuel"},
  {id:"plus",name:"NEXUS PLUS",price:"5,99€",sub:"/mois",features:["Participer aux simulations","Tout accès (Débat, ONU, Procès)","Guides & stratégies","Opportunités & Événements","Notifications & Calendrier"],highlight:true,cta:"Commencer l'essai gratuit 7j"},
@@ -5722,7 +5742,7 @@ function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
  </div>
  ))}
  </div>
- <button style={{width:"100%",padding:"12px",borderRadius:10,border:`1px solid ${p.highlight?T.blueB:T.b1}`,background:p.highlight?T.blueB:T.blueG,color:p.highlight?"#fff":T.blueB,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{p.cta}</button>
+ <button onClick={()=>activate(p.id)} disabled={p.id==="free"} style={{width:"100%",padding:"12px",borderRadius:10,border:`1px solid ${p.highlight?T.blueB:T.b1}`,background:p.highlight?T.blueB:T.blueG,color:p.highlight?"#fff":T.blueB,fontSize:13,fontWeight:800,cursor:p.id==="free"?"default":"pointer",fontFamily:"inherit",opacity:p.id==="free"?.6:1}}>{activated===p.id?"✓ Activé":p.cta}</button>
  </div>
  ))}
  </div>
@@ -10177,7 +10197,9 @@ export default function NexusApp() {
  const [feedKey,setFeedKey] = useState(0);
  const [showNotifPanel,setShowNotifPanel] = useState(false);
  const [notifRead,setNotifRead] = useState(false);
+ const [showExitToast,setShowExitToast] = useState(false);
  const scrollRef = useRef<HTMLDivElement>(null);
+ const lastBackPressRef = useRef(0);
 
  useEffect(()=>{
  if(typeof window==="undefined") return;
@@ -10216,6 +10238,38 @@ export default function NexusApp() {
  }
  setTimeout(()=>setTabAnim("fadeIn"),300);
  };
+
+ // Bouton retour matériel Android (Capacitor) — sans ça, le bouton retour ferme
+ // l'app instantanément peu importe l'écran affiché.
+ const backStateRef = useRef({showAdminPin,showPremium,showProfile,showNotifPanel,showMenu,showAgenda,showProgress,showOnboarding,tab,switchTab});
+ useEffect(()=>{
+  backStateRef.current = {showAdminPin,showPremium,showProfile,showNotifPanel,showMenu,showAgenda,showProgress,showOnboarding,tab,switchTab};
+ });
+
+ useEffect(()=>{
+  if(!Capacitor.isNativePlatform()) return;
+  const handlePromise = CapacitorApp.addListener("backButton", () => {
+   const s = backStateRef.current;
+   if(s.showAdminPin){setShowAdminPin(false);return;}
+   if(s.showPremium){setShowPremium(false);return;}
+   if(s.showProfile){setShowProfile(false);return;}
+   if(s.showNotifPanel){setShowNotifPanel(false);return;}
+   if(s.showMenu){setShowMenu(false);return;}
+   if(s.showAgenda){setShowAgenda(false);return;}
+   if(s.showProgress){setShowProgress(false);return;}
+   if(s.showOnboarding){return;}
+   if(s.tab!=="news"){s.switchTab("news");return;}
+   const now=Date.now();
+   if(now-lastBackPressRef.current<2000){
+    CapacitorApp.exitApp();
+   } else {
+    lastBackPressRef.current=now;
+    setShowExitToast(true);
+    setTimeout(()=>setShowExitToast(false),2000);
+   }
+  });
+  return ()=>{handlePromise.then(h=>h.remove());};
+ },[]);
 
  const handleNewPosts = (n:number)=>{
  if(tab!=="news"){
@@ -10282,6 +10336,13 @@ export default function NexusApp() {
  {/* Install banner */}
  {showInstall&&!showPremium&&(
  <InstallBanner T={T} onDismiss={()=>{setShowInstall(false);localStorage.setItem("install_dismissed","1");}}/>
+ )}
+
+ {/* Toast "appuyez à nouveau pour quitter" (retour Android) */}
+ {showExitToast&&(
+ <div style={{position:"absolute",bottom:90,left:"50%",transform:"translateX(-50%)",zIndex:1000,background:T.mode==="dark"?"#1C2840":"#0C1117",color:"#fff",padding:"10px 18px",borderRadius:24,fontSize:12,fontWeight:700,boxShadow:"0 4px 16px rgba(0,0,0,.3)",animation:"fadeUp .25s ease",whiteSpace:"nowrap"}}>
+  Appuyez à nouveau pour quitter
+ </div>
  )}
 
  {/* Header */}

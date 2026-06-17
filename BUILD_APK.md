@@ -21,15 +21,12 @@ cd ARCA
 npm install
 ```
 
-### 3. Construire l'app web (export statique)
+### 3. Construire l'app web (export statique) + synchroniser Android
 ```bash
-npm run build
+npm run build:android
 ```
-
-### 4. Synchroniser avec Android
-```bash
-npx cap sync android
-```
+Ce script exclut temporairement les routes `/api/*` (impossibles à exporter statiquement),
+génère `out/`, puis lance `npx cap sync android` automatiquement.
 
 ### 5. Option A — Ouvrir dans Android Studio (recommandé)
 ```bash
@@ -50,16 +47,30 @@ APK généré : `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## Build de production (signé pour Google Play)
 
+### 1. Générer le keystore (une seule fois, à conserver précieusement)
 ```bash
+./scripts/generate-keystore.sh
+```
+Crée `android/nexus-release-key.jks` et `android/keystore.properties` (tous deux ignorés par git —
+**sauvegarde-les ailleurs**, sans eux impossible de republier une mise à jour sur le même listing Play Store).
+
+### 2. Builder
+```bash
+npm run build:android
 cd android
 ./gradlew assembleRelease
 ```
+Avec `keystore.properties` présent, `build.gradle` signe automatiquement l'APK release.
+Sans ce fichier, le build release reste **non signé** (utile en CI sans secrets, mais pas publiable).
 
-Tu devras créer un keystore :
-```bash
-keytool -genkey -v -keystore nexus-release-key.jks \
-  -alias nexus -keyalg RSA -keysize 2048 -validity 10000
-```
+APK signé : `android/app/build/outputs/apk/release/app-release.apk`
+
+### 3. Checklist avant publication sur le Play Store
+- [ ] Politique de confidentialité accessible publiquement : `https://arca-psi-eight.vercel.app/privacy`
+- [ ] Formulaire "Sécurité des données" du Play Console rempli (données collectées : voir `/privacy`)
+- [ ] Bouton retour Android géré (fait — voir `backButton` listener dans `NexusApp.tsx`)
+- [ ] Si Premium est un vrai achat : intégrer Google Play Billing (les CTA actuels dans `PremiumScreen` sont des maquettes sans paiement réel — voir note dans le code)
+- [ ] `versionCode`/`versionName` incrémentés dans `android/app/build.gradle` à chaque nouvelle publication
 
 ---
 
