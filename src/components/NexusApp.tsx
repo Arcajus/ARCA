@@ -6440,7 +6440,7 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
         <span style={{background:openArticle.tagC,borderRadius:4,padding:"2px 7px"}}>
          <span style={{color:"#fff",fontSize:9,fontWeight:800,letterSpacing:.5}}>{openArticle.tag}</span>
         </span>
-        <span style={{color:T.muted,fontSize:10,fontWeight:700}}>NEXUS Originals · {openArticle.time}</span>
+        <span style={{color:T.muted,fontSize:10,fontWeight:700}}>{openArticle.src} · {openArticle.time}</span>
        </div>
        <button onClick={()=>setOpenArticle(null)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,fontSize:18,lineHeight:1,padding:4}}>✕</button>
       </div>

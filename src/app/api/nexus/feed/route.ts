@@ -3,6 +3,13 @@ import { ensureSchema } from "@/lib/db";
 
 export const maxDuration = 15;
 
+const SPORT_CATEGORIES = new Set(["Football", "Basketball", "Handball", "Sport"]);
+
+function brandFor(category: string): string {
+  if (SPORT_CATEGORIES.has(category)) return "NEXUS Sport";
+  return `NEXUS ${category}`;
+}
+
 export async function GET() {
   const sql = await ensureSchema();
   if (!sql) {
@@ -21,7 +28,7 @@ export async function GET() {
     title: r.title,
     hook: r.hook,
     body: r.body,
-    src: "NEXUS",
+    src: brandFor(String(r.category)),
     tag: String(r.category).toUpperCase(),
     tagC: r.tag_color,
     time: r.created_at,
