@@ -5530,6 +5530,18 @@ RÈGLES ABSOLUES :
 function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}:{T:Theme;onPremium:()=>void;isAdmin:boolean;streak:number;onProgress:()=>void;dark:boolean;onToggleDark:()=>void}) {
  const [activeTab,setActiveTab] = useState<"posts"|"republications">("posts");
  const [showSettings,setShowSettings] = useState(false);
+ const [deleting,setDeleting] = useState(false);
+
+ const deleteAccount = async () => {
+  if(typeof window==="undefined") return;
+  if(!confirm("Supprimer définitivement ton compte et toutes tes données (salles rejointes, pièces versées) ? Cette action est irréversible.")) return;
+  setDeleting(true);
+  try{
+   await fetch(apiUrl("/api/auth/delete"),{method:"POST",credentials:"include"});
+  }catch{/* on nettoie localement même si la requête échoue (ex: hors-ligne) */}
+  ["nexus_guest_email","nexus_guest_password","nexus_premium","nexus_mod","nexus_posts"].forEach(k=>localStorage.removeItem(k));
+  window.location.reload();
+ };
 
  const ls=(k:string,d="")=>typeof window!=="undefined"?localStorage.getItem(k)||d:d;
  const [name,setName] = useState(()=>ls("nexus_name","Arcajus Auguste"));
@@ -5602,6 +5614,18 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}
       <Ic n="trending" s={18} c={T.red}/>
       <span style={{color:T.red,fontSize:14,fontWeight:600,fontFamily:"inherit"}}>Réinitialiser ma progression</span>
      </button>
+     <button onClick={deleteAccount} disabled={deleting} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 16px",background:"none",border:"none",borderBottom:`1px solid ${T.b1}`,cursor:deleting?"default":"pointer",textAlign:"left",opacity:deleting?.6:1}}>
+      <Ic n="x" s={18} c={T.red}/>
+      <span style={{color:T.red,fontSize:14,fontWeight:600,fontFamily:"inherit"}}>{deleting?"Suppression…":"Supprimer mon compte"}</span>
+     </button>
+     <a href="/terms" target="_blank" rel="noopener noreferrer" style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:`1px solid ${T.b1}`,textDecoration:"none",boxSizing:"border-box"}}>
+      <Ic n="info" s={18} c={T.textD}/>
+      <span style={{color:T.text,fontSize:14,fontWeight:600,fontFamily:"inherit"}}>Conditions d&apos;utilisation</span>
+     </a>
+     <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 16px",textDecoration:"none",boxSizing:"border-box"}}>
+      <Ic n="info" s={18} c={T.textD}/>
+      <span style={{color:T.text,fontSize:14,fontWeight:600,fontFamily:"inherit"}}>Confidentialité & données</span>
+     </a>
      <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
       <span style={{color:T.muted,fontSize:12}}>Version</span>
       <span style={{color:T.muted,fontSize:12,fontWeight:700}}>NEXUS v1.0.0</span>
@@ -8059,6 +8083,8 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [hasFloor,setHasFloor]=useState(false);
  const [speakerRole,setSpeakerRole]=useState<TrialRole|null>(null);
  const [showInput,setShowInput]=useState(false);
+ const isSensitiveTopic=/viol|meurtre|f[ée]minicide|violence (conjugale|domestique)/i.test(sim.topic);
+ const [warnAck,setWarnAck]=useState(!isSensitiveTopic);
  const col=trialType?TRIAL_TYPE_COLORS[trialType]:"#8B4513";
  type Msg={id:number;role:TrialRole|"system";user:string;text:string;time:number};
  const [msgs,setMsgs]=useState<Msg[]>([]);
@@ -8387,6 +8413,24 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  };
 
  // ── SETUP: TYPE SELECTION ─────────────────────────────────────────
+ if(isSensitiveTopic&&!warnAck) return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={T.muted}/></button>
+    <span style={{background:"#E0353520",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>AVERTISSEMENT</span>
+   </div>
+   <div style={{flex:1,overflowY:"auto",padding:"24px",display:"flex",flexDirection:"column" as const,gap:14,alignItems:"center",justifyContent:"center",textAlign:"center" as const}}>
+    <div style={{width:56,height:56,borderRadius:"50%",background:"#E0353520",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>⚠️</div>
+    <p style={{color:T.text,fontSize:16,fontWeight:800}}>Contenu sensible</p>
+    <p style={{color:T.textD,fontSize:13,lineHeight:1.5,maxWidth:320}}>Cette simulation de procès aborde un sujet sensible (violence, atteinte aux personnes) — « {sim.topic} ». C&apos;est un exercice fictif à visée strictement pédagogique : aucun fait réel, aucune personne réelle. Continue uniquement si tu te sens à l&apos;aise avec ce thème.</p>
+    <div style={{display:"flex",flexDirection:"column" as const,gap:8,width:"100%",maxWidth:320,marginTop:8}}>
+     <button onClick={()=>{haptic();setWarnAck(true);}} style={{padding:"13px",borderRadius:10,border:"none",background:"#E03535",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>J&apos;ai compris, continuer</button>
+     <button onClick={onBack} style={{padding:"13px",borderRadius:10,border:`1px solid ${T.b1}`,background:"none",color:T.textD,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Retour</button>
+    </div>
+   </div>
+  </div>
+ );
+
  if(setup==="type") return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
    <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
