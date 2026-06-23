@@ -11,6 +11,15 @@ const TOPICS = [
   { q: "économie finance marchés inflation", category: "Économie", color: "#D97706" },
   { q: "intelligence artificielle technologie", category: "Sciences & IA", color: "#0E7490" },
   { q: "climat environnement énergie", category: "Climat", color: "#16A34A" },
+  { q: "santé médecine hôpital recherche médicale", category: "Santé", color: "#DB2777" },
+  { q: "justice procès tribunal réforme judiciaire", category: "Justice", color: "#4338CA" },
+  { q: "éducation école université enseignement", category: "Éducation", color: "#0891B2" },
+  { q: "société immigration sécurité faits de société", category: "Société", color: "#B45309" },
+  { q: "culture cinéma musique littérature", category: "Culture", color: "#C026D3" },
+  { q: "espace astronomie exploration spatiale", category: "Espace", color: "#1E3A8A" },
+  { q: "afrique actualité politique économie", category: "Afrique", color: "#15803D" },
+  { q: "états-unis actualité politique élection", category: "États-Unis", color: "#1D4ED8" },
+  { q: "asie chine japon actualité", category: "Asie", color: "#B91C1C" },
   { q: "football ligue 1 champions league transferts", category: "Football", color: "#16A34A" },
   { q: "basketball nba euroligue", category: "Basketball", color: "#EA580C" },
   { q: "handball championnat ligue lnh", category: "Handball", color: "#9333EA" },
@@ -40,15 +49,19 @@ async function fetchHeadlines(q: string): Promise<Headline[]> {
 }
 
 async function writeArticle(category: string, headlines: Headline[], key: string) {
-  const prompt = `Tu es le rédacteur en chef de NEXUS, un média qui synthétise l'actualité ${category} de façon factuelle et percutante (style "Brut" : phrases courtes, accrocheuses, zéro jargon).
+  const prompt = `Tu es le rédacteur en chef de NEXUS, un média qui couvre l'actualité ${category} avec une vraie voix éditoriale : direct, analytique, sans langue de bois, mais toujours rigoureux sur les faits.
 
 Voici des titres de presse publiés récemment par plusieurs médias indépendants sur ce thème :
 ${headlines.map((h, i) => `${i + 1}. [${h.src}] ${h.title}`).join("\n")}
 
-Rédige une synthèse de ces informations, UNIQUEMENT à partir des faits présents dans ces titres — n'invente aucun fait, aucun chiffre, aucune citation qui n'y figure pas. Si les titres sont insuffisants ou trop vagues pour écrire un article factuel, réponds avec "body": "".
+Rédige un article NEXUS à partir de ces informations. Règles :
+- UNIQUEMENT les faits présents dans ces titres — n'invente aucun fait, aucun chiffre, aucune citation qui n'y figure pas.
+- Va au-delà du simple résumé : mets les faits en perspective, explique pourquoi ça compte, relie-les entre eux si plusieurs sources se complètent. C'est une analyse éditoriale, pas une dépêche.
+- Structure le corps en 2 courts paragraphes séparés par un saut de ligne (\\n\\n) : le premier expose les faits, le second l'angle / la portée.
+- Si les titres sont insuffisants ou trop vagues pour écrire un article factuel et étoffé, réponds avec "body": "".
 
 Réponds UNIQUEMENT en JSON valide :
-{"title":"titre court et factuel (max 90 caractères)","hook":"une phrase d'accroche percutante (max 140 caractères)","body":"3 à 5 phrases de synthèse factuelle, sans markdown"}`;
+{"title":"titre court et factuel (max 90 caractères)","hook":"une phrase d'accroche percutante (max 140 caractères)","body":"2 paragraphes (6 à 10 phrases au total), séparés par \\n\\n, sans markdown"}`;
 
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
   const res = await fetch(geminiUrl, {
@@ -56,7 +69,7 @@ Réponds UNIQUEMENT en JSON valide :
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.4, topP: 0.9, maxOutputTokens: 500, responseMimeType: "application/json" },
+      generationConfig: { temperature: 0.5, topP: 0.9, maxOutputTokens: 900, responseMimeType: "application/json" },
     }),
   });
   if (!res.ok) return null;

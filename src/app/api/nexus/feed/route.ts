@@ -20,7 +20,7 @@ export async function GET() {
     SELECT id, title, hook, body, category, tag_color, sources, created_at
     FROM nexus_articles
     ORDER BY created_at DESC
-    LIMIT 40
+    LIMIT 80
   `) as { id: number; title: string; hook: string; body: string; category: string; tag_color: string; sources: unknown; created_at: string }[];
 
   const articles = rows.map((r) => ({

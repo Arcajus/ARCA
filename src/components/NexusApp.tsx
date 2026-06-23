@@ -6249,8 +6249,8 @@ const NEWS_CATS = [
  {id:"sciences",label:"NEXUS Sciences & IA",icon:"zap",tags:["SCIENCE","MÉDECINE","ESPACE","IA","TECH","CYBER","SPATIAL","OMS","ARCHÉO"]},
  {id:"climat",label:"NEXUS Climat",icon:"globe",tags:["CLIMAT","BIODIVERSITÉ","ÉNERGIE MONDE","EAU","ALIMENTATION","DÉVELOPPEMENT","RÉFUGIÉS"]},
  {id:"culture",label:"NEXUS Sport & Culture",icon:"award",tags:["CULTURE","SPORT","FOOTBALL","BASKETBALL","HANDBALL","HISTOIRE","HIST. FR","MÉMOIRE","ARCHÉO","MÉDIAS","RS","RELIGION","JEUNESSE","GENRE"]},
- {id:"afrique",label:"Afrique",icon:"map",tags:["JEUNE AFRIQUE","SAHEL","MAGHREB","AF. EST","UA","RFI","DROITS","UNICEF","UNESCO"]},
- {id:"intl",label:"Monde",icon:"globe",tags:["FRANCE 24","TV5MONDE","BBC","COURRIER INT.","DW","AM. LATINE","OCÉANIE","ASIE-PAC.","MOYEN-ORIENT","DIPLOMATIE"]},
+ {id:"afrique",label:"Afrique",icon:"map",tags:["AFRIQUE","JEUNE AFRIQUE","SAHEL","MAGHREB","AF. EST","UA","RFI","DROITS","UNICEF","UNESCO"]},
+ {id:"intl",label:"Monde",icon:"globe",tags:["FRANCE 24","TV5MONDE","BBC","COURRIER INT.","DW","AM. LATINE","OCÉANIE","ASIE-PAC.","ASIE","ÉTATS-UNIS","MOYEN-ORIENT","DIPLOMATIE"]},
 ];
 
 function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
