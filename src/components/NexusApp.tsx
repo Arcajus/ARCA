@@ -8061,10 +8061,15 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  type Msg={id:number;role:TrialRole|"system";user:string;text:string;time:number};
  const [msgs,setMsgs]=useState<Msg[]>([]);
  const [input,setInput]=useState("");
- type DocEntry={id:number;name:string;type:string;by:TrialRole;time:number};
+ type DocEntry={id:number|string;name:string;type:string;by:TrialRole;time:number;url?:string;size?:number};
  const [docs,setDocs]=useState<DocEntry[]>([]);
  const [docName,setDocName]=useState("");
  const [docType,setDocType]=useState("Pièce");
+ const {user:trialUser}=useCurrentUser();
+ const [showAuthForUpload,setShowAuthForUpload]=useState(false);
+ const [uploading,setUploading]=useState(false);
+ const [uploadErr,setUploadErr]=useState<string|null>(null);
+ const fileInputRef=useRef<HTMLInputElement>(null);
  const chatRef=useRef<HTMLDivElement>(null);
  const [dossier,setDossier]=useState<GeneratedDossier|null>(null);
  const [dossierLoading,setDossierLoading]=useState(false);
@@ -8134,6 +8139,43 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   setDocs(p=>[...p,d]);setDocName("");
   setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Pièce versée au dossier par ${getRoleLabel(myRole,trialType)} : « ${d.name} » (${d.type}).`,time:Date.now()}]);
   haptic();
+ };
+
+ useEffect(()=>{
+  fetch(apiUrl(`/api/rooms/${sim.id}/files`))
+   .then(r=>r.ok?r.json():null)
+   .then(data=>{
+    if(!data?.files||!myRole) return;
+    setDocs(p=>[
+     ...p,
+     ...data.files.map((f:{id:number;name:string;docType:string;url:string;size:number;time:number})=>({id:`real-${f.id}`,name:f.name,type:f.docType,by:myRole,time:f.time,url:f.url,size:f.size})),
+    ]);
+   })
+   .catch(()=>{});
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[sim.id]);
+
+ const uploadDocFile=(file:File)=>{
+  if(!trialUser){setShowAuthForUpload(true);return;}
+  if(!myRole||myRole==="public"||myRole==="jure"||!trialType){return;}
+  const role=myRole;const tt=trialType;
+  setUploading(true);setUploadErr(null);
+  const fd=new FormData();
+  fd.append("file",file);
+  fd.append("docType",docType);
+  fetch(apiUrl(`/api/rooms/${sim.id}/files`),{method:"POST",credentials:"include",body:fd})
+   .then(async r=>{
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||"Échec de l'envoi.");}
+    return r.json();
+   })
+   .then(f=>{
+    const d:DocEntry={id:`real-${f.id}`,name:f.name,type:f.docType,by:role,time:f.time,url:f.url,size:f.size};
+    setDocs(p=>[...p,d]);
+    setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"GREFFIER",text:`Pièce versée au dossier par ${getRoleLabel(role,tt)} : « ${d.name} » (${d.type}).`,time:Date.now()}]);
+    haptic();
+   })
+   .catch(e=>setUploadErr(String(e.message||e)))
+   .finally(()=>setUploading(false));
  };
 
  const takeMic=()=>{
@@ -8736,18 +8778,26 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
             </select>
            </div>
            <button onClick={submitDoc} disabled={!docName.trim()} style={{padding:"8px",borderRadius:8,border:"none",background:docName.trim()?col:"#444",color:"#fff",fontSize:12,fontWeight:800,cursor:docName.trim()?"pointer":"default",fontFamily:"inherit"}}>Verser au dossier</button>
+           <div style={{display:"flex",alignItems:"center",gap:8,paddingTop:4,borderTop:`1px solid ${T.b1}`}}>
+            <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadDocFile(f);e.target.value="";}}/>
+            <button onClick={()=>trialUser?fileInputRef.current?.click():setShowAuthForUpload(true)} disabled={uploading} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${col}`,background:"transparent",color:col,fontSize:12,fontWeight:800,cursor:uploading?"default":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+             <Ic n="plus" s={14} c={col}/>{uploading?"Envoi…":"Joindre un fichier réel"}
+            </button>
+           </div>
+           {uploadErr&&<p style={{color:"#DC2626",fontSize:10}}>{uploadErr}</p>}
+           {showAuthForUpload&&<AuthModal T={T} onClose={()=>setShowAuthForUpload(false)} onAuthed={()=>setShowAuthForUpload(false)}/>}
           </div>
          )}
          {/* ── DOCS LIST ── */}
          {docs.map(d=>(
-          <div key={d.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10}}>
+          <a key={d.id} href={d.url||undefined} target={d.url?"_blank":undefined} rel={d.url?"noopener noreferrer":undefined} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 13px",display:"flex",alignItems:"center",gap:10,textDecoration:"none",cursor:d.url?"pointer":"default"}}>
            <div style={{width:34,height:34,borderRadius:8,background:TRIAL_ROLE_COLORS[d.by]+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="feed" s={16} c={TRIAL_ROLE_COLORS[d.by]}/></div>
            <div style={{flex:1}}>
             <p style={{color:T.text,fontSize:12,fontWeight:800}}>{d.name}</p>
-            <p style={{color:T.textD,fontSize:10,marginTop:1}}>{d.type} · {getRoleLabel(d.by,trialType)} · {timeFromTs(d.time)}</p>
+            <p style={{color:T.textD,fontSize:10,marginTop:1}}>{d.type} · {getRoleLabel(d.by,trialType)} · {timeFromTs(d.time)}{d.url?" · fichier réel":""}</p>
            </div>
            <span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>VERSÉ</span>
-          </div>
+          </a>
          ))}
         </>
        );
@@ -10248,7 +10298,7 @@ function RoomCallPanel({T,sim,user,onRequireAuth}:{T:Theme;sim:SimRoom;user:Nexu
  };
 
  return(
-  <div style={{position:"fixed",bottom:16,right:16,zIndex:150,display:"flex",flexDirection:"column" as const,alignItems:"flex-end",gap:8}}>
+  <div style={{position:"absolute",bottom:90,right:16,zIndex:150,display:"flex",flexDirection:"column" as const,alignItems:"flex-end",gap:8}}>
    {open&&(
     <div style={{width:280,maxHeight:380,background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,boxShadow:"0 8px 30px rgba(0,0,0,.3)",display:"flex",flexDirection:"column" as const,overflow:"hidden"}}>
      <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`}}>
