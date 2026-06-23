@@ -12,6 +12,8 @@ export const SEED_ROOMS = [
   { id: "s9", type: "assemblee", topic: "Projet de loi immigration — contrôle des frontières", status: "live", scheduled: Date.now() - 1800000, maxParticipants: 30, moderator: "@mod_elise", room: 1, trialType: null },
   { id: "s10", type: "conseil", topic: "Cessez-le-feu immédiat en Palestine — Résolution d'urgence", status: "live", scheduled: Date.now() - 900000, maxParticipants: 15, moderator: "@pdt_cs", room: 1, trialType: null },
   { id: "s11", type: "presse", topic: "Conférence de presse du Ministre de l'Intérieur — réforme de la police", status: "upcoming", scheduled: Date.now() + 86400000 * 2, maxParticipants: 1, moderator: "@journaliste_ia", room: 1, trialType: null },
+  { id: "s12", type: "eloquence", topic: "Grand oral — Plaidoyer pour l'engagement citoyen", status: "live", scheduled: Date.now() - 1200000, maxParticipants: 8, moderator: "@jury_lina", room: 1, trialType: null },
+  { id: "s13", type: "eloquence", topic: "Soutenance orale — Présentez votre projet en 3 minutes", status: "upcoming", scheduled: Date.now() + 86400000, maxParticipants: 8, moderator: "@jury_marc", room: 1, trialType: null },
 ];
 
 export async function seedRoomsIfEmpty(sql: Sql): Promise<void> {

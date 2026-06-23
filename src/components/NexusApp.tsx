@@ -6887,7 +6887,7 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
 // ──────────────────────────────────────────────────
 // SIMULATIONS TAB
 // ──────────────────────────────────────────────────
-type SimType = "onu"|"proces"|"debat"|"assemblee"|"conseil"|"presse";
+type SimType = "onu"|"proces"|"debat"|"assemblee"|"conseil"|"presse"|"eloquence";
 type SimStatus = "upcoming"|"open"|"live"|"closed";
 interface SimRoom {id:string;type:SimType;topic:string;status:SimStatus;scheduled:number;participants:number;maxParticipants:number;moderator:string;room:number;trialType?:TrialType;}
 
@@ -6903,11 +6903,13 @@ const MOCK_SIMS:SimRoom[] = [
  {id:"s9",type:"assemblee",topic:"Projet de loi immigration — contrôle des frontières",status:"live",scheduled:Date.now()-1800000,participants:5,maxParticipants:30,moderator:"@mod_elise",room:1},
  {id:"s10",type:"conseil",topic:"Cessez-le-feu immédiat en Palestine — Résolution d'urgence",status:"live",scheduled:Date.now()-900000,participants:5,maxParticipants:15,moderator:"@pdt_cs",room:1},
  {id:"s11",type:"presse",topic:"Conférence de presse du Ministre de l'Intérieur — réforme de la police",status:"upcoming",scheduled:Date.now()+86400000*2,participants:1,maxParticipants:1,moderator:"@journaliste_ia",room:1},
+ {id:"s12",type:"eloquence",topic:"Grand oral — Plaidoyer pour l'engagement citoyen",status:"live",scheduled:Date.now()-1200000,participants:4,maxParticipants:8,moderator:"@jury_lina",room:1},
+ {id:"s13",type:"eloquence",topic:"Soutenance orale — Présentez votre projet en 3 minutes",status:"upcoming",scheduled:Date.now()+86400000,participants:2,maxParticipants:8,moderator:"@jury_marc",room:1},
 ];
 
-const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat",assemblee:"AN",conseil:"CS ONU",presse:"Presse"};
-const SIM_TYPE_COLORS:Record<SimType,string> = {onu:"#1A5FD4",proces:"#8B4513",debat:"#E03535",assemblee:"#16A34A",conseil:"#0E4D8F",presse:"#C2410C"};
-const SIM_TYPE_ICONS:Record<SimType,string> = {onu:"globe",proces:"scale",debat:"users",assemblee:"landmark",conseil:"shield",presse:"mic"};
+const SIM_TYPE_LABELS:Record<SimType,string> = {onu:"ONU",proces:"Procès",debat:"Débat",assemblee:"AN",conseil:"CS ONU",presse:"Presse",eloquence:"Éloquence"};
+const SIM_TYPE_COLORS:Record<SimType,string> = {onu:"#1A5FD4",proces:"#8B4513",debat:"#E03535",assemblee:"#16A34A",conseil:"#0E4D8F",presse:"#C2410C",eloquence:"#7C3AED"};
+const SIM_TYPE_ICONS:Record<SimType,string> = {onu:"globe",proces:"scale",debat:"users",assemblee:"landmark",conseil:"shield",presse:"mic",eloquence:"award"};
 const SIM_STATUS_LABELS:Record<SimStatus,string> = {upcoming:"À venir",open:"Inscriptions ouvertes",live:"EN DIRECT",closed:"Terminé"};
 
 function fmtSimDate(ts:number){const d=new Date(ts);return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
@@ -10166,6 +10168,227 @@ function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  );
 }
 
+type EloquenceRole = "candidat"|"jury";
+
+// Le jury affiché ici est réel : ce sont les participants effectivement
+// connectés à la salle (présence /api/rooms/[id]/participants), comme
+// dans RoomCallPanel. La grille façon visio reflète qui est vraiment là.
+function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const {user} = useCurrentUser();
+ const [showAuth,setShowAuth] = useState(false);
+ const [myRole,setMyRole] = useState<EloquenceRole|null>(null);
+ const [tab,setTab] = useState<"scene"|"notes"|"conseils">("scene");
+ const [participants,setParticipants] = useState<RoomParticipant[]>([]);
+ const [speaking,setSpeaking] = useState(false);
+ const [seconds,setSeconds] = useState(0);
+ const timerRef = useRef<ReturnType<typeof setInterval>|null>(null);
+ type Msg={id:number;user:string;text:string;time:number};
+ const [msgs,setMsgs] = useState<Msg[]>([
+  {id:1,user:"GREFFIER",text:`Bienvenue. Sujet : « ${sim.topic} ». Le ou la candidat·e dispose de quelques minutes pour s'exprimer devant le jury.`,time:sim.scheduled},
+ ]);
+ const [input,setInput] = useState("");
+ const chatRef = useRef<HTMLDivElement>(null);
+ const CRITERIA = ["Clarté du propos","Posture & regard","Structure de l'argumentation","Impact sur l'auditoire"];
+ type Note = {id:number;by:string;scores:number[];comment:string;time:number};
+ const [notes,setNotes] = useState<Note[]>([]);
+ const [draftScores,setDraftScores] = useState<number[]>(CRITERIA.map(()=>3));
+ const [draftComment,setDraftComment] = useState("");
+ const col = SIM_TYPE_COLORS.eloquence;
+
+ useEffect(()=>{
+  if(!user) return;
+  const loadParticipants = () => {
+   fetch(apiUrl(`/api/rooms/${sim.id}/participants`),{credentials:"include"})
+    .then(r=>r.json()).then(d=>setParticipants(d.participants||[])).catch(()=>{});
+  };
+  loadParticipants();
+  const poll = setInterval(loadParticipants,4000);
+  return ()=>clearInterval(poll);
+ },[user,sim.id]);
+
+ useEffect(()=>{
+  if(speaking) timerRef.current=setInterval(()=>setSeconds(s=>s+1),1000);
+  else if(timerRef.current) clearInterval(timerRef.current);
+  return ()=>{if(timerRef.current)clearInterval(timerRef.current);};
+ },[speaking]);
+
+ const toggleSpeaking = () => {
+  haptic();
+  if(!speaking) setSeconds(0);
+  setSpeaking(s=>!s);
+ };
+
+ const sendMsg = () => {
+  if(!input.trim()||!myRole) return;
+  setMsgs(p=>[...p,{id:Date.now(),user:myRole==="candidat"?"Vous (candidat·e)":"Vous (jury)",text:input.trim(),time:Date.now()}]);
+  setInput("");
+  haptic();
+  setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
+ };
+
+ const submitNote = () => {
+  if(!draftComment.trim()) return;
+  setNotes(p=>[...p,{id:Date.now(),by:user?.handle||"@jury",scores:draftScores,comment:draftComment.trim(),time:Date.now()}]);
+  setDraftComment("");
+  setDraftScores(CRITERIA.map(()=>3));
+  haptic();
+ };
+
+ const fmtTime = (s:number) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
+
+ if(!myRole) return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"12px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={22} c={col}/></button>
+    <div>
+     <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>ÉLOQUENCE</span>
+     <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:2}}>{sim.topic}</p>
+    </div>
+   </div>
+   <div style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",padding:"24px",gap:16}}>
+    <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>CHOISISSEZ VOTRE RÔLE</p>
+    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",width:"100%",maxWidth:340}}>
+     <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>🎥 Le jury est composé de <strong>vrais participants connectés</strong> à cette salle, visibles en direct ci-dessous.</p>
+    </div>
+    <div style={{display:"flex",gap:12,width:"100%",maxWidth:320}}>
+     <button onClick={()=>{if(!user){setShowAuth(true);return;}haptic();setMyRole("candidat");}} style={{flex:1,padding:"20px 12px",borderRadius:14,border:`3px solid ${col}`,background:col+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,cursor:"pointer"}}>
+      <Ic n="mic" s={26} c={col}/>
+      <span style={{color:col,fontSize:14,fontWeight:900}}>CANDIDAT·E</span>
+      <span style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>Vous présentez devant le jury</span>
+     </button>
+     <button onClick={()=>{if(!user){setShowAuth(true);return;}haptic();setMyRole("jury");}} style={{flex:1,padding:"20px 12px",borderRadius:14,border:`3px solid ${T.blueB}`,background:T.blueG,display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,cursor:"pointer"}}>
+      <Ic n="users" s={26} c={T.blueB}/>
+      <span style={{color:T.blueB,fontSize:14,fontWeight:900}}>JURY</span>
+      <span style={{color:T.textD,fontSize:11,textAlign:"center" as const}}>Vous évaluez le ou la candidat·e</span>
+     </button>
+    </div>
+   </div>
+   {showAuth&&<AuthModal T={T} onClose={()=>setShowAuth(false)} onAuthed={()=>setShowAuth(false)}/>}
+  </div>
+ );
+
+ return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
+     <div style={{flex:1,minWidth:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
+       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{myRole==="candidat"?"CANDIDAT·E":"JURY"}</span>
+       {speaking&&<span style={{color:"#E03535",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>PARLE · {fmtTime(seconds)}</span>}
+      </div>
+      <p style={{color:T.text,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+     </div>
+    </div>
+    <div style={{display:"flex",gap:5}}>
+     {(["scene","notes","conseils"] as const).map(t=>(
+      <button key={t} onClick={()=>setTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${tab===t?col:T.b1}`,background:tab===t?col+"15":"transparent",color:tab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+       {t==="scene"?"Scène":t==="notes"?"Notes du jury":"Conseils"}
+      </button>
+     ))}
+    </div>
+   </div>
+
+   <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column" as const}}>
+    {tab==="scene"&&(
+     <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column" as const}}>
+      <div style={{padding:"14px",display:"flex",flexDirection:"column" as const,gap:12}}>
+       <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const}}>JURY EN DIRECT ({participants.length})</p>
+       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        {participants.length===0&&(
+         <div style={{gridColumn:"1 / -1",background:T.card,border:`1px dashed ${T.b1}`,borderRadius:12,padding:"16px",textAlign:"center" as const}}>
+          <p style={{color:T.textD,fontSize:11}}>Aucun·e juré·e connecté·e pour l&apos;instant — partagez le lien de la salle.</p>
+         </div>
+        )}
+        {participants.map(p=>(
+         <div key={p.handle} style={{background:"#0B0B0F",border:`2px solid ${p.micOn?col:T.b1}`,borderRadius:12,padding:"14px 10px",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,aspectRatio:"4/3" as const}}>
+          <div style={{width:48,height:48,borderRadius:"50%",background:col+"25",border:`2px solid ${col}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:col}}>{p.handle.replace("@","").slice(0,2).toUpperCase()}</div>
+          <p style={{color:"#fff",fontSize:11,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const,maxWidth:"100%"}}>{p.handle}</p>
+          <Ic n={p.micOn?"mic":"micOff"} s={13} c={p.micOn?col:"#777"}/>
+         </div>
+        ))}
+       </div>
+       <div style={{background:T.card,border:`2px solid ${speaking?col:T.b1}`,borderRadius:14,padding:"12px 14px",transition:"border-color .3s"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:speaking?10:0}}>
+         <div style={{width:46,height:46,borderRadius:"50%",background:col+"20",border:`2px solid ${col}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:col,flexShrink:0}}>{(user?.handle||"VO").replace("@","").slice(0,2).toUpperCase()}</div>
+         <div style={{flex:1}}>
+          <span style={{background:col+"20",color:col,fontSize:9,fontWeight:900,padding:"1px 7px",borderRadius:3}}>{myRole==="candidat"?"VOUS — CANDIDAT·E":"VOUS — JURY"}</span>
+          <p style={{color:T.text,fontSize:13,fontWeight:800,marginTop:3}}>{user?.handle||"Vous"}</p>
+         </div>
+         {myRole==="candidat"&&(
+          <button onClick={toggleSpeaking} style={{padding:"8px 14px",borderRadius:9,border:"none",background:speaking?"#E03535":col,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+           {speaking?"Terminer":"Prendre la parole"}
+          </button>
+         )}
+        </div>
+        {speaking&&<AudioWave active={true} color={col} bars={18} h={38}/>}
+       </div>
+      </div>
+      <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"0 14px"}}>
+       {msgs.map(m=>(
+        <div key={m.id} style={{marginBottom:10}}>
+         <p style={{color:T.muted,fontSize:9,fontWeight:800}}>{m.user} · {new Date(m.time).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</p>
+         <p style={{color:T.text,fontSize:12,lineHeight:1.5,marginTop:2}}>{m.text}</p>
+        </div>
+       ))}
+      </div>
+      <div style={{display:"flex",gap:7,padding:"10px 14px",borderTop:`1px solid ${T.b1}`}}>
+       <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder={myRole==="candidat"?"Votre discours…":"Une remarque pour le candidat·e…"} style={{flex:1,padding:"9px 12px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+       <button onClick={sendMsg} disabled={!input.trim()} style={{padding:"9px 12px",borderRadius:9,border:"none",background:input.trim()?col:"#444",cursor:input.trim()?"pointer":"default",display:"flex",alignItems:"center"}}><Ic n="send" s={16} c="#fff"/></button>
+      </div>
+     </div>
+    )}
+
+    {tab==="notes"&&(
+     <div style={{flex:1,overflowY:"auto",padding:"14px",display:"flex",flexDirection:"column" as const,gap:14}}>
+      {myRole==="jury"&&(
+       <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:12,display:"flex",flexDirection:"column" as const,gap:10}}>
+        <p style={{color:T.text,fontSize:12,fontWeight:800}}>Noter le ou la candidat·e</p>
+        {CRITERIA.map((c,i)=>(
+         <div key={c} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+          <span style={{color:T.textD,fontSize:11,flex:1}}>{c}</span>
+          <div style={{display:"flex",gap:3}}>
+           {[1,2,3,4,5].map(n=>(
+            <button key={n} onClick={()=>setDraftScores(s=>s.map((v,j)=>j===i?n:v))} style={{background:"none",border:"none",cursor:"pointer",padding:1}}>
+             <Ic n="star" s={16} c={n<=draftScores[i]?"#F59E0B":T.b1}/>
+            </button>
+           ))}
+          </div>
+         </div>
+        ))}
+        <textarea value={draftComment} onChange={e=>setDraftComment(e.target.value)} placeholder="Commentaire pour le ou la candidat·e…" rows={2} style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",resize:"none" as const,outline:"none"}}/>
+        <button onClick={submitNote} disabled={!draftComment.trim()} style={{padding:"9px",borderRadius:8,border:"none",background:draftComment.trim()?col:"#444",color:"#fff",fontSize:12,fontWeight:800,cursor:draftComment.trim()?"pointer":"default",fontFamily:"inherit"}}>Envoyer la note</button>
+       </div>
+      )}
+      <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const}}>NOTES REÇUES ({notes.length})</p>
+      {notes.length===0&&<p style={{color:T.textD,fontSize:11}}>Aucune note pour l&apos;instant.</p>}
+      {notes.map(n=>(
+       <div key={n.id} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 13px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+         <span style={{color:T.text,fontSize:12,fontWeight:800}}>{n.by}</span>
+         <span style={{color:"#F59E0B",fontSize:11,fontWeight:800}}>{(n.scores.reduce((a,b)=>a+b,0)/n.scores.length).toFixed(1)}/5</span>
+        </div>
+        <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{n.comment}</p>
+       </div>
+      ))}
+     </div>
+    )}
+
+    {tab==="conseils"&&(
+     <div style={{flex:1,overflowY:"auto",padding:"14px",display:"flex",flexDirection:"column" as const,gap:10}}>
+      {["Tenez-vous droit, regardez le jury — pas vos notes.","Une structure claire vaut mieux qu'un vocabulaire compliqué : annoncez votre plan.","Variez le rythme — ralentissez sur les idées importantes.","Le silence est un outil : une pause bien placée a plus d'impact qu'un mot de plus.","Terminez sur une phrase forte, pas sur une excuse."].map((tip,i)=>(
+       <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 13px",display:"flex",gap:10,alignItems:"flex-start"}}>
+        <span style={{color:col,fontSize:13,fontWeight:900,flexShrink:0}}>{i+1}.</span>
+        <p style={{color:T.textD,fontSize:12,lineHeight:1.6}}>{tip}</p>
+       </div>
+      ))}
+     </div>
+    )}
+   </div>
+  </div>
+ );
+}
+
 // ──────────────────────────────────────────────────
 // COMPTES RÉELS, PRÉSENCE EN SALLE & PIÈCES UPLOADÉES
 // ──────────────────────────────────────────────────
@@ -10384,6 +10607,7 @@ function RoomShellInner({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  if(sim.type==="assemblee") return <AssembleeRoom T={T} sim={sim} onBack={onBack}/>;
  if(sim.type==="conseil") return <ConseilSecuriteRoom T={T} sim={sim} onBack={onBack}/>;
  if(sim.type==="presse") return <ConfPresseRoom T={T} sim={sim} onBack={onBack}/>;
+ if(sim.type==="eloquence") return <EloquenceRoom T={T} sim={sim} onBack={onBack}/>;
  return <GeneralDebateRoom T={T} sim={sim} onBack={onBack}/>;
 }
 
@@ -10420,7 +10644,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
   if(!user){setShowAuth(true);return;}
   const res = await fetch(apiUrl("/api/rooms"),{
    method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({type:createType,topic:createTopic,scheduled:new Date(createDate).getTime(),maxParticipants:createType==="onu"?193:createType==="proces"?12:createType==="assemblee"?30:createType==="conseil"?15:20}),
+   body:JSON.stringify({type:createType,topic:createTopic,scheduled:new Date(createDate).getTime(),maxParticipants:createType==="onu"?193:createType==="proces"?12:createType==="assemblee"?30:createType==="conseil"?15:createType==="eloquence"?8:20}),
   });
   const d = await res.json();
   if(!res.ok){return;}
@@ -10445,7 +10669,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
    <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16,display:"flex",flexDirection:"column" as const,gap:12}}>
     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>TYPE DE SIMULATION</p>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-     {(["debat","onu","proces","assemblee","conseil","presse"] as SimType[]).map(t=>(
+     {(["debat","onu","proces","assemblee","conseil","presse","eloquence"] as SimType[]).map(t=>(
       <button key={t} onClick={()=>setCreateType(t)} style={{padding:"12px 6px",borderRadius:10,border:`2px solid ${createType===t?SIM_TYPE_COLORS[t]:T.b1}`,background:createType===t?SIM_TYPE_COLORS[t]+"15":"transparent",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:6,cursor:"pointer",transition:"all .15s"}}>
        <Ic n={SIM_TYPE_ICONS[t]} s={20} c={createType===t?SIM_TYPE_COLORS[t]:T.muted}/>
        <span style={{color:createType===t?SIM_TYPE_COLORS[t]:T.muted,fontSize:11,fontWeight:800}}>{SIM_TYPE_LABELS[t]}</span>
@@ -10453,10 +10677,10 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
      ))}
     </div>
     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginTop:4}}>SUJET <span style={{color:SIM_TYPE_COLORS[createType],fontSize:9}}>(libre — écrivez votre propre sujet)</span></p>
-    <textarea value={createTopic} onChange={e=>setCreateTopic(e.target.value)} placeholder={createType==="onu"?"Ex : Cessez-le-feu immédiat à Gaza…":createType==="proces"?"Ex : Affaire de corruption ministérielle…":createType==="assemblee"?"Ex : Projet de loi sur la réforme des retraites…":createType==="conseil"?"Ex : Résolution d'urgence sur la crise au Sahel…":createType==="presse"?"Ex : Conférence de presse — bilan du sommet G7…":"Ex : Le revenu universel est-il une utopie ?"} rows={3} style={{padding:"10px 12px",borderRadius:8,border:`1.5px solid ${createTopic.trim()?SIM_TYPE_COLORS[createType]:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none",transition:"border-color .2s"}}/>
+    <textarea value={createTopic} onChange={e=>setCreateTopic(e.target.value)} placeholder={createType==="onu"?"Ex : Cessez-le-feu immédiat à Gaza…":createType==="proces"?"Ex : Affaire de corruption ministérielle…":createType==="assemblee"?"Ex : Projet de loi sur la réforme des retraites…":createType==="conseil"?"Ex : Résolution d'urgence sur la crise au Sahel…":createType==="presse"?"Ex : Conférence de presse — bilan du sommet G7…":createType==="eloquence"?"Ex : Grand oral — Présentez votre projet en 3 minutes…":"Ex : Le revenu universel est-il une utopie ?"} rows={3} style={{padding:"10px 12px",borderRadius:8,border:`1.5px solid ${createTopic.trim()?SIM_TYPE_COLORS[createType]:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",resize:"none" as const,outline:"none",transition:"border-color .2s"}}/>
     <p style={{color:T.muted,fontSize:9,marginTop:-6}}>ou choisissez un sujet suggéré :</p>
     <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
-     {(createType==="onu"?UN_TOPICS:createType==="proces"?TRIAL_TOPICS:createType==="assemblee"?AN_TOPICS:createType==="conseil"?["Cessez-le-feu au Moyen-Orient","Sanctions contre la Russie","Aide humanitaire au Soudan","Opération de paix en RDC","Cybersécurité mondiale","Crise climatique — urgence sécuritaire"]:createType==="presse"?["Bilan du sommet du G7","Réforme des retraites","Plan de relance économique","Accord de paix historique","Budget 2026","Crise migratoire"]:DEBATE_CATEGORIES[0].topics).slice(0,6).map(s=>(
+     {(createType==="onu"?UN_TOPICS:createType==="proces"?TRIAL_TOPICS:createType==="assemblee"?AN_TOPICS:createType==="conseil"?["Cessez-le-feu au Moyen-Orient","Sanctions contre la Russie","Aide humanitaire au Soudan","Opération de paix en RDC","Cybersécurité mondiale","Crise climatique — urgence sécuritaire"]:createType==="presse"?["Bilan du sommet du G7","Réforme des retraites","Plan de relance économique","Accord de paix historique","Budget 2026","Crise migratoire"]:createType==="eloquence"?["Grand oral — Mon projet professionnel","Plaidoyer pour une cause qui me tient à cœur","Soutenance de mémoire — 5 minutes","Discours de motivation — concours d'entrée","Pitch — Présentez une idée innovante","Éloge ou réquisitoire — exercice de style"]:DEBATE_CATEGORIES[0].topics).slice(0,6).map(s=>(
       <button key={s} onClick={()=>setCreateTopic(s)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${createTopic===s?SIM_TYPE_COLORS[createType]:T.b1}`,background:createTopic===s?SIM_TYPE_COLORS[createType]+"15":T.bg2,color:createTopic===s?SIM_TYPE_COLORS[createType]:T.textD,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{s}</button>
      ))}
     </div>
@@ -10466,7 +10690,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
      <span style={{fontSize:16,flexShrink:0}}>✅</span>
      <div>
       <p style={{color:"#16A34A",fontSize:12,fontWeight:800}}>Accès NEXUS MODÉRATEUR actif</p>
-      <p style={{color:T.textD,fontSize:11,marginTop:2}}>{createType==="onu"?"Jusqu'à 193 délégations · Non-abonnés auront un pays aléatoire":createType==="proces"?"Discovery (24h) → Procès complet · Rôles assignés":createType==="assemblee"?"5 rôles · Hémicycle complet · 49.3 disponible":createType==="conseil"?"15 membres · 5 P5 avec droit de veto · Résolutions votées":createType==="presse"?"7 journalistes · Évaluation IA temps réel · Score /20":"2 équipes · Points · Vote public final"}</p>
+      <p style={{color:T.textD,fontSize:11,marginTop:2}}>{createType==="onu"?"Jusqu'à 193 délégations · Non-abonnés auront un pays aléatoire":createType==="proces"?"Discovery (24h) → Procès complet · Rôles assignés":createType==="assemblee"?"5 rôles · Hémicycle complet · 49.3 disponible":createType==="conseil"?"15 membres · 5 P5 avec droit de veto · Résolutions votées":createType==="presse"?"7 journalistes · Évaluation IA temps réel · Score /20":createType==="eloquence"?"1 candidat·e · Jury en visio réelle · Notation par critères":"2 équipes · Points · Vote public final"}</p>
      </div>
     </div>
     <button onClick={createSim} disabled={!createTopic.trim()||!createDate} style={{padding:"13px",borderRadius:10,border:"none",background:createTopic.trim()&&createDate?SIM_TYPE_COLORS[createType]:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:createTopic.trim()&&createDate?"pointer":"default",fontFamily:"inherit"}}>Créer la simulation</button>
@@ -10487,7 +10711,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
     </button>
    </div>
    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
-    {(["all","debat","onu","proces","assemblee","conseil","presse"] as const).map(f=>{
+    {(["all","debat","onu","proces","assemblee","conseil","presse","eloquence"] as const).map(f=>{
      const col=f==="all"?T.blueB:SIM_TYPE_COLORS[f as SimType];
      return <button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 13px",borderRadius:6,border:`1px solid ${filter===f?col:T.b1}`,background:filter===f?col+"15":"transparent",color:filter===f?col:T.textD,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:"inherit",whiteSpace:"nowrap" as const}}>{f==="all"?"Tout":SIM_TYPE_LABELS[f as SimType]}</button>;
     })}

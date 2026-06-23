@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   const maxParticipants = Number(body?.maxParticipants) || 20;
   const trialType = typeof body?.trialType === "string" ? body.trialType : null;
   const scheduled = Number(body?.scheduled) || Date.now();
-  const validTypes = ["onu", "proces", "debat", "assemblee", "conseil", "presse"];
+  const validTypes = ["onu", "proces", "debat", "assemblee", "conseil", "presse", "eloquence"];
 
   if (!validTypes.includes(type) || !topic) {
     return NextResponse.json({ error: "Type et sujet requis." }, { status: 400 });
