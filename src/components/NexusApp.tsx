@@ -10116,7 +10116,219 @@ function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  );
 }
 
+// ──────────────────────────────────────────────────
+// COMPTES RÉELS, PRÉSENCE EN SALLE & PIÈCES UPLOADÉES
+// ──────────────────────────────────────────────────
+type NexusUser = {id:number;email:string;handle:string};
+
+function useCurrentUser() {
+ const [user,setUser] = useState<NexusUser|null|undefined>(undefined); // undefined = chargement
+ const refresh = () => {
+  fetch(apiUrl("/api/auth/me"),{credentials:"include"})
+   .then(r=>r.json()).then(d=>setUser(d.user||null)).catch(()=>setUser(null));
+ };
+ useEffect(()=>{refresh();},[]);
+ return {user,loading:user===undefined,refresh};
+}
+
+function AuthModal({T,onClose,onAuthed}:{T:Theme;onClose:()=>void;onAuthed:(u:NexusUser)=>void}) {
+ const [mode,setMode] = useState<"login"|"register">("login");
+ const [email,setEmail] = useState("");
+ const [handle,setHandle] = useState("");
+ const [password,setPassword] = useState("");
+ const [err,setErr] = useState("");
+ const [busy,setBusy] = useState(false);
+
+ const submit = async () => {
+  setErr("");setBusy(true);
+  try{
+   const res = await fetch(apiUrl(`/api/auth/${mode==="login"?"login":"register"}`),{
+    method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(mode==="login"?{email,password}:{email,handle,password}),
+   });
+   const d = await res.json();
+   if(!res.ok){setErr(d.error||"Erreur.");return;}
+   onAuthed(d.user);
+  }catch{setErr("Connexion impossible.");}
+  finally{setBusy(false);}
+ };
+
+ return(
+  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onClose}>
+   <div onClick={e=>e.stopPropagation()} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,padding:20,width:"100%",maxWidth:340,display:"flex",flexDirection:"column" as const,gap:12}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+     <h3 style={{color:T.text,fontSize:16,fontWeight:800}}>{mode==="login"?"Connexion":"Créer un compte"}</h3>
+     <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",display:"flex"}}><Ic n="x" s={18} c={T.muted}/></button>
+    </div>
+    <p style={{color:T.textD,fontSize:12}}>Un compte est nécessaire pour rejoindre une salle, apparaître dans la liste des participants et verser des pièces réelles.</p>
+    <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" type="email" style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+    {mode==="register"&&<input value={handle} onChange={e=>setHandle(e.target.value)} placeholder="Pseudo (ex: @julien)" style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>}
+    <input value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mot de passe (8+ caractères)" type="password" onKeyDown={e=>e.key==="Enter"&&submit()} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+    {err&&<p style={{color:T.red,fontSize:12,fontWeight:600}}>{err}</p>}
+    <button onClick={submit} disabled={busy||!email||!password||(mode==="register"&&!handle)} style={{padding:"11px",borderRadius:9,border:"none",background:T.blueB,color:"#fff",fontSize:13,fontWeight:800,cursor:busy?"default":"pointer",fontFamily:"inherit",opacity:busy?.6:1}}>{busy?"…":mode==="login"?"Se connecter":"Créer mon compte"}</button>
+    <button onClick={()=>{setMode(mode==="login"?"register":"login");setErr("");}} style={{background:"none",border:"none",color:T.blueB,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{mode==="login"?"Pas de compte ? Créer un compte":"Déjà un compte ? Se connecter"}</button>
+   </div>
+  </div>
+ );
+}
+
+type RoomParticipant = {handle:string;roleLabel:string|null;micOn:boolean;camOn:boolean};
+type RoomFile = {id:number;name:string;docType:string;url:string;size:number;mimeType:string;by:string;time:number};
+
+// Panneau partagé par toutes les salles : présence réelle des participants
+// (rejoint/quitte la salle côté serveur, heartbeat de présence), micro/caméra
+// déclarés, et upload réel de pièces (stockées sur Vercel Blob).
+// Le transport audio/vidéo lui-même n'est pas encore branché — voir
+// /api/rooms/[id]/call-token pour le point d'intégration prévu.
+function RoomCallPanel({T,sim,user,onRequireAuth}:{T:Theme;sim:SimRoom;user:NexusUser|null|undefined;onRequireAuth:()=>void}) {
+ const [open,setOpen] = useState(false);
+ const [tab,setTab] = useState<"appel"|"pieces">("appel");
+ const [participants,setParticipants] = useState<RoomParticipant[]>([]);
+ const [micOn,setMicOn] = useState(false);
+ const [camOn,setCamOn] = useState(false);
+ const [callMsg,setCallMsg] = useState("");
+ const [files,setFiles] = useState<RoomFile[]>([]);
+ const [uploading,setUploading] = useState(false);
+ const [docType,setDocType] = useState("Document");
+ const fileInputRef = useRef<HTMLInputElement>(null);
+
+ useEffect(()=>{
+  if(!user) return;
+  fetch(apiUrl(`/api/rooms/${sim.id}/join`),{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({roleLabel:null})});
+  return ()=>{ fetch(apiUrl(`/api/rooms/${sim.id}/leave`),{method:"POST",credentials:"include"}); };
+ },[user,sim.id]);
+
+ useEffect(()=>{
+  if(!user) return;
+  const loadParticipants = () => {
+   fetch(apiUrl(`/api/rooms/${sim.id}/participants`),{credentials:"include"})
+    .then(r=>r.json()).then(d=>setParticipants(d.participants||[])).catch(()=>{});
+  };
+  loadParticipants();
+  const poll = setInterval(loadParticipants,4000);
+  return ()=>clearInterval(poll);
+ },[user,sim.id]);
+
+ useEffect(()=>{
+  if(!user) return;
+  const beat = () => fetch(apiUrl(`/api/rooms/${sim.id}/presence`),{method:"PATCH",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({micOn,camOn})});
+  beat();
+  const hb = setInterval(beat,6000);
+  return ()=>clearInterval(hb);
+ },[user,sim.id,micOn,camOn]);
+
+ useEffect(()=>{
+  if(!open||tab!=="pieces") return;
+  fetch(apiUrl(`/api/rooms/${sim.id}/files`),{credentials:"include"})
+   .then(r=>r.json()).then(d=>setFiles(d.files||[])).catch(()=>{});
+ },[open,tab,sim.id]);
+
+ const joinCall = async () => {
+  if(!user){onRequireAuth();return;}
+  setCallMsg("");
+  const res = await fetch(apiUrl(`/api/rooms/${sim.id}/call-token`),{method:"POST",credentials:"include"});
+  if(res.status===501){setCallMsg("Service d'appel audio/vidéo pas encore branché — la liste des participants ci-dessous est réelle.");return;}
+  if(!res.ok){setCallMsg("Impossible de rejoindre l'appel pour le moment.");return;}
+  setMicOn(true);
+ };
+
+ const uploadFile = async (f: File) => {
+  if(!user){onRequireAuth();return;}
+  setUploading(true);
+  try{
+   const form = new FormData();
+   form.append("file",f);
+   form.append("docType",docType);
+   const res = await fetch(apiUrl(`/api/rooms/${sim.id}/files`),{method:"POST",credentials:"include",body:form});
+   const d = await res.json();
+   if(res.ok) setFiles(p=>[...p,d.file]);
+   else setCallMsg(d.error||"Échec de l'upload.");
+  }catch{setCallMsg("Échec de l'upload.");}
+  finally{setUploading(false);}
+ };
+
+ return(
+  <div style={{position:"fixed",bottom:16,right:16,zIndex:150,display:"flex",flexDirection:"column" as const,alignItems:"flex-end",gap:8}}>
+   {open&&(
+    <div style={{width:280,maxHeight:380,background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,boxShadow:"0 8px 30px rgba(0,0,0,.3)",display:"flex",flexDirection:"column" as const,overflow:"hidden"}}>
+     <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`}}>
+      <button onClick={()=>setTab("appel")} style={{flex:1,padding:"10px 0",background:tab==="appel"?T.blueG:"transparent",border:"none",color:tab==="appel"?T.blueB:T.textD,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Appel & présence</button>
+      <button onClick={()=>setTab("pieces")} style={{flex:1,padding:"10px 0",background:tab==="pieces"?T.blueG:"transparent",border:"none",color:tab==="pieces"?T.blueB:T.textD,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Pièces</button>
+     </div>
+     <div style={{padding:12,overflowY:"auto" as const,flex:1,display:"flex",flexDirection:"column" as const,gap:10}}>
+      {!user&&(
+       <div style={{background:`${T.amber}12`,border:`1px solid ${T.amber}40`,borderRadius:8,padding:10}}>
+        <p style={{color:T.amber,fontSize:11,fontWeight:700}}>Connecte-toi pour apparaître dans la salle.</p>
+        <button onClick={onRequireAuth} style={{marginTop:6,background:T.amber,color:"#fff",border:"none",borderRadius:6,padding:"6px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Se connecter</button>
+       </div>
+      )}
+      {tab==="appel"?(
+       <>
+        <div style={{display:"flex",gap:6}}>
+         <button onClick={joinCall} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"8px",borderRadius:8,border:"none",background:T.blueB,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}><Ic n="video" s={14} c="#fff"/>Rejoindre l&apos;appel</button>
+         <button onClick={()=>setMicOn(m=>!m)} style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${T.b1}`,background:micOn?T.blueG:"transparent",cursor:"pointer"}}><Ic n={micOn?"mic":"micOff"} s={14} c={micOn?T.blueB:T.muted}/></button>
+         <button onClick={()=>setCamOn(c=>!c)} style={{padding:"8px 10px",borderRadius:8,border:`1px solid ${T.b1}`,background:camOn?T.blueG:"transparent",cursor:"pointer"}}><Ic n="video" s={14} c={camOn?T.blueB:T.muted}/></button>
+        </div>
+        {callMsg&&<p style={{color:T.textD,fontSize:11}}>{callMsg}</p>}
+        <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const}}>Participants connectés ({participants.length})</p>
+        <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
+         {participants.length===0&&<p style={{color:T.textD,fontSize:11}}>Personne d&apos;autre pour l&apos;instant.</p>}
+         {participants.map(p=>(
+          <div key={p.handle} style={{display:"flex",alignItems:"center",gap:8}}>
+           <span style={{width:6,height:6,borderRadius:"50%",background:"#16A34A",flexShrink:0}}/>
+           <span style={{color:T.text,fontSize:12,fontWeight:700,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{p.handle}</span>
+           <Ic n={p.micOn?"mic":"micOff"} s={12} c={p.micOn?T.blueB:T.muted}/>
+          </div>
+         ))}
+        </div>
+       </>
+      ):(
+       <>
+        <div style={{display:"flex",gap:6}}>
+         <select value={docType} onChange={e=>setDocType(e.target.value)} style={{flex:1,padding:"7px 8px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:11,fontFamily:"inherit"}}>
+          {["Document","Pièce","Expertise","Témoignage"].map(d=><option key={d} value={d}>{d}</option>)}
+         </select>
+         <button onClick={()=>fileInputRef.current?.click()} disabled={uploading} style={{padding:"7px 10px",borderRadius:7,border:"none",background:T.blueB,color:"#fff",fontSize:11,fontWeight:800,cursor:uploading?"default":"pointer",fontFamily:"inherit",opacity:uploading?.6:1}}>{uploading?"…":"📎 Verser"}</button>
+         <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadFile(f);e.target.value="";}}/>
+        </div>
+        {callMsg&&<p style={{color:T.red,fontSize:11}}>{callMsg}</p>}
+        <div style={{display:"flex",flexDirection:"column" as const,gap:6}}>
+         {files.length===0&&<p style={{color:T.textD,fontSize:11}}>Aucune pièce versée.</p>}
+         {files.map(f=>(
+          <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",borderRadius:7,background:T.bg2,textDecoration:"none"}}>
+           <span style={{fontSize:13}}>📄</span>
+           <div style={{flex:1,overflow:"hidden"}}>
+            <p style={{color:T.text,fontSize:11,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{f.name}</p>
+            <p style={{color:T.muted,fontSize:9}}>{f.docType} · {f.by}</p>
+           </div>
+          </a>
+         ))}
+        </div>
+       </>
+      )}
+     </div>
+    </div>
+   )}
+   <button onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:7,padding:"10px 14px",borderRadius:24,border:"none",background:T.blueB,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px rgba(0,0,0,.25)"}}>
+    <Ic n="users" s={15} c="#fff"/>{open?"Fermer":`Salle (${participants.length})`}
+   </button>
+  </div>
+ );
+}
+
 function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const {user} = useCurrentUser();
+ const [showAuth,setShowAuth] = useState(false);
+ return(
+  <>
+   <RoomShellInner T={T} sim={sim} onBack={onBack}/>
+   <RoomCallPanel T={T} sim={sim} user={user} onRequireAuth={()=>setShowAuth(true)}/>
+   {showAuth&&<AuthModal T={T} onClose={()=>setShowAuth(false)} onAuthed={()=>setShowAuth(false)}/>}
+  </>
+ );
+}
+
+function RoomShellInner({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  if(sim.type==="onu") return <UNDebateRoom T={T} sim={sim} onBack={onBack}/>;
  if(sim.type==="proces") return <TrialRoom T={T} sim={sim} onBack={onBack}/>;
  if(sim.type==="assemblee") return <AssembleeRoom T={T} sim={sim} onBack={onBack}/>;
@@ -10129,6 +10341,8 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
  type SimView = "hub"|"create"|"room";
  type SimFilter = "all"|SimType;
  const hasPremium = typeof window!=="undefined"&&(localStorage.getItem("nexus_premium")==="true"||localStorage.getItem("nexus_mod")==="true");
+ const {user} = useCurrentUser();
+ const [showAuth,setShowAuth] = useState(false);
  const [view,setView] = useState<SimView>("hub");
  const [filter,setFilter] = useState<SimFilter>("all");
  const [selectedSim,setSelectedSim] = useState<SimRoom|null>(null);
@@ -10137,12 +10351,30 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
  const [createDate,setCreateDate] = useState("");
  const [sims,setSims] = useState<SimRoom[]>(MOCK_SIMS);
 
+ useEffect(()=>{
+  fetch(apiUrl("/api/rooms"),{credentials:"include"})
+   .then(r=>r.json()).then(d=>{if(d.sims) setSims(d.sims);})
+   .catch(()=>{/* hors-ligne / build statique : on garde les salles de démo */});
+ },[]);
+
  const filtered = filter==="all"?sims:sims.filter(s=>s.type===filter);
 
- const createSim = () => {
+ const joinSim = (s: SimRoom) => {
+  if(!user){setShowAuth(true);return;}
+  setSelectedSim(s);
+  setView("room");
+ };
+
+ const createSim = async () => {
   if(!createTopic.trim()||!createDate) return;
-  const ns:SimRoom = {id:`s${Date.now()}`,type:createType,topic:createTopic,status:"upcoming",scheduled:new Date(createDate).getTime(),participants:1,maxParticipants:createType==="onu"?193:createType==="proces"?12:createType==="assemblee"?30:createType==="conseil"?15:1,moderator:typeof window!=="undefined"?(localStorage.getItem("nexus_handle")||"@vous"):"@vous",room:1};
-  setSims(p=>[ns,...p]);
+  if(!user){setShowAuth(true);return;}
+  const res = await fetch(apiUrl("/api/rooms"),{
+   method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({type:createType,topic:createTopic,scheduled:new Date(createDate).getTime(),maxParticipants:createType==="onu"?193:createType==="proces"?12:createType==="assemblee"?30:createType==="conseil"?15:20}),
+  });
+  const d = await res.json();
+  if(!res.ok){return;}
+  setSims(p=>[d.sim,...p]);
   setView("hub");
   setCreateTopic("");
   setCreateDate("");
@@ -10189,6 +10421,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
     </div>
     <button onClick={createSim} disabled={!createTopic.trim()||!createDate} style={{padding:"13px",borderRadius:10,border:"none",background:createTopic.trim()&&createDate?SIM_TYPE_COLORS[createType]:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:createTopic.trim()&&createDate?"pointer":"default",fontFamily:"inherit"}}>Créer la simulation</button>
    </div>
+   {showAuth&&<AuthModal T={T} onClose={()=>setShowAuth(false)} onAuthed={()=>setShowAuth(false)}/>}
   </div>
  );
 
@@ -10213,7 +10446,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
     <div>
      <p style={{color:"#E03535",fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:"#E03535",display:"inline-block" as const,animation:"pulse 1s ease infinite"}}/>EN DIRECT</p>
      <div style={{display:"flex",flexDirection:"column" as const,gap:10}}>
-      {filtered.filter(s=>s.status==="live").map(s=><SimCard key={s.id} s={s} T={T} onJoin={()=>{setSelectedSim(s);setView("room");}} highlight/>)}
+      {filtered.filter(s=>s.status==="live").map(s=><SimCard key={s.id} s={s} T={T} onJoin={()=>joinSim(s)} highlight/>)}
      </div>
     </div>
    )}
@@ -10221,7 +10454,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
     <div>
      <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:8}}>PROCHAINES</p>
      <div style={{display:"flex",flexDirection:"column" as const,gap:10}}>
-      {filtered.filter(s=>s.status!=="live"&&s.status!=="closed").map(s=><SimCard key={s.id} s={s} T={T} onJoin={()=>{setSelectedSim(s);setView("room");}}/>)}
+      {filtered.filter(s=>s.status!=="live"&&s.status!=="closed").map(s=><SimCard key={s.id} s={s} T={T} onJoin={()=>joinSim(s)}/>)}
      </div>
     </div>
    )}
@@ -10230,6 +10463,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
     <div style={{flex:1}}><p style={{color:T.text,fontSize:14,fontWeight:800}}>Guides & Stratégies</p><p style={{color:T.textD,fontSize:12,marginTop:2}}>Techniques de débat, diplomatie, rhétorique — NEXUS+</p></div>
     <button onClick={onPremium} style={{background:T.blueB,color:"#fff",fontSize:11,fontWeight:800,padding:"7px 12px",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>NEXUS+</button>
    </div>
+   {showAuth&&<AuthModal T={T} onClose={()=>setShowAuth(false)} onAuthed={()=>setShowAuth(false)}/>}
   </div>
  );
 }
