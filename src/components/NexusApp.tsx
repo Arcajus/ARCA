@@ -11007,40 +11007,81 @@ type RoomFile = {id:number;name:string;docType:string;url:string;size:number;mim
 
 // Tuile façon appel vidéo. Le flux caméra réel n'est pas encore branché
 // (voir /api/rooms/[id]/call-token) : la tuile affiche un avatar/drapeau en
-// attendant, mais la structure (taille, libellé, indicateur micro/caméra)
-// est celle qui accueillera le vrai flux une fois le service vidéo branché.
-function VideoTile({label,flag,micOn,camOn,highlight,col,big}:{label:string;flag?:string;micOn?:boolean;camOn?:boolean;highlight?:boolean;col:string;big?:boolean}) {
- const size=big?86:60;
+// attendant, mais la structure (taille, libellé, indicateur micro/caméra,
+// "à la parole"/"vous") est celle qui accueillera le vrai flux une fois le
+// service vidéo branché.
+function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half"}:{label:string;flag?:string;micOn?:boolean;camOn?:boolean;you?:boolean;speaking?:boolean;col:string;size?:"full"|"half"|"mini"}) {
+ const dims = size==="mini"?{width:44,height:44,flexShrink:0}:size==="full"?{width:"100%",aspectRatio:"16/9"}:{flex:1,minWidth:0,aspectRatio:"4/3"};
  return(
-  <div style={{position:"relative" as const,width:size,height:size,borderRadius:10,flexShrink:0,
-   background:"#0d1117",border:`2px solid ${highlight?col:"#ffffff30"}`,
-   display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",boxShadow:highlight?`0 0 0 3px ${col}30`:"none"}}>
-   <span style={{fontSize:big?32:22,lineHeight:1,opacity:camOn?1:.55}}>{flag||"👤"}</span>
-   {!camOn&&<span style={{position:"absolute",top:3,right:3,fontSize:9}}>📷</span>}
-   <span style={{position:"absolute",bottom:0,left:0,right:0,textAlign:"center" as const,fontSize:8,fontWeight:800,color:"#fff",background:"linear-gradient(0deg,rgba(0,0,0,.75),transparent)",padding:"6px 3px 2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{label}</span>
-   <span style={{position:"absolute",top:3,left:3}}><Ic n={micOn?"mic":"micOff"} s={9} c={micOn?"#16A34A":"#94a3b8"}/></span>
+  <div style={{position:"relative" as const,borderRadius:size==="mini"?6:8,overflow:"hidden",
+   background:"#0d1117",outline:speaking?`2px solid ${col}`:you?"2px solid #2563eb":"2px solid #ffffff20",outlineOffset:-2,
+   display:"flex",alignItems:"center",justifyContent:"center",boxShadow:speaking?`0 0 0 3px ${col}30`:"none",...dims}}>
+   <span style={{fontSize:size==="mini"?16:size==="full"?32:24,lineHeight:1,opacity:camOn?1:.55}}>{flag||"👤"}</span>
+   {speaking&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,left:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:col,padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>À LA PAROLE</span>}
+   {you&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,right:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:"#2563eb",padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>VOUS</span>}
+   <span style={{position:"absolute" as const,bottom:size==="mini"?3:5,left:size==="mini"?3:6,right:size==="mini"?3:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const,fontSize:size==="mini"?7:10,fontWeight:700,color:"#fff",background:"rgba(0,0,0,.55)",padding:size==="mini"?"1px 4px":"2px 6px",borderRadius:5,display:"flex",alignItems:"center",justifyContent:size==="mini"?"center" as const:"flex-start" as const,gap:4}}>
+    {micOn!=null&&<Ic n={micOn?"mic":"micOff"} s={size==="mini"?7:9} c={micOn?"#16A34A":"#94a3b8"}/>}{label}
+   </span>
+  </div>
+ );
+}
+
+const NEXUS_BACKDROPS=[
+ {id:"jt",label:"JT Nexus",grad:"linear-gradient(135deg,#0a0e1a,#111b30,#E0353525)"},
+ {id:"vert",label:"Vert",grad:"linear-gradient(135deg,#0a1c1a,#0e3030,#16A34A25)"},
+ {id:"violet",label:"Violet",grad:"linear-gradient(135deg,#1a0e22,#2a1640,#7C3AED25)"},
+ {id:"studio",label:"Studio",grad:"linear-gradient(135deg,#1a1a0a,#332b10,#C2410C25)"},
+ {id:"nuit",label:"Nuit",grad:"linear-gradient(135deg,#0a1422,#102a40,#0E4D8F40)"},
+];
+
+// Choix du fond de plateau pour les types "plateau TV" — uniquement des
+// fonds maison Nexus, pas de fonds tiers.
+function BackdropPicker() {
+ const [sel,setSel] = useState("jt");
+ return(
+  <div style={{position:"relative" as const}}>
+   <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Fond de plateau — fonds Nexus uniquement</div>
+   <div style={{display:"flex",gap:5,overflowX:"auto" as const}}>
+    {NEXUS_BACKDROPS.map(b=>(
+     <button key={b.id} onClick={()=>setSel(b.id)} style={{width:38,height:24,borderRadius:5,flexShrink:0,border:`2px solid ${sel===b.id?"#fff":"transparent"}`,background:b.grad,cursor:"pointer",padding:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <span style={{fontSize:6,fontWeight:800,color:"#fff"}}>{b.label}</span>
+     </button>
+    ))}
+   </div>
   </div>
  );
 }
 
 // Habillage visuel par type de simulation : un décor (plateau TV, tribunal,
-// hémicycle) avec les participants présentés comme des tuiles d'appel vidéo.
-// Le flux caméra réel n'est pas encore branché (le service vidéo l'est pas
-// encore — voir /api/rooms/[id]/call-token) : tant qu'il ne l'est pas, les
-// tuiles affichent un avatar/drapeau à la place du flux, mais l'écran est
-// déjà construit comme un véritable plateau d'appel vidéo.
+// hémicycle) avec, pour chaque type, la disposition qui correspond à la
+// réalité — celui qui a la parole en pleine largeur (présentateur, juge,
+// délégation à la tribune), les autres rôles à leur vraie place (débatteurs
+// face à face, parties à leur table + greffier/témoin en mini-vidéo + public,
+// membres permanents de l'ONU toujours visibles en vidéo + présidence/vous).
+// Le flux caméra réel n'est pas encore branché (voir /api/rooms/[id]/call-token) :
+// tant qu'il ne l'est pas, les tuiles affichent un avatar/drapeau à la place
+// du flux, mais l'écran est déjà construit comme un véritable plateau d'appel vidéo.
 function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel}:{sim:SimRoom;participants:RoomParticipant[];myCamOn:boolean;myMicOn:boolean;myLabel:string}) {
  const col=SIM_TYPE_COLORS[sim.type];
  const isNews=sim.type==="debat"||sim.type==="presse"||sim.type==="eloquence";
  const isCourt=sim.type==="proces";
  const isChamber=sim.type==="onu"||sim.type==="assemblee"||sim.type==="conseil";
  const permMembers=isChamber&&sim.type!=="assemblee"?UN_DEL.filter(c=>c.perm):[];
+ const speakingP=participants.find(p=>p.micOn);
  const queueCount=Math.max(0,sim.participants-(permMembers.length+1)-participants.length);
- const others=participants.slice(0,isChamber?3:4);
+ const others=participants.filter(p=>p!==speakingP);
+
+ const speaker=myMicOn
+  ?{label:myLabel,flag:undefined,you:true}
+  :speakingP
+   ?{label:speakingP.handle,flag:undefined,you:false}
+   :isCourt?{label:sim.moderator?.split(" ")[0]||"Président·e",flag:undefined,you:false}
+   :isChamber?{label:"Présidence",flag:"🌐",you:false}
+   :{label:sim.moderator||"Animateur — Nexus",flag:undefined,you:false};
 
  return(
   <div style={{position:"relative" as const,flexShrink:0,overflow:"hidden",padding:"10px 12px 8px",
-   display:"flex",flexDirection:"column" as const,gap:8,
+   display:"flex",flexDirection:"column" as const,gap:6,
    background:isNews?`linear-gradient(135deg,#0a0e1a 0%,#111b30 60%,${col}25 100%)`
     :isCourt?"linear-gradient(180deg,#2b1d12 0%,#4a3420 100%)"
     :`linear-gradient(135deg,#061224 0%,${col}30 100%)`,
@@ -11064,21 +11105,56 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel}:{sim:SimRoom;
     )}
    </div>
 
-   <div style={{position:"relative" as const,display:"flex",gap:6,overflowX:"auto" as const,paddingBottom:2}}>
-    {isChamber&&permMembers.slice(0,5).map(c=>(
-     <VideoTile key={c.id} label={c.init} flag={c.flag} col={col} micOn={false} camOn={false}/>
-    ))}
-    {isCourt&&sim.moderator&&(
-     <VideoTile label={sim.moderator.split(" ")[0]} col={col} big highlight micOn camOn={false}/>
-    )}
-    {isChamber&&sim.moderator&&(
-     <VideoTile label="Présidence" flag="🌐" col={col} highlight micOn camOn={false}/>
-    )}
-    <VideoTile label={myLabel} col={col} highlight micOn={myMicOn} camOn={myCamOn}/>
-    {others.map(p=>(
-     <VideoTile key={p.handle} label={p.handle} col={col} micOn={p.micOn} camOn={p.camOn}/>
-    ))}
+   <VideoTile label={speaker.label} flag={speaker.flag} you={speaker.you} speaking col={col} size="full"/>
+
+   {isChamber&&permMembers.length>0&&(
+    <div style={{position:"relative" as const}}>
+     <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Membres permanents — vidéo obligatoire, premier rang, toujours visibles</div>
+     <div style={{display:"flex",gap:6}}>
+      {permMembers.slice(0,5).map(c=>(
+       <VideoTile key={c.id} label={c.country} flag={c.flag} col={col} size="half"/>
+      ))}
+     </div>
+    </div>
+   )}
+
+   <div style={{position:"relative" as const}}>
+    <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>
+     {isCourt?"Parties — chacune à sa table, face au juge":isChamber?"Présidence & vous — second rang":"Intervenants — face à face"}
+    </div>
+    <div style={{display:"flex",gap:6}}>
+     {isChamber&&<VideoTile label="Présidence" flag="🌐" col={col} size="half"/>}
+     <VideoTile label={myLabel} you={!myMicOn} speaking={myMicOn} micOn={myMicOn} camOn={myCamOn} col={col} size="half"/>
+     {!isChamber&&others[0]&&(
+      <VideoTile key={others[0].handle} label={others[0].handle} micOn={others[0].micOn} camOn={others[0].camOn} col={col} size="half"/>
+     )}
+    </div>
    </div>
+
+   {isCourt&&others.length>1&&(
+    <div style={{position:"relative" as const}}>
+     <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Autres personnes importantes — vidéo en miniature</div>
+     <div style={{display:"flex",gap:5,overflowX:"auto" as const}}>
+      {others.slice(1,5).map(p=>(
+       <VideoTile key={p.handle} label={p.handle} micOn={p.micOn} camOn={p.camOn} col={col} size="mini"/>
+      ))}
+     </div>
+    </div>
+   )}
+
+   {isCourt&&(
+    <div style={{position:"relative" as const}}>
+     <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Public — au fond de la salle</div>
+     <div style={{display:"flex",gap:4,marginTop:2}}>
+      {Array.from({length:Math.min(4,Math.max(0,sim.participants-5))}).map((_,i)=>(
+       <span key={i} style={{width:18,height:18,borderRadius:"50%",background:"#2a2a35",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,opacity:.6}}>🙂</span>
+      ))}
+      {sim.participants-5>4&&<span style={{width:18,height:18,borderRadius:"50%",background:"#2a2a35",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,opacity:.6,color:"#fff"}}>+{sim.participants-9}</span>}
+     </div>
+    </div>
+   )}
+
+   {isNews&&<BackdropPicker/>}
 
    <p style={{position:"relative" as const,color:"#cbd5e1",fontSize:10,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.moderator&&!isChamber&&!isCourt?`Modérateur : ${sim.moderator} · `:""}{sim.topic}</p>
   </div>
