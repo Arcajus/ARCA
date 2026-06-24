@@ -3690,13 +3690,78 @@ const CONCOURS_EPREUVES:{[k:string]:{annee:number;matiere:string;sujet:string;ty
  ],
 };
 
-// APPRENDRE SCREEN 
+const CONC_META=[
+ {key:"sciencespo" as const,label:"Sciences Po",color:"#2B78F5",desc:"Culture générale · Histoire · Géopolitique"},
+ {key:"ens" as const,label:"ENS",color:"#7C3AED",desc:"Philosophie · Histoire · Sciences sociales"},
+ {key:"fonction" as const,label:"Fonction pub.",color:"#16A34A",desc:"Droit public · Culture G · Cas pratique"},
+ {key:"droit" as const,label:"Barreau",color:"#E03535",desc:"Droit civil · Pénal · Procédure"},
+];
+type ConcoursKey=typeof CONC_META[number]["key"];
+type GrilleEntry={epreuve:string;bareme:number;eliminatoire?:string;criteres:{label:string;pts:number;desc:string}[];conseils:string[]};
+type GradeItem={label:string;score:number;maxPts:number;comment:string};
+type GradeResult={total:number;max:number;items:GradeItem[];raw:string};
+const BLANCHE_DURATIONS:Record<string,number>={"Dissertation":180,"Note de synthèse":240,"Cas pratique":180,"Mise en situation":120};
+
+function getConcoursProgress():Record<string,Record<string,{total:number;count:number}>>{
+ if(typeof window==="undefined")return{};
+ try{return JSON.parse(localStorage.getItem("nx_concours_progress")||"{}");}catch{return{};}
+}
+function saveConcoursProgress(concoursKey:string,items:GradeItem[]){
+ if(typeof window==="undefined")return;
+ const data=getConcoursProgress();
+ if(!data[concoursKey])data[concoursKey]={};
+ items.forEach(it=>{
+ const ratio=it.maxPts>0?it.score/it.maxPts:0;
+ if(!data[concoursKey][it.label])data[concoursKey][it.label]={total:0,count:0};
+ data[concoursKey][it.label].total+=ratio;
+ data[concoursKey][it.label].count+=1;
+ });
+ localStorage.setItem("nx_concours_progress",JSON.stringify(data));
+}
+
+async function gradeWithGrille(grille:GrilleEntry,sujet:string,answer:string):Promise<GradeResult>{
+ const critList=grille.criteres.map(c=>`- ${c.label} (max ${c.pts} pts) : ${c.desc}`).join("\n");
+ const sys=`Tu es un correcteur de concours rigoureux et exigeant. Sujet : "${sujet}". Voici la grille de notation officielle (barème /${grille.bareme}) :\n${critList}\n\nCorrige la copie du candidat ci-dessous STRICTEMENT selon cette grille. Pour CHAQUE critère, réponds sur une seule ligne au format exact :\nLABEL::points attribués (nombre)::commentaire bref (une phrase)\nReprends le LABEL exactement comme dans la grille ci-dessus. Une ligne par critère, dans l'ordre de la grille. N'ajoute rien d'autre avant ou après ces lignes, pas de titre, pas de total.`;
+ const raw=await callGemini(sys,[{role:"user",parts:[{text:answer||"(copie vide)"}]}],"",1000);
+ const items:GradeItem[]=grille.criteres.map(c=>{
+ const escaped=c.label.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+ const re=new RegExp(`${escaped}\\s*::\\s*([\\d.,]+)\\s*::\\s*(.+)`,"i");
+ const m=raw.match(re);
+ if(m) return {label:c.label,score:Math.min(c.pts,parseFloat(m[1].replace(",","."))||0),maxPts:c.pts,comment:m[2].trim()};
+ return {label:c.label,score:0,maxPts:c.pts,comment:"Non évalué (réponse IA dans un format inattendu — réessaie)."};
+ });
+ const total=items.reduce((s,it)=>s+it.score,0);
+ return {total,max:grille.bareme,items,raw};
+}
+
+async function genTrainingSubject(concoursLabel:string,epreuveLabel:string):Promise<string>{
+ const sys=`Tu es un concepteur de sujets de concours. Génère UN SEUL sujet plausible et inédit de type "${epreuveLabel}" pour le concours ${concoursLabel}, dans le style et au niveau d'exigence réel de ce concours. Ce sujet est un exercice d'ENTRAÎNEMENT que tu inventes : ne prétends jamais qu'il a été tiré d'une session réelle, n'indique aucune année. Réponds uniquement par l'énoncé du sujet (une phrase ou une question), sans numérotation ni commentaire.`;
+ return (await callGemini(sys,[{role:"user",parts:[{text:"Génère le sujet."}]}],"",150)).trim();
+}
+
+// APPRENDRE SCREEN
 function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:()=>void}){
  const [sub,setSub]=useState<"menu"|"discours"|"rhetori"|"dict"|"fiches"|"concours">("menu");
  const [selSpeech,setSelSpeech]=useState<typeof DISCOURS_DATA[0]|null>(null);
  const [selLesson,setSelLesson]=useState<typeof RHETORIC_DATA[0]|null>(null);
  const [dictQ,setDictQ]=useState("");
  const [selFiche,setSelFiche]=useState<typeof FICHES_DATA[0]|null>(null);
+ const [ficheTheme,setFicheTheme]=useState("");
+ const [ficheGenText,setFicheGenText]=useState<string|null>(null);
+ const [ficheGenLoading,setFicheGenLoading]=useState(false);
+
+ const genFiche=async()=>{
+ if(!ficheTheme.trim())return;
+ const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="true";
+ if(!hasPremium){onPremium();return;}
+ setFicheGenLoading(true);
+ try{
+ const sys=`Tu es un professeur de classe préparatoire. Génère une fiche de révision structurée sur le thème : "${ficheTheme}". Inclus, dans cet ordre :\n\nDÉFINITIONS — les notions clés définies avec précision\n\nREPÈRES — dates, auteurs, jurisprudences ou références essentielles à connaître sur ce thème\n\nPLAN-TYPE — un plan de dissertation ou d'argumentation possible (2-3 parties avec sous-idées)\n\nRéponds en français, de façon concise et structurée, sans introduction ni conclusion superflues.`;
+ const r=await callGemini(sys,[{role:"user",parts:[{text:ficheTheme}]}],"",900);
+ setFicheGenText(r);addXP(8);
+ }catch(err){setFicheGenText("Erreur: "+(err instanceof Error?err.message:"inconnu")+". Vérifie ta clé Gemini dans Profil > Paramètres.");}
+ setFicheGenLoading(false);
+ };
 
  if(sub==="concours") return <CarriereScreen T={T} onBack={()=>setSub("menu")} onPremium={onPremium}/>;
 
@@ -3817,12 +3882,28 @@ function ApprendreScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  if(sub==="fiches")return(
  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
  <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
- <button onClick={()=>{if(selFiche)setSelFiche(null);else setSub("menu");}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
- <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>{selFiche?selFiche.title:"Fiches de révision"}</h2>
+ <button onClick={()=>{if(ficheGenText){setFicheGenText(null);}else if(selFiche){setSelFiche(null);}else{setSub("menu");}}} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+ <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>{ficheGenText?`Fiche : ${ficheTheme}`:selFiche?selFiche.title:"Fiches de révision"}</h2>
  </div>
  <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
- {!selFiche?(
+ {ficheGenText?(
+ <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:18}}>
+ {ficheGenText.split("\n").map((line,li)=>{
+ if(!line.trim())return <div key={li} style={{height:8}}/>;
+ if(/^(DÉFINITIONS|REPÈRES|PLAN-TYPE)/i.test(line))return <p key={li} style={{color:T.blueB,fontWeight:800,fontSize:14,marginTop:14,marginBottom:4}}>{line}</p>;
+ return <p key={li} style={{color:T.text,fontSize:13,lineHeight:1.6}}>{line}</p>;
+ })}
+ </div>
+ ):!selFiche?(
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
+ <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:16}}>
+ <p style={{color:T.text,fontWeight:800,fontSize:14,marginBottom:4}}>Générer une fiche sur n&apos;importe quel thème</p>
+ <p style={{color:T.textD,fontSize:12,marginBottom:10}}>Définitions, repères clés et plan-type, générés par l&apos;IA.</p>
+ <input value={ficheTheme} onChange={e=>setFicheTheme(e.target.value)} placeholder="Ex : Le principe de séparation des pouvoirs" style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:10}}/>
+ <button onClick={genFiche} disabled={!ficheTheme.trim()||ficheGenLoading} style={{width:"100%",padding:"10px",borderRadius:10,border:`1px solid ${T.blueB}`,background:`${T.blueB}15`,color:T.blueB,fontSize:13,fontWeight:700,cursor:ficheTheme.trim()&&!ficheGenLoading?"pointer":"default",fontFamily:"inherit",opacity:ficheTheme.trim()?1:.5}}>
+ {ficheGenLoading?"Génération en cours…":"Générer la fiche"}
+ </button>
+ </div>
  {FICHES_DATA.map(f=>(
  <button key={f.id} onClick={()=>{if((f as any).premium){onPremium();}else{setSelFiche(f);}}} style={{padding:16,borderRadius:14,border:`1px solid ${(f as any).premium?T.amber+"40":T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,opacity:(f as any).premium?.9:1}}>
  <div style={{width:44,height:44,borderRadius:12,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={f.icon} s={22} c={T.blueB}/></div>
@@ -4173,10 +4254,12 @@ function EloquenceScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
 
 // CARRIÈRE & CONCOURS SCREEN
 function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:()=>void}){
- const [sub,setSub]=useState<"menu"|"concours">("menu");
- const [concoursKey,setConcoursKey]=useState<"sciencespo"|"ens"|"fonction"|"droit">("sciencespo");
+ const [sub,setSub]=useState<"menu"|"concours"|"blanche"|"oral"|"calendrier">("menu");
+ const [concoursKey,setConcoursKey]=useState<ConcoursKey>("sciencespo");
  const [concoursAnnee,setConcoursAnnee]=useState<number|null>(null);
- const [concoursTab,setConcoursTab]=useState<"epreuves"|"stats"|"grilles">("epreuves");
+ const [concoursTab,setConcoursTab]=useState<"epreuves"|"stats"|"grilles"|"progression"|"banque">("epreuves");
+ const [banqueSujets,setBanqueSujets]=useState<Record<string,string[]>>({});
+ const [banqueLoading,setBanqueLoading]=useState(false);
  const [corrId,setCorrId]=useState<string|null>(null);
  const [corrTexts,setCorrTexts]=useState<Record<string,string>>({});
  const [corrLoading,setCorrLoading]=useState<string|null>(null);
@@ -4201,12 +4284,6 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
 
 
  if(sub==="concours"){
- const CONC_META=[
- {key:"sciencespo" as const,label:"Sciences Po",color:"#2B78F5",desc:"Culture générale · Histoire · Géopolitique"},
- {key:"ens" as const,label:"ENS",color:"#7C3AED",desc:"Philosophie · Histoire · Sciences sociales"},
- {key:"fonction" as const,label:"Fonction pub.",color:"#16A34A",desc:"Droit public · Culture G · Cas pratique"},
- {key:"droit" as const,label:"Barreau",color:"#E03535",desc:"Droit civil · Pénal · Procédure"},
- ];
  const meta=CONC_META.find(c=>c.key===concoursKey)!;
  const epreuves=CONCOURS_EPREUVES[concoursKey];
  const stats=CONCOURS_STATS[concoursKey];
@@ -4214,6 +4291,19 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  const annees=[...new Set(epreuves.map(e=>e.annee))].sort((a,b)=>b-a);
  const filtered=concoursAnnee?epreuves.filter(e=>e.annee===concoursAnnee):epreuves;
  const typeColor=(t:string)=>({Dissertation:"#2B78F5","Note de synthèse":"#16A34A","Cas pratique":"#E03535","Mise en situation":"#D97706"}[t]||"#888");
+ const progress=getConcoursProgress()[concoursKey]||{};
+ const genBanqueSujet=async()=>{
+ const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="true";
+ if(!hasPremium){onPremium();return;}
+ setBanqueLoading(true);
+ try{
+ const epreuveLabel=grilles[0]?.epreuve||"Dissertation";
+ const s=await genTrainingSubject(meta.label,epreuveLabel);
+ setBanqueSujets(p=>({...p,[concoursKey]:[s,...(p[concoursKey]||[])]}));
+ addXP(5);
+ }catch{/* ignore */}
+ setBanqueLoading(false);
+ };
  return(
  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
  <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
@@ -4230,9 +4320,9 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  </div>
  {/* Sujets / Résultats / Grilles tab switch */}
  <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
- {(["epreuves","stats","grilles"] as const).map(t=>(
- <button key={t} onClick={()=>setConcoursTab(t as typeof concoursTab)} style={{flex:1,padding:"9px 4px",background:"none",border:"none",borderBottom:`2.5px solid ${concoursTab===t?meta.color:"transparent"}`,color:concoursTab===t?meta.color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
- {t==="epreuves"?"Sujets":t==="stats"?"Résultats":"Grilles"}
+ {(["epreuves","stats","grilles","progression","banque"] as const).map(t=>(
+ <button key={t} onClick={()=>setConcoursTab(t as typeof concoursTab)} style={{flex:1,padding:"9px 4px",background:"none",border:"none",borderBottom:`2.5px solid ${concoursTab===t?meta.color:"transparent"}`,color:concoursTab===t?meta.color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+ {t==="epreuves"?"Sujets":t==="stats"?"Résultats":t==="grilles"?"Grilles":t==="progression"?"Progression":"Banque IA"}
  </button>
  ))}
  </div>
@@ -4360,9 +4450,61 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  </div>
  </div>
  )}
+
+ {concoursTab==="progression"&&(
+ <div style={{flex:1,overflowY:"scroll",minHeight:0,WebkitOverflowScrolling:"touch",touchAction:"pan-y"}}>
+ <div style={{display:"flex",flexDirection:"column",gap:10,padding:"12px 16px"}}>
+ <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Progression par compétence</p>
+ {Object.keys(progress).length===0?(
+ <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:18,textAlign:"center"}}>
+ <p style={{color:T.textD,fontSize:13,lineHeight:1.6}}>Aucune donnée encore. Fais une Épreuve blanche ou un Oral du jury pour voir ta progression compétence par compétence.</p>
+ </div>
+ ):Object.entries(progress).map(([label,d])=>{
+ const pct=Math.round((d.total/d.count)*100);
+ const col=pct>=70?"#16A34A":pct>=45?"#D97706":"#E03535";
+ return(
+ <div key={label} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+ <p style={{color:T.text,fontWeight:700,fontSize:13}}>{label}</p>
+ <span style={{color:col,fontWeight:800,fontSize:13}}>{pct}%</span>
+ </div>
+ <div style={{height:8,borderRadius:5,background:T.bg2,overflow:"hidden"}}>
+ <div style={{height:"100%",width:`${pct}%`,background:col,borderRadius:5,transition:"width .3s"}}/>
+ </div>
+ <p style={{color:T.muted,fontSize:11,marginTop:6}}>{d.count} évaluation{d.count>1?"s":""}</p>
+ </div>
+ );
+ })}
+ </div>
+ </div>
+ )}
+
+ {concoursTab==="banque"&&(
+ <div style={{flex:1,overflowY:"scroll",minHeight:0,WebkitOverflowScrolling:"touch",touchAction:"pan-y"}}>
+ <div style={{display:"flex",flexDirection:"column",gap:10,padding:"12px 16px"}}>
+ <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Banque de sujets d&apos;entraînement (générés par IA)</p>
+ <div style={{background:`${T.amber}10`,border:`1px solid ${T.amber}30`,borderRadius:12,padding:12}}>
+ <p style={{color:T.amber,fontSize:11,lineHeight:1.5,fontWeight:600}}>Ces sujets sont inventés par l&apos;IA pour t&apos;entraîner. Ce ne sont pas des sujets ayant réellement été posés à un examen — pour ceux-là, va dans l&apos;onglet &ldquo;Sujets&rdquo;.</p>
+ </div>
+ <button onClick={genBanqueSujet} disabled={banqueLoading} style={{padding:"10px",borderRadius:10,border:`1px solid ${meta.color}`,background:`${meta.color}15`,color:meta.color,fontSize:13,fontWeight:700,cursor:banqueLoading?"default":"pointer",fontFamily:"inherit",opacity:banqueLoading?.6:1}}>
+ {banqueLoading?"Génération en cours…":"Générer un nouveau sujet d'entraînement"}
+ </button>
+ {(banqueSujets[concoursKey]||[]).map((s,i)=>(
+ <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+ <span style={{background:`${T.amber}18`,color:T.amber,fontSize:9,padding:"3px 9px",borderRadius:8,fontWeight:800,letterSpacing:0.5,textTransform:"uppercase"}}>Sujet d&apos;entraînement</span>
+ <p style={{color:T.text,fontSize:13,fontWeight:600,lineHeight:1.5,marginTop:8}}>{s}</p>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
  </div>
  );
  }
+
+ if(sub==="blanche") return <EpreuveBlancheScreen T={T} onBack={()=>setSub("menu")} onPremium={onPremium}/>;
+ if(sub==="oral") return <OralJuryScreen T={T} onBack={()=>setSub("menu")} onPremium={onPremium}/>;
+ if(sub==="calendrier") return <CalendrierRevisionScreen T={T} onBack={()=>setSub("menu")}/>;
 
  return(
  <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -4371,7 +4513,12 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Carrière & Concours</h2><p style={{color:T.muted,fontSize:11}}>Outils IA pour ta progression</p></div>
  </div>
  <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
- {([{id:"concours",icon:"award",label:"Prépa concours",desc:"Sciences Po, ENS, Barreau, Fonction publique",color:"#D97706"}] as const).map(s=>(
+ {([
+ {id:"concours",icon:"award",label:"Prépa concours",desc:"Sciences Po, ENS, Barreau, Fonction publique",color:"#D97706"},
+ {id:"blanche",icon:"zap",label:"Épreuve blanche chronométrée",desc:"Conditions réelles, correction IA sur le barème officiel",color:"#2B78F5"},
+ {id:"oral",icon:"mic",label:"Oral du jury simulé",desc:"Questions imprévisibles tirées au sort, feedback sur le fond",color:"#7C3AED"},
+ {id:"calendrier",icon:"cal",label:"Calendrier de révision",desc:"Plan de révision inversé depuis ta date de concours",color:"#16A34A"},
+ ] as const).map(s=>(
  <button key={s.id} onClick={()=>setSub(s.id)} style={{padding:18,borderRadius:16,border:`1px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16,transition:"all .2s"}}
  onMouseEnter={e=>e.currentTarget.style.background=T.bg2} onMouseLeave={e=>e.currentTarget.style.background=T.card}>
  <div style={{width:52,height:52,borderRadius:14,background:T.bg2,border:`1px solid ${T.b1}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={s.icon} s={26} c={T.blueB}/></div>
@@ -4379,6 +4526,364 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  <Ic n="chevR" s={18} c={T.muted}/>
  </button>
  ))}
+ </div>
+ </div>
+ );
+}
+
+function EpreuveBlancheScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:()=>void}){
+ const [concoursKey,setConcoursKey]=useState<ConcoursKey>("sciencespo");
+ const [grilleIdx,setGrilleIdx]=useState(0);
+ const [phase,setPhase]=useState<"setup"|"writing"|"result">("setup");
+ const [sujet,setSujet]=useState("");
+ const [sujetLoading,setSujetLoading]=useState(false);
+ const [timeLeft,setTimeLeft]=useState(0);
+ const [answer,setAnswer]=useState("");
+ const [grading,setGrading]=useState(false);
+ const [result,setResult]=useState<GradeResult|null>(null);
+ const timerRef=useRef<ReturnType<typeof setInterval>|null>(null);
+
+ const meta=CONC_META.find(c=>c.key===concoursKey)!;
+ const grilles=CONCOURS_GRILLES[concoursKey];
+ const grille=grilles[grilleIdx]||grilles[0];
+
+ const submit=async()=>{
+ if(timerRef.current)clearInterval(timerRef.current);
+ setPhase("result");setGrading(true);
+ try{
+ const r=await gradeWithGrille(grille,sujet,answer);
+ setResult(r);saveConcoursProgress(concoursKey,r.items);addXP(15);
+ }catch(err){setResult({total:0,max:grille.bareme,items:[],raw:"Erreur: "+(err instanceof Error?err.message:"inconnu")});}
+ setGrading(false);
+ };
+
+ useEffect(()=>{
+ if(phase!=="writing")return;
+ timerRef.current=setInterval(()=>{
+ setTimeLeft(t=>{
+ if(t<=1){if(timerRef.current)clearInterval(timerRef.current);submit();return 0;}
+ return t-1;
+ });
+ },1000);
+ return ()=>{if(timerRef.current)clearInterval(timerRef.current);};
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[phase]);
+
+ const start=async()=>{
+ const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="true";
+ if(!hasPremium){onPremium();return;}
+ setSujetLoading(true);
+ try{
+ const s=await genTrainingSubject(meta.label,grille.epreuve);
+ setSujet(s);
+ const mins=BLANCHE_DURATIONS[grille.epreuve.includes("synthèse")?"Note de synthèse":"Dissertation"]||180;
+ setTimeLeft(mins*60);setAnswer("");setResult(null);
+ setPhase("writing");
+ }catch{/* ignore */}
+ setSujetLoading(false);
+ };
+
+ const fmt=(s:number)=>`${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor((s%3600)/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+
+ if(phase==="writing")return(
+ <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+ <div style={{padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <div style={{display:"flex",alignItems:"center",gap:8}}><Ic n="zap" s={18} c={timeLeft<300?T.red:meta.color}/><span style={{color:timeLeft<300?T.red:T.text,fontWeight:800,fontSize:18,fontFamily:"monospace"}}>{fmt(timeLeft)}</span></div>
+ <button onClick={submit} style={{padding:"8px 16px",borderRadius:10,border:`1px solid ${T.red}`,background:`${T.red}15`,color:T.red,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Rendre la copie</button>
+ </div>
+ <div style={{padding:"12px 20px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <span style={{background:`${T.amber}18`,color:T.amber,fontSize:9,padding:"3px 9px",borderRadius:8,fontWeight:800,letterSpacing:0.5,textTransform:"uppercase"}}>Sujet d&apos;entraînement · {grille.epreuve}</span>
+ <p style={{color:T.text,fontSize:14,fontWeight:700,lineHeight:1.5,marginTop:8}}>{sujet}</p>
+ </div>
+ <textarea value={answer} onChange={e=>setAnswer(e.target.value)} placeholder="Rédige ta copie ici…" style={{flex:1,border:"none",outline:"none",resize:"none",background:T.bg,color:T.text,fontSize:14,lineHeight:1.7,padding:20,fontFamily:"inherit"}}/>
+ </div>
+ );
+
+ if(phase==="result")return(
+ <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+ <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+ <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Résultat</h2>
+ </div>
+ <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
+ {grading?(
+ <p style={{color:T.textD,fontSize:14,textAlign:"center",marginTop:30}}>Correction en cours sur le barème officiel…</p>
+ ):result&&(
+ <>
+ <div style={{background:T.card,border:`1px solid ${meta.color}`,borderRadius:16,padding:20,textAlign:"center"}}>
+ <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>Note</p>
+ <p style={{color:meta.color,fontWeight:800,fontSize:34,marginTop:4}}>{result.total.toFixed(1)}<span style={{fontSize:18,color:T.muted}}>/{result.max}</span></p>
+ </div>
+ {result.items.map((it,i)=>(
+ <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+ <p style={{color:T.text,fontWeight:700,fontSize:13}}>{it.label}</p>
+ <span style={{color:meta.color,fontWeight:800,fontSize:13}}>{it.score}/{it.maxPts}</span>
+ </div>
+ <p style={{color:T.textD,fontSize:12,lineHeight:1.5}}>{it.comment}</p>
+ </div>
+ ))}
+ <button onClick={()=>setPhase("setup")} style={{padding:12,borderRadius:10,border:`1px solid ${meta.color}`,background:`${meta.color}15`,color:meta.color,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Nouvelle épreuve blanche</button>
+ </>
+ )}
+ </div>
+ </div>
+ );
+
+ return(
+ <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+ <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+ <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Épreuve blanche chronométrée</h2><p style={{color:T.muted,fontSize:11}}>Conditions réelles · correction IA sur barème officiel</p></div>
+ </div>
+ <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
+ <div style={{display:"flex",gap:8,overflowX:"auto"}}>
+ {CONC_META.map(c=>(
+ <button key={c.key} onClick={()=>{setConcoursKey(c.key);setGrilleIdx(0);}} style={{flexShrink:0,padding:"8px 14px",borderRadius:20,border:`1.5px solid ${concoursKey===c.key?c.color:T.b1}`,background:concoursKey===c.key?c.color:"transparent",color:concoursKey===c.key?"#fff":T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{c.label}</button>
+ ))}
+ </div>
+ <div>
+ <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Épreuve</p>
+ <div style={{display:"flex",flexDirection:"column",gap:8}}>
+ {grilles.map((g,i)=>(
+ <button key={i} onClick={()=>setGrilleIdx(i)} style={{padding:"12px 14px",borderRadius:12,border:`1.5px solid ${grilleIdx===i?meta.color:T.b1}`,background:grilleIdx===i?`${meta.color}15`:T.card,color:T.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <span>{g.epreuve}</span><span style={{color:T.muted,fontSize:11}}>/{g.bareme}</span>
+ </button>
+ ))}
+ </div>
+ </div>
+ <div style={{background:`${T.blueB}08`,border:`1px solid ${T.blueB}25`,borderRadius:14,padding:14}}>
+ <p style={{color:T.textD,fontSize:12,lineHeight:1.6}}>Un sujet d&apos;entraînement inédit sera généré par l&apos;IA, dans le style et le niveau de l&apos;épreuve choisie. Tu auras {Math.floor((BLANCHE_DURATIONS[grille.epreuve.includes("synthèse")?"Note de synthèse":"Dissertation"]||180)/60)}h pour composer, puis ta copie sera corrigée point par point sur le barème officiel.</p>
+ </div>
+ <button onClick={start} disabled={sujetLoading} style={{padding:14,borderRadius:12,border:`1px solid ${meta.color}`,background:meta.color,color:"#fff",fontSize:14,fontWeight:800,cursor:sujetLoading?"default":"pointer",fontFamily:"inherit",opacity:sujetLoading?.6:1}}>
+ {sujetLoading?"Génération du sujet…":"Démarrer l'épreuve blanche"}
+ </button>
+ </div>
+ </div>
+ );
+}
+
+function OralJuryScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:()=>void}){
+ const [concoursKey,setConcoursKey]=useState<ConcoursKey>("sciencespo");
+ const [phase,setPhase]=useState<"setup"|"answer"|"result">("setup");
+ const [question,setQuestion]=useState("");
+ const [loading,setLoading]=useState(false);
+ const [answer,setAnswer]=useState("");
+ const [forme,setForme]=useState<Record<string,boolean>>({});
+ const [grading,setGrading]=useState(false);
+ const [result,setResult]=useState<GradeResult|null>(null);
+
+ const meta=CONC_META.find(c=>c.key===concoursKey)!;
+ const oralGrilles=CONCOURS_GRILLES[concoursKey].filter(g=>/oral/i.test(g.epreuve));
+ const grille=oralGrilles[0]||CONCOURS_GRILLES[concoursKey][0];
+ const FORME_ITEMS=["J'ai regardé le jury (ou la caméra) en parlant","J'ai géré mon temps de parole sans le dépasser","J'ai évité les tics de langage ('euh', 'du coup'…)","J'ai gardé mon calme même sous une question piège"];
+
+ const start=async()=>{
+ const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="true";
+ if(!hasPremium){onPremium();return;}
+ setLoading(true);
+ try{
+ const sys=`Tu es un membre exigeant et imprévisible du jury de l'oral "${grille.epreuve}" du concours ${meta.label}. Pose UNE question d'ouverture suivie de 2 sous-questions de relance plus difficiles, comme un vrai jury qui rebondit sur les réponses attendues. Sujet tiré au sort, inédit. Réponds uniquement avec les 3 questions, numérotées 1/2/3, sans aucun commentaire.`;
+ const q=await callGemini(sys,[{role:"user",parts:[{text:"Pose les questions."}]}],"",250);
+ setQuestion(q.trim());setAnswer("");setResult(null);setForme({});
+ setPhase("answer");
+ }catch{/* ignore */}
+ setLoading(false);
+ };
+
+ const submit=async()=>{
+ setPhase("result");setGrading(true);
+ try{
+ const r=await gradeWithGrille(grille,question,answer);
+ setResult(r);saveConcoursProgress(concoursKey,r.items);addXP(15);
+ }catch(err){setResult({total:0,max:grille.bareme,items:[],raw:"Erreur: "+(err instanceof Error?err.message:"inconnu")});}
+ setGrading(false);
+ };
+
+ if(phase==="answer")return(
+ <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+ <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Questions du jury</h2>
+ </div>
+ <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
+ <div style={{background:T.card,border:`1px solid ${meta.color}`,borderRadius:14,padding:16}}>
+ {question.split("\n").filter(l=>l.trim()).map((l,i)=><p key={i} style={{color:T.text,fontSize:14,lineHeight:1.7,fontWeight:600,marginBottom:i<2?8:0}}>{l}</p>)}
+ </div>
+ <div style={{background:`${T.purple}08`,border:`1px solid ${T.purple}25`,borderRadius:12,padding:12}}>
+ <p style={{color:T.textD,fontSize:12,lineHeight:1.6}}>Entraîne-toi à voix haute (enregistre-toi dans Apprendre &gt; Diction si tu veux travailler la forme), puis note ici l&apos;essentiel de ta réponse pour que l&apos;IA évalue le fond.</p>
+ </div>
+ <textarea value={answer} onChange={e=>setAnswer(e.target.value)} placeholder="Note l'essentiel de ta réponse…" style={{flex:1,minHeight:160,border:`1px solid ${T.b1}`,borderRadius:12,outline:"none",resize:"none",background:T.bg2,color:T.text,fontSize:14,lineHeight:1.6,padding:14,fontFamily:"inherit",boxSizing:"border-box"}}/>
+ <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>Auto-évaluation de la forme</p>
+ {FORME_ITEMS.map(it=>(
+ <button key={it} onClick={()=>setForme(p=>({...p,[it]:!p[it]}))} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,border:`1px solid ${forme[it]?T.green:T.b1}`,background:forme[it]?`${T.green}10`:T.card,cursor:"pointer",textAlign:"left"}}>
+ <div style={{width:18,height:18,borderRadius:5,border:`1.5px solid ${forme[it]?T.green:T.muted}`,background:forme[it]?T.green:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{forme[it]&&<Ic n="check" s={11} c="#fff"/>}</div>
+ <span style={{color:T.text,fontSize:12}}>{it}</span>
+ </button>
+ ))}
+ <button onClick={submit} style={{padding:14,borderRadius:12,border:`1px solid ${meta.color}`,background:meta.color,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Soumettre ma réponse</button>
+ </div>
+ </div>
+ );
+
+ if(phase==="result")return(
+ <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+ <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+ <h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Résultat</h2>
+ </div>
+ <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
+ {grading?(
+ <p style={{color:T.textD,fontSize:14,textAlign:"center",marginTop:30}}>Évaluation du fond en cours…</p>
+ ):result&&(
+ <>
+ <div style={{background:T.card,border:`1px solid ${meta.color}`,borderRadius:16,padding:20,textAlign:"center"}}>
+ <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>Note (fond)</p>
+ <p style={{color:meta.color,fontWeight:800,fontSize:34,marginTop:4}}>{result.total.toFixed(1)}<span style={{fontSize:18,color:T.muted}}>/{result.max}</span></p>
+ </div>
+ {result.items.map((it,i)=>(
+ <div key={i} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+ <p style={{color:T.text,fontWeight:700,fontSize:13}}>{it.label}</p>
+ <span style={{color:meta.color,fontWeight:800,fontSize:13}}>{it.score}/{it.maxPts}</span>
+ </div>
+ <p style={{color:T.textD,fontSize:12,lineHeight:1.5}}>{it.comment}</p>
+ </div>
+ ))}
+ <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+ <p style={{color:T.text,fontWeight:700,fontSize:13,marginBottom:8}}>Forme (auto-évaluation)</p>
+ {FORME_ITEMS.map(it=>(
+ <p key={it} style={{color:forme[it]?T.green:T.muted,fontSize:12,marginBottom:4}}>{forme[it]?"✓":"○"} {it}</p>
+ ))}
+ </div>
+ <button onClick={()=>setPhase("setup")} style={{padding:12,borderRadius:10,border:`1px solid ${meta.color}`,background:`${meta.color}15`,color:meta.color,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Nouvel oral</button>
+ </>
+ )}
+ </div>
+ </div>
+ );
+
+ return(
+ <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+ <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+ <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Oral du jury simulé</h2><p style={{color:T.muted,fontSize:11}}>Questions imprévisibles · feedback sur le fond</p></div>
+ </div>
+ <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
+ <div style={{display:"flex",gap:8,overflowX:"auto"}}>
+ {CONC_META.map(c=>(
+ <button key={c.key} onClick={()=>setConcoursKey(c.key)} style={{flexShrink:0,padding:"8px 14px",borderRadius:20,border:`1.5px solid ${concoursKey===c.key?c.color:T.b1}`,background:concoursKey===c.key?c.color:"transparent",color:concoursKey===c.key?"#fff":T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{c.label}</button>
+ ))}
+ </div>
+ <div style={{background:`${T.purple}08`,border:`1px solid ${T.purple}25`,borderRadius:14,padding:14}}>
+ <p style={{color:T.textD,fontSize:12,lineHeight:1.6}}>Le jury ({grille.epreuve}) va te poser une question d&apos;ouverture imprévisible puis 2 relances. Note l&apos;essentiel de ta réponse pour être évalué·e sur le fond, et auto-évalue ta forme.</p>
+ </div>
+ <button onClick={start} disabled={loading} style={{padding:14,borderRadius:12,border:`1px solid ${meta.color}`,background:meta.color,color:"#fff",fontSize:14,fontWeight:800,cursor:loading?"default":"pointer",fontFamily:"inherit",opacity:loading?.6:1}}>
+ {loading?"Le jury prépare ses questions…":"Passer à l'oral"}
+ </button>
+ </div>
+ </div>
+ );
+}
+
+function CalendrierRevisionScreen({T,onBack}:{T:Theme;onBack:()=>void}){
+ type Plan={examDate:string;concoursKey:ConcoursKey;weeks:{label:string;tasks:{id:string;label:string;done:boolean}[]}[]};
+ const [plan,setPlan]=useState<Plan|null>(()=>{
+ if(typeof window==="undefined")return null;
+ try{return JSON.parse(localStorage.getItem("nx_revision_plan")||"null");}catch{return null;}
+ });
+ const [concoursKey,setConcoursKey]=useState<ConcoursKey>("sciencespo");
+ const [examDate,setExamDate]=useState("");
+
+ const meta=CONC_META.find(c=>c.key===concoursKey)!;
+
+ const generate=()=>{
+ if(!examDate)return;
+ const today=new Date();
+ const target=new Date(examDate);
+ const msPerWeek=7*24*60*60*1000;
+ const weeksLeft=Math.max(1,Math.ceil((target.getTime()-today.getTime())/msPerWeek));
+ const cycle=[
+ "Réviser les fiches et cours fondamentaux",
+ "1 Épreuve blanche chronométrée + corriger les erreurs du barème",
+ "1 Oral du jury simulé + travailler la forme identifiée comme faible",
+ "Revoir en priorité les compétences les plus faibles (onglet Progression)",
+ ];
+ const weeks=Array.from({length:weeksLeft},(_,i)=>{
+ const remaining=weeksLeft-i;
+ const isLast=remaining===1;
+ return{
+ label:isLast?"Dernière semaine avant le concours":`Semaine ${i+1} (${remaining} semaine${remaining>1?"s":""} avant le concours)`,
+ tasks:(isLast?["Relire toutes les fiches clés","1 dernière épreuve blanche courte","Repos et gestion du stress la veille"]:[cycle[i%cycle.length],"Mémoriser 5 références/jurisprudences/exemples nouveaux"]).map((t,ti)=>({id:`${i}-${ti}`,label:t,done:false})),
+ };
+ });
+ const p:Plan={examDate,concoursKey,weeks};
+ setPlan(p);
+ if(typeof window!=="undefined")localStorage.setItem("nx_revision_plan",JSON.stringify(p));
+ };
+
+ const toggleTask=(wi:number,ti:number)=>{
+ if(!plan)return;
+ const p={...plan,weeks:plan.weeks.map((w,i)=>i!==wi?w:{...w,tasks:w.tasks.map((t,j)=>j!==ti?{...t,done:!t.done}:t)})};
+ setPlan(p);
+ if(typeof window!=="undefined")localStorage.setItem("nx_revision_plan",JSON.stringify(p));
+ };
+
+ const reset=()=>{
+ setPlan(null);
+ if(typeof window!=="undefined")localStorage.removeItem("nx_revision_plan");
+ };
+
+ if(plan){
+ const planMeta=CONC_META.find(c=>c.key===plan.concoursKey)!;
+ const totalTasks=plan.weeks.reduce((s,w)=>s+w.tasks.length,0);
+ const doneTasks=plan.weeks.reduce((s,w)=>s+w.tasks.filter(t=>t.done).length,0);
+ return(
+ <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+ <div style={{padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <div style={{display:"flex",alignItems:"center",gap:12}}>
+ <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+ <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Calendrier de révision</h2><p style={{color:T.muted,fontSize:11}}>{planMeta.label} · concours le {new Date(plan.examDate).toLocaleDateString("fr-FR")}</p></div>
+ </div>
+ <button onClick={reset} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,fontSize:11,fontWeight:700}}>Refaire</button>
+ </div>
+ <div style={{padding:"10px 20px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <div style={{height:8,borderRadius:5,background:T.bg2,overflow:"hidden"}}><div style={{height:"100%",width:`${totalTasks?Math.round(doneTasks/totalTasks*100):0}%`,background:planMeta.color,borderRadius:5}}/></div>
+ <p style={{color:T.muted,fontSize:11,marginTop:6}}>{doneTasks}/{totalTasks} tâches faites</p>
+ </div>
+ <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
+ {plan.weeks.map((w,wi)=>(
+ <div key={wi} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
+ <p style={{color:planMeta.color,fontWeight:800,fontSize:13,marginBottom:8}}>{w.label}</p>
+ {w.tasks.map((t,ti)=>(
+ <button key={t.id} onClick={()=>toggleTask(wi,ti)} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",width:"100%",background:"none",border:"none",cursor:"pointer",textAlign:"left"}}>
+ <div style={{width:18,height:18,borderRadius:5,border:`1.5px solid ${t.done?T.green:T.muted}`,background:t.done?T.green:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{t.done&&<Ic n="check" s={11} c="#fff"/>}</div>
+ <span style={{color:t.done?T.muted:T.text,fontSize:13,textDecoration:t.done?"line-through":"none"}}>{t.label}</span>
+ </button>
+ ))}
+ </div>
+ ))}
+ </div>
+ </div>
+ );
+ }
+
+ return(
+ <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+ <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+ <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ic n="chevL" s={22} c={T.text}/></button>
+ <div><h2 style={{color:T.text,fontWeight:800,fontSize:18}}>Calendrier de révision</h2><p style={{color:T.muted,fontSize:11}}>Plan inversé depuis ta date de concours</p></div>
+ </div>
+ <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
+ <div style={{display:"flex",gap:8,overflowX:"auto"}}>
+ {CONC_META.map(c=>(
+ <button key={c.key} onClick={()=>setConcoursKey(c.key)} style={{flexShrink:0,padding:"8px 14px",borderRadius:20,border:`1.5px solid ${concoursKey===c.key?c.color:T.b1}`,background:concoursKey===c.key?c.color:"transparent",color:concoursKey===c.key?"#fff":T.textD,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{c.label}</button>
+ ))}
+ </div>
+ <div>
+ <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Date de ton concours</p>
+ <input type="date" value={examDate} onChange={e=>setExamDate(e.target.value)} style={{width:"100%",background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"12px 14px",color:T.text,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+ </div>
+ <button onClick={generate} disabled={!examDate} style={{padding:14,borderRadius:12,border:`1px solid ${meta.color}`,background:examDate?meta.color:T.b1,color:"#fff",fontSize:14,fontWeight:800,cursor:examDate?"pointer":"default",fontFamily:"inherit",opacity:examDate?1:.5}}>Générer mon plan de révision</button>
  </div>
  </div>
  );
