@@ -3883,7 +3883,7 @@ function EloquencePractice({T,entry,onBack,onPremium}:{T:Theme;entry:EloquenceEn
  })();
 
  const startRec=()=>{
-  const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="1";
+  const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="true";
   if(!hasPremium){onPremium();return;}
   const SR=(typeof window!=="undefined")&&((window as any).SpeechRecognition||(window as any).webkitSpeechRecognition);
   if(!SR){alert("Reconnaissance vocale non disponible sur ce navigateur.");return;}
@@ -4070,7 +4070,7 @@ function EloquenceScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium
  ] as const;
  const catColor:{[k:string]:string}={discours:"#2B78F5",litterature:"#7C3AED",poesie:"#E03535",pratique:"#D97706"};
  const filtered=ELOQUENCE_TEXTS.filter(t=>(cat==="all"||t.category===cat)&&(level==="all"||t.level===level));
- const isPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="1";
+ const isPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="true";
 
  return(
   <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -4266,7 +4266,7 @@ function CarriereScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  <button onClick={()=>{
  if(open){setCorrId(null);}
  else{
- const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="1";
+ const hasPremium=typeof window!=="undefined"&&localStorage.getItem("nexus_premium")==="true";
  if(!hasPremium){onPremium();return;}
  setCorrId(cid);if(!corrText&&!loading)genCorrection(e,cid);
  }
@@ -5670,7 +5670,7 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}
  ))}
  </div>
  <button onClick={onPremium} style={{width:"100%",marginTop:12,padding:"12px",borderRadius:12,border:`1px solid ${T.amber}50`,background:`${T.amber}10`,color:T.amber,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
- <Ic n="zap" s={16} c={T.amber}/>Passer à NEXUS+ — 5,99€/mois
+ <Ic n="zap" s={16} c={T.amber}/>Passer à NEXUS+ — 4,99€/mois
  </button>
  </div>
  <div style={{borderTop:`1px solid ${T.b1}`,display:"flex"}}>
@@ -5733,9 +5733,9 @@ function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
  };
  const plans = [
  {id:"free",name:"Gratuit",price:"0€",sub:"Pour toujours",features:["Observateur uniquement","Accès au fil NEWS","Accès à la Communauté","Voir les simulations en direct"],highlight:false,cta:"Plan actuel"},
- {id:"plus",name:"NEXUS PLUS",price:"5,99€",sub:"/mois",features:["Participer aux simulations","Tout accès (Débat, ONU, Procès)","Guides & stratégies","Opportunités & Événements","Notifications & Calendrier"],highlight:true,cta:"Commencer l'essai gratuit 7j"},
- {id:"mod",name:"NEXUS MODÉRATEUR",price:"9,99€",sub:"/mois",features:["Créer & modérer des simulations","Tout NEXUS PLUS","Contrôles modérateur (mute/kick)","Statistiques & enregistrements","Rôles premium (juge, président)"],highlight:false,cta:"Devenir Modérateur"},
- {id:"institution",name:"Institution",price:"299-999€",sub:"/mois",features:["Tout NEXUS MODÉRATEUR","Dashboard institutions","Licences étudiants illimitées","Parcours personnalisés","Support dédié & SLA"],highlight:false,cta:"Contacter les ventes"},
+ {id:"plus",name:"NEXUS+",price:"4,99€",sub:"/mois · 39,99€/an (-33%)",features:["Accès illimité aux salles de simulation","Studio Débat complet","IA sans limite de tours","Dépôt de pièces au dossier","Historique des sessions"],highlight:true,cta:"Commencer l'essai gratuit 7j"},
+ {id:"mod",name:"NEXUS PRO",price:"12,99€",sub:"/mois · 99,99€/an (-36%)",features:["Tout NEXUS+","Création et gestion de salles privées","Analytics de progression orale","Export des sessions (PDF, audio)","Badge profil vérifié","Accès prioritaire aux nouveautés"],highlight:false,cta:"Passer à NEXUS PRO"},
+ {id:"institution",name:"Institution",price:"299-999€",sub:"/mois",features:["Tout NEXUS PRO","Dashboard institutions","Licences étudiants illimitées","Parcours personnalisés","Support dédié & SLA"],highlight:false,cta:"Contacter les ventes"},
  ];
  return(
  <div style={{padding:"16px 20px 32px"}}>
@@ -10735,7 +10735,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
     <div style={{background:"#16A34A15",border:"1px solid #16A34A30",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
      <Ic n="check" s={16} c="#16A34A"/>
      <div>
-      <p style={{color:"#16A34A",fontSize:12,fontWeight:800}}>Accès NEXUS MODÉRATEUR actif</p>
+      <p style={{color:"#16A34A",fontSize:12,fontWeight:800}}>Accès NEXUS PRO actif</p>
       <p style={{color:T.textD,fontSize:11,marginTop:2}}>{createType==="onu"?"Jusqu'à 193 délégations · Non-abonnés auront un pays aléatoire":createType==="proces"?"Discovery (24h) → Procès complet · Rôles assignés":createType==="assemblee"?"5 rôles · Hémicycle complet · 49.3 disponible":createType==="conseil"?"15 membres · 5 P5 avec droit de veto · Résolutions votées":createType==="presse"?"7 journalistes · Évaluation IA temps réel · Score /20":createType==="eloquence"?"1 candidat·e · Jury en visio réelle · Notation par critères":"2 équipes · Points · Vote public final"}</p>
      </div>
     </div>
