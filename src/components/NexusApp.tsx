@@ -6709,9 +6709,9 @@ function SearchScreen({T,onSimulation}:{T:Theme;onSimulation:()=>void}) {
 }
 
 // ── MENU DRAWER ────────────────────────────────────────────────────────────────
-function MenuDrawer({T,dark,onToggleDark,onClose,onSimulation,onAgenda,onPremium}:{T:Theme;dark:boolean;onToggleDark:()=>void;onClose:()=>void;onSimulation:()=>void;onAgenda:()=>void;onPremium:()=>void}) {
+function MenuDrawer({T,dark,onToggleDark,onClose,onApprendre,onAgenda,onPremium}:{T:Theme;dark:boolean;onToggleDark:()=>void;onClose:()=>void;onApprendre:()=>void;onAgenda:()=>void;onPremium:()=>void}) {
  const items = [
-  {icon:"zap" as const,label:"Simulation",sub:"Débat · Éloquence · Discours · ONU",onTap:onSimulation},
+  {icon:"zap" as const,label:"Apprendre",sub:"Fiches de révision · Prépa concours",onTap:onApprendre},
   {icon:"cal" as const,label:"Agenda",sub:"Événements · Concours · Forums",onTap:onAgenda},
   {icon:"award" as const,label:"NEXUS+",sub:"Débats illimités · Fonctions premium",onTap:onPremium},
  ];
@@ -11165,12 +11165,12 @@ function RoomShellInner({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  return <GeneralDebateRoom T={T} sim={sim} onBack={onBack}/>;
 }
 
-function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
+function SimulationsTab({T,onPremium,initialView}:{T:Theme;onPremium:()=>void;initialView?:"hub"|"apprendre"}) {
  type SimView = "hub"|"create"|"room"|"apprendre";
  type SimFilter = "all"|SimType;
  const hasPremium = typeof window!=="undefined"&&(localStorage.getItem("nexus_premium")==="true"||localStorage.getItem("nexus_mod")==="true");
  const {user} = useCurrentUser();
- const [view,setView] = useState<SimView>("hub");
+ const [view,setView] = useState<SimView>(initialView||"hub");
  const [filter,setFilter] = useState<SimFilter>("all");
  const [selectedSim,setSelectedSim] = useState<SimRoom|null>(null);
  const [createType,setCreateType] = useState<SimType>("debat");
@@ -11310,6 +11310,7 @@ export default function NexusApp() {
  const [showProfile,setShowProfile] = useState(false);
  const [showAgenda,setShowAgenda] = useState(false);
  const [showInstall,setShowInstall] = useState(false);
+ const [simInitialView,setSimInitialView] = useState<"hub"|"apprendre">("hub");
  const [tabAnim,setTabAnim] = useState("fadeIn");
  const [feedUnread,setFeedUnread] = useState(()=>{
  if(typeof window==="undefined") return 0;
@@ -11454,7 +11455,7 @@ export default function NexusApp() {
  {/* Menu overlay */}
  {showMenu&&(
   <div style={{position:"absolute",inset:0,zIndex:400,display:"flex",justifyContent:"flex-end"}} onClick={()=>setShowMenu(false)}>
-   <MenuDrawer T={T} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}} onClose={()=>setShowMenu(false)} onSimulation={()=>{setShowMenu(false);switchTab("simulations");if(typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1")setShowOnboarding(true);}} onAgenda={()=>setShowAgenda(true)} onPremium={()=>setShowPremium(true)}/>
+   <MenuDrawer T={T} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}} onClose={()=>setShowMenu(false)} onApprendre={()=>{setShowMenu(false);setSimInitialView("apprendre");switchTab("simulations");setSimInitialView("hub");}} onAgenda={()=>setShowAgenda(true)} onPremium={()=>setShowPremium(true)}/>
   </div>
  )}
 
@@ -11551,7 +11552,7 @@ export default function NexusApp() {
  {tab==="community"&&<CommunityScreen T={T}/>}
  {tab==="opportunities"&&<NewOpportunitiesScreen T={T}/>}
  {tab==="messages"&&<MessagesScreen T={T}/>}
- {tab==="simulations"&&<SimulationsTab T={T} onPremium={()=>setShowPremium(true)}/>}
+ {tab==="simulations"&&<SimulationsTab T={T} onPremium={()=>setShowPremium(true)} initialView={simInitialView}/>}
  </div>
  )}
  </div>
