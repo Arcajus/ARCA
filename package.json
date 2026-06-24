@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:android": "node scripts/build-android.mjs && npx cap sync android",
+    "build:android": "node scripts/build-static-export.mjs capacitor && npx cap sync android",
+    "build:ghpages": "node scripts/build-static-export.mjs ghpages",
     "start": "next start",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.mjs"

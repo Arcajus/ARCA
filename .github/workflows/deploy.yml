@@ -25,7 +25,7 @@ jobs:
         run: npm ci
 
       - name: Build (static export)
-        run: BUILD_TARGET=ghpages npm run build
+        run: npm run build:ghpages
         env:
           NEXT_PUBLIC_GEMINI_KEY: ${{ secrets.NEXT_PUBLIC_GEMINI_KEY }}
           NEXT_PUBLIC_EL_KEY: ${{ secrets.NEXT_PUBLIC_EL_KEY }}
