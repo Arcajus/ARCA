@@ -4,7 +4,7 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "crons": [
-    { "path": "/api/nexus/generate", "schedule": "0 */3 * * *" }
+    { "path": "/api/nexus/generate", "schedule": "0 6 * * *" }
   ],
   "headers": [
     {
