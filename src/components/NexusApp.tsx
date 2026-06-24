@@ -11455,7 +11455,7 @@ export default function NexusApp() {
  {/* Menu overlay */}
  {showMenu&&(
   <div style={{position:"absolute",inset:0,zIndex:400,display:"flex",justifyContent:"flex-end"}} onClick={()=>setShowMenu(false)}>
-   <MenuDrawer T={T} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}} onClose={()=>setShowMenu(false)} onApprendre={()=>{setShowMenu(false);setSimInitialView("apprendre");switchTab("simulations");setSimInitialView("hub");}} onAgenda={()=>setShowAgenda(true)} onPremium={()=>setShowPremium(true)}/>
+   <MenuDrawer T={T} dark={dark} onToggleDark={()=>{haptic();setDark(d=>!d);}} onClose={()=>setShowMenu(false)} onApprendre={()=>{setShowMenu(false);setSimInitialView("apprendre");switchTab("simulations");setTimeout(()=>setSimInitialView("hub"),0);}} onAgenda={()=>setShowAgenda(true)} onPremium={()=>setShowPremium(true)}/>
   </div>
  )}
 
