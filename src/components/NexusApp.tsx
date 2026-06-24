@@ -4937,15 +4937,15 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  {phase==="delibere"&&!loading&&<div style={{textAlign:"center",padding:"28px 16px"}}><div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:14}}>{[0,1,2,3,4].map(i=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:T.purple,animation:`pulse 1.4s ${i*0.25}s infinite`}}/>)}</div><p style={{color:T.purple,fontWeight:800,fontSize:14}}>La Cour délibère…</p><p style={{color:T.textD,fontSize:12,marginTop:4}}>Le verdict sera rendu dans quelques instants</p></div>}
  </div>
  {phase==="pause"&&<div style={{padding:"14px 16px",background:`${T.amber}08`,borderTop:`2px solid ${T.amber}`,flexShrink:0}}>
- <p style={{color:T.amber,fontWeight:800,fontSize:11,marginBottom:8,letterSpacing:.8,textTransform:"uppercase"}}>⚖ Suspension — Négociation hors audience</p>
+ <p style={{color:T.amber,fontWeight:800,fontSize:11,marginBottom:8,letterSpacing:.8,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}><Ic n="scale" s={12} c={T.amber}/>Suspension — Négociation hors audience</p>
  <p style={{color:T.text,fontSize:12,marginBottom:12,lineHeight:1.55}}>{pauseDeal}</p>
  <div style={{display:"flex",gap:10}}>
- <button onClick={acceptNeg} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${T.amber}`,background:`${T.amber}15`,color:T.amber,fontWeight:800,fontSize:13,cursor:"pointer"}}>✓ Accepter la négociation</button>
- <button onClick={refuseNeg} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${T.red}`,background:`${T.red}15`,color:T.red,fontWeight:800,fontSize:13,cursor:"pointer"}}>✗ Refuser — continuer</button>
+ <button onClick={acceptNeg} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${T.amber}`,background:`${T.amber}15`,color:T.amber,fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="check" s={13} c={T.amber}/>Accepter la négociation</button>
+ <button onClick={refuseNeg} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${T.red}`,background:`${T.red}15`,color:T.red,fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="x" s={13} c={T.red}/>Refuser — continuer</button>
  </div>
  </div>}
  {phase==="verdict"&&<div style={{padding:"12px 16px",background:`${T.purple}10`,borderTop:`2px solid ${T.purple}`,flexShrink:0,textAlign:"center"}}>
- <p style={{color:T.purple,fontWeight:800,fontSize:12,letterSpacing:.8}}>⚖ VERDICT RENDU</p>
+ <p style={{color:T.purple,fontWeight:800,fontSize:12,letterSpacing:.8,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="scale" s={13} c={T.purple}/>VERDICT RENDU</p>
  <button onClick={()=>{stopSpeech();onBack();}} style={{marginTop:8,padding:"8px 20px",borderRadius:10,border:`1px solid ${T.purple}`,background:`${T.purple}15`,color:T.purple,fontWeight:700,fontSize:12,cursor:"pointer"}}>Retour</button>
  </div>}
  {["audience","plaidoirie_finale"].includes(phase)&&!loading&&yourTurn&&<div onClick={()=>{setYourTurn(false);toggleMic();}} style={{padding:"8px 16px",background:`${T.purple}12`,borderTop:`1px solid ${T.purple}30`,flexShrink:0,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
@@ -5224,7 +5224,7 @@ ${isSecond&&prevR1?`${respondents[0]?.country} a dit : "${prevR1.slice(0,80)}" �
  </div>}
  </div>
  {phase==="consultation"&&!consultPartner&&<div style={{padding:"14px 16px",background:`${T.amber}08`,borderTop:`2px solid ${T.amber}`,flexShrink:0}}>
- <p style={{color:T.amber,fontWeight:800,fontSize:11,marginBottom:8,letterSpacing:.8,textTransform:"uppercase"}}>🤝 Consultation informelle — dans les couloirs</p>
+ <p style={{color:T.amber,fontWeight:800,fontSize:11,marginBottom:8,letterSpacing:.8,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}><Ic n="users" s={12} c={T.amber}/>Consultation informelle — dans les couloirs</p>
  <p style={{color:T.textD,fontSize:12,marginBottom:10,lineHeight:1.5}}>Choisissez une délégation pour une négociation privée — ce que vous dites ici ne sera pas au procès-verbal.</p>
  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
  {UN_DEL.filter(d=>d.id!==unRole.id).map(d=>(<button key={d.id} onClick={()=>setConsultPartner(d)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.card,color:T.text,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16}}>{d.flag}</span>{d.country}</button>))}
@@ -5236,7 +5236,7 @@ ${isSecond&&prevR1?`${respondents[0]?.country} a dit : "${prevR1.slice(0,80)}" �
  <button onClick={endConsultation} style={{padding:"4px 10px",borderRadius:8,border:`1px solid ${T.amber}`,background:"transparent",color:T.amber,fontSize:10,cursor:"pointer",fontWeight:700}}>Fin des consultations</button>
  </div>}
  {phase==="cloture"&&<div style={{padding:"12px 16px",background:`${T.blueB}08`,borderTop:`2px solid ${T.blueB}`,flexShrink:0,textAlign:"center"}}>
- <p style={{color:T.blueB,fontWeight:800,fontSize:12,letterSpacing:.8}}>🌐 SÉANCE LEVÉE</p>
+ <p style={{color:T.blueB,fontWeight:800,fontSize:12,letterSpacing:.8,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="globe" s={13} c={T.blueB}/>SÉANCE LEVÉE</p>
  <button onClick={()=>{stopSpeech();onBack();}} style={{marginTop:8,padding:"8px 20px",borderRadius:10,border:`1px solid ${T.blueB}`,background:`${T.blueB}15`,color:T.blueB,fontWeight:700,fontSize:12,cursor:"pointer"}}>Retour</button>
  </div>}
  {(phase==="debat"||(phase==="consultation"&&!!consultPartner))&&!loading&&yourTurn&&<div onClick={()=>{setYourTurn(false);toggleMic();}} style={{padding:"8px 16px",background:`${T.blueB}10`,borderTop:`1px solid ${T.blueB}30`,flexShrink:0,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
@@ -5902,7 +5902,7 @@ function ProgressScreen({T,onBack}:{T:Theme;onBack:()=>void}){
      {/* Streak + Level card */}
      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:18,padding:20,display:"flex",alignItems:"center",gap:16}}>
       <div style={{width:64,height:64,borderRadius:18,background:`${T.amber}18`,border:`2px solid ${T.amber}30`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-       <span style={{fontSize:22}}>🔥</span>
+       <Ic n="zap" s={20} c={T.amber}/>
        <span style={{color:T.amber,fontWeight:900,fontSize:18,lineHeight:1}}>{streak}</span>
       </div>
       <div style={{flex:1}}>
@@ -6058,7 +6058,7 @@ function ReelsScreen({T}:{T:Theme}) {
        </div>
        {/* Mute toggle */}
        <button onClick={e=>{e.stopPropagation();haptic();setMuted(m=>!m);}} style={{position:"absolute",top:16,right:16,zIndex:2,background:"rgba(0,0,0,.45)",border:"none",borderRadius:"50%",width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
-        <span style={{color:"#fff",fontSize:16}}>{muted?"🔇":"🔊"}</span>
+        <Ic n={muted?"micOff":"mic"} s={16} c="#fff"/>
        </button>
        {/* Bottom info — always visible */}
        <div style={{position:"absolute",bottom:0,left:0,right:64,padding:"0 18px 22px",zIndex:2}}>
@@ -6473,7 +6473,7 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
         </span>
         <span style={{color:T.muted,fontSize:10,fontWeight:700}}>{openArticle.src} · {openArticle.time}</span>
        </div>
-       <button onClick={()=>setOpenArticle(null)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,fontSize:18,lineHeight:1,padding:4}}>✕</button>
+       <button onClick={()=>setOpenArticle(null)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,fontSize:18,lineHeight:1,padding:4,display:"flex"}}><Ic n="x" s={16}/></button>
       </div>
       {openArticle.hook&&<p style={{color:T.blueB,fontSize:13,fontWeight:700,fontStyle:"italic" as const,marginBottom:10}}>{openArticle.hook}</p>}
       <h2 style={{color:T.text,fontSize:19,fontWeight:800,lineHeight:1.35,marginBottom:12}}>{openArticle.title}</h2>
@@ -6506,6 +6506,14 @@ const COMMUNITY_POSTS_SEED = [
  {id:2,handle:"@thomasL",initials:"TL",text:"Question : quelqu'un sait comment préparer un contre-interrogatoire convaincant pour le procès de demain ? Je suis côté défense.",time:Date.now()-7200000,likes:8,comments:12,simLink:""},
  {id:3,handle:"@debatrice_pro",initials:"DP",text:"Débat général sur la réforme des retraites — victoire 8-5 pour le POUR. La clé : les arguments économiques bien sourcés > les arguments émotionnels.",time:Date.now()-86400000,likes:41,comments:19,simLink:"sim_123"},
  {id:4,handle:"@nexus_user",initials:"NU",text:"À tous les débutants : commencez par les débats généraux avant de sauter dans les simulations ONU. La structure est plus simple et ça vous prépare vraiment bien.",time:Date.now()-172800000,likes:33,comments:6,simLink:""},
+ {id:5,handle:"@leo_assemblee",initials:"LA",text:"Première simulation à l'Assemblée Nationale ce soir — rapporteur sur un texte fictif sur la transition énergétique. Stressant mais hyper formateur pour structurer un discours sous contrainte de temps.",time:Date.now()-10800000,likes:17,comments:4,simLink:""},
+ {id:6,handle:"@sarah_oratrice",initials:"SO",text:"Conseil pour la conférence de presse : préparez 3 réponses-types à l'avance (chiffres, contexte, recadrage). Les journalistes virtuels posent des questions vraiment pièges.",time:Date.now()-14400000,likes:29,comments:9,simLink:""},
+ {id:7,handle:"@karim_jure",initials:"KJ",text:"Rôle de juré dans une cour d'assises simulée aujourd'hui — on sous-estime à quel point délibérer collectivement change la perception d'un dossier. Très différent du rôle d'avocat.",time:Date.now()-36000000,likes:22,comments:5,simLink:""},
+ {id:8,handle:"@manon_diplomatie",initials:"MD",text:"Conseil de Sécurité : ma délégation a posé son veto pour la première fois. Moment charnière dans la simulation — ça change toute la dynamique du débat ensuite.",time:Date.now()-50400000,likes:38,comments:14,simLink:"sim_207"},
+ {id:9,handle:"@victor_plaidoirie",initials:"VP",text:"Petit retour d'expérience : pour la plaidoirie, structurez toujours en 3 temps — les faits, le droit, l'humain. Le jury (même simulé) retient surtout la dernière partie.",time:Date.now()-100800000,likes:19,comments:3,simLink:""},
+ {id:10,handle:"@ines_grandoral",initials:"IG",text:"Entraînement Grand Oral du Bac sur la plateforme — le feedback IA m'a repéré 6 tics de langage que je ne soupçonnais même pas. Recommandé avant l'épreuve réelle.",time:Date.now()-151200000,likes:46,comments:11,simLink:""},
+ {id:11,handle:"@yacine_eco",initials:"YE",text:"Débat sur la dette publique terminé 11-9 pour le CONTRE — dommage, j'étais POUR, mais l'équipe adverse a mieux sourcé ses chiffres macro. À refaire avec plus de préparation.",time:Date.now()-201600000,likes:14,comments:2,simLink:""},
+ {id:12,handle:"@nadia_procureure",initials:"NP",text:"Simulation procès correctionnel — j'ai tenu le rôle de procureure pour la première fois. Construire une accusation argumentée sans tomber dans l'excès, c'est tout un exercice d'équilibre.",time:Date.now()-259200000,likes:27,comments:8,simLink:""},
 ];
 
 type CommunityPost = {id:number;handle:string;initials:string;text:string;time:number;likes:number;comments:number;simLink:string};
@@ -6980,7 +6988,7 @@ function SimCard({s,T,onJoin,highlight}:{s:SimRoom;T:Theme;onJoin:()=>void;highl
     <div style={{display:"flex",gap:6,flexShrink:0}}>
      {s.status==="upcoming"&&(
       <button onClick={setReminder} style={{background:notifSet?"#16A34A15":T.bg2,color:notifSet?"#16A34A":T.muted,fontSize:11,fontWeight:700,padding:"7px 10px",borderRadius:8,border:`1px solid ${notifSet?"#16A34A30":T.b1}`,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
-       {notifSet?"🔔":"⏰"}
+       <Ic n="bell" s={13} c={notifSet?"#16A34A":T.muted}/>
       </button>
      )}
      <button onClick={onJoin} style={{background:s.status==="live"?col:T.blueG,color:s.status==="live"?"#fff":T.blueB,fontSize:12,fontWeight:800,padding:"7px 14px",borderRadius:8,border:`1px solid ${s.status==="live"?col:T.blueB}`,cursor:"pointer",fontFamily:"inherit"}}>
@@ -7295,11 +7303,11 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     {caucus&&(
      <div style={{background:caucus.type==="modere"?"#7C3AED15":"#D9770615",borderTop:`2px solid ${caucus.type==="modere"?"#7C3AED":"#D97706"}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
       <div style={{flex:1,minWidth:0}}>
-       <p style={{color:caucus.type==="modere"?"#7C3AED":"#D97706",fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1}}>🕐 Caucus {caucus.type==="modere"?"Modéré":"Non-Modéré"}</p>
+       <p style={{color:caucus.type==="modere"?"#7C3AED":"#D97706",fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1}}>Caucus {caucus.type==="modere"?"Modéré":"Non-Modéré"}</p>
        <p style={{color:T.text,fontSize:11,fontWeight:700,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>«{caucus.topic}»</p>
       </div>
       <span style={{fontFamily:"monospace",color:caucus.type==="modere"?"#7C3AED":"#D97706",fontSize:20,fontWeight:900,flexShrink:0}}>{fmtTimer(caucus.remaining)}</span>
-      <button onClick={()=>setCaucus(null)} style={{background:"none",border:"none",color:T.muted,fontSize:14,cursor:"pointer",padding:"2px 6px"}}>✕</button>
+      <button onClick={()=>setCaucus(null)} style={{background:"none",border:"none",color:T.muted,fontSize:14,cursor:"pointer",padding:"2px 6px",display:"flex"}}><Ic n="x" s={14}/></button>
      </div>
     )}
 
@@ -7309,15 +7317,15 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
        <span style={{fontSize:44,lineHeight:1,flexShrink:0}}>{myCountry?.flag}</span>
        <div style={{flex:1,minWidth:0}}>
-        <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:2}}>🎙️ VOUS AVEZ LA PAROLE</p>
+        <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:2,display:"flex",alignItems:"center",gap:4}}><Ic n="mic" s={11} c={T.muted}/>VOUS AVEZ LA PAROLE</p>
         <p style={{color:T.text,fontSize:16,fontWeight:900,lineHeight:1.1}}>{myCountry?.country}</p>
        </div>
        <span style={{fontFamily:"monospace",color:"#E03535",fontSize:22,fontWeight:900,flexShrink:0}}>{fmtTimer(speakerTime)}</span>
       </div>
       <AudioWave active={true} color="#E03535" bars={20} h={36}/>
       <div style={{display:"flex",gap:8,marginTop:10}}>
-       <button onClick={yieldFloor} style={{flex:1,padding:"10px",borderRadius:9,border:"1px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>⏹ Céder la parole</button>
-       <button onClick={()=>setShowInput(s=>!s)} style={{padding:"10px 13px",borderRadius:9,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✍️</button>
+       <button onClick={yieldFloor} style={{flex:1,padding:"10px",borderRadius:9,border:"1px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Céder la parole</button>
+       <button onClick={()=>setShowInput(s=>!s)} style={{padding:"10px 13px",borderRadius:9,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,cursor:"pointer",fontFamily:"inherit",display:"flex"}}><Ic n="msg" s={16} c={T.muted}/></button>
       </div>
       {showInput&&(
        <div style={{display:"flex",gap:7,marginTop:8}}>
@@ -7342,12 +7350,12 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      <div style={{padding:"12px 16px",borderTop:`1px solid ${T.b1}`}}>
       {!handRaised?(
        <button onClick={raiseHand} style={{width:"100%",padding:"13px",borderRadius:11,border:"none",background:acCol,color:"#fff",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-        <span style={{fontSize:20}}>✋</span> S'inscrire à la Liste des Orateurs (GSL)
+        S'inscrire à la Liste des Orateurs (GSL)
        </button>
       ):(
        <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>setHandRaised(false)} style={{flex:1,padding:"12px",borderRadius:9,border:`1px solid #D97706`,background:"#D9770620",color:"#D97706",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✋ En attente — Annuler</button>
-        <button onClick={takeFloor} style={{flex:1,padding:"12px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🎤 Prendre la parole</button>
+        <button onClick={()=>setHandRaised(false)} style={{flex:1,padding:"12px",borderRadius:9,border:`1px solid #D97706`,background:"#D9770620",color:"#D97706",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>En attente — Annuler</button>
+        <button onClick={takeFloor} style={{flex:1,padding:"12px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="mic" s={14} c="#fff"/>Prendre la parole</button>
        </div>
       )}
      </div>
@@ -7355,11 +7363,11 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
     {/* Points & Motions */}
     <div style={{padding:"8px 12px",borderTop:`1px solid ${T.b1}`,display:"flex",gap:5,flexWrap:"wrap" as const}}>
-     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Point d'ordre — délégation de ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>⚡ Ordre</button>
-     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Point d'information accordé à ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Info</button>
-     <button onClick={()=>setShowCaucusModal(true)} style={{padding:"5px 9px",borderRadius:6,border:"1px solid #7C3AED40",background:"#7C3AED10",color:"#7C3AED",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🔄 Caucus</button>
-     <button onClick={()=>setPhase("vote")} style={{padding:"5px 9px",borderRadius:6,border:"1px solid #16A34A40",background:"#16A34A10",color:"#16A34A",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🗳️ Vote</button>
-     <button onClick={()=>{setPhase("feedback");getFeedback();}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${acCol}40`,background:acCol+"10",color:acCol,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>📊 Évaluation</button>
+     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Point d'ordre — délégation de ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="zap" s={11} c={T.muted}/>Ordre</button>
+     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Point d'information accordé à ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="info" s={11} c={T.muted}/>Info</button>
+     <button onClick={()=>setShowCaucusModal(true)} style={{padding:"5px 9px",borderRadius:6,border:"1px solid #7C3AED40",background:"#7C3AED10",color:"#7C3AED",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="users" s={11} c="#7C3AED"/>Caucus</button>
+     <button onClick={()=>setPhase("vote")} style={{padding:"5px 9px",borderRadius:6,border:"1px solid #16A34A40",background:"#16A34A10",color:"#16A34A",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="vote" s={11} c="#16A34A"/>Vote</button>
+     <button onClick={()=>{setPhase("feedback");getFeedback();}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${acCol}40`,background:acCol+"10",color:acCol,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="bar" s={11} c={acCol}/>Évaluation</button>
     </div>
    </div>
   );
@@ -7413,7 +7421,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
    </div>
    <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column" as const,gap:10}}>
     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
-     <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:6}}>📄 Position paper (optionnel)</p>
+     <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:6,display:"flex",alignItems:"center",gap:5}}><Ic n="brief" s={12} c={T.text}/>Position paper (optionnel)</p>
      <textarea value={positionPaper} onChange={e=>setPositionPaper(e.target.value)} placeholder="Résumez la position de votre pays en 2-3 phrases (sera ajoutée à votre premier discours)…" style={{width:"100%",minHeight:65,padding:"8px 10px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:11,fontFamily:"inherit",outline:"none",resize:"vertical" as const,boxSizing:"border-box" as const}}/>
     </div>
     <div style={{position:"relative" as const}}>
@@ -7456,9 +7464,9 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     </div>
     {!myVote?(
      <div style={{display:"flex",flexDirection:"column" as const,gap:10,width:"100%",maxWidth:320}}>
-      {([["pour","✅","POUR","#16A34A"],["contre","❌","CONTRE","#E03535"],["abstention","⬜","ABSTENTION",T.muted]] as const).map(([v,emoji,label,c])=>(
+      {([["pour","check","POUR","#16A34A"],["contre","x","CONTRE","#E03535"],["abstention",null,"ABSTENTION",T.muted]] as const).map(([v,icon,label,c])=>(
        <button key={v} onClick={()=>castVote(v)} style={{padding:"14px",borderRadius:12,border:`2px solid ${c}30`,background:c+"15",display:"flex",alignItems:"center",gap:12,cursor:"pointer",transition:"all .15s",fontFamily:"inherit"}}>
-        <span style={{fontSize:24}}>{emoji}</span>
+        {icon?<Ic n={icon} s={20} c={c}/>:<span style={{width:20,height:3,background:c,borderRadius:2}}/>}
         <span style={{color:c,fontSize:16,fontWeight:900,flex:1,textAlign:"left" as const}}>{label}</span>
         <span style={{color:c,fontSize:12,fontWeight:700}}>{myCountry?.flag} {myCountry?.country}</span>
        </button>
@@ -7479,7 +7487,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        </div>
       ))}
       <div style={{display:"flex",gap:8,marginTop:8}}>
-       <button onClick={()=>{setPhase("feedback");getFeedback();}} style={{flex:1,padding:"12px",borderRadius:9,border:"none",background:acCol,color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>📊 Mon évaluation</button>
+       <button onClick={()=>{setPhase("feedback");getFeedback();}} style={{flex:1,padding:"12px",borderRadius:9,border:"none",background:acCol,color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="bar" s={13} c="#fff"/>Mon évaluation</button>
        <button onClick={onBack} style={{flex:1,padding:"12px",borderRadius:9,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Terminer</button>
       </div>
      </div>
@@ -7500,7 +7508,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
    </div>
    <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column" as const,gap:12}}>
     <div style={{background:col+"15",border:`1px solid ${col}30`,borderRadius:12,padding:"12px 14px"}}>
-     <p style={{color:col,fontSize:10,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:4}}>🌐 Assemblée Générale · ONU</p>
+     <p style={{color:col,fontSize:10,fontWeight:900,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:4,display:"flex",alignItems:"center",gap:5}}><Ic n="globe" s={11} c={col}/>Assemblée Générale · ONU</p>
      <p style={{color:T.text,fontSize:12,fontWeight:700,lineHeight:1.4}}>{sim.topic}</p>
      <p style={{color:T.muted,fontSize:10,marginTop:4}}>{userSpeeches.current.length} intervention(s) enregistrée(s)</p>
     </div>
@@ -7511,11 +7519,11 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      </div>
     ):feedback?(
      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"14px"}}>
-      <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:10}}>📊 Évaluation IA</p>
+      <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:10,display:"flex",alignItems:"center",gap:5}}><Ic n="bar" s={12} c={T.text}/>Évaluation IA</p>
       <p style={{color:T.textD,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap" as const}}>{feedback}</p>
      </div>
     ):(
-     <button onClick={getFeedback} style={{padding:"14px",borderRadius:12,border:`1px solid ${acCol}`,background:acCol+"15",color:acCol,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>📊 Obtenir mon évaluation</button>
+     <button onClick={getFeedback} style={{padding:"14px",borderRadius:12,border:`1px solid ${acCol}`,background:acCol+"15",color:acCol,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="bar" s={13} c={acCol}/>Obtenir mon évaluation</button>
     )}
     {userSpeeches.current.length>0&&(
      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
@@ -7544,7 +7552,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       <div style={{display:"flex",gap:8,marginBottom:12}}>
        {(["modere","non-modere"] as const).map(t=>(
         <button key={t} onClick={()=>setCaucusType(t)} style={{flex:1,padding:"10px",borderRadius:9,border:`2px solid ${caucusType===t?"#7C3AED":T.b1}`,background:caucusType===t?"#7C3AED15":"transparent",color:caucusType===t?"#7C3AED":T.muted,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-         {t==="modere"?"🎙️ Modéré":"🤝 Non-Modéré"}
+         <span style={{display:"inline-flex",alignItems:"center",gap:5}}><Ic n={t==="modere"?"mic":"users"} s={13} c={caucusType===t?"#7C3AED":T.muted}/>{t==="modere"?"Modéré":"Non-Modéré"}</span>
         </button>
        ))}
       </div>
@@ -7557,7 +7565,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       </div>
       <div style={{display:"flex",gap:8}}>
        <button onClick={()=>setShowCaucusModal(false)} style={{flex:1,padding:"11px",borderRadius:9,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
-       <button onClick={startCaucus} style={{flex:2,padding:"11px",borderRadius:9,border:"none",background:"#7C3AED",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🔄 Lancer le caucus</button>
+       <button onClick={startCaucus} style={{flex:2,padding:"11px",borderRadius:9,border:"none",background:"#7C3AED",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Lancer le caucus</button>
       </div>
      </div>
     </div>
@@ -7567,7 +7575,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={acCol}/></button>
      <div style={{flex:1,minWidth:0}}>
       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
-       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>🌐 ONU</span>
+       <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3,display:"inline-flex",alignItems:"center",gap:3}}><Ic n="globe" s={9} c={col}/>ONU</span>
        <span style={{color:"#E03535",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>DIRECT</span>
        {myCountry&&<span style={{fontSize:12}}>{myCountry.flag}</span>}
       </div>
@@ -7623,13 +7631,13 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
         <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap" as const}}>
          <span style={{background:"#E0353515",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:4,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>DÉBAT EN COURS</span>
          <span style={{background:T.bg2,color:T.muted,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4}}>{sim.participants} délégations · {speeches.length} interv.</span>
-         <span style={{background:T.bg2,color:T.muted,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4}}>🕐 {new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</span>
+         <span style={{background:T.bg2,color:T.muted,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4}}>{new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</span>
         </div>
        </div>
 
        {/* Live vote intentions */}
        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
-        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:10}}>📊 Intentions de vote en direct</p>
+        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:10,display:"flex",alignItems:"center",gap:5}}><Ic n="bar" s={12} c={T.text}/>Intentions de vote en direct</p>
         <div style={{display:"flex",borderRadius:8,overflow:"hidden",height:16,marginBottom:8}}>
          <div style={{width:`${Math.round(counts.pour/sim.participants*100)}%`,background:"#16A34A",transition:"width .6s"}}/>
          <div style={{width:`${Math.round(counts.contre/sim.participants*100)}%`,background:"#E03535"}}/>
@@ -7651,7 +7659,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
           <div style={{display:"flex",gap:6}}>
            {(["pour","contre","abstention"] as const).map(v=>(
             <button key={v} onClick={()=>castVote(v)} style={{flex:1,padding:"7px 4px",borderRadius:7,border:`1.5px solid ${myVote===v?"#16A34A":v==="pour"?"#16A34A30":v==="contre"?"#E0353530":"#D9770630"}`,background:myVote===v?(v==="pour"?"#16A34A20":v==="contre"?"#E0353520":"#D9770620"):"transparent",color:v==="pour"?"#16A34A":v==="contre"?"#E03535":"#D97706",fontSize:9,fontWeight:800,cursor:myVote?"default":"pointer",fontFamily:"inherit"}}>
-             {v==="pour"?"✅ POUR":v==="contre"?"❌ CONTRE":"⬜ ABST."}
+             {v==="pour"?"POUR":v==="contre"?"CONTRE":"ABST."}
             </button>
            ))}
           </div>
@@ -7661,7 +7669,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
        {/* Key arguments */}
        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
-        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8}}>💬 Arguments consignés au dossier</p>
+        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8,display:"flex",alignItems:"center",gap:5}}><Ic n="comment" s={12} c={T.text}/>Arguments consignés au dossier</p>
         {speeches.length===0&&<p style={{color:T.muted,fontSize:11,fontStyle:"italic" as const}}>Aucun argument soumis pour l'instant.</p>}
         {speeches.slice(-5).map((m,i)=>(
          <div key={m.id} style={{display:"flex",gap:8,marginBottom:8,paddingBottom:8,borderBottom:i<speeches.slice(-5).length-1?`1px solid ${T.b1}`:"none"}}>
@@ -7676,7 +7684,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
        {/* Amendments */}
        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
-        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8}}>📝 Amendements proposés</p>
+        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8,display:"flex",alignItems:"center",gap:5}}><Ic n="brief" s={12} c={T.text}/>Amendements proposés</p>
         {AMENDMENTS.map(a=>(
          <div key={a.id} style={{background:T.bg2,border:`1px solid ${a.status==="adopté"?"#16A34A40":T.b1}`,borderRadius:9,padding:"9px 12px",marginBottom:7}}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
@@ -7696,7 +7704,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
        {/* Signataires */}
        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
-        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8}}>✍️ Co-signataires ({Math.floor(sim.participants*0.3)})</p>
+        <p style={{color:T.text,fontSize:11,fontWeight:800,marginBottom:8,display:"flex",alignItems:"center",gap:5}}><Ic n="users" s={12} c={T.text}/>Co-signataires ({Math.floor(sim.participants*0.3)})</p>
         <div style={{display:"flex",flexWrap:"wrap" as const,gap:4}}>
          {DELEGATES.slice(0,Math.floor(sim.participants*0.3)).map(d=>(
           <span key={d.id} style={{fontSize:16}}>{d.flag}</span>
@@ -7728,11 +7736,11 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
         );
        })}
        {myCountry&&!gsl.find(s=>s.country===myCountry.country)&&(
-        <button onClick={raiseHand} style={{marginTop:4,padding:"10px",borderRadius:9,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✋ S'inscrire à la GSL — {myCountry.flag} {myCountry.country}</button>
+        <button onClick={raiseHand} style={{marginTop:4,padding:"10px",borderRadius:9,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>S'inscrire à la GSL — {myCountry.flag} {myCountry.country}</button>
        )}
       </div>
       <div style={{marginTop:12,background:T.card,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px"}}>
-       <p style={{color:T.muted,fontSize:10,fontWeight:700,marginBottom:4}}>📋 TRANSCRIPTION</p>
+       <p style={{color:T.muted,fontSize:10,fontWeight:700,marginBottom:4,display:"flex",alignItems:"center",gap:4}}><Ic n="brief" s={11} c={T.muted}/>TRANSCRIPTION</p>
        <button onClick={()=>setTab("procedure")} style={{width:"100%",padding:"7px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Voir le script MUN complet →</button>
       </div>
      </div>
@@ -7771,8 +7779,8 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        style={{width:"100%",minHeight:220,padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.card,color:T.text,fontSize:11,fontFamily:"inherit",outline:"none",resize:"vertical" as const,lineHeight:1.7,boxSizing:"border-box" as const,marginBottom:10}}
       />
       {draftResolution&&(
-       <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:myCountry?.country||"Délégation",flag:myCountry?.flag||"🌐",text:`[DOCUMENT DE TRAVAIL WP/1 SOUMIS] La délégation de ${myCountry?.country} soumet son document de travail au Comité.`,time:Date.now(),hasFloor:true}]);}} style={{width:"100%",padding:"11px",borderRadius:9,border:"none",background:col,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-        📤 Soumettre le document de travail
+       <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:myCountry?.country||"Délégation",flag:myCountry?.flag||"🌐",text:`[DOCUMENT DE TRAVAIL WP/1 SOUMIS] La délégation de ${myCountry?.country} soumet son document de travail au Comité.`,time:Date.now(),hasFloor:true}]);}} style={{width:"100%",padding:"11px",borderRadius:9,border:"none",background:col,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+        <Ic n="send" s={13} c="#fff"/>Soumettre le document de travail
        </button>
       )}
       <div style={{marginTop:10,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"10px 12px"}}>
@@ -7819,12 +7827,12 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
            <div style={{flex:1}}>
             <p style={{color:T.text,fontSize:11,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:.3}}>{s.label}</p>
            </div>
-           <span style={{color:T.muted,fontSize:12}}>{isOpen?"▲":"▼"}</span>
+           <span style={{display:"inline-flex",transform:isOpen?"rotate(-90deg)":"rotate(90deg)"}}><Ic n="chevR" s={12} c={T.muted}/></span>
           </button>
           {isOpen&&(
            <div style={{background:T.bg,border:`1.5px solid ${s.col}`,borderTop:"none",borderRadius:"0 0 12px 12px",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:10}}>
             <div style={{background:s.col+"12",border:`1px solid ${s.col}40`,borderRadius:10,padding:"10px 12px"}}>
-             <p style={{color:s.col,fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6}}>🎤 Ce que tu dis</p>
+             <p style={{color:s.col,fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6,display:"flex",alignItems:"center",gap:5}}><Ic n="mic" s={11} c={s.col}/>Ce que tu dis</p>
              {s.lines.map((line,li)=>(
               <div key={li} style={{marginBottom:li<s.lines.length-1?8:0}}>
                {line.startsWith("(")||line.startsWith("[")||line.startsWith("→")?(
@@ -7836,7 +7844,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
              ))}
             </div>
             <div style={{background:"#D97706"+"12",borderRadius:8,padding:"8px 11px",display:"flex",gap:8,alignItems:"flex-start"}}>
-             <span style={{fontSize:14,flexShrink:0}}>💡</span>
+             <Ic n="info" s={14} c="#D97706"/>
              <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{s.tip}</p>
             </div>
            </div>
@@ -8249,7 +8257,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
       {/* President */}
       <div style={{flex:1,display:"flex",alignItems:"center",gap:10}}>
-       <div style={{width:44,height:44,borderRadius:"50%",background:PRES_COL+"25",border:`2px solid ${speakerRole==="president"?PRES_COL:PRES_COL+"50"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>⚖️</div>
+       <div style={{width:44,height:44,borderRadius:"50%",background:PRES_COL+"25",border:`2px solid ${speakerRole==="president"?PRES_COL:PRES_COL+"50"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="scale" s={20} c={PRES_COL}/></div>
        <div style={{flex:1}}>
         <p style={{color:PRES_COL,fontSize:9,fontWeight:900,letterSpacing:1}}>PRÉSIDENT·E</p>
         <p style={{color:T.text,fontSize:12,fontWeight:800}}>M. Moreau{myRole==="president"?" (Vous)":""}</p>
@@ -8262,7 +8270,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        <div style={{display:"flex",gap:5,alignItems:"center"}}>
         {[{n:"M. Petit",k:0},{n:"Mme Roux",k:1}].map(a=>(
          <div key={a.k} style={{background:T.bg2,border:`1px solid ${TRIAL_ROLE_COLORS.assesseur}30`,borderRadius:8,padding:"6px 8px",textAlign:"center" as const}}>
-          <p style={{fontSize:14,marginBottom:2}}>👨‍⚖️</p>
+          <p style={{marginBottom:2,display:"flex",justifyContent:"center"}}><Ic n="scale" s={14} c={TRIAL_ROLE_COLORS.assesseur}/></p>
           <p style={{color:TRIAL_ROLE_COLORS.assesseur,fontSize:8,fontWeight:800}}>ASSESSEUR</p>
           <p style={{color:T.textD,fontSize:9}}>{a.n}{myRole==="assesseur"&&a.k===0?" (Vous)":""}</p>
          </div>
@@ -8271,7 +8279,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       )}
       {/* Greffier */}
       <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:8,padding:"6px 8px",display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center" as const,gap:2}}>
-       <span style={{fontSize:14}}>📋</span>
+       <Ic n="brief" s={14} c={T.muted}/>
        <p style={{color:T.muted,fontSize:8,fontWeight:800}}>GREFFIER</p>
        <p style={{color:T.textD,fontSize:9}}>Mme Blanc</p>
       </div>
@@ -8286,8 +8294,8 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        {myRole==="jure"&&<span style={{marginLeft:6,background:JUR_COL+"25",padding:"1px 5px",borderRadius:3,fontSize:7}}>VOUS ÊTES JURÉ·E</span>}
       </p>
       <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
-       {(["👩","👨","🧑","👩‍💼","👨‍💼","🧑‍💼"] as const).map((em,i)=>(
-        <div key={i} style={{width:30,height:30,borderRadius:"50%",background:JUR_COL+"15",border:`1.5px solid ${JUR_COL}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>{em}</div>
+       {Array.from({length:6}).map((_,i)=>(
+        <div key={i} style={{width:30,height:30,borderRadius:"50%",background:JUR_COL+"15",border:`1.5px solid ${JUR_COL}50`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="user" s={15} c={JUR_COL}/></div>
        ))}
       </div>
      </div>
@@ -8296,7 +8304,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     {/* ── PARQUET — face au tribunal ── */}
     {(trialType==="correctionnel"||trialType==="assises")&&(
      <div style={{background:T.card,border:`1.5px solid ${PROS_COL}40`,borderRadius:12,padding:"9px 12px",display:"flex",alignItems:"center",gap:10}}>
-      <div style={{width:38,height:38,borderRadius:"50%",background:PROS_COL+"20",border:`2px solid ${speakerRole===(trialType==="assises"?"avocat_gen":"procureur")?PROS_COL:PROS_COL+"40"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🔴</div>
+      <div style={{width:38,height:38,borderRadius:"50%",background:PROS_COL+"20",border:`2px solid ${speakerRole===(trialType==="assises"?"avocat_gen":"procureur")?PROS_COL:PROS_COL+"40"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="user" s={16} c={PROS_COL}/></div>
       <div style={{flex:1}}>
        <p style={{color:PROS_COL,fontSize:8,fontWeight:900,letterSpacing:1.2,textTransform:"uppercase" as const}}>
         {trialType==="assises"?"MINISTÈRE PUBLIC — AVOCAT GÉNÉRAL":"MINISTÈRE PUBLIC — PARQUET"}
@@ -8319,7 +8327,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        {trialType==="civil"?"AVOCAT DU DÉFENDEUR":"BANC DE LA DÉFENSE"}
       </p>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-       <div style={{width:32,height:32,borderRadius:"50%",background:DEF_COL+"20",border:`1.5px solid ${DEF_COL}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🔵</div>
+       <div style={{width:32,height:32,borderRadius:"50%",background:DEF_COL+"20",border:`1.5px solid ${DEF_COL}60`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="user" s={14} c={DEF_COL}/></div>
        <div style={{flex:1}}>
         <p style={{color:T.textD,fontSize:10,fontWeight:700}}>Me. Laurent{myRole==="avocat_def"?" (Vous)":""}</p>
         <p style={{color:T.muted,fontSize:9}}>Côté gauche de la salle</p>
@@ -8333,7 +8341,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        {trialType==="civil"?"BANC DU DEMANDEUR":"BANC DE LA PARTIE CIVILE"}
       </p>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-       <div style={{width:32,height:32,borderRadius:"50%",background:PCV_COL+"20",border:`1.5px solid ${PCV_COL}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🟠</div>
+       <div style={{width:32,height:32,borderRadius:"50%",background:PCV_COL+"20",border:`1.5px solid ${PCV_COL}60`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="user" s={14} c={PCV_COL}/></div>
        <div style={{flex:1}}>
         <p style={{color:T.textD,fontSize:10,fontWeight:700}}>
          {trialType==="civil"?"M. Bernard (Demandeur)":"Me. Simon + Mme Dupont"}
@@ -8349,7 +8357,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     {/* ── BOX DU PRÉVENU / ACCUSÉ ── */}
     {(trialType==="correctionnel"||trialType==="assises")&&(
      <div style={{background:T.mode==="dark"?"#0d1117":"#f0f4f8",border:`1.5px solid ${TRIAL_ROLE_COLORS.prevenu}${speakerRole==="prevenu"?"":"40"}`,borderRadius:12,padding:"9px 12px",display:"flex",alignItems:"center",gap:10}}>
-      <div style={{width:36,height:36,borderRadius:"50%",background:TRIAL_ROLE_COLORS.prevenu+"20",border:`1.5px solid ${TRIAL_ROLE_COLORS.prevenu}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>👤</div>
+      <div style={{width:36,height:36,borderRadius:"50%",background:TRIAL_ROLE_COLORS.prevenu+"20",border:`1.5px solid ${TRIAL_ROLE_COLORS.prevenu}60`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="user" s={16} c={TRIAL_ROLE_COLORS.prevenu}/></div>
       <div style={{flex:1}}>
        <p style={{color:TRIAL_ROLE_COLORS.prevenu,fontSize:8,fontWeight:900,letterSpacing:1.2,textTransform:"uppercase" as const}}>
         {trialType==="assises"?"BOX DE L'ACCUSÉ·E — DEVANT LA COUR":"BOX DU PRÉVENU·E — DEVANT LE TRIBUNAL"}
@@ -8365,7 +8373,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     {/* ── BARRE DES TÉMOINS ── */}
     {(phase==="p4"||phase==="p5"||speakerRole==="temoin")&&(
      <div style={{background:T.card,border:`1.5px solid ${TRIAL_ROLE_COLORS.temoin}${speakerRole==="temoin"?"":"40"}`,borderRadius:11,padding:"9px 12px",display:"flex",alignItems:"center",gap:10}}>
-      <div style={{width:32,height:32,borderRadius:"50%",background:TRIAL_ROLE_COLORS.temoin+"20",border:`1.5px solid ${TRIAL_ROLE_COLORS.temoin}60`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🗣️</div>
+      <div style={{width:32,height:32,borderRadius:"50%",background:TRIAL_ROLE_COLORS.temoin+"20",border:`1.5px solid ${TRIAL_ROLE_COLORS.temoin}60`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="mic" s={14} c={TRIAL_ROLE_COLORS.temoin}/></div>
       <div style={{flex:1}}>
        <p style={{color:TRIAL_ROLE_COLORS.temoin,fontSize:8,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const}}>BARRE DES TÉMOINS — APPELÉ·E À TÉMOIGNER</p>
        <p style={{color:T.textD,fontSize:10,fontWeight:700}}>{myRole==="temoin"?"Vous (Témoin)":"Témoin appelé·e à la barre"}</p>
@@ -8376,7 +8384,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
     {/* ── PUBLIC (bancs au fond) ── */}
     <div style={{background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:10,padding:"7px 12px",display:"flex",alignItems:"center",gap:8}}>
-     <span style={{fontSize:15}}>👥</span>
+     <Ic n="users" s={15} c={T.textD}/>
      <div style={{flex:1}}>
       <p style={{color:T.textD,fontSize:10}}>Bancs du public — fond de la salle · <span style={{fontWeight:700}}>38 observateurs</span></p>
       {myRole==="public"&&<p style={{color:T.muted,fontSize:9,marginTop:1}}>Vous observez l'audience — sans droit de parole</p>}
@@ -8388,7 +8396,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      <div style={{paddingTop:2}}>
       {!hasFloor?(
        <button onClick={takeMic} style={{width:"100%",padding:"13px",borderRadius:11,border:"none",background:myC,color:"#fff",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:8}}>
-        <span style={{fontSize:18}}>🎤</span> Prendre la parole
+        <Ic n="mic" s={16} c="#fff"/> Prendre la parole
        </button>
       ):(
        <div style={{display:"flex",gap:8}}>
@@ -8396,8 +8404,8 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
          <AudioWave active={true} color={myC} bars={10} h={28}/>
          <span style={{color:myC,fontSize:12,fontWeight:800}}>Vous parlez…</span>
         </div>
-        <button onClick={takeMic} style={{padding:"10px 14px",borderRadius:10,border:`1px solid #E03535`,background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>⏹</button>
-        <button onClick={()=>setShowInput(s=>!s)} style={{padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✍️</button>
+        <button onClick={takeMic} style={{padding:"10px 14px",borderRadius:10,border:`1px solid #E03535`,background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex"}}><Ic n="micOff" s={14} c="#E03535"/></button>
+        <button onClick={()=>setShowInput(s=>!s)} style={{padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,cursor:"pointer",fontFamily:"inherit",display:"flex"}}><Ic n="msg" s={14} c={T.muted}/></button>
        </div>
       )}
       {showInput&&(
@@ -8420,7 +8428,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     <span style={{background:"#E0353520",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:4}}>AVERTISSEMENT</span>
    </div>
    <div style={{flex:1,overflowY:"auto",padding:"24px",display:"flex",flexDirection:"column" as const,gap:14,alignItems:"center",justifyContent:"center",textAlign:"center" as const}}>
-    <div style={{width:56,height:56,borderRadius:"50%",background:"#E0353520",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>⚠️</div>
+    <div style={{width:56,height:56,borderRadius:"50%",background:"#E0353520",display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="shield" s={26} c="#E03535"/></div>
     <p style={{color:T.text,fontSize:16,fontWeight:800}}>Contenu sensible</p>
     <p style={{color:T.textD,fontSize:13,lineHeight:1.5,maxWidth:320}}>Cette simulation de procès aborde un sujet sensible (violence, atteinte aux personnes) — « {sim.topic} ». C&apos;est un exercice fictif à visée strictement pédagogique : aucun fait réel, aucune personne réelle. Continue uniquement si tu te sens à l&apos;aise avec ce thème.</p>
     <div style={{display:"flex",flexDirection:"column" as const,gap:8,width:"100%",maxWidth:320,marginTop:8}}>
@@ -8449,8 +8457,8 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      const c=TRIAL_TYPE_COLORS[tt];
      return(
       <button key={tt} onClick={()=>{haptic();setTrialType(tt);setSetup("role");}} style={{padding:"16px",borderRadius:14,border:`2px solid ${trialType===tt?c:T.b1}`,background:trialType===tt?c+"12":T.card,display:"flex",alignItems:"flex-start",gap:13,cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
-       <div style={{width:42,height:42,borderRadius:11,background:c+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20}}>
-        {tt==="correctionnel"?"⚖️":tt==="assises"?"🔴":"📄"}
+       <div style={{width:42,height:42,borderRadius:11,background:c+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        <Ic n={tt==="correctionnel"?"scale":tt==="assises"?"users":"brief"} s={20} c={c}/>
        </div>
        <div style={{flex:1}}>
         <p style={{color:T.text,fontSize:14,fontWeight:800}}>{TRIAL_TYPE_LABELS[tt]}</p>
@@ -8538,7 +8546,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     <div style={{display:"flex",gap:5,overflowX:"auto" as const,scrollbarWidth:"none" as const}}>
      {(["audience","direct","docs","script","procedure"] as const).map(t=>(
       <button key={t} onClick={()=>setRoomTab(t)} style={{padding:"4px 10px",borderRadius:5,border:`1px solid ${roomTab===t?col:T.b1}`,background:roomTab===t?col+"15":"transparent",color:roomTab===t?col:T.textD,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0,whiteSpace:"nowrap" as const}}>
-       {t==="audience"?"Salle":t==="direct"?"🔴 En direct":t==="docs"?`Dossier (${docs.length})`:t==="script"?"Script":"Procédure"}
+       {t==="audience"?"Salle":t==="direct"?"En direct":t==="docs"?`Dossier (${docs.length})`:t==="script"?"Script":"Procédure"}
       </button>
      ))}
     </div>
@@ -8550,7 +8558,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       <CourtroomView/>
       <div style={{padding:"8px 14px 14px"}}>
        <button onClick={()=>setRoomTab("script")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:5}}>
-        📋 Procès-verbal ({msgs.filter(m=>m.role!=="system").length} déclarations)
+        <Ic n="brief" s={12} c={T.muted}/>Procès-verbal ({msgs.filter(m=>m.role!=="system").length} déclarations)
        </button>
       </div>
      </div>
@@ -8602,8 +8610,8 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"12px 14px"}}>
         <p style={{color:T.muted,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:8}}>AVANTAGE JUDICIAIRE EN DIRECT</p>
         <div style={{display:"flex",justifyContent:"space-between" as const,marginBottom:5}}>
-         <span style={{color:PROS_COL,fontSize:11,fontWeight:800}}>🔴 Accusation {prosP}%</span>
-         <span style={{color:DEF_COL,fontSize:11,fontWeight:800}}>{defP}% Défense 🔵</span>
+         <span style={{color:PROS_COL,fontSize:11,fontWeight:800}}>Accusation {prosP}%</span>
+         <span style={{color:DEF_COL,fontSize:11,fontWeight:800}}>{defP}% Défense</span>
         </div>
         <div style={{height:12,borderRadius:6,background:T.b1,overflow:"hidden",display:"flex"}}>
          <div style={{width:`${prosP}%`,background:PROS_COL,transition:"width .5s ease"}}/>
@@ -8619,16 +8627,16 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
         <div style={{background:T.card,border:`1px solid ${JUR_COL}30`,borderRadius:12,padding:"12px 14px"}}>
          <p style={{color:JUR_COL,fontSize:9,fontWeight:900,letterSpacing:2,marginBottom:8}}>SENTIMENT DU JURY POPULAIRE — 6 JURÉS (ESTIMÉ)</p>
          <div style={{display:"flex",gap:6,marginBottom:8}}>
-          {(["👩","👨","🧑","👩‍💼","👨‍💼","🧑‍💼"] as const).map((em,i)=>(
+          {Array.from({length:6}).map((_,i)=>(
            <div key={i} style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",gap:3}}>
-            <span style={{fontSize:18}}>{em}</span>
+            <Ic n="user" s={16} c={JUR_COL}/>
             <div style={{width:10,height:10,borderRadius:"50%",background:i<guiltCount?PROS_COL:DEF_COL}}/>
            </div>
           ))}
          </div>
          <div style={{display:"flex",justifyContent:"space-between" as const,padding:"6px 10px",background:T.bg2,borderRadius:8}}>
-          <span style={{color:PROS_COL,fontSize:11,fontWeight:800}}>🔴 Coupable : {guiltCount}/6</span>
-          <span style={{color:DEF_COL,fontSize:11,fontWeight:800}}>🔵 Non coupable : {6-guiltCount}/6</span>
+          <span style={{color:PROS_COL,fontSize:11,fontWeight:800}}>Coupable : {guiltCount}/6</span>
+          <span style={{color:DEF_COL,fontSize:11,fontWeight:800}}>Non coupable : {6-guiltCount}/6</span>
          </div>
         </div>
        )}
@@ -8654,7 +8662,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
          const c=TRIAL_ROLE_COLORS[d.by];
          return(
           <div key={d.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<docs.slice(-5).length-1?8:0,paddingBottom:i<docs.slice(-5).length-1?8:0,borderBottom:i<docs.slice(-5).length-1?`1px solid ${T.b1}`:"none"}}>
-           <div style={{width:28,height:28,borderRadius:7,background:c+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13}}>📄</div>
+           <div style={{width:28,height:28,borderRadius:7,background:c+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="brief" s={13} c={c}/></div>
            <div style={{flex:1}}>
             <p style={{color:T.text,fontSize:11,fontWeight:700}}>{d.name}</p>
             <p style={{color:T.textD,fontSize:9}}>{d.type} · {getRoleLabel(d.by,trialType)}</p>
@@ -8665,8 +8673,8 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
         })}
         {docs.length===0&&<p style={{color:T.muted,fontSize:11,textAlign:"center" as const}}>Aucune pièce versée</p>}
        </div>
-       <button onClick={()=>setRoomTab("audience")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-        ← Retour à la salle d'audience
+       <button onClick={()=>setRoomTab("audience")} style={{width:"100%",padding:"8px",borderRadius:8,border:`1px dashed ${T.b1}`,background:"transparent",color:T.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+        <Ic n="chevL" s={12} c={T.muted}/>Retour à la salle d'audience
        </button>
       </div>
      );
@@ -8702,7 +8710,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
          {/* JURY / PUBLIC RESTRICTION */}
          {isRestricted&&(
           <div style={{background:myRoleC+"12",border:`1.5px solid ${myRoleC}40`,borderRadius:12,padding:"16px",textAlign:"center" as const}}>
-           <p style={{fontSize:22,marginBottom:8}}>⚖️</p>
+           <p style={{marginBottom:8,display:"flex",justifyContent:"center"}}><Ic n="scale" s={22} c={myRoleC}/></p>
            <p style={{color:myRoleC,fontSize:12,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6}}>{myRole==="jure"?"Juré·e":"Public"} — Accès restreint</p>
            <p style={{color:T.textD,fontSize:12,lineHeight:1.6}}>Vous découvrez les faits uniquement pendant l'audience. Consulter le dossier à l'avance compromettrait votre impartialité.</p>
           </div>
@@ -8762,7 +8770,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
                 </div>
                 <p style={{color:T.text,fontSize:11,fontWeight:700,flex:1,minWidth:0}}>{piece.titre}</p>
                 <span style={{background:tc+"20",color:tc,fontSize:8,fontWeight:900,padding:"2px 6px",borderRadius:3,flexShrink:0}}>{pieceTypeLabel(piece.type)}</span>
-                <span style={{color:T.muted,fontSize:11,flexShrink:0}}>{isExpanded?"▲":"▼"}</span>
+                <span style={{display:"inline-flex",flexShrink:0,transform:isExpanded?"rotate(-90deg)":"rotate(90deg)"}}><Ic n="chevR" s={11} c={T.muted}/></span>
                </button>
                {isExpanded&&(
                 <div style={{background:tc+"08",border:`1px solid ${tc}30`,borderTop:"none",borderRadius:"0 0 8px 8px",padding:"10px 13px"}}>
@@ -8885,7 +8893,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        {/* Role reminder */}
        {myRole&&(
         <div style={{background:TRIAL_ROLE_COLORS[myRole]+"18",border:`1.5px solid ${TRIAL_ROLE_COLORS[myRole]}50`,borderRadius:12,padding:"10px 14px",display:"flex",gap:10,alignItems:"center"}}>
-         <div style={{width:34,height:34,borderRadius:"50%",background:TRIAL_ROLE_COLORS[myRole]+"25",border:`2px solid ${TRIAL_ROLE_COLORS[myRole]}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:16}}>⚖️</div>
+         <div style={{width:34,height:34,borderRadius:"50%",background:TRIAL_ROLE_COLORS[myRole]+"25",border:`2px solid ${TRIAL_ROLE_COLORS[myRole]}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="scale" s={16} c={TRIAL_ROLE_COLORS[myRole]}/></div>
          <div>
           <p style={{color:TRIAL_ROLE_COLORS[myRole],fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1}}>{TRIAL_TYPE_LABELS[trialType]} · Ton rôle</p>
           <p style={{color:T.text,fontSize:13,fontWeight:800}}>{getRoleLabel(myRole,trialType)}</p>
@@ -8915,14 +8923,14 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
             </div>
             <p style={{color:T.muted,fontSize:9,marginTop:1}}>{PHASE_DURATIONS[p]}</p>
            </div>
-           <span style={{color:T.muted,fontSize:12,flexShrink:0}}>{isOpen?"▲":"▼"}</span>
+           <span style={{display:"inline-flex",flexShrink:0,transform:isOpen?"rotate(-90deg)":"rotate(90deg)"}}><Ic n="chevR" s={12} c={T.muted}/></span>
           </button>
           {isOpen&&(
            <div style={{background:T.bg,border:`1.5px solid ${col}`,borderTop:"none",borderRadius:"0 0 12px 12px",padding:"12px 14px",display:"flex",flexDirection:"column" as const,gap:12}}>
             {myScript?(
              <>
               <div style={{background:TRIAL_ROLE_COLORS[myRole!]+"12",border:`1px solid ${TRIAL_ROLE_COLORS[myRole!]}40`,borderRadius:10,padding:"10px 12px"}}>
-               <p style={{color:TRIAL_ROLE_COLORS[myRole!],fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6}}>🎤 Ton script — {getRoleLabel(myRole!,trialType)}</p>
+               <p style={{color:TRIAL_ROLE_COLORS[myRole!],fontSize:10,fontWeight:900,textTransform:"uppercase" as const,letterSpacing:1,marginBottom:6,display:"flex",alignItems:"center",gap:5}}><Ic n="mic" s={11} c={TRIAL_ROLE_COLORS[myRole!]}/>Ton script — {getRoleLabel(myRole!,trialType)}</p>
                {myScript.lines.map((line,li)=>(
                 <div key={li} style={{marginBottom:li<myScript.lines.length-1?8:0}}>
                  {line.stage?(
@@ -8934,7 +8942,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
                ))}
               </div>
               <div style={{background:"#D97706"+"12",border:`1px solid #D97706"40"`,borderRadius:8,padding:"8px 11px",display:"flex",gap:8,alignItems:"flex-start"}}>
-               <span style={{fontSize:14,flexShrink:0}}>💡</span>
+               <Ic n="info" s={14} c="#D97706"/>
                <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>{myScript.tip}</p>
               </div>
              </>
@@ -9071,16 +9079,16 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
     <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>CHOISISSEZ VOTRE CAMP</p>
     <p style={{color:T.text,fontSize:15,fontWeight:800,textAlign:"center" as const,lineHeight:1.4,marginBottom:4}}>« {sim.topic} »</p>
     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",width:"100%",maxWidth:340}}>
-     <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>🎙️ Ce débat est <strong>audio</strong> — vous parlerez à tour de rôle. Un modérateur annoncera les tours. La transcription est automatique.</p>
+     <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>Ce débat est <strong>audio</strong> — vous parlerez à tour de rôle. Un modérateur annoncera les tours. La transcription est automatique.</p>
     </div>
     <div style={{display:"flex",gap:12,width:"100%",maxWidth:320}}>
      <button onClick={()=>{haptic();setMySide("pour");setSetup(false);}} style={{flex:1,padding:"20px 12px",borderRadius:14,border:`3px solid ${POUR_COL}`,background:POUR_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,cursor:"pointer",transition:"all .15s"}}>
-      <span style={{fontSize:28}}>✅</span>
+      <Ic n="check" s={26} c={POUR_COL}/>
       <span style={{color:POUR_COL,fontSize:18,fontWeight:900}}>POUR</span>
       <span style={{color:T.textD,fontSize:11}}>Défendez la motion</span>
      </button>
      <button onClick={()=>{haptic();setMySide("contre");setSetup(false);}} style={{flex:1,padding:"20px 12px",borderRadius:14,border:`3px solid ${CONTRE_COL}`,background:CONTRE_COL+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,cursor:"pointer",transition:"all .15s"}}>
-      <span style={{fontSize:28}}>❌</span>
+      <Ic n="x" s={26} c={CONTRE_COL}/>
       <span style={{color:CONTRE_COL,fontSize:18,fontWeight:900}}>CONTRE</span>
       <span style={{color:T.textD,fontSize:11}}>Combattez la motion</span>
      </button>
@@ -9136,7 +9144,7 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
        {/* VS SEPARATOR */}
        <div style={{display:"flex",alignItems:"center",gap:10}}>
         <div style={{flex:1,height:1,background:T.b1}}/>
-        <span style={{color:T.muted,fontSize:11,fontWeight:900,padding:"3px 10px",background:T.card,border:`1px solid ${T.b1}`,borderRadius:20}}>⚡ VS ⚡</span>
+        <span style={{color:T.muted,fontSize:11,fontWeight:900,padding:"3px 10px",background:T.card,border:`1px solid ${T.b1}`,borderRadius:20}}>VS</span>
         <div style={{flex:1,height:1,background:T.b1}}/>
        </div>
 
@@ -9170,7 +9178,7 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
        {/* PUBLIC METER */}
        <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 12px"}}>
         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7}}>
-         <span style={{fontSize:14}}>📊</span>
+         <Ic n="bar" s={14} c={T.text}/>
          <p style={{color:T.text,fontSize:11,fontWeight:800,flex:1}}>Réaction du public</p>
          <span style={{color:T.muted,fontSize:10}}>{total} votes</span>
         </div>
@@ -9189,22 +9197,22 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
         <div>
          {!hasFloor?(
           <button onClick={()=>{haptic();setHasFloor(true);}} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:myCol,color:"#fff",fontSize:15,fontWeight:900,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center" as const,gap:8}}>
-           <span style={{fontSize:22}}>🎤</span> Prendre la parole
+           <Ic n="mic" s={20} c="#fff"/> Prendre la parole
           </button>
          ):(
           <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
            <div style={{background:myCol+"15",border:`2px solid ${myCol}`,borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:22}}>🎤</span>
+            <Ic n="mic" s={20} c={myCol}/>
             <div style={{flex:1}}>
              <p style={{color:myCol,fontSize:11,fontWeight:900}}>VOUS PARLEZ</p>
              <p style={{color:T.textD,fontSize:10}}>Parlez clairement — répondez au journaliste</p>
             </div>
-            <button onClick={()=>setShowInput(s=>!s)} style={{padding:"5px 9px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>✍️</button>
+            <button onClick={()=>setShowInput(s=>!s)} style={{padding:"5px 9px",borderRadius:7,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,cursor:"pointer",fontFamily:"inherit",display:"flex"}}><Ic n="msg" s={12} c={T.muted}/></button>
            </div>
            <AudioWave active={true} color={myCol} bars={20} h={40}/>
            <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>{setHasFloor(false);sendMsg("Je souhaite que mon argument soit évalué par le public.");}} style={{flex:1,padding:"11px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✓ Terminer l'argument</button>
-            <button onClick={()=>{setHasFloor(false);}} style={{padding:"11px 13px",borderRadius:9,border:`1px solid #E03535`,background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+            <button onClick={()=>{setHasFloor(false);sendMsg("Je souhaite que mon argument soit évalué par le public.");}} style={{flex:1,padding:"11px",borderRadius:9,border:"none",background:"#16A34A",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="check" s={13} c="#fff"/>Terminer l'argument</button>
+            <button onClick={()=>{setHasFloor(false);}} style={{padding:"11px 13px",borderRadius:9,border:`1px solid #E03535`,background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex"}}><Ic n="x" s={13} c="#E03535"/></button>
            </div>
            {showInput&&(
             <div style={{display:"flex",gap:7}}>
@@ -9244,12 +9252,12 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
       </div>
       {!finalVote?(
        <div style={{display:"flex",gap:10}}>
-        <button onClick={()=>{setFinalVote("pour");setFinalVotes(v=>({...v,pour:v.pour+1}));haptic();}} style={{flex:1,padding:"14px",borderRadius:12,border:`2px solid ${POUR_COL}`,background:POUR_COL+"15",color:POUR_COL,fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>✅ POUR</button>
-        <button onClick={()=>{setFinalVote("contre");setFinalVotes(v=>({...v,contre:v.contre+1}));haptic();}} style={{flex:1,padding:"14px",borderRadius:12,border:`2px solid ${CONTRE_COL}`,background:CONTRE_COL+"15",color:CONTRE_COL,fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>❌ CONTRE</button>
+        <button onClick={()=>{setFinalVote("pour");setFinalVotes(v=>({...v,pour:v.pour+1}));haptic();}} style={{flex:1,padding:"14px",borderRadius:12,border:`2px solid ${POUR_COL}`,background:POUR_COL+"15",color:POUR_COL,fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>POUR</button>
+        <button onClick={()=>{setFinalVote("contre");setFinalVotes(v=>({...v,contre:v.contre+1}));haptic();}} style={{flex:1,padding:"14px",borderRadius:12,border:`2px solid ${CONTRE_COL}`,background:CONTRE_COL+"15",color:CONTRE_COL,fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>CONTRE</button>
        </div>
       ):(
        <div style={{background:"#16A34A15",border:"1px solid #16A34A30",borderRadius:12,padding:14,textAlign:"center" as const}}>
-        <p style={{color:"#16A34A",fontSize:13,fontWeight:800}}>Vote enregistré : {finalVote.toUpperCase()} ✓</p>
+        <p style={{color:"#16A34A",fontSize:13,fontWeight:800}}>Vote enregistré : {finalVote.toUpperCase()}</p>
        </div>
       )}
      </div>
@@ -9278,7 +9286,7 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
      <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
       <div style={{display:"flex",flexDirection:"column" as const,gap:10}}>
        <div style={{background:myCol+"12",border:`1px solid ${myCol}30`,borderRadius:12,padding:"12px 14px"}}>
-        <p style={{color:myCol,fontSize:11,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const,marginBottom:4}}>Ton rôle · Camp {mySide==="pour"?"POUR ✅":"CONTRE ❌"}</p>
+        <p style={{color:myCol,fontSize:11,fontWeight:900,letterSpacing:1,textTransform:"uppercase" as const,marginBottom:4}}>Ton rôle · Camp {mySide==="pour"?"POUR":"CONTRE"}</p>
         <p style={{color:T.text,fontSize:13,lineHeight:1.5}}>Tu défends la position <strong>{mySide==="pour"?"favorable":"défavorable"}</strong> sur le sujet. Construis tes arguments, réfute ceux de l'adversaire.</p>
        </div>
        {[
@@ -9516,7 +9524,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
       <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
       <div style={{flex:1}}>
        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-        <span style={{background:"#C9A22720",color:"#C9A227",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3,letterSpacing:1,border:"1px solid #C9A22730"}}>🏛 ASSEMBLÉE NATIONALE</span>
+        <span style={{background:"#C9A22720",color:"#C9A227",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3,letterSpacing:1,border:"1px solid #C9A22730",display:"inline-flex",alignItems:"center",gap:4}}><Ic n="scale" s={10} c="#C9A227"/>ASSEMBLÉE NATIONALE</span>
         {isLive&&<span style={{background:"#E0353520",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3,border:"1px solid #E0353540",display:"flex",alignItems:"center",gap:4}}><span style={{width:5,height:5,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>EN DIRECT</span>}
        </div>
        <h2 style={{color:"#fff",fontSize:16,fontWeight:800,lineHeight:1.3}}>{sim.topic}</h2>
@@ -9590,7 +9598,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
       <button onClick={onBack} style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",borderRadius:7,padding:"5px 7px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={17} c="#fff"/></button>
       <div style={{flex:1,minWidth:0}}>
        <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}>
-        <span style={{color:"#C9A227",fontSize:8,fontWeight:800,letterSpacing:1}}>🏛 AN</span>
+        <span style={{color:"#C9A227",fontSize:8,fontWeight:800,letterSpacing:1,display:"inline-flex",alignItems:"center",gap:3}}><Ic n="scale" s={9} c="#C9A227"/>AN</span>
         <span style={{color:"rgba(255,255,255,.4)",fontSize:8}}>·</span>
         <span style={{background:AN_ROLE_COLORS[myRole!]+"30",color:AN_ROLE_COLORS[myRole!],fontSize:8,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{AN_ROLE_LABELS[myRole!]}</span>
         {isLive&&<span style={{display:"flex",alignItems:"center",gap:3,background:"#E0353520",color:"#E03535",fontSize:8,fontWeight:800,padding:"1px 6px",borderRadius:3,border:"1px solid #E0353440"}}><span style={{width:4,height:4,borderRadius:"50%",background:"#E03535",display:"inline-block",animation:"pulse 1s ease infinite"}}/>LIVE</span>}
@@ -9720,8 +9728,8 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
       )}
       {phase==="vote_final"&&!votes&&(
        <div style={{display:"flex",gap:6}}>
-        <button onClick={()=>{haptic();setVotes({pour:289,contre:247,abst:21});setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"RÉSULTATS",text:"VOTE SOLENNEL — Pour : 289 · Contre : 247 · Abstentions : 21 → LE PROJET DE LOI EST ADOPTÉ",time:Date.now()}]);}} style={{flex:1,padding:"8px",borderRadius:7,border:"1px solid #16A34A40",background:"#16A34A15",color:"#16A34A",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✅ Voter POUR</button>
-        <button onClick={()=>{haptic();setVotes({pour:247,contre:289,abst:21});setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"RÉSULTATS",text:"VOTE SOLENNEL — Pour : 247 · Contre : 289 · Abstentions : 21 → LE PROJET DE LOI EST REJETÉ",time:Date.now()}]);}} style={{flex:1,padding:"8px",borderRadius:7,border:"1px solid #E0353540",background:"#E0353515",color:"#E03535",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>❌ Voter CONTRE</button>
+        <button onClick={()=>{haptic();setVotes({pour:289,contre:247,abst:21});setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"RÉSULTATS",text:"VOTE SOLENNEL — Pour : 289 · Contre : 247 · Abstentions : 21 → LE PROJET DE LOI EST ADOPTÉ",time:Date.now()}]);}} style={{flex:1,padding:"8px",borderRadius:7,border:"1px solid #16A34A40",background:"#16A34A15",color:"#16A34A",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Voter POUR</button>
+        <button onClick={()=>{haptic();setVotes({pour:247,contre:289,abst:21});setMsgs(p=>[...p,{id:Date.now(),role:"system",user:"RÉSULTATS",text:"VOTE SOLENNEL — Pour : 247 · Contre : 289 · Abstentions : 21 → LE PROJET DE LOI EST REJETÉ",time:Date.now()}]);}} style={{flex:1,padding:"8px",borderRadius:7,border:"1px solid #E0353540",background:"#E0353515",color:"#E03535",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Voter CONTRE</button>
        </div>
       )}
       {votes&&(
@@ -9737,8 +9745,8 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
        </div>
       )}
       <div style={{display:"flex",gap:6,marginBottom:4}}>
-       <button onClick={()=>setAiAN(a=>!a)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${aiAN?"#16A34A40":T.b1}`,background:aiAN?"#16A34A15":"transparent",color:aiAN?"#16A34A":T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>🤖 Adversaire IA {aiAN?"ON":"OFF"}</button>
-       <button onClick={getFeedback} disabled={fbLoading||userMsgsAN.current.length===0} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>📊 Mon feedback</button>
+       <button onClick={()=>setAiAN(a=>!a)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${aiAN?"#16A34A40":T.b1}`,background:aiAN?"#16A34A15":"transparent",color:aiAN?"#16A34A":T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="zap" s={11} c={aiAN?"#16A34A":T.muted}/>Adversaire IA {aiAN?"ON":"OFF"}</button>
+       <button onClick={getFeedback} disabled={fbLoading||userMsgsAN.current.length===0} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="bar" s={11} c={T.muted}/>Mon feedback</button>
       </div>
       <div style={{display:"flex",gap:8}}>
        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder={`Prise de parole — ${AN_ROLE_LABELS[myRole!]}…`} style={{flex:1,padding:"10px 13px",borderRadius:9,border:`1.5px solid ${input.trim()?col:T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none",transition:"border-color .2s"}}/>
@@ -9751,8 +9759,8 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
     <div style={{position:"absolute" as const,inset:0,zIndex:200,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"flex-end"}}>
      <div style={{width:"100%",background:T.surf,borderRadius:"18px 18px 0 0",padding:"20px 20px 32px",maxHeight:"60vh",overflowY:"auto"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-       <p style={{color:T.text,fontSize:16,fontWeight:800}}>📊 Feedback de performance</p>
-       <button onClick={()=>setShowFeedback(false)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,fontSize:20}}>✕</button>
+       <p style={{color:T.text,fontSize:16,fontWeight:800,display:"flex",alignItems:"center",gap:7}}><Ic n="bar" s={16} c={T.text}/>Feedback de performance</p>
+       <button onClick={()=>setShowFeedback(false)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,display:"flex"}}><Ic n="x" s={18} c={T.muted}/></button>
       </div>
       {fbLoading&&<div style={{display:"flex",justifyContent:"center",padding:"20px"}}><div style={{width:28,height:28,borderRadius:"50%",border:`3px solid ${col}`,borderTop:"3px solid transparent",animation:"spin .8s linear infinite"}}/></div>}
       {feedbackAN&&!fbLoading&&<p style={{color:T.text,fontSize:13,lineHeight:1.7}}>{feedbackAN}</p>}
@@ -9785,7 +9793,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
            <button onClick={()=>setExpandedArt(expandedArt===art.numero?null:art.numero)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:expandedArt===art.numero?col+"10":T.bg2,border:`1px solid ${expandedArt===art.numero?col+"40":T.b1}`,borderRadius:expandedArt===art.numero?"7px 7px 0 0":7,padding:"9px 11px",cursor:"pointer",textAlign:"left" as const,fontFamily:"inherit"}}>
             <span style={{color:col,fontSize:10,fontWeight:900,background:col+"20",padding:"2px 7px",borderRadius:4,flexShrink:0}}>Art. {art.numero}</span>
             <span style={{color:T.text,fontSize:11,fontWeight:700,flex:1}}>{art.titre}</span>
-            <span style={{color:T.muted,fontSize:11}}>{expandedArt===art.numero?"▲":"▼"}</span>
+            <span style={{display:"inline-flex",transform:expandedArt===art.numero?"rotate(-90deg)":"rotate(90deg)"}}><Ic n="chevR" s={11} c={T.muted}/></span>
            </button>
            {expandedArt===art.numero&&<div style={{background:col+"08",border:`1px solid ${col}30`,borderTop:"none",borderRadius:"0 0 7px 7px",padding:"10px 13px"}}><p style={{color:T.textD,fontSize:11,lineHeight:1.7,fontStyle:"italic" as const}}>{art.texte}</p></div>}
           </div>
@@ -9799,7 +9807,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
             <span style={{color:"#E03535",fontSize:10,fontWeight:900,background:"#E0353520",padding:"2px 7px",borderRadius:4,flexShrink:0}}>#{am.numero}</span>
             <span style={{color:T.text,fontSize:11,fontWeight:700,flex:1}}>{am.objet}</span>
             <span style={{color:T.muted,fontSize:10,flexShrink:0}}>art. {am.article}</span>
-            <span style={{color:T.muted,fontSize:11}}>{expandedAmend===am.numero?"▲":"▼"}</span>
+            <span style={{display:"inline-flex",transform:expandedAmend===am.numero?"rotate(-90deg)":"rotate(90deg)"}}><Ic n="chevR" s={11} c={T.muted}/></span>
            </button>
            {expandedAmend===am.numero&&<div style={{background:"#E0353508",border:"1px solid #E0353530",borderTop:"none",borderRadius:"0 0 7px 7px",padding:"10px 13px"}}><p style={{color:T.muted,fontSize:10,marginBottom:2}}>Par <strong style={{color:T.text}}>{am.auteur}</strong> — sur l&apos;article {am.article}</p></div>}
           </div>
@@ -9880,7 +9888,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
          <p style={{color:isActive?col:T.text,fontSize:12,fontWeight:800,flex:1}}>{AN_PHASE_LABELS[p]}</p>
          {hasScript&&!isOpen&&<span style={{background:AN_ROLE_COLORS[myRole!]+"20",color:AN_ROLE_COLORS[myRole!],fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:3,flexShrink:0}}>Mes répliques</span>}
          {!hasScript&&<span style={{background:T.bg2,color:T.muted,fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,flexShrink:0}}>Tu écoutes</span>}
-         <span style={{color:T.muted,fontSize:11}}>{isOpen?"▲":"▼"}</span>
+         <span style={{display:"inline-flex",transform:isOpen?"rotate(-90deg)":"rotate(90deg)"}}><Ic n="chevR" s={11} c={T.muted}/></span>
         </button>
         {isOpen&&(
          <div style={{padding:"12px 14px",background:T.bg2,borderTop:`1px solid ${T.b1}`,display:"flex",flexDirection:"column" as const,gap:6}}>
@@ -9889,7 +9897,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
             {pScript.lines.map((line,li)=>(
              <div key={li}>{line.stage?<p style={{color:T.muted,fontSize:11,fontStyle:"italic" as const,lineHeight:1.5}}>{line.text}</p>:<p style={{color:T.text,fontSize:13,lineHeight:1.6,fontWeight:500}}>« {line.text} »</p>}</div>
             ))}
-            <p style={{color:T.muted,fontSize:10,lineHeight:1.5,marginTop:4,paddingTop:6,borderTop:`1px solid ${T.b1}`,fontStyle:"italic" as const}}>💡 {pScript.tip}</p>
+            <p style={{color:T.muted,fontSize:10,lineHeight:1.5,marginTop:4,paddingTop:6,borderTop:`1px solid ${T.b1}`,fontStyle:"italic" as const,display:"flex",alignItems:"flex-start",gap:5}}><Ic n="info" s={11} c={T.muted}/>{pScript.tip}</p>
            </>
           ):(
            <p style={{color:T.muted,fontSize:11,fontStyle:"italic" as const}}>Pas de script pour ce rôle à cette phase. Tu écoutes et observes.</p>
@@ -10006,7 +10014,7 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
     <div style={{flex:1}}>
      <div style={{display:"flex",alignItems:"center",gap:6}}>
       <span style={{background:"#0E749020",color:"#67E8F9",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>🇺🇳 CONSEIL DE SÉCURITÉ</span>
-      {isP5&&<span style={{background:"#E0353520",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>⚡ DROIT DE VETO</span>}
+      {isP5&&<span style={{background:"#E0353520",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>DROIT DE VETO</span>}
      </div>
      <p style={{color:"#fff",fontSize:13,fontWeight:700,marginTop:3,lineHeight:1.3}}>{sim.topic}</p>
     </div>
@@ -10015,8 +10023,8 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
      <p style={{color:"rgba(255,255,255,.5)",fontSize:9}}>15 membres</p>
     </div>
    </div>
-   {vetoed&&<div style={{background:"#E0353515",borderBottom:"1px solid #E0353540",padding:"8px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}><span style={{fontSize:14}}>🚫</span><p style={{color:"#E03535",fontSize:11,fontWeight:800}}>Résolution bloquée — Veto de {vetoed}</p></div>}
-   {adopted&&<div style={{background:"#16A34A15",borderBottom:"1px solid #16A34A40",padding:"8px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}><span style={{fontSize:14}}>✅</span><p style={{color:"#16A34A",fontSize:11,fontWeight:800}}>Résolution adoptée ! {totalPour}/15 votes pour</p></div>}
+   {vetoed&&<div style={{background:"#E0353515",borderBottom:"1px solid #E0353540",padding:"8px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}><Ic n="x" s={14} c="#E03535"/><p style={{color:"#E03535",fontSize:11,fontWeight:800}}>Résolution bloquée — Veto de {vetoed}</p></div>}
+   {adopted&&<div style={{background:"#16A34A15",borderBottom:"1px solid #16A34A40",padding:"8px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}><Ic n="check" s={14} c="#16A34A"/><p style={{color:"#16A34A",fontSize:11,fontWeight:800}}>Résolution adoptée ! {totalPour}/15 votes pour</p></div>}
    <div ref={chatRef} style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:8}}>
     {msgs.map(m=>(
      <div key={m.id} style={{display:"flex",flexDirection:"column" as const,alignItems:m.country===myCountry?.name?"flex-end":"flex-start",gap:3}}>
@@ -10036,19 +10044,19 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
      <div style={{display:"flex",gap:7}}>
       <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Votre déclaration au Conseil…" style={{flex:1,padding:"9px 12px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
       <button onClick={sendMsg} disabled={aiThinking} style={{background:col,border:"none",borderRadius:9,width:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Ic n="send" s={15} c="#fff"/></button>
-      <button onClick={()=>setShowVote(true)} style={{padding:"9px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>🗳 Vote</button>
+      <button onClick={()=>setShowVote(true)} style={{padding:"9px 11px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0,display:"flex",alignItems:"center",gap:4}}><Ic n="vote" s={12} c={T.muted}/>Vote</button>
      </div>
     ):(
      <div style={{display:"flex",flexDirection:"column" as const,gap:8}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-       <p style={{color:T.text,fontSize:12,fontWeight:800}}>🗳 Soumettre une résolution</p>
-       <button onClick={()=>setShowVote(false)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,fontSize:16}}>✕</button>
+       <p style={{color:T.text,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",gap:6}}><Ic n="vote" s={13} c={T.text}/>Soumettre une résolution</p>
+       <button onClick={()=>setShowVote(false)} style={{background:"none",border:"none",cursor:"pointer",color:T.muted,display:"flex"}}><Ic n="x" s={16} c={T.muted}/></button>
       </div>
       <input value={resolution} onChange={e=>setResolution(e.target.value)} placeholder="Objet de la résolution (optionnel)…" style={{padding:"8px 11px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none"}}/>
       <div style={{display:"flex",gap:6}}>
-       <button onClick={voteFor} style={{flex:1,padding:"9px",borderRadius:9,border:`2px solid ${isPour?"#16A34A":T.b1}`,background:isPour?"#16A34A20":T.bg2,color:isPour?"#16A34A":T.text,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✅ POUR ({totalPour})</button>
-       <button onClick={voteAgainst} style={{flex:1,padding:"9px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>❌ CONTRE</button>
-       {isP5&&!vetoed&&<button onClick={doVeto} style={{padding:"9px 13px",borderRadius:9,border:"2px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>🚫 VETO</button>}
+       <button onClick={voteFor} style={{flex:1,padding:"9px",borderRadius:9,border:`2px solid ${isPour?"#16A34A":T.b1}`,background:isPour?"#16A34A20":T.bg2,color:isPour?"#16A34A":T.text,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>POUR ({totalPour})</button>
+       <button onClick={voteAgainst} style={{flex:1,padding:"9px",borderRadius:9,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>CONTRE</button>
+       {isP5&&!vetoed&&<button onClick={doVeto} style={{padding:"9px 13px",borderRadius:9,border:"2px solid #E03535",background:"#E0353520",color:"#E03535",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>VETO</button>}
       </div>
       <p style={{color:T.muted,fontSize:10}}>9 votes minimum requis · Tout veto d'un P5 bloque la résolution</p>
      </div>
@@ -10147,7 +10155,7 @@ function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
    <div style={{background:`linear-gradient(135deg,#3B0764 0%,#7C3AED 100%)`,padding:"20px 20px 24px"}}>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
      <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
-     <div><span style={{background:"rgba(255,255,255,.15)",color:"#fff",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3}}>🎙 CONFÉRENCE DE PRESSE</span><p style={{color:"#fff",fontSize:15,fontWeight:800,marginTop:4}}>{sim.topic}</p></div>
+     <div><span style={{background:"rgba(255,255,255,.15)",color:"#fff",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3,display:"inline-flex",alignItems:"center",gap:4}}><Ic n="mic" s={10} c="#fff"/>CONFÉRENCE DE PRESSE</span><p style={{color:"#fff",fontSize:15,fontWeight:800,marginTop:4}}>{sim.topic}</p></div>
     </div>
     <div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"12px 14px"}}>
      <p style={{color:"rgba(255,255,255,.8)",fontSize:11,lineHeight:1.6}}>7 journalistes · Évaluation IA en temps réel · Score /20 final</p>
@@ -10161,10 +10169,10 @@ function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      ))}
     </div>
     <div style={{background:col+"12",border:`1px solid ${col}30`,borderRadius:10,padding:"10px 14px",marginBottom:16}}>
-     <p style={{color:col,fontSize:11,fontWeight:800,marginBottom:4}}>💡 Conseils</p>
+     <p style={{color:col,fontSize:11,fontWeight:800,marginBottom:4,display:"flex",alignItems:"center",gap:5}}><Ic n="info" s={12} c={col}/>Conseils</p>
      <p style={{color:T.textD,fontSize:11,lineHeight:1.6}}>Soyez clair, concis et confiant. Évitez les réponses évasives. Préparez-vous à des questions difficiles sur « {sim.topic} ».</p>
     </div>
-    <button onClick={startConference} disabled={!myTitle} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:myTitle?col:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:myTitle?"pointer":"default",fontFamily:"inherit"}}>🎙 Commencer la conférence de presse</button>
+    <button onClick={startConference} disabled={!myTitle} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:myTitle?col:"#444",color:"#fff",fontSize:14,fontWeight:800,cursor:myTitle?"pointer":"default",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="mic" s={14} c="#fff"/>Commencer la conférence de presse</button>
    </div>
   </div>
  );
@@ -10174,7 +10182,7 @@ function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
    <div style={{background:`linear-gradient(135deg,#3B0764 0%,#7C3AED 100%)`,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
     <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
     <div style={{flex:1}}>
-     <span style={{background:"rgba(255,255,255,.15)",color:"#fff",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>🎙 CONFÉRENCE DE PRESSE</span>
+     <span style={{background:"rgba(255,255,255,.15)",color:"#fff",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3,display:"inline-flex",alignItems:"center",gap:4}}><Ic n="mic" s={9} c="#fff"/>CONFÉRENCE DE PRESSE</span>
      <p style={{color:"#fff",fontSize:13,fontWeight:700,marginTop:3}}>{sim.topic}</p>
     </div>
     <div style={{textAlign:"right" as const,flexShrink:0}}>
@@ -10193,12 +10201,12 @@ function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      <div key={m.id} style={{display:"flex",flexDirection:"column" as const,alignItems:m.who===myTitle?"flex-end":"flex-start",gap:3}}>
       {m.who!==myTitle&&<div style={{display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:14}}>{m.flag}</span><p style={{color:T.muted,fontSize:9,fontWeight:800}}>{m.who}</p></div>}
       <div style={{maxWidth:"88%",padding:"9px 12px",borderRadius:10,background:m.who==="ÉVALUATION"?scoreColor+"15":m.isQuestion?"#7C3AED15":m.who===myTitle?col+"25":T.card,border:`1px solid ${m.who==="ÉVALUATION"?scoreColor:m.isQuestion?col:m.who===myTitle?col:T.b1}30`}}>
-       {m.score!==undefined&&<p style={{color:scoreColor,fontSize:10,fontWeight:800,marginBottom:4}}>⭐ {m.score}/20</p>}
+       {m.score!==undefined&&<p style={{color:scoreColor,fontSize:10,fontWeight:800,marginBottom:4,display:"flex",alignItems:"center",gap:4}}><Ic n="star" s={11} c={scoreColor}/>{m.score}/20</p>}
        <p style={{color:T.text,fontSize:12,lineHeight:1.5}}>{m.text}</p>
       </div>
      </div>
     ))}
-    {aiThinking&&<div style={{display:"flex",alignItems:"center",gap:6,opacity:.6}}><span style={{fontSize:14}}>⭐</span><div style={{background:T.card,borderRadius:10,padding:"8px 12px"}}><p style={{color:T.muted,fontSize:11}}>évaluation en cours…</p></div></div>}
+    {aiThinking&&<div style={{display:"flex",alignItems:"center",gap:6,opacity:.6}}><Ic n="star" s={14} c={T.muted}/><div style={{background:T.card,borderRadius:10,padding:"8px 12px"}}><p style={{color:T.muted,fontSize:11}}>évaluation en cours…</p></div></div>}
    </div>
    {!done&&(
     <div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",gap:7}}>
@@ -10289,7 +10297,7 @@ function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
    <div style={{flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",padding:"24px",gap:16}}>
     <p style={{color:T.muted,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const}}>CHOISISSEZ VOTRE RÔLE</p>
     <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",width:"100%",maxWidth:340}}>
-     <p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>🎥 Le jury est composé de <strong>vrais participants connectés</strong> à cette salle, visibles en direct ci-dessous.</p>
+     <p style={{color:T.textD,fontSize:11,lineHeight:1.5,display:"flex",alignItems:"flex-start",gap:6}}><Ic n="video" s={12} c={T.textD}/>Le jury est composé de <strong>vrais participants connectés</strong> à cette salle, visibles en direct ci-dessous.</p>
     </div>
     <div style={{display:"flex",gap:12,width:"100%",maxWidth:320}}>
      <button onClick={()=>{haptic();setMyRole("candidat");}} style={{flex:1,padding:"20px 12px",borderRadius:14,border:`3px solid ${col}`,background:col+"15",display:"flex",flexDirection:"column" as const,alignItems:"center",gap:8,cursor:"pointer"}}>
@@ -10604,7 +10612,7 @@ function RoomCallPanel({T,sim,user}:{T:Theme;sim:SimRoom;user:NexusUser|null|und
          <select value={docType} onChange={e=>setDocType(e.target.value)} style={{flex:1,padding:"7px 8px",borderRadius:7,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:11,fontFamily:"inherit"}}>
           {["Document","Pièce","Expertise","Témoignage"].map(d=><option key={d} value={d}>{d}</option>)}
          </select>
-         <button onClick={()=>fileInputRef.current?.click()} disabled={uploading} style={{padding:"7px 10px",borderRadius:7,border:"none",background:T.blueB,color:"#fff",fontSize:11,fontWeight:800,cursor:uploading?"default":"pointer",fontFamily:"inherit",opacity:uploading?.6:1}}>{uploading?"…":"📎 Verser"}</button>
+         <button onClick={()=>fileInputRef.current?.click()} disabled={uploading} style={{padding:"7px 10px",borderRadius:7,border:"none",background:T.blueB,color:"#fff",fontSize:11,fontWeight:800,cursor:uploading?"default":"pointer",fontFamily:"inherit",opacity:uploading?.6:1,display:"flex",alignItems:"center",gap:5}}>{uploading?"…":<><Ic n="plus" s={11} c="#fff"/>Verser</>}</button>
          <input ref={fileInputRef} type="file" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadFile(f);e.target.value="";}}/>
         </div>
         {callMsg&&<p style={{color:T.red,fontSize:11}}>{callMsg}</p>}
@@ -10612,7 +10620,7 @@ function RoomCallPanel({T,sim,user}:{T:Theme;sim:SimRoom;user:NexusUser|null|und
          {files.length===0&&<p style={{color:T.textD,fontSize:11}}>Aucune pièce versée.</p>}
          {files.map(f=>(
           <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",borderRadius:7,background:T.bg2,textDecoration:"none"}}>
-           <span style={{fontSize:13}}>📄</span>
+           <Ic n="brief" s={13} c={T.muted}/>
            <div style={{flex:1,overflow:"hidden"}}>
             <p style={{color:T.text,fontSize:11,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{f.name}</p>
             <p style={{color:T.muted,fontSize:9}}>{f.docType} · {f.by}</p>
@@ -10725,7 +10733,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
     <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginTop:4}}>DATE (minimum 48h)</p>
     <input type="datetime-local" value={createDate} onChange={e=>setCreateDate(e.target.value)} min={new Date(Date.now()+172800000).toISOString().slice(0,16)} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
     <div style={{background:"#16A34A15",border:"1px solid #16A34A30",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
-     <span style={{fontSize:16,flexShrink:0}}>✅</span>
+     <Ic n="check" s={16} c="#16A34A"/>
      <div>
       <p style={{color:"#16A34A",fontSize:12,fontWeight:800}}>Accès NEXUS MODÉRATEUR actif</p>
       <p style={{color:T.textD,fontSize:11,marginTop:2}}>{createType==="onu"?"Jusqu'à 193 délégations · Non-abonnés auront un pays aléatoire":createType==="proces"?"Discovery (24h) → Procès complet · Rôles assignés":createType==="assemblee"?"5 rôles · Hémicycle complet · 49.3 disponible":createType==="conseil"?"15 membres · 5 P5 avec droit de veto · Résolutions votées":createType==="presse"?"7 journalistes · Évaluation IA temps réel · Score /20":createType==="eloquence"?"1 candidat·e · Jury en visio réelle · Notation par critères":"2 équipes · Points · Vote public final"}</p>
@@ -10744,7 +10752,7 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
      <h1 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:24,fontWeight:800,color:T.text}}>SIMULATIONS</h1>
     </div>
     <button onClick={()=>{haptic();if(!hasPremium){onPremium();return;}setView("create");}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,border:`1px solid ${hasPremium?T.blueB:T.amber+"80"}`,background:hasPremium?T.blueG:`${T.amber}10`,color:hasPremium?T.blueB:T.amber,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginTop:4,flexShrink:0}}>
-     {hasPremium?<Ic n="plus" s={14} c={T.blueB}/>:<span style={{fontSize:13}}>🔒</span>} Créer
+     {hasPremium?<Ic n="plus" s={14} c={T.blueB}/>:<Ic n="lock" s={13} c={T.amber}/>} Créer
     </button>
    </div>
    <div style={{display:"flex",gap:6,overflowX:"auto"}}>
