@@ -11005,65 +11005,82 @@ function useCurrentUser() {
 type RoomParticipant = {handle:string;roleLabel:string|null;micOn:boolean;camOn:boolean};
 type RoomFile = {id:number;name:string;docType:string;url:string;size:number;mimeType:string;by:string;time:number};
 
+// Tuile façon appel vidéo. Le flux caméra réel n'est pas encore branché
+// (voir /api/rooms/[id]/call-token) : la tuile affiche un avatar/drapeau en
+// attendant, mais la structure (taille, libellé, indicateur micro/caméra)
+// est celle qui accueillera le vrai flux une fois le service vidéo branché.
+function VideoTile({label,flag,micOn,camOn,highlight,col,big}:{label:string;flag?:string;micOn?:boolean;camOn?:boolean;highlight?:boolean;col:string;big?:boolean}) {
+ const size=big?86:60;
+ return(
+  <div style={{position:"relative" as const,width:size,height:size,borderRadius:10,flexShrink:0,
+   background:"#0d1117",border:`2px solid ${highlight?col:"#ffffff30"}`,
+   display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",boxShadow:highlight?`0 0 0 3px ${col}30`:"none"}}>
+   <span style={{fontSize:big?32:22,lineHeight:1,opacity:camOn?1:.55}}>{flag||"👤"}</span>
+   {!camOn&&<span style={{position:"absolute",top:3,right:3,fontSize:9}}>📷</span>}
+   <span style={{position:"absolute",bottom:0,left:0,right:0,textAlign:"center" as const,fontSize:8,fontWeight:800,color:"#fff",background:"linear-gradient(0deg,rgba(0,0,0,.75),transparent)",padding:"6px 3px 2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{label}</span>
+   <span style={{position:"absolute",top:3,left:3}}><Ic n={micOn?"mic":"micOff"} s={9} c={micOn?"#16A34A":"#94a3b8"}/></span>
+  </div>
+ );
+}
+
 // Habillage visuel par type de simulation : un décor (plateau TV, tribunal,
-// hémicycle) au-dessus de chaque salle pour une immersion plus réaliste.
-// Pas de vidéo caméra réelle ici — uniquement une mise en scène graphique.
-function RoomStageBanner({sim}:{sim:SimRoom}) {
+// hémicycle) avec les participants présentés comme des tuiles d'appel vidéo.
+// Le flux caméra réel n'est pas encore branché (le service vidéo l'est pas
+// encore — voir /api/rooms/[id]/call-token) : tant qu'il ne l'est pas, les
+// tuiles affichent un avatar/drapeau à la place du flux, mais l'écran est
+// déjà construit comme un véritable plateau d'appel vidéo.
+function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel}:{sim:SimRoom;participants:RoomParticipant[];myCamOn:boolean;myMicOn:boolean;myLabel:string}) {
  const col=SIM_TYPE_COLORS[sim.type];
  const isNews=sim.type==="debat"||sim.type==="presse"||sim.type==="eloquence";
  const isCourt=sim.type==="proces";
  const isChamber=sim.type==="onu"||sim.type==="assemblee"||sim.type==="conseil";
  const permMembers=isChamber&&sim.type!=="assemblee"?UN_DEL.filter(c=>c.perm):[];
- const queueCount=Math.max(0,sim.participants-(permMembers.length+1));
+ const queueCount=Math.max(0,sim.participants-(permMembers.length+1)-participants.length);
+ const others=participants.slice(0,isChamber?3:4);
 
  return(
-  <div style={{position:"relative" as const,height:84,flexShrink:0,overflow:"hidden",
+  <div style={{position:"relative" as const,flexShrink:0,overflow:"hidden",padding:"10px 12px 8px",
+   display:"flex",flexDirection:"column" as const,gap:8,
    background:isNews?`linear-gradient(135deg,#0a0e1a 0%,#111b30 60%,${col}25 100%)`
     :isCourt?"linear-gradient(180deg,#2b1d12 0%,#4a3420 100%)"
     :`linear-gradient(135deg,#061224 0%,${col}30 100%)`,
    borderBottom:`2px solid ${col}55`}}>
-   <div style={{position:"absolute",inset:0,opacity:.12,backgroundImage:"radial-gradient(circle,#fff 1px,transparent 1px)",backgroundSize:"14px 14px"}}/>
+   <div style={{position:"absolute",inset:0,opacity:.1,backgroundImage:"radial-gradient(circle,#fff 1px,transparent 1px)",backgroundSize:"14px 14px"}}/>
 
-   {isNews&&(<>
-    <div style={{position:"absolute",top:8,left:12,display:"flex",alignItems:"center",gap:6}}>
-     <span style={{fontWeight:900,fontSize:14,color:"#fff",letterSpacing:1}}>NEXUS</span>
-     <span style={{fontSize:9,fontWeight:800,color:col,background:col+"25",padding:"1px 6px",borderRadius:4,letterSpacing:1}}>{SIM_TYPE_LABELS[sim.type].toUpperCase()}</span>
-    </div>
-    <div style={{position:"absolute",top:8,right:12,display:"flex",alignItems:"center",gap:5}}>
-     <span style={{width:7,height:7,borderRadius:"50%",background:"#E03535",animation:"pulse 1.2s ease infinite"}}/>
-     <span style={{fontSize:9,fontWeight:800,color:"#E03535",letterSpacing:1}}>EN DIRECT</span>
-    </div>
-    <div style={{position:"absolute",bottom:8,left:12,right:12,display:"flex",alignItems:"center",gap:8}}>
-     <span style={{fontSize:20}}>🎙️</span>
-     <p style={{color:"#cbd5e1",fontSize:10,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const,flex:1}}>{sim.topic}</p>
-    </div>
-   </>)}
+   <div style={{position:"relative" as const,display:"flex",alignItems:"center",gap:6}}>
+    <span style={{fontSize:isNews?undefined:16}}>{isNews?undefined:isChamber?(sim.type==="assemblee"?"🏛️":"🇺🇳"):"⚖️"}</span>
+    {isNews?(
+     <span style={{fontWeight:900,fontSize:13,color:"#fff",letterSpacing:1}}>NEXUS</span>
+    ):null}
+    <span style={{fontSize:9,fontWeight:800,color:isNews?col:"#fff",background:isNews?col+"25":undefined,padding:isNews?"1px 6px":undefined,borderRadius:4,letterSpacing:1}}>{SIM_TYPE_LABELS[sim.type].toUpperCase()}</span>
+    {isNews&&(
+     <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:5}}>
+      <span style={{width:6,height:6,borderRadius:"50%",background:"#E03535",animation:"pulse 1.2s ease infinite"}}/>
+      <span style={{fontSize:9,fontWeight:800,color:"#E03535",letterSpacing:1}}>EN DIRECT</span>
+     </span>
+    )}
+    {isChamber&&permMembers.length>0&&(
+     <span style={{marginLeft:"auto",fontSize:8,fontWeight:800,color:col,background:col+"30",padding:"1px 5px",borderRadius:4}}>+{queueCount} en file</span>
+    )}
+   </div>
 
-   {isCourt&&(<>
-    <div style={{position:"absolute",top:6,left:"50%",transform:"translateX(-50%)",textAlign:"center" as const}}>
-     <span style={{fontSize:22}}>⚖️</span>
-     <p style={{color:"#e8d8c0",fontSize:9,fontWeight:800,letterSpacing:2,marginTop:1}}>TRIBUNAL</p>
-    </div>
-    <div style={{position:"absolute",bottom:8,left:12,right:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-     <span style={{fontSize:9,color:"#c9a876",fontWeight:700}}>PARTIE A</span>
-     <p style={{color:"#e8d8c0",fontSize:10,fontWeight:600,maxWidth:"55%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
-     <span style={{fontSize:9,color:"#c9a876",fontWeight:700}}>PARTIE B</span>
-    </div>
-   </>)}
+   <div style={{position:"relative" as const,display:"flex",gap:6,overflowX:"auto" as const,paddingBottom:2}}>
+    {isChamber&&permMembers.slice(0,5).map(c=>(
+     <VideoTile key={c.id} label={c.init} flag={c.flag} col={col} micOn={false} camOn={false}/>
+    ))}
+    {isCourt&&sim.moderator&&(
+     <VideoTile label={sim.moderator.split(" ")[0]} col={col} big highlight micOn camOn={false}/>
+    )}
+    {isChamber&&sim.moderator&&(
+     <VideoTile label="Présidence" flag="🌐" col={col} highlight micOn camOn={false}/>
+    )}
+    <VideoTile label={myLabel} col={col} highlight micOn={myMicOn} camOn={myCamOn}/>
+    {others.map(p=>(
+     <VideoTile key={p.handle} label={p.handle} col={col} micOn={p.micOn} camOn={p.camOn}/>
+    ))}
+   </div>
 
-   {isChamber&&(<>
-    <div style={{position:"absolute",top:8,left:12,display:"flex",alignItems:"center",gap:6}}>
-     <span style={{fontSize:16}}>{sim.type==="assemblee"?"🏛️":"🇺🇳"}</span>
-     <span style={{fontSize:9,fontWeight:800,color:"#fff",letterSpacing:1}}>{SIM_TYPE_LABELS[sim.type].toUpperCase()}</span>
-    </div>
-    <div style={{position:"absolute",top:6,right:12,display:"flex",alignItems:"center",gap:3}}>
-     {permMembers.slice(0,5).map(c=><span key={c.id} title={c.country} style={{fontSize:13}}>{c.flag}</span>)}
-     {permMembers.length>0&&<span style={{fontSize:8,fontWeight:800,color:col,background:col+"30",padding:"1px 5px",borderRadius:4,marginLeft:2}}>+{queueCount} en file</span>}
-    </div>
-    <div style={{position:"absolute",bottom:8,left:12,right:12}}>
-     <p style={{color:"#cbd5e1",fontSize:10,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.moderator?`Modérateur : ${sim.moderator} · `:""}{sim.topic}</p>
-    </div>
-   </>)}
+   <p style={{position:"relative" as const,color:"#cbd5e1",fontSize:10,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.moderator&&!isChamber&&!isCourt?`Modérateur : ${sim.moderator} · `:""}{sim.topic}</p>
   </div>
  );
 }
@@ -11073,42 +11090,14 @@ function RoomStageBanner({sim}:{sim:SimRoom}) {
 // déclarés, et upload réel de pièces (stockées sur Vercel Blob).
 // Le transport audio/vidéo lui-même n'est pas encore branché — voir
 // /api/rooms/[id]/call-token pour le point d'intégration prévu.
-function RoomCallPanel({T,sim,user}:{T:Theme;sim:SimRoom;user:NexusUser|null|undefined}) {
+function RoomCallPanel({T,sim,user,participants,micOn,camOn,setMicOn,setCamOn}:{T:Theme;sim:SimRoom;user:NexusUser|null|undefined;participants:RoomParticipant[];micOn:boolean;camOn:boolean;setMicOn:(v:boolean|((p:boolean)=>boolean))=>void;setCamOn:(v:boolean|((p:boolean)=>boolean))=>void}) {
  const [open,setOpen] = useState(false);
  const [tab,setTab] = useState<"appel"|"pieces">("appel");
- const [participants,setParticipants] = useState<RoomParticipant[]>([]);
- const [micOn,setMicOn] = useState(false);
- const [camOn,setCamOn] = useState(false);
  const [callMsg,setCallMsg] = useState("");
  const [files,setFiles] = useState<RoomFile[]>([]);
  const [uploading,setUploading] = useState(false);
  const [docType,setDocType] = useState("Document");
  const fileInputRef = useRef<HTMLInputElement>(null);
-
- useEffect(()=>{
-  if(!user) return;
-  fetch(apiUrl(`/api/rooms/${sim.id}/join`),{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({roleLabel:null})});
-  return ()=>{ fetch(apiUrl(`/api/rooms/${sim.id}/leave`),{method:"POST",credentials:"include"}); };
- },[user,sim.id]);
-
- useEffect(()=>{
-  if(!user) return;
-  const loadParticipants = () => {
-   fetch(apiUrl(`/api/rooms/${sim.id}/participants`),{credentials:"include"})
-    .then(r=>r.json()).then(d=>setParticipants(d.participants||[])).catch(()=>{});
-  };
-  loadParticipants();
-  const poll = setInterval(loadParticipants,4000);
-  return ()=>clearInterval(poll);
- },[user,sim.id]);
-
- useEffect(()=>{
-  if(!user) return;
-  const beat = () => fetch(apiUrl(`/api/rooms/${sim.id}/presence`),{method:"PATCH",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({micOn,camOn})});
-  beat();
-  const hb = setInterval(beat,6000);
-  return ()=>clearInterval(hb);
- },[user,sim.id,micOn,camOn]);
 
  useEffect(()=>{
   if(!open||tab!=="pieces") return;
@@ -11120,7 +11109,7 @@ function RoomCallPanel({T,sim,user}:{T:Theme;sim:SimRoom;user:NexusUser|null|und
   if(!user){setCallMsg("Connexion en cours, réessaie dans un instant.");return;}
   setCallMsg("");
   const res = await fetch(apiUrl(`/api/rooms/${sim.id}/call-token`),{method:"POST",credentials:"include"});
-  if(res.status===501){setCallMsg("Service d'appel audio/vidéo pas encore branché — la liste des participants ci-dessous est réelle.");return;}
+  if(res.status===501){setCallMsg("Service d'appel vidéo pas encore branché — ta tuile s'affiche déjà, le flux caméra arrivera quand le service sera connecté.");return;}
   if(!res.ok){setCallMsg("Impossible de rejoindre l'appel pour le moment.");return;}
   setMicOn(true);
  };
@@ -11210,15 +11199,44 @@ function RoomCallPanel({T,sim,user}:{T:Theme;sim:SimRoom;user:NexusUser|null|und
 
 function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const {user} = useCurrentUser();
+ const [participants,setParticipants] = useState<RoomParticipant[]>([]);
+ const [micOn,setMicOn] = useState(false);
+ const [camOn,setCamOn] = useState(false);
+
+ useEffect(()=>{
+  if(!user) return;
+  fetch(apiUrl(`/api/rooms/${sim.id}/join`),{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({roleLabel:null})});
+  return ()=>{ fetch(apiUrl(`/api/rooms/${sim.id}/leave`),{method:"POST",credentials:"include"}); };
+ },[user,sim.id]);
+
+ useEffect(()=>{
+  if(!user) return;
+  const loadParticipants = () => {
+   fetch(apiUrl(`/api/rooms/${sim.id}/participants`),{credentials:"include"})
+    .then(r=>r.json()).then(d=>setParticipants(d.participants||[])).catch(()=>{});
+  };
+  loadParticipants();
+  const poll = setInterval(loadParticipants,4000);
+  return ()=>clearInterval(poll);
+ },[user,sim.id]);
+
+ useEffect(()=>{
+  if(!user) return;
+  const beat = () => fetch(apiUrl(`/api/rooms/${sim.id}/presence`),{method:"PATCH",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({micOn,camOn})});
+  beat();
+  const hb = setInterval(beat,6000);
+  return ()=>clearInterval(hb);
+ },[user,sim.id,micOn,camOn]);
+
  return(
   <>
    <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
-    <RoomStageBanner sim={sim}/>
+    <RoomVideoStage sim={sim} participants={participants} myCamOn={camOn} myMicOn={micOn} myLabel={user?.handle||"Vous"}/>
     <div style={{flex:1,minHeight:0,overflow:"hidden",position:"relative" as const}}>
      <RoomShellInner T={T} sim={sim} onBack={onBack}/>
     </div>
    </div>
-   <RoomCallPanel T={T} sim={sim} user={user}/>
+   <RoomCallPanel T={T} sim={sim} user={user} participants={participants} micOn={micOn} camOn={camOn} setMicOn={setMicOn} setCamOn={setCamOn}/>
   </>
  );
 }
