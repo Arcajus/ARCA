@@ -46,13 +46,7 @@ jobs:
           # Check if env var already exists
           ENV_ID=$(curl -sf "https://api.vercel.com/v9/projects/$PROJECT_ID/env" \
             -H "Authorization: Bearer $VERCEL_TOKEN" | \
-            python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-envs = data.get('envs', [])
-match = [e for e in envs if e['key'] == 'GEMINI_API_KEY']
-print(match[0]['id'] if match else '')
-" 2>/dev/null || echo "")
+            python3 -c "import json,sys; data=json.load(sys.stdin); envs=data.get('envs',[]); match=[e for e in envs if e['key']=='GEMINI_API_KEY']; print(match[0]['id'] if match else '')" 2>/dev/null || echo "")
 
           if [ -n "$ENV_ID" ]; then
             # Update existing env var
