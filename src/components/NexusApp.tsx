@@ -11005,6 +11005,69 @@ function useCurrentUser() {
 type RoomParticipant = {handle:string;roleLabel:string|null;micOn:boolean;camOn:boolean};
 type RoomFile = {id:number;name:string;docType:string;url:string;size:number;mimeType:string;by:string;time:number};
 
+// Habillage visuel par type de simulation : un décor (plateau TV, tribunal,
+// hémicycle) au-dessus de chaque salle pour une immersion plus réaliste.
+// Pas de vidéo caméra réelle ici — uniquement une mise en scène graphique.
+function RoomStageBanner({sim}:{sim:SimRoom}) {
+ const col=SIM_TYPE_COLORS[sim.type];
+ const isNews=sim.type==="debat"||sim.type==="presse"||sim.type==="eloquence";
+ const isCourt=sim.type==="proces";
+ const isChamber=sim.type==="onu"||sim.type==="assemblee"||sim.type==="conseil";
+ const permMembers=isChamber&&sim.type!=="assemblee"?UN_DEL.filter(c=>c.perm):[];
+ const queueCount=Math.max(0,sim.participants-(permMembers.length+1));
+
+ return(
+  <div style={{position:"relative" as const,height:84,flexShrink:0,overflow:"hidden",
+   background:isNews?`linear-gradient(135deg,#0a0e1a 0%,#111b30 60%,${col}25 100%)`
+    :isCourt?"linear-gradient(180deg,#2b1d12 0%,#4a3420 100%)"
+    :`linear-gradient(135deg,#061224 0%,${col}30 100%)`,
+   borderBottom:`2px solid ${col}55`}}>
+   <div style={{position:"absolute",inset:0,opacity:.12,backgroundImage:"radial-gradient(circle,#fff 1px,transparent 1px)",backgroundSize:"14px 14px"}}/>
+
+   {isNews&&(<>
+    <div style={{position:"absolute",top:8,left:12,display:"flex",alignItems:"center",gap:6}}>
+     <span style={{fontWeight:900,fontSize:14,color:"#fff",letterSpacing:1}}>NEXUS</span>
+     <span style={{fontSize:9,fontWeight:800,color:col,background:col+"25",padding:"1px 6px",borderRadius:4,letterSpacing:1}}>{SIM_TYPE_LABELS[sim.type].toUpperCase()}</span>
+    </div>
+    <div style={{position:"absolute",top:8,right:12,display:"flex",alignItems:"center",gap:5}}>
+     <span style={{width:7,height:7,borderRadius:"50%",background:"#E03535",animation:"pulse 1.2s ease infinite"}}/>
+     <span style={{fontSize:9,fontWeight:800,color:"#E03535",letterSpacing:1}}>EN DIRECT</span>
+    </div>
+    <div style={{position:"absolute",bottom:8,left:12,right:12,display:"flex",alignItems:"center",gap:8}}>
+     <span style={{fontSize:20}}>🎙️</span>
+     <p style={{color:"#cbd5e1",fontSize:10,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const,flex:1}}>{sim.topic}</p>
+    </div>
+   </>)}
+
+   {isCourt&&(<>
+    <div style={{position:"absolute",top:6,left:"50%",transform:"translateX(-50%)",textAlign:"center" as const}}>
+     <span style={{fontSize:22}}>⚖️</span>
+     <p style={{color:"#e8d8c0",fontSize:9,fontWeight:800,letterSpacing:2,marginTop:1}}>TRIBUNAL</p>
+    </div>
+    <div style={{position:"absolute",bottom:8,left:12,right:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+     <span style={{fontSize:9,color:"#c9a876",fontWeight:700}}>PARTIE A</span>
+     <p style={{color:"#e8d8c0",fontSize:10,fontWeight:600,maxWidth:"55%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
+     <span style={{fontSize:9,color:"#c9a876",fontWeight:700}}>PARTIE B</span>
+    </div>
+   </>)}
+
+   {isChamber&&(<>
+    <div style={{position:"absolute",top:8,left:12,display:"flex",alignItems:"center",gap:6}}>
+     <span style={{fontSize:16}}>{sim.type==="assemblee"?"🏛️":"🇺🇳"}</span>
+     <span style={{fontSize:9,fontWeight:800,color:"#fff",letterSpacing:1}}>{SIM_TYPE_LABELS[sim.type].toUpperCase()}</span>
+    </div>
+    <div style={{position:"absolute",top:6,right:12,display:"flex",alignItems:"center",gap:3}}>
+     {permMembers.slice(0,5).map(c=><span key={c.id} title={c.country} style={{fontSize:13}}>{c.flag}</span>)}
+     {permMembers.length>0&&<span style={{fontSize:8,fontWeight:800,color:col,background:col+"30",padding:"1px 5px",borderRadius:4,marginLeft:2}}>+{queueCount} en file</span>}
+    </div>
+    <div style={{position:"absolute",bottom:8,left:12,right:12}}>
+     <p style={{color:"#cbd5e1",fontSize:10,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.moderator?`Modérateur : ${sim.moderator} · `:""}{sim.topic}</p>
+    </div>
+   </>)}
+  </div>
+ );
+}
+
 // Panneau partagé par toutes les salles : présence réelle des participants
 // (rejoint/quitte la salle côté serveur, heartbeat de présence), micro/caméra
 // déclarés, et upload réel de pièces (stockées sur Vercel Blob).
@@ -11149,7 +11212,12 @@ function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const {user} = useCurrentUser();
  return(
   <>
-   <RoomShellInner T={T} sim={sim} onBack={onBack}/>
+   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+    <RoomStageBanner sim={sim}/>
+    <div style={{flex:1,minHeight:0,overflow:"hidden",position:"relative" as const}}>
+     <RoomShellInner T={T} sim={sim} onBack={onBack}/>
+    </div>
+   </div>
    <RoomCallPanel T={T} sim={sim} user={user}/>
   </>
  );
