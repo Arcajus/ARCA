@@ -11166,7 +11166,7 @@ function RoomShellInner({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 }
 
 function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
- type SimView = "hub"|"create"|"room";
+ type SimView = "hub"|"create"|"room"|"apprendre";
  type SimFilter = "all"|SimType;
  const hasPremium = typeof window!=="undefined"&&(localStorage.getItem("nexus_premium")==="true"||localStorage.getItem("nexus_mod")==="true");
  const {user} = useCurrentUser();
@@ -11205,6 +11205,8 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
   setCreateDate("");
   haptic();
  };
+
+ if(view==="apprendre") return <ApprendreScreen T={T} onBack={()=>setView("hub")} onPremium={onPremium}/>;
 
  if(view==="room"&&selectedSim) return <SimRoomView T={T} sim={selectedSim} onBack={()=>{setView("hub");setSelectedSim(null);}}/>;
 
@@ -11282,6 +11284,11 @@ function SimulationsTab({T,onPremium}:{T:Theme;onPremium:()=>void}) {
      </div>
     </div>
    )}
+   <button onClick={()=>{haptic();setView("apprendre");}} style={{background:`linear-gradient(135deg,#16A34A15,#2B78F515)`,border:`1px solid #16A34A30`,borderRadius:14,padding:16,display:"flex",alignItems:"center",gap:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left" as const,width:"100%"}}>
+    <div style={{width:44,height:44,borderRadius:12,background:"#16A34A20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="zap" s={22} c="#16A34A"/></div>
+    <div style={{flex:1}}><p style={{color:T.text,fontSize:14,fontWeight:800}}>Apprendre</p><p style={{color:T.textD,fontSize:12,marginTop:2}}>Fiches de révision · Prépa concours (Sciences Po, ENS, Fonction pub., Barreau)</p></div>
+    <Ic n="chevR" s={18} c={T.muted}/>
+   </button>
    <div style={{background:`linear-gradient(135deg,${T.blueB}15,#7C3AED15)`,border:`1px solid ${T.blueB}30`,borderRadius:14,padding:16,display:"flex",alignItems:"center",gap:12}}>
     <div style={{width:44,height:44,borderRadius:12,background:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="award" s={22} c={T.blueB}/></div>
     <div style={{flex:1}}><p style={{color:T.text,fontSize:14,fontWeight:800}}>Guides & Stratégies</p><p style={{color:T.textD,fontSize:12,marginTop:2}}>Techniques de débat, diplomatie, rhétorique — NEXUS+</p></div>
