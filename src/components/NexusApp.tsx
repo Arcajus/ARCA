@@ -952,7 +952,24 @@ function ScoreModal({topic,T,onClose}:{topic:string;T:Theme;onClose:()=>void}) {
  );
 }
 
-// AUDIO STAGE 
+// Confirmation avant de quitter une session live (évite de sortir d'un coup
+// au lieu de revenir à l'étape précédente sur un clic accidentel).
+function LeaveConfirmModal({T,onConfirm,onCancel,label="la session"}:{T:Theme;onConfirm:()=>void;onCancel:()=>void;label?:string}) {
+ return(
+  <div onClick={e=>e.target===e.currentTarget&&onCancel()} style={{position:"fixed" as const,inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(4px)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20,animation:"fadeIn .2s"}}>
+   <div style={{background:T.surf,border:`1px solid ${T.b1}`,borderRadius:18,padding:22,width:"100%",maxWidth:340}}>
+    <p style={{color:T.text,fontSize:15,fontWeight:800,marginBottom:6}}>Quitter {label} ?</p>
+    <p style={{color:T.textD,fontSize:12.5,lineHeight:1.5,marginBottom:18}}>Vous allez sortir de la session en cours. Vous pourrez la rejoindre à nouveau plus tard.</p>
+    <div style={{display:"flex",gap:8}}>
+     <button onClick={onCancel} style={{flex:1,padding:"12px",borderRadius:10,border:`1px solid ${T.b1}`,background:"transparent",color:T.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Rester</button>
+     <button onClick={onConfirm} style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:T.red,color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Quitter</button>
+    </div>
+   </div>
+  </div>
+ );
+}
+
+// AUDIO STAGE
 function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onBack:()=>void}) {
  const j = config.journalist as typeof JOURNALISTS[0];
  const level = config.level as typeof LEVELS[0];
@@ -974,6 +991,7 @@ function AudioStage({config,T,onBack}:{config:Record<string,unknown>;T:Theme;onB
  });
 
  const initTime = (config.speechTime as number) || 120;
+ const [confirmLeave,setConfirmLeave] = useState(false);
  const [phase,setPhase] = useState<"intro"|"speaking"|"listening"|"waiting"|"cut"|"ended">("intro");
  const [timer,setTimer] = useState(initTime);
  const [timerOn,setTimerOn] = useState(false);
@@ -1284,8 +1302,9 @@ RÈGLES :
  return(
  <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.bg}}>
  {showScore&&<ScoreModal topic={topic} T={T} onClose={()=>{setShowScore(false);onBack();}}/>}
+ {confirmLeave&&<LeaveConfirmModal T={T} label="le débat" onCancel={()=>setConfirmLeave(false)} onConfirm={()=>{recRef.current?.stop();stopSpeech();onBack();}}/>}
  <div style={{padding:"12px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
- <button onClick={()=>{recRef.current?.stop();stopSpeech();onBack();}} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ic n="chevL" s={22} c={T.blueB}/></button>
+ <button onClick={()=>setConfirmLeave(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ic n="chevL" s={22} c={T.blueB}/></button>
  <div style={{flex:1}}>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
  <div style={{width:8,height:8,borderRadius:"50%",background:T.red,animation:"pulse 1s infinite"}}/>
@@ -1419,7 +1438,7 @@ function TopicPicker({topic,setTopic,T,onPremium}:{topic:string;setTopic:(t:stri
 }
 
 // BRIEFING SCREEN 
-function BriefingScreen({topic,T,onStart,onSkip}:{topic:string;T:Theme;onStart:()=>void;onSkip:()=>void}) {
+function BriefingScreen({topic,T,onStart,onSkip,onBack}:{topic:string;T:Theme;onStart:()=>void;onSkip:()=>void;onBack:()=>void}) {
  const [speaking,setSpeaking] = useState(false);
  const briefText = `"${topic}" est un sujet complexe qui soulève des enjeux majeurs dans notre société. Pour débattre efficacement, il est utile de connaître les principaux arguments des deux camps, le contexte historique et les acteurs clés du débat. Prenez le temps de structurer votre position avec des faits concrets, des exemples réels et une argumentation logique. Votre journaliste testera la solidité de votre raisonnement.`;
  const speakBriefing = () => {
@@ -1437,6 +1456,7 @@ function BriefingScreen({topic,T,onStart,onSkip}:{topic:string;T:Theme;onStart:(
  return(
  <div style={{padding:"24px 20px",display:"flex",flexDirection:"column",gap:20,height:"100%"}}>
  <div style={{display:"flex",alignItems:"center",gap:12}}>
+ <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,flexShrink:0}}><Ic n="chevL" s={22} c={T.text}/></button>
  <div style={{width:44,height:44,borderRadius:12,background:T.blueG,border:`1px solid ${T.blueB}30`,display:"flex",alignItems:"center",justifyContent:"center"}}><Ic n="info" s={22} c={T.blueB}/></div>
  <div>
  <p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase"}}>Avant le débat</p>
@@ -1469,10 +1489,10 @@ function StudioScreen({T,onPremium,onBack}:{T:Theme;onPremium:()=>void;onBack?:(
  const [inviteCode,setInviteCode] = useState("");
 
  if(step==="stage"&&journalist&&level&&topic){
- return <AudioStage config={{journalist,level,topic,publicSide,subMode,speechTime}} T={T} onBack={()=>setStep("home")}/>;
+ return <AudioStage config={{journalist,level,topic,publicSide,subMode,speechTime}} T={T} onBack={()=>setStep("brief")}/>;
  }
  if(step==="brief"&&topic){
- return <BriefingScreen topic={topic} T={T} onStart={()=>setStep("stage")} onSkip={()=>setStep("stage")}/>;
+ return <BriefingScreen topic={topic} T={T} onStart={()=>setStep("stage")} onSkip={()=>setStep("stage")} onBack={()=>setStep("home")}/>;
  }
 
  return(
@@ -7606,6 +7626,7 @@ const ttsSpeak=(text:string)=>{
 type MUNPhase="select"|"debate"|"vote"|"feedback";
 
 function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const [confirmLeave,setConfirmLeave]=useState(false);
  const col="#1A5FD4";
  const hasPremium=typeof window!=="undefined"&&(localStorage.getItem("nexus_premium")==="true"||localStorage.getItem("nexus_mod")==="true");
  const randomCountry=ALL_UN_COUNTRIES[Math.floor(Math.random()*Math.min(sim.participants,ALL_UN_COUNTRIES.length))];
@@ -8075,9 +8096,10 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      </div>
     </div>
    )}
+   {confirmLeave&&<LeaveConfirmModal T={T} label="la session ONU" onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={acCol}/></button>
+     <button onClick={()=>setConfirmLeave(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={acCol}/></button>
      <div style={{flex:1,minWidth:0}}>
       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
        <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3,display:"inline-flex",alignItems:"center",gap:3}}><Ic n="globe" s={9} c={col}/>ONU</span>
@@ -8586,6 +8608,7 @@ const TRIAL_SCRIPTS:TrialScripts={
 };
 
 function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const [confirmLeave,setConfirmLeave]=useState(false);
  type SetupPhase="type"|"role"|"trial";
  const [setup,setSetup]=useState<SetupPhase>(sim.trialType?"role":"type");
  const [trialType,setTrialType]=useState<TrialType|null>(sim.trialType||null);
@@ -9030,9 +9053,10 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {confirmLeave&&<LeaveConfirmModal T={T} label="le procès" onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
+     <button onClick={()=>setConfirmLeave(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
      <div style={{flex:1,minWidth:0}}>
       <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:1,flexWrap:"wrap" as const}}>
        <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{TRIAL_TYPE_LABELS[trialType].toUpperCase()}</span>
@@ -9477,6 +9501,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 // ── GENERAL DEBATE ROOM ────────────────────────────────────────────
 
 function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const [confirmLeave,setConfirmLeave]=useState(false);
  type Side="pour"|"contre"|null;
  const [mySide,setMySide]=useState<Side>(null);
  const [setup,setSetup]=useState(true);
@@ -9604,10 +9629,11 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
 
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {confirmLeave&&<LeaveConfirmModal T={T} label="le débat" onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
    {/* Header */}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={myCol}/></button>
+     <button onClick={()=>setConfirmLeave(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={myCol}/></button>
      <div style={{flex:1,minWidth:0}}>
       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
        <span style={{background:"#E0353515",color:"#E03535",fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3,display:"flex",alignItems:"center",gap:3}}><span style={{width:4,height:4,borderRadius:"50%",background:"#E03535",display:"inline-block"}}/>DIRECT</span>
@@ -9917,6 +9943,7 @@ const AN_LIVE_SCRIPT:{delay:number;role:ANRole;text:string}[]=[
 ];
 
 function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
+ const [confirmLeave,setConfirmLeave]=useState(false);
  const col="#16A34A";
  const isLive=sim.status==="live";
  const [myRole,setMyRole]=useState<ANRole|null>(null);
@@ -10096,11 +10123,12 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
 
  return(
   <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" as const}}>
+   {confirmLeave&&<LeaveConfirmModal T={T} label="l'assemblée" onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
    {/* Header */}
    <div style={{background:"linear-gradient(180deg,#0A1F4E 0%,#0D2654 100%)",position:"sticky" as const,top:0,zIndex:10,boxShadow:"0 2px 12px rgba(0,0,0,.3)"}}>
     <div style={{padding:"10px 16px 8px"}}>
      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-      <button onClick={onBack} style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",borderRadius:7,padding:"5px 7px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={17} c="#fff"/></button>
+      <button onClick={()=>setConfirmLeave(true)} style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",borderRadius:7,padding:"5px 7px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={17} c="#fff"/></button>
       <div style={{flex:1,minWidth:0}}>
        <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}>
         <span style={{color:"#C9A227",fontSize:8,fontWeight:800,letterSpacing:1,display:"inline-flex",alignItems:"center",gap:3}}><Ic n="scale" s={9} c="#C9A227"/>AN</span>
@@ -10424,6 +10452,7 @@ const CS_ELECTED=[{name:"Brésil",flag:"🇧🇷"},{name:"Japon",flag:"🇯🇵"
 const CS_ALL=[...CS_P5,...CS_ELECTED];
 
 function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const [confirmLeave,setConfirmLeave]=useState(false);
  const col="#0E7490";
  type CSMember={name:string;flag:string};
  const [myCountry,setMyCountry]=useState<CSMember|null>(null);
@@ -10514,8 +10543,9 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
 
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%",background:T.bg}}>
+   {confirmLeave&&<LeaveConfirmModal T={T} label="le conseil" onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
    <div style={{background:"linear-gradient(180deg,#0A1F4E 0%,#0D2654 100%)",padding:"12px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-    <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
+    <button onClick={()=>setConfirmLeave(true)} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
     <div style={{flex:1}}>
      <div style={{display:"flex",alignItems:"center",gap:6}}>
       <span style={{background:"#0E749020",color:"#67E8F9",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>🇺🇳 CONSEIL DE SÉCURITÉ</span>
@@ -10583,6 +10613,7 @@ const PRESSE_PERSONAS=[
 ];
 
 function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const [confirmLeave,setConfirmLeave]=useState(false);
  const col="#7C3AED";
  const [myTitle,setMyTitle]=useState("");
  const [setupDone,setSetupDone]=useState(false);
@@ -10684,8 +10715,9 @@ function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%",background:T.bg}}>
+   {confirmLeave&&<LeaveConfirmModal T={T} label="la conférence de presse" onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
    <div style={{background:`linear-gradient(135deg,#3B0764 0%,#7C3AED 100%)`,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-    <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
+    <button onClick={()=>setConfirmLeave(true)} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
     <div style={{flex:1}}>
      <span style={{background:"rgba(255,255,255,.15)",color:"#fff",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3,display:"inline-flex",alignItems:"center",gap:4}}><Ic n="mic" s={9} c="#fff"/>CONFÉRENCE DE PRESSE</span>
      <p style={{color:"#fff",fontSize:13,fontWeight:700,marginTop:3}}>{sim.topic}</p>
@@ -10729,6 +10761,7 @@ type EloquenceRole = "candidat"|"jury";
 // connectés à la salle (présence /api/rooms/[id]/participants), comme
 // dans RoomCallPanel. La grille façon visio reflète qui est vraiment là.
 function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
+ const [confirmLeave,setConfirmLeave] = useState(false);
  const {user} = useCurrentUser();
  const [myRole,setMyRole] = useState<EloquenceRole|null>(null);
  const [tab,setTab] = useState<"scene"|"notes"|"conseils">("scene");
@@ -10822,9 +10855,10 @@ function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   {confirmLeave&&<LeaveConfirmModal T={T} label="la session" onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-     <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
+     <button onClick={()=>setConfirmLeave(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
      <div style={{flex:1,minWidth:0}}>
       <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:1}}>
        <span style={{background:col+"20",color:col,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{myRole==="candidat"?"CANDIDAT·E":"JURY"}</span>
