@@ -62,6 +62,18 @@ export async function GET() {
     return true;
   });
 
+  // Google News RSS search results aren't chronological — sort by actual
+  // pubDate so the "live" feed doesn't surface week/month-old reposts above
+  // fresh ones. Undated items sink to the bottom instead of breaking the sort.
+  unique.sort((a, b) => {
+    const ta = new Date(a.pubDate).getTime();
+    const tb = new Date(b.pubDate).getTime();
+    if (isNaN(ta) && isNaN(tb)) return 0;
+    if (isNaN(ta)) return 1;
+    if (isNaN(tb)) return -1;
+    return tb - ta;
+  });
+
   return NextResponse.json({ articles: unique }, {
     headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate=60" },
   });
