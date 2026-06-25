@@ -11101,6 +11101,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel}:{sim:SimRoom;
  const isCourt=sim.type==="proces";
  const isChamber=sim.type==="onu"||sim.type==="assemblee"||sim.type==="conseil";
  const permMembers=isChamber&&sim.type!=="assemblee"?UN_DEL.filter(c=>c.perm):[];
+ const courtRoles=isCourt&&sim.trialType?TRIAL_ROLES_BY_TYPE[sim.trialType].filter(r=>r!=="president"&&r!=="public"):[];
  const speakingP=participants.find(p=>p.micOn);
  const queueCount=Math.max(0,sim.participants-(permMembers.length+1)-participants.length);
  const others=participants.filter(p=>p!==speakingP);
@@ -11154,22 +11155,25 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel}:{sim:SimRoom;
 
    <div style={{position:"relative" as const}}>
     <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>
-     {isCourt?"Parties — chacune à sa table, face au juge":isChamber?"Présidence & vous — second rang":"Intervenants — face à face"}
+     {isCourt?"Présidence & vous — face à face":isChamber?"Présidence & vous — second rang":"Intervenants — face à face"}
     </div>
     <div style={{display:"flex",gap:6}}>
-     {isChamber&&<VideoTile label="Présidence" flag="🌐" col={col} size="half"/>}
+     {(isChamber||isCourt)&&<VideoTile label={isCourt?(sim.trialType?getRoleLabel("president",sim.trialType):"Président·e"):"Présidence"} flag={isChamber?"🌐":undefined} col={col} size="half"/>}
      <VideoTile label={myLabel} you={!myMicOn} speaking={myMicOn} micOn={myMicOn} camOn={myCamOn} col={col} size="half"/>
-     {!isChamber&&others[0]&&(
+     {!isChamber&&!isCourt&&others[0]&&(
       <VideoTile key={others[0].handle} label={others[0].handle} micOn={others[0].micOn} camOn={others[0].camOn} col={col} size="half"/>
      )}
     </div>
    </div>
 
-   {isCourt&&others.length>1&&(
+   {isCourt&&(courtRoles.length>0||others.length>0)&&(
     <div style={{position:"relative" as const}}>
-     <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Autres personnes importantes — vidéo en miniature</div>
+     <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Autres parties — vidéo en miniature</div>
      <div style={{display:"flex",gap:5,overflowX:"auto" as const}}>
-      {others.slice(1,5).map(p=>(
+      {courtRoles.map(r=>(
+       <VideoTile key={r} label={getRoleLabel(r,sim.trialType!)} col={TRIAL_ROLE_COLORS[r]} size="mini"/>
+      ))}
+      {others.map(p=>(
        <VideoTile key={p.handle} label={p.handle} micOn={p.micOn} camOn={p.camOn} col={col} size="mini"/>
       ))}
      </div>
