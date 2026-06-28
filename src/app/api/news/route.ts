@@ -42,7 +42,7 @@ export async function GET() {
     FEEDS.map(async feed => {
       const r = await fetch(feed.url, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" },
-        next: { revalidate: 300 }, // 5 min Vercel cache
+        next: { revalidate: 120 }, // 2 min Vercel cache
       });
       if (!r.ok) return [];
       const xml = await r.text();
@@ -75,6 +75,6 @@ export async function GET() {
   });
 
   return NextResponse.json({ articles: unique }, {
-    headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate=60" },
+    headers: { "Cache-Control": "s-maxage=120, stale-while-revalidate=60" },
   });
 }
