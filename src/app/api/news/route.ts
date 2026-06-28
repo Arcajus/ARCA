@@ -3,19 +3,22 @@ import { NextResponse } from "next/server";
 export const maxDuration = 30;
 
 // Google News RSS — no API key, no rate limit, server-side only
+// "when:2d" biases Google News search toward the last 48h instead of pure
+// relevance ranking — without it, week/month-old reposts routinely outrank
+// same-day coverage.
 const FEEDS = [
-  {url:"https://news.google.com/rss/search?q=géopolitique+diplomatie+international&hl=fr&gl=FR&ceid=FR:fr",     tag:"Géopolitique",   tagC:"#1A5FD4"},
-  {url:"https://news.google.com/rss/search?q=france+politique+gouvernement+actualité&hl=fr&gl=FR&ceid=FR:fr",  tag:"France",          tagC:"#E03535"},
-  {url:"https://news.google.com/rss/search?q=europe+union+européenne+parlement&hl=fr&gl=FR&ceid=FR:fr",        tag:"Europe",          tagC:"#7C3AED"},
-  {url:"https://news.google.com/rss/search?q=économie+finance+bourse+inflation&hl=fr&gl=FR&ceid=FR:fr",        tag:"Économie",        tagC:"#D97706"},
-  {url:"https://news.google.com/rss/search?q=ONU+nations+unies+conseil+sécurité&hl=fr&gl=FR&ceid=FR:fr",       tag:"ONU",             tagC:"#16A34A"},
-  {url:"https://news.google.com/rss/search?q=intelligence+artificielle+technologie+innovation&hl=fr&gl=FR&ceid=FR:fr", tag:"Sciences & IA", tagC:"#0E7490"},
-  {url:"https://news.google.com/rss/search?q=climat+environnement+COP+énergie&hl=fr&gl=FR&ceid=FR:fr",         tag:"Climat",          tagC:"#16A34A"},
-  {url:"https://news.google.com/rss/search?q=afrique+sahel+développement+crise&hl=fr&gl=FR&ceid=FR:fr",        tag:"Afrique",         tagC:"#D97706"},
-  {url:"https://news.google.com/rss/search?q=guerre+conflit+ukraine+moyen-orient&hl=fr&gl=FR&ceid=FR:fr",      tag:"Conflits",        tagC:"#E03535"},
-  {url:"https://news.google.com/rss/search?q=droits+humains+justice+démocratie&hl=fr&gl=FR&ceid=FR:fr",        tag:"Droits & Justice", tagC:"#8B4513"},
-  {url:"https://news.google.com/rss/search?q=Asie+Chine+Japon+Inde+Pacifique&hl=fr&gl=FR&ceid=FR:fr",         tag:"Asie-Pacifique",  tagC:"#1A5FD4"},
-  {url:"https://news.google.com/rss/search?q=sport+culture+société+france&hl=fr&gl=FR&ceid=FR:fr",             tag:"Culture & Sport", tagC:"#16A34A"},
+  {url:"https://news.google.com/rss/search?q=géopolitique+diplomatie+international+when:2d&hl=fr&gl=FR&ceid=FR:fr",     tag:"Géopolitique",   tagC:"#1A5FD4"},
+  {url:"https://news.google.com/rss/search?q=france+politique+gouvernement+actualité+when:2d&hl=fr&gl=FR&ceid=FR:fr",  tag:"France",          tagC:"#E03535"},
+  {url:"https://news.google.com/rss/search?q=europe+union+européenne+parlement+when:2d&hl=fr&gl=FR&ceid=FR:fr",        tag:"Europe",          tagC:"#7C3AED"},
+  {url:"https://news.google.com/rss/search?q=économie+finance+bourse+inflation+when:2d&hl=fr&gl=FR&ceid=FR:fr",        tag:"Économie",        tagC:"#D97706"},
+  {url:"https://news.google.com/rss/search?q=ONU+nations+unies+conseil+sécurité+when:2d&hl=fr&gl=FR&ceid=FR:fr",       tag:"ONU",             tagC:"#16A34A"},
+  {url:"https://news.google.com/rss/search?q=intelligence+artificielle+technologie+innovation+when:2d&hl=fr&gl=FR&ceid=FR:fr", tag:"Sciences & IA", tagC:"#0E7490"},
+  {url:"https://news.google.com/rss/search?q=climat+environnement+COP+énergie+when:2d&hl=fr&gl=FR&ceid=FR:fr",         tag:"Climat",          tagC:"#16A34A"},
+  {url:"https://news.google.com/rss/search?q=afrique+sahel+développement+crise+when:2d&hl=fr&gl=FR&ceid=FR:fr",        tag:"Afrique",         tagC:"#D97706"},
+  {url:"https://news.google.com/rss/search?q=guerre+conflit+ukraine+moyen-orient+when:2d&hl=fr&gl=FR&ceid=FR:fr",      tag:"Conflits",        tagC:"#E03535"},
+  {url:"https://news.google.com/rss/search?q=droits+humains+justice+démocratie+when:2d&hl=fr&gl=FR&ceid=FR:fr",        tag:"Droits & Justice", tagC:"#8B4513"},
+  {url:"https://news.google.com/rss/search?q=Asie+Chine+Japon+Inde+Pacifique+when:2d&hl=fr&gl=FR&ceid=FR:fr",         tag:"Asie-Pacifique",  tagC:"#1A5FD4"},
+  {url:"https://news.google.com/rss/search?q=sport+culture+société+france+when:2d&hl=fr&gl=FR&ceid=FR:fr",             tag:"Culture & Sport", tagC:"#16A34A"},
 ];
 
 function extractCDATA(s: string): string {
@@ -30,7 +33,9 @@ function parseRSS(xml: string, feed: typeof FEEDS[0]): {id:string;title:string;l
     const link  = (item.match(/<link>([\s\S]*?)<\/link>/)?.[1] ?? item.match(/<link\s*\/>([\s\S]*?)<\/link>/)?.[1] ?? "").trim();
     const guid  = (item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/)?.[1] ?? link).trim();
     const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] ?? "";
-    const imgUrl  = item.match(/url="([^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/)?.[1] ?? null;
+    const imgUrl  = item.match(/(?:url|src)="([^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/)?.[1]
+      ?? item.match(/(?:url|src)="(https:\/\/[^"]*(?:googleusercontent|ggpht|gstatic)[^"]*)"/)?.[1]
+      ?? null;
     const src = item.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1]?.trim() || feed.tag;
     if (!title || !link) return null;
     return { id: `gn-${guid}`, title, link, pubDate, imgUrl, tag: feed.tag, tagC: feed.tagC, src };
