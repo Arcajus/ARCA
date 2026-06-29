@@ -7171,14 +7171,25 @@ function StoryViewer({stories,startIndex,onClose}:{stories:CommunityStory[];star
     ))}
    </div>
    <div style={{position:"relative" as const,display:"flex",alignItems:"center",gap:9,padding:"12px 14px",zIndex:2}}>
+    <button onClick={onClose} style={{background:"#00000040",border:"none",borderRadius:8,cursor:"pointer",padding:5,display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
+     <Ic n="chevL" s={18} c="#fff"/><span style={{color:"#fff",fontSize:11,fontWeight:800}}>Retour</span>
+    </button>
     <div style={{width:32,height:32,borderRadius:"50%",background:"#ffffff30",border:"1.5px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",flexShrink:0}}>{s.initials}</div>
-    <span style={{color:"#fff",fontSize:13,fontWeight:800,flex:1}}>{s.handle}</span>
+    <span style={{color:"#fff",fontSize:13,fontWeight:800,flex:1,overflow:"hidden",textOverflow:"ellipsis" as const,whiteSpace:"nowrap" as const}}>{s.handle}</span>
     <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="x" s={20} c="#fff"/></button>
    </div>
    <div style={{position:"relative" as const,flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 30px",zIndex:2}}>
     <p style={{color:"#fff",fontSize:22,fontWeight:800,textAlign:"center" as const,lineHeight:1.4,textShadow:"0 2px 12px rgba(0,0,0,.4)"}}>{s.caption}</p>
    </div>
-   <div style={{position:"absolute" as const,inset:0,display:"flex",zIndex:1}}>
+   <div style={{position:"relative" as const,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 14px 18px",zIndex:2}}>
+    <button onClick={()=>setIdx(i=>Math.max(0,i-1))} disabled={idx===0} style={{display:"flex",alignItems:"center",gap:4,background:"#00000050",border:"1px solid #ffffff40",borderRadius:20,padding:"8px 14px",cursor:idx===0?"default":"pointer",opacity:idx===0?0.4:1}}>
+     <Ic n="chevL" s={15} c="#fff"/><span style={{color:"#fff",fontSize:12,fontWeight:800}}>Précédent</span>
+    </button>
+    <button onClick={()=>{if(idx<stories.length-1) setIdx(i=>i+1); else onClose();}} style={{display:"flex",alignItems:"center",gap:4,background:"#00000050",border:"1px solid #ffffff40",borderRadius:20,padding:"8px 14px",cursor:"pointer"}}>
+     <span style={{color:"#fff",fontSize:12,fontWeight:800}}>Suivant</span><Ic n="chevR" s={15} c="#fff"/>
+    </button>
+   </div>
+   <div style={{position:"absolute" as const,inset:"60px 0 70px",display:"flex",zIndex:1}}>
     <div style={{flex:1}} onClick={()=>setIdx(i=>Math.max(0,i-1))}/>
     <div style={{flex:1}} onClick={()=>{if(idx<stories.length-1) setIdx(i=>i+1); else onClose();}}/>
    </div>
