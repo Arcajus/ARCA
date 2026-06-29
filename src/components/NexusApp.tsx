@@ -11075,7 +11075,7 @@ function BackdropPicker() {
 // Le flux caméra réel n'est pas encore branché (voir /api/rooms/[id]/call-token) :
 // tant qu'il ne l'est pas, les tuiles affichent un avatar/drapeau à la place
 // du flux, mais l'écran est déjà construit comme un véritable plateau d'appel vidéo.
-function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel}:{sim:SimRoom;participants:RoomParticipant[];myCamOn:boolean;myMicOn:boolean;myLabel:string}) {
+function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:SimRoom;participants:RoomParticipant[];myCamOn:boolean;myMicOn:boolean;myLabel:string;onBack:()=>void}) {
  const col=SIM_TYPE_COLORS[sim.type];
  const isNews=sim.type==="debat"||sim.type==="presse"||sim.type==="eloquence";
  const isCourt=sim.type==="proces";
@@ -11095,7 +11095,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel}:{sim:SimRoom;
    :{label:sim.moderator||"Animateur — Nexus",flag:undefined,you:false};
 
  return(
-  <div style={{position:"relative" as const,flexShrink:0,overflow:"hidden",padding:"10px 12px 8px",
+  <div style={{position:"relative" as const,flexShrink:0,maxHeight:"42vh",overflowY:"auto" as const,overflowX:"hidden" as const,padding:"10px 12px 8px",
    display:"flex",flexDirection:"column" as const,gap:6,
    background:isNews?`linear-gradient(135deg,#0a0e1a 0%,#111b30 60%,${col}25 100%)`
     :isCourt?"linear-gradient(180deg,#2b1d12 0%,#4a3420 100%)"
@@ -11104,6 +11104,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel}:{sim:SimRoom;
    <div style={{position:"absolute",inset:0,opacity:.1,backgroundImage:"radial-gradient(circle,#fff 1px,transparent 1px)",backgroundSize:"14px 14px"}}/>
 
    <div style={{position:"relative" as const,display:"flex",alignItems:"center",gap:6}}>
+    <button onClick={onBack} style={{background:"#ffffff20",border:"none",borderRadius:8,cursor:"pointer",padding:4,display:"flex",flexShrink:0}}><Ic n="chevL" s={18} c="#fff"/></button>
     <span style={{fontSize:isNews?undefined:16}}>{isNews?undefined:isChamber?(sim.type==="assemblee"?"🏛️":"🇺🇳"):"⚖️"}</span>
     {isNews?(
      <span style={{fontWeight:900,fontSize:13,color:"#fff",letterSpacing:1}}>NEXUS</span>
@@ -11296,6 +11297,7 @@ function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [participants,setParticipants] = useState<RoomParticipant[]>([]);
  const [micOn,setMicOn] = useState(false);
  const [camOn,setCamOn] = useState(false);
+ const [confirmLeave,setConfirmLeave] = useState(false);
 
  useEffect(()=>{
   if(!user) return;
@@ -11324,8 +11326,9 @@ function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
  return(
   <>
+   {confirmLeave&&<LeaveConfirmModal T={T} label={`${SIM_TYPE_LABELS[sim.type]==="ONU"?"la session ONU":SIM_TYPE_LABELS[sim.type]==="Procès"?"le procès":"la session"}`} onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
    <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
-    <RoomVideoStage sim={sim} participants={participants} myCamOn={camOn} myMicOn={micOn} myLabel={user?.handle||"Vous"}/>
+    <RoomVideoStage sim={sim} participants={participants} myCamOn={camOn} myMicOn={micOn} myLabel={user?.handle||"Vous"} onBack={()=>setConfirmLeave(true)}/>
     <div style={{flex:1,minHeight:0,overflow:"hidden",position:"relative" as const}}>
      <RoomShellInner T={T} sim={sim} onBack={onBack}/>
     </div>
