@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export const maxDuration = 30;
+export const maxDuration = 45;
 
 // Google News RSS — no API key, no rate limit, server-side only
 // "when:2d" biases Google News search toward the last 48h instead of pure
@@ -42,6 +42,30 @@ function parseRSS(xml: string, feed: typeof FEEDS[0]): {id:string;title:string;l
   }).filter(Boolean) as {id:string;title:string;link:string;pubDate:string;imgUrl:string|null;tag:string;tagC:string;src:string}[];
 }
 
+// Google News RSS items carry no per-article thumbnail, so without this every
+// article shared the same handful of generic category stock photos. Fetch the
+// real article page and pull its og:image instead — capped + time-boxed so a
+// slow or bot-blocking source can't blow the function's duration budget.
+async function fetchOgImage(url: string, timeoutMs = 3000): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    const r = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" },
+      signal: controller.signal,
+    });
+    clearTimeout(t);
+    if (!r.ok) return null;
+    const html = await r.text();
+    const og = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+      ?? html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
+    return og?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   const results = await Promise.allSettled(
     FEEDS.map(async feed => {
@@ -78,6 +102,19 @@ export async function GET() {
     if (isNaN(tb)) return -1;
     return tb - ta;
   });
+
+  // Only the top of the sorted list is actually visible on first load, so
+  // cap real-photo lookups there and leave the rest on the category fallback.
+  const NEED_IMAGE_LIMIT = 32;
+  const BATCH = 8;
+  const candidates = unique.filter(a => !a.imgUrl).slice(0, NEED_IMAGE_LIMIT);
+  for (let i = 0; i < candidates.length; i += BATCH) {
+    const batch = candidates.slice(i, i + BATCH);
+    await Promise.all(batch.map(async a => {
+      const img = await fetchOgImage(a.link);
+      if (img) a.imgUrl = img;
+    }));
+  }
 
   return NextResponse.json({ articles: unique }, {
     headers: { "Cache-Control": "s-maxage=120, stale-while-revalidate=60" },
