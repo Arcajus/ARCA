@@ -7022,37 +7022,208 @@ const COMMUNITY_POSTS_SEED = [
 ];
 
 type CommunityPost = {id:number;handle:string;initials:string;text:string;time:number;likes:number;comments:number;simLink:string};
+type CommunityAccount = {handle:string;initials:string;bio:string;followers:number;sims:number};
+type CommunityStory = {id:string;handle:string;initials:string;color:string;caption:string};
+
+// Démo : peuple la communauté avec des centaines de comptes/publications/stories
+// fictifs générés à partir de pools de mots, pour que l'app paraisse active
+// quand on la présente. PRNG seedé (et non Math.random) pour rester déterministe.
+function seededRandom(seed: number) {
+ let s = seed;
+ return () => {
+  s = (s * 1664525 + 1013904223) >>> 0;
+  return s / 4294967296;
+ };
+}
+
+const COMMUNITY_COLORS = ["#2B78F5","#7C3AED","#16A34A","#D97706","#E03535","#0891B2","#BE185D"];
+const colorForHandle = (s:string) => COMMUNITY_COLORS[s.charCodeAt(0)%COMMUNITY_COLORS.length];
+
+const ACCOUNT_FIRST_NAMES = ["claire","thomas","lea","hugo","camille","nathan","manon","lucas","sarah","karim","ines","victor","nadia","yacine","emma","louis","chloe","adam","sofia","matheo","jade","noah","lina","gabriel","zoe","raphael","yasmine","tom","anais","maxime","salome","enzo","lena","amine","juliette","nicolas","margaux","rayan","charlotte","bastien","leon","maelys","romain","lilou","quentin","oumar","eva","antoine","fatou","baptiste","aya","mehdi","pauline","adrien","sirine","clement","maya","younes","alicia"];
+const ACCOUNT_TOPIC_WORDS = ["debat","diplomatie","oratoire","plaidoirie","geo","assemblee","onu","eloquence","procureur","juriste","avocat","grandoral","politiste","tribune","conference","conseil","rheteur","negociation","reforme","institutions","presidence","rapporteur","delegue","gsl","caucus","resolution","veto","syndic","souverainete","reporter"];
+const BIO_ROLES = ["Simulateur ONU","Avocat plaidant","Délégué diplomatique","Orateur Grand Oral","Débatteur","Juré simulé","Rapporteur Assemblée","Procureur fictif","Porte-parole","Négociateur"];
+const BIO_TOPICS = ["Sciences Po","Droit international","Relations internationales","Sécurité collective","Économie politique","Justice pénale","Diplomatie climatique","Politique européenne","Sécurité internationale","Droit public"];
+const POST_TOPICS = ["la réforme du Conseil de Sécurité","le débat sur les retraites","la transition énergétique","la politique migratoire","le commerce international","la régulation de l'IA","la crise climatique","la réforme fiscale","la politique de défense","les droits humains","la dette publique","la diplomatie climatique","la réforme judiciaire","la politique étrangère","l'Union européenne","la sécurité alimentaire","la liberté de la presse","la régulation bancaire","la politique de santé","l'éducation publique"];
+const POST_TEMPLATES = [
+ "Simulation terminée sur {t} — débat vraiment intense, j'ai appris à mieux structurer mes arguments sous pression.",
+ "Petit conseil : pour {t}, préparez toujours 2-3 chiffres clés à l'avance, ça change tout face à un contradicteur solide.",
+ "Première fois que je traite {t} en simulation — beaucoup plus complexe qu'il n'y paraît, surtout sur les compromis diplomatiques.",
+ "Question à la communauté : quelqu'un a des ressources solides sur {t} pour préparer ma prochaine intervention ?",
+ "Résultat serré aujourd'hui sur {t} — la délibération collective a vraiment fait basculer le vote au dernier moment.",
+ "Retour d'expérience : {t} reste l'un des sujets les plus polarisants qu'on ait eu en simulation ce mois-ci.",
+ "Débrief express : sur {t}, les arguments sourcés ont clairement pris le dessus sur les effets de manche.",
+ "Je recommande à tous les débutants de s'entraîner sur {t} avant de passer aux simulations plus techniques.",
+ "Entraînement solo aujourd'hui sur {t} — la plateforme m'a aidé à repérer mes tics de langage en plein discours.",
+ "Anecdote du jour : pendant le débat sur {t}, un délégué a complètement renversé la salle avec un seul chiffre bien placé.",
+ "Bilan de la semaine : 3 simulations sur {t}, et toujours la même leçon — la préparation compte plus que l'éloquence pure.",
+ "On a frôlé l'incident diplomatique en traitant {t} hier soir — heureusement la présidence a su recadrer le débat à temps.",
+ "Petite victoire personnelle : j'ai enfin réussi à défendre {t} sans lire mes notes. Progrès net depuis le mois dernier.",
+ "Qui d'autre prépare une intervention sur {t} cette semaine ? On pourrait s'entraîner ensemble en binôme.",
+ "Ce qui m'a marqué dans le débat sur {t} : à quel point les questions de procédure changent l'issue d'un vote serré.",
+ "Retour sur {t} : la salle était clairement divisée, mais le compromis final a surpris tout le monde.",
+ "Conseil pour {t} : anticipez les questions pièges, c'est souvent là que les délégations les mieux préparées se distinguent.",
+ "Mon discours sur {t} a été cité par la présidence comme exemple de synthèse claire — fierté du jour.",
+];
+const STORY_CAPTIONS = [
+ "🔥 Simulation ONU en cours — Conseil de Sécurité",
+ "🎤 Grand Oral : 3e répétition aujourd'hui",
+ "⚖️ Plaidoirie finale dans 10 minutes",
+ "🏛️ Premier discours à l'Assemblée Nationale",
+ "📊 Résultat du débat : victoire serrée !",
+ "🤝 Négociation diplomatique en pleine session",
+ "✍️ Préparation contre-interrogatoire",
+ "🎯 Nouveau record de simulations ce mois",
+ "💬 Caucus officieux improvisé",
+ "🇺🇳 Veto posé pour la première fois",
+ "📚 Révisions avant l'épreuve du Grand Oral",
+ "🗣️ Discours liminaire validé par la présidence",
+];
+
+function generateAccounts(count: number): CommunityAccount[] {
+ const rnd = seededRandom(42);
+ const accounts: CommunityAccount[] = [];
+ const used = new Set<string>();
+ let guard = 0;
+ while (accounts.length < count && guard < count * 6) {
+  guard++;
+  const name = ACCOUNT_FIRST_NAMES[Math.floor(rnd() * ACCOUNT_FIRST_NAMES.length)];
+  const topic = ACCOUNT_TOPIC_WORDS[Math.floor(rnd() * ACCOUNT_TOPIC_WORDS.length)];
+  const handle = `@${name}_${topic}`;
+  if (used.has(handle)) continue;
+  used.add(handle);
+  const role = BIO_ROLES[Math.floor(rnd() * BIO_ROLES.length)];
+  const bioTopic = BIO_TOPICS[Math.floor(rnd() * BIO_TOPICS.length)];
+  const sims = 1 + Math.floor(rnd() * 30);
+  const followers = 12 + Math.floor(rnd() * 480);
+  accounts.push({ handle, initials: (name[0] + topic[0]).toUpperCase(), bio: `${role} · ${bioTopic} · ${sims} simulations`, followers, sims });
+ }
+ return accounts;
+}
+
+function generatePosts(accounts: CommunityAccount[], count: number): CommunityPost[] {
+ const rnd = seededRandom(99);
+ const now = Date.now();
+ const posts: CommunityPost[] = [];
+ for (let i = 0; i < count; i++) {
+  const acc = accounts[Math.floor(rnd() * accounts.length)];
+  const topic = POST_TOPICS[Math.floor(rnd() * POST_TOPICS.length)];
+  const template = POST_TEMPLATES[Math.floor(rnd() * POST_TEMPLATES.length)];
+  const ageMs = Math.floor(rnd() * 1000 * 60 * 60 * 24 * 21);
+  posts.push({
+   id: 1_000_000 + i,
+   handle: acc.handle,
+   initials: acc.initials,
+   text: template.replace("{t}", topic),
+   time: now - ageMs,
+   likes: 2 + Math.floor(rnd() * 60),
+   comments: Math.floor(rnd() * 20),
+   simLink: rnd() < 0.15 ? `sim_${100 + i}` : "",
+  });
+ }
+ return posts;
+}
+
+function generateStories(accounts: CommunityAccount[], count: number): CommunityStory[] {
+ const rnd = seededRandom(7);
+ const stories: CommunityStory[] = [];
+ for (let i = 0; i < count; i++) {
+  const acc = accounts[Math.floor(rnd() * accounts.length)];
+  const caption = STORY_CAPTIONS[Math.floor(rnd() * STORY_CAPTIONS.length)];
+  stories.push({ id: `st-${i}`, handle: acc.handle, initials: acc.initials, color: colorForHandle(acc.handle), caption });
+ }
+ return stories;
+}
+
+const MOCK_ACCOUNTS_CURATED: CommunityAccount[] = [
+ { handle: "@claire_debat", initials: "CD", bio: "Simulatrice ONU · Sciences Po · 3 victoires", followers: 124, sims: 8 },
+ { handle: "@thomas_rheto", initials: "TR", bio: "Avocat plaidant · Débat général · POUR", followers: 87, sims: 12 },
+ { handle: "@debatrice_pro", initials: "DP", bio: "Championne d'éloquence 2024 · Procès", followers: 312, sims: 24 },
+ { handle: "@nexus_diplomate", initials: "ND", bio: "Délégué ONU France · Géopolitique", followers: 201, sims: 19 },
+ { handle: "@marie_contre", initials: "MC", bio: "Débat · CONTRE · Économie politique", followers: 56, sims: 5 },
+];
+const GENERATED_ACCOUNTS = generateAccounts(260);
+const ALL_COMMUNITY_ACCOUNTS = [...MOCK_ACCOUNTS_CURATED, ...GENERATED_ACCOUNTS];
+const GENERATED_POSTS = generatePosts(GENERATED_ACCOUNTS, 280);
+const ALL_SEED_POSTS = [...COMMUNITY_POSTS_SEED, ...GENERATED_POSTS].sort((a, b) => b.time - a.time);
+const GENERATED_STORIES = generateStories(GENERATED_ACCOUNTS, 60);
+
+function StoryViewer({stories,startIndex,onClose}:{stories:CommunityStory[];startIndex:number;onClose:()=>void}) {
+ const [idx,setIdx] = useState(startIndex);
+ const STORY_MS = 4500;
+ useEffect(()=>{
+  const t = setTimeout(()=>{
+   if (idx < stories.length-1) setIdx(i=>i+1);
+   else onClose();
+  }, STORY_MS);
+  return ()=>clearTimeout(t);
+ },[idx,stories.length,onClose]);
+ const s = stories[idx];
+ if (!s) return null;
+ return (
+  <div style={{position:"fixed" as const,inset:0,zIndex:300,background:"#000",display:"flex",flexDirection:"column" as const}}>
+   <div style={{position:"absolute" as const,inset:0,background:`linear-gradient(160deg,${s.color}cc,#000)`}}/>
+   <div style={{position:"relative" as const,display:"flex",gap:4,padding:"10px 10px 0",zIndex:2}}>
+    {stories.map((st,i)=>(
+     <div key={st.id} style={{flex:1,height:3,borderRadius:2,background:"#ffffff40",overflow:"hidden" as const}}>
+      {i<idx&&<div style={{width:"100%",height:"100%",background:"#fff"}}/>}
+      {i===idx&&<div style={{width:"100%",height:"100%",background:"#fff",animation:`storyProgress ${STORY_MS}ms linear`}}/>}
+     </div>
+    ))}
+   </div>
+   <div style={{position:"relative" as const,display:"flex",alignItems:"center",gap:9,padding:"12px 14px",zIndex:2}}>
+    <div style={{width:32,height:32,borderRadius:"50%",background:"#ffffff30",border:"1.5px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",flexShrink:0}}>{s.initials}</div>
+    <span style={{color:"#fff",fontSize:13,fontWeight:800,flex:1}}>{s.handle}</span>
+    <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="x" s={20} c="#fff"/></button>
+   </div>
+   <div style={{position:"relative" as const,flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 30px",zIndex:2}}>
+    <p style={{color:"#fff",fontSize:22,fontWeight:800,textAlign:"center" as const,lineHeight:1.4,textShadow:"0 2px 12px rgba(0,0,0,.4)"}}>{s.caption}</p>
+   </div>
+   <div style={{position:"absolute" as const,inset:0,display:"flex",zIndex:1}}>
+    <div style={{flex:1}} onClick={()=>setIdx(i=>Math.max(0,i-1))}/>
+    <div style={{flex:1}} onClick={()=>{if(idx<stories.length-1) setIdx(i=>i+1); else onClose();}}/>
+   </div>
+  </div>
+ );
+}
 
 function CommunityScreen({T}:{T:Theme}) {
  type CommTab = "feed"|"search";
  const [commTab,setCommTab] = useState<CommTab>("feed");
  const [posts,setPosts] = useState<CommunityPost[]>(()=>{
-  if(typeof window==="undefined") return COMMUNITY_POSTS_SEED;
-  try{const s=localStorage.getItem("nexus_community");return s?JSON.parse(s):COMMUNITY_POSTS_SEED;}catch{return COMMUNITY_POSTS_SEED;}
+  if(typeof window==="undefined") return ALL_SEED_POSTS;
+  try{const s=localStorage.getItem("nexus_community_v2");return s?JSON.parse(s):ALL_SEED_POSTS;}catch{return ALL_SEED_POSTS;}
  });
  const [liked,setLiked] = useState<Set<number>>(new Set());
  const [compose,setCompose] = useState("");
  const [showCompose,setShowCompose] = useState(false);
  const [search,setSearch] = useState("");
+ const [viewedStories,setViewedStories] = useState<Set<string>>(()=>{
+  if(typeof window==="undefined") return new Set();
+  try{const s=localStorage.getItem("nexus_stories_viewed");return s?new Set(JSON.parse(s)):new Set();}catch{return new Set();}
+ });
+ const [activeStoryIdx,setActiveStoryIdx] = useState<number|null>(null);
  const handle = typeof window!=="undefined"?localStorage.getItem("nexus_handle")||"Anonyme":"Anonyme";
  const initials = handle.replace("@","").slice(0,2).toUpperCase();
- const COLORS = ["#2B78F5","#7C3AED","#16A34A","#D97706","#E03535","#0891B2","#BE185D"];
- const colorFor = (s:string) => COLORS[s.charCodeAt(0)%COLORS.length];
+ const colorFor = colorForHandle;
+ const MOCK_ACCOUNTS = ALL_COMMUNITY_ACCOUNTS;
 
- const MOCK_ACCOUNTS = [
-  {handle:"@claire_debat",initials:"CD",bio:"Simulatrice ONU · Sciences Po · 3 victoires",followers:124,sims:8},
-  {handle:"@thomas_rheto",initials:"TR",bio:"Avocat plaidant · Débat général · POUR",followers:87,sims:12},
-  {handle:"@debatrice_pro",initials:"DP",bio:"Championne d'éloquence 2024 · Procès",followers:312,sims:24},
-  {handle:"@nexus_diplomate",initials:"ND",bio:"Délégué ONU France · Géopolitique",followers:201,sims:19},
-  {handle:"@marie_contre",initials:"MC",bio:"Débat · CONTRE · Économie politique",followers:56,sims:5},
- ];
+ const openStory = (i:number)=>{
+  haptic();
+  setActiveStoryIdx(i);
+  setViewedStories(s=>{
+   const ns = new Set(s);
+   ns.add(GENERATED_STORIES[i].id);
+   if(typeof window!=="undefined") localStorage.setItem("nexus_stories_viewed",JSON.stringify([...ns]));
+   return ns;
+  });
+ };
 
  const submitPost = ()=>{
   if(!compose.trim()) return;
   const np:CommunityPost = {id:Date.now(),handle:handle||"@vous",initials,text:compose.trim(),time:Date.now(),likes:0,comments:0,simLink:""};
   const updated = [np,...posts];
   setPosts(updated);
-  if(typeof window!=="undefined") localStorage.setItem("nexus_community",JSON.stringify(updated.slice(0,200)));
+  if(typeof window!=="undefined") localStorage.setItem("nexus_community_v2",JSON.stringify(updated.slice(0,500)));
   setCompose("");
   setShowCompose(false);
   haptic();
@@ -7100,6 +7271,21 @@ function CommunityScreen({T}:{T:Theme}) {
    </div>
 
    <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:12}}>
+    {/* Stories */}
+    {(commTab==="feed"||!search)&&(
+     <div style={{display:"flex",gap:13,overflowX:"auto" as const,paddingBottom:2}}>
+      {GENERATED_STORIES.map((st,i)=>(
+       <button key={st.id} onClick={()=>openStory(i)} style={{display:"flex",flexDirection:"column" as const,alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0,width:58}}>
+        <div style={{width:54,height:54,borderRadius:"50%",padding:2,background:viewedStories.has(st.id)?T.b1:`linear-gradient(135deg,${st.color},#7C3AED)`}}>
+         <div style={{width:"100%",height:"100%",borderRadius:"50%",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${T.bg}`}}>
+          <div style={{width:"100%",height:"100%",borderRadius:"50%",background:st.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:st.color}}>{st.initials}</div>
+         </div>
+        </div>
+        <span style={{fontSize:9,color:T.textD,fontWeight:600,whiteSpace:"nowrap" as const,overflow:"hidden",textOverflow:"ellipsis" as const,maxWidth:58}}>{st.handle.replace("@","")}</span>
+       </button>
+      ))}
+     </div>
+    )}
     {/* Compose box */}
     {showCompose&&(
      <div style={{background:T.card,border:`1px solid ${T.blueB}40`,borderRadius:14,padding:13,display:"flex",flexDirection:"column" as const,gap:10,animation:"fadeUp .2s ease"}}>
@@ -7169,6 +7355,7 @@ function CommunityScreen({T}:{T:Theme}) {
      </div>
     )}
    </div>
+   {activeStoryIdx!==null&&<StoryViewer stories={GENERATED_STORIES} startIndex={activeStoryIdx} onClose={()=>setActiveStoryIdx(null)}/>}
   </div>
  );
 }
@@ -11589,6 +11776,7 @@ export default function NexusApp() {
  @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
  @keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
  @keyframes wave{from{height:4px}to{height:24px}}
+ @keyframes storyProgress{from{width:0%}to{width:100%}}
  `}</style>
 
  {showAdminPin&&<AdminPinModal T={T} onClose={()=>setShowAdminPin(false)} onSuccess={()=>{setIsAdmin(true);setShowAdminPin(false);if(typeof window!=="undefined")localStorage.setItem("nexus_admin","1");}}/>}
