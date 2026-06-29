@@ -1743,45 +1743,16 @@ function timeFromTs(ts:number):string{
  if(diff<604800000) return `${Math.floor(diff/86400000)}j`;
  return new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
 }
-const TAG_IMG_POOLS: Record<string,string[]> = {
- "GÉOPOLITIQUE":["photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1551288049-bebda4e38f71","photo-1453928582365-b6ad33cbcf64","photo-1529107386315-e1a2ed48a620","photo-1540910419892-4a36d2c3266c"],
- "DIPLOMATIE":["photo-1569950044272-e4ef57e0e29b","photo-1541872703-74c5e44368f9","photo-1453928582365-b6ad33cbcf64","photo-1529107386315-e1a2ed48a620","photo-1540910419892-4a36d2c3266c"],
- "FRANCE":["photo-1540910419892-4a36d2c3266c","photo-1529107386315-e1a2ed48a620","photo-1551288049-bebda4e38f71","photo-1453928582365-b6ad33cbcf64","photo-1541872703-74c5e44368f9"],
- "EUROPE":["photo-1529107386315-e1a2ed48a620","photo-1569950044272-e4ef57e0e29b","photo-1540910419892-4a36d2c3266c","photo-1453928582365-b6ad33cbcf64","photo-1551288049-bebda4e38f71"],
- "CONFLITS":["photo-1582481725274-d63bdf929a90","photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1453928582365-b6ad33cbcf64"],
- "GUERRE":["photo-1582481725274-d63bdf929a90","photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1529107386315-e1a2ed48a620"],
- "UKRAINE":["photo-1582481725274-d63bdf929a90","photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1453928582365-b6ad33cbcf64"],
- "ONU":["photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1529107386315-e1a2ed48a620","photo-1453928582365-b6ad33cbcf64"],
- "UNESCO":["photo-1481627834876-b7833e8f5570","photo-1523050854058-8df90110c9f1","photo-1507003211169-0a1dd7228f2d","photo-1541872703-74c5e44368f9"],
- "UNICEF":["photo-1532375810709-75b1da00537c","photo-1523050854058-8df90110c9f1","photo-1481627834876-b7833e8f5570","photo-1569950044272-e4ef57e0e29b"],
- "POLITIQUE":["photo-1540910419892-4a36d2c3266c","photo-1529107386315-e1a2ed48a620","photo-1541872703-74c5e44368f9","photo-1453928582365-b6ad33cbcf64"],
- "ÉLECTIONS":["photo-1540910419892-4a36d2c3266c","photo-1529107386315-e1a2ed48a620","photo-1551288049-bebda4e38f71","photo-1569950044272-e4ef57e0e29b"],
- "ÉCONOMIE":["photo-1551288049-bebda4e38f71","photo-1529107386315-e1a2ed48a620","photo-1453928582365-b6ad33cbcf64","photo-1540910419892-4a36d2c3266c"],
- "ÉDUCATION":["photo-1523050854058-8df90110c9f1","photo-1481627834876-b7833e8f5570","photo-1507003211169-0a1dd7228f2d","photo-1532375810709-75b1da00537c"],
- "SCIENCE":["photo-1507003211169-0a1dd7228f2d","photo-1523050854058-8df90110c9f1","photo-1551288049-bebda4e38f71","photo-1481627834876-b7833e8f5570"],
- "SCIENCES & IA":["photo-1551288049-bebda4e38f71","photo-1507003211169-0a1dd7228f2d","photo-1529107386315-e1a2ed48a620","photo-1523050854058-8df90110c9f1","photo-1541697418-d4b63bda48a2"],
- "MÉDECINE":["photo-1532375810709-75b1da00537c","photo-1507003211169-0a1dd7228f2d","photo-1523050854058-8df90110c9f1","photo-1551288049-bebda4e38f71"],
- "ESPACE":["photo-1541697418-d4b63bda48a2","photo-1507003211169-0a1dd7228f2d","photo-1551288049-bebda4e38f71","photo-1523050854058-8df90110c9f1"],
- "CLIMAT":["photo-1504711434969-e33886168f5c","photo-1532375810709-75b1da00537c","photo-1481627834876-b7833e8f5570","photo-1507003211169-0a1dd7228f2d"],
- "AFRIQUE":["photo-1504711434969-e33886168f5c","photo-1532375810709-75b1da00537c","photo-1569950044272-e4ef57e0e29b","photo-1453928582365-b6ad33cbcf64"],
- "CULTURE":["photo-1481627834876-b7833e8f5570","photo-1523050854058-8df90110c9f1","photo-1507003211169-0a1dd7228f2d","photo-1532375810709-75b1da00537c"],
- "CULTURE & SPORT":["photo-1540910419892-4a36d2c3266c","photo-1529107386315-e1a2ed48a620","photo-1481627834876-b7833e8f5570","photo-1551288049-bebda4e38f71"],
- "HISTOIRE":["photo-1481627834876-b7833e8f5570","photo-1453928582365-b6ad33cbcf64","photo-1541872703-74c5e44368f9","photo-1507003211169-0a1dd7228f2d"],
- "DROITS & JUSTICE":["photo-1453928582365-b6ad33cbcf64","photo-1540910419892-4a36d2c3266c","photo-1529107386315-e1a2ed48a620","photo-1569950044272-e4ef57e0e29b"],
- "ASIE-PACIFIQUE":["photo-1529107386315-e1a2ed48a620","photo-1551288049-bebda4e38f71","photo-1541872703-74c5e44368f9","photo-1523050854058-8df90110c9f1"],
- "IA":["photo-1551288049-bebda4e38f71","photo-1507003211169-0a1dd7228f2d","photo-1529107386315-e1a2ed48a620","photo-1523050854058-8df90110c9f1"],
- "TECH":["photo-1551288049-bebda4e38f71","photo-1507003211169-0a1dd7228f2d","photo-1529107386315-e1a2ed48a620","photo-1541697418-d4b63bda48a2"],
- "IMMIGRATION":["photo-1532375810709-75b1da00537c","photo-1569950044272-e4ef57e0e29b","photo-1453928582365-b6ad33cbcf64","photo-1504711434969-e33886168f5c"],
- "GAZA":["photo-1582481725274-d63bdf929a90","photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1453928582365-b6ad33cbcf64"],
- "SAHEL":["photo-1504711434969-e33886168f5c","photo-1532375810709-75b1da00537c","photo-1569950044272-e4ef57e0e29b","photo-1541872703-74c5e44368f9"],
- "SPORT":["photo-1540910419892-4a36d2c3266c","photo-1529107386315-e1a2ed48a620","photo-1551288049-bebda4e38f71","photo-1453928582365-b6ad33cbcf64"],
-};
-const FALLBACK_POOL=["photo-1541872703-74c5e44368f9","photo-1569950044272-e4ef57e0e29b","photo-1551288049-bebda4e38f71","photo-1481627834876-b7833e8f5570","photo-1532375810709-75b1da00537c","photo-1523050854058-8df90110c9f1","photo-1504711434969-e33886168f5c","photo-1507003211169-0a1dd7228f2d"];
+// A curated per-category Unsplash pool was tried before this, but with only
+// ~13 verified photo IDs shared across 30 categories, unrelated articles kept
+// landing on the exact same image (e.g. the same ballot-box photo for a sports
+// story and a culture story). Lorem Picsum's seeded endpoint gives each
+// article its own distinct photo deterministically — same article always
+// gets the same photo (stable across refresh/cache), but two different
+// articles essentially never collide.
 function getFallbackImg(tag:string,seed:string=""):string{
- const tagU=tag.toUpperCase();
- const pool=TAG_IMG_POOLS[tagU]||TAG_IMG_POOLS[Object.keys(TAG_IMG_POOLS).find(k=>tagU.includes(k))||""]||FALLBACK_POOL;
- const hash=(seed+tag).split("").reduce((a,c)=>a+c.charCodeAt(0),0);
- return `https://images.unsplash.com/${pool[hash%pool.length]}?w=700&q=70`;
+ const s=encodeURIComponent((seed||tag||"nexus").slice(0,80));
+ return `https://picsum.photos/seed/${s}/700/400`;
 }
 function interleave<T extends {src:string}>(items:T[]):T[]{
  const groups=new Map<string,T[]>();
