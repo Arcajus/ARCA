@@ -7273,7 +7273,7 @@ function CommunityScreen({T}:{T:Theme}) {
    <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column" as const,gap:12}}>
     {/* Stories */}
     {(commTab==="feed"||!search)&&(
-     <div style={{display:"flex",gap:13,overflowX:"auto" as const,paddingBottom:2}}>
+     <div style={{display:"flex",gap:13,overflowX:"auto" as const,overflowY:"hidden" as const,paddingBottom:2,flexShrink:0,minHeight:80}}>
       {GENERATED_STORIES.map((st,i)=>(
        <button key={st.id} onClick={()=>openStory(i)} style={{display:"flex",flexDirection:"column" as const,alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0,width:58}}>
         <div style={{width:54,height:54,borderRadius:"50%",padding:2,background:viewedStories.has(st.id)?T.b1:`linear-gradient(135deg,${st.color},#7C3AED)`}}>
