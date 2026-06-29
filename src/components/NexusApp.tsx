@@ -11191,12 +11191,13 @@ type RoomFile = {id:number;name:string;docType:string;url:string;size:number;mim
 // attendant, mais la structure (taille, libellé, indicateur micro/caméra,
 // "à la parole"/"vous") est celle qui accueillera le vrai flux une fois le
 // service vidéo branché.
-function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half"}:{label:string;flag?:string;micOn?:boolean;camOn?:boolean;you?:boolean;speaking?:boolean;col:string;size?:"full"|"half"|"mini"}) {
+function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journalistBg}:{label:string;flag?:string;micOn?:boolean;camOn?:boolean;you?:boolean;speaking?:boolean;col:string;size?:"full"|"half"|"mini";journalistBg?:string}) {
  const dims = size==="mini"?{width:44,height:44,flexShrink:0}:size==="full"?{width:"100%",aspectRatio:"16/9"}:{flex:1,minWidth:0,aspectRatio:"4/3"};
  return(
   <div style={{position:"relative" as const,borderRadius:size==="mini"?6:8,overflow:"hidden",
-   background:"#0d1117",outline:speaking?`2px solid ${col}`:you?"2px solid #2563eb":"2px solid #ffffff20",outlineOffset:-2,
+   background:journalistBg||"#0d1117",outline:speaking?`2px solid ${col}`:you?"2px solid #2563eb":"2px solid #ffffff20",outlineOffset:-2,
    display:"flex",alignItems:"center",justifyContent:"center",boxShadow:speaking?`0 0 0 3px ${col}30`:"none",...dims}}>
+   {journalistBg&&<span style={{position:"absolute" as const,top:6,right:8,fontSize:size==="mini"?6:9,fontWeight:900,letterSpacing:1,color:"#ffffff90"}}>NEXUS</span>}
    <span style={{fontSize:size==="mini"?16:size==="full"?32:24,lineHeight:1,opacity:camOn?1:.55}}>{flag||"👤"}</span>
    {speaking&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,left:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:col,padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>À LA PAROLE</span>}
    {you&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,right:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:"#2563eb",padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>VOUS</span>}
@@ -11216,15 +11217,16 @@ const NEXUS_BACKDROPS=[
 ];
 
 // Choix du fond de plateau pour les types "plateau TV" — uniquement des
-// fonds maison Nexus, pas de fonds tiers.
-function BackdropPicker() {
- const [sel,setSel] = useState("jt");
+// fonds maison Nexus, pas de fonds tiers. Appliqué uniquement sur la tuile
+// du·de la journaliste/animateur·rice (voir RoomVideoStage), pas sur celle
+// des autres intervenants.
+function BackdropPicker({sel,onSelect}:{sel:string;onSelect:(id:string)=>void}) {
  return(
   <div style={{position:"relative" as const}}>
-   <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Fond de plateau — fonds Nexus uniquement</div>
+   <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Fond de plateau journaliste — fonds Nexus uniquement</div>
    <div style={{display:"flex",gap:5,overflowX:"auto" as const}}>
     {NEXUS_BACKDROPS.map(b=>(
-     <button key={b.id} onClick={()=>setSel(b.id)} style={{width:38,height:24,borderRadius:5,flexShrink:0,border:`2px solid ${sel===b.id?"#fff":"transparent"}`,background:b.grad,cursor:"pointer",padding:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+     <button key={b.id} onClick={()=>onSelect(b.id)} style={{width:38,height:24,borderRadius:5,flexShrink:0,border:`2px solid ${sel===b.id?"#fff":"transparent"}`,background:b.grad,cursor:"pointer",padding:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <span style={{fontSize:6,fontWeight:800,color:"#fff"}}>{b.label}</span>
      </button>
     ))}
@@ -11252,6 +11254,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
  const speakingP=participants.find(p=>p.micOn);
  const queueCount=Math.max(0,sim.participants-(permMembers.length+1)-participants.length);
  const others=participants.filter(p=>p!==speakingP);
+ const [backdrop,setBackdrop] = useState("jt");
 
  const speaker=myMicOn
   ?{label:myLabel,flag:undefined,you:true}
@@ -11260,6 +11263,11 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
    :isCourt?{label:sim.moderator?.split(" ")[0]||"Président·e",flag:undefined,you:false}
    :isChamber?{label:"Présidence",flag:"🌐",you:false}
    :{label:sim.moderator||"Animateur — Nexus",flag:undefined,you:false};
+
+ // Le·la journaliste/animateur·rice est à l'écran quand personne d'autre
+ // n'a la parole — c'est la seule tuile qui reçoit le fond Nexus.
+ const isJournalistOnScreen = isNews && !myMicOn && !speakingP;
+ const journalistBg = isJournalistOnScreen ? NEXUS_BACKDROPS.find(b=>b.id===backdrop)?.grad : undefined;
 
  return(
   <div style={{position:"relative" as const,flex:1,minHeight:0,overflowY:"auto" as const,overflowX:"hidden" as const,padding:"10px 12px 8px",
@@ -11288,7 +11296,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
     )}
    </div>
 
-   <VideoTile label={speaker.label} flag={speaker.flag} you={speaker.you} speaking col={col} size="full"/>
+   <VideoTile label={speaker.label} flag={speaker.flag} you={speaker.you} speaking col={col} size="full" journalistBg={journalistBg}/>
 
    {isChamber&&permMembers.length>0&&(
     <div style={{position:"relative" as const}}>
@@ -11340,7 +11348,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
     </div>
    )}
 
-   {isNews&&<BackdropPicker/>}
+   {isNews&&<BackdropPicker sel={backdrop} onSelect={setBackdrop}/>}
 
    <p style={{position:"relative" as const,color:"#cbd5e1",fontSize:10,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.moderator&&!isChamber&&!isCourt?`Modérateur : ${sim.moderator} · `:""}{sim.topic}</p>
   </div>
