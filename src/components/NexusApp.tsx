@@ -6770,9 +6770,9 @@ const STATIC_NEWS_FALLBACK: LiveArticle[] = [
 const NEWS_CATS = [
  {id:"all",label:"Tout",icon:"globe"},
  {id:"nexus",label:"Tout NEXUS",icon:"award"},
- {id:"geo",label:"NEXUS Géopolitique",icon:"globe",tags:["GÉOPOLITIQUE","DIPLOMATIE","CONFLITS","UKRAINE","GAZA","MOYEN-ORIENT","ONU","OTAN","USA","RUSSIE","CHINE","INDE","ASIE-PAC.","AM. LATINE","OCÉANIE","EUROPE","BALKANS","EU. EST","CAUCASE","ASIE CENT."]},
- {id:"france",label:"NEXUS Politique",icon:"flag",tags:["POLITIQUE","PARLEMENT","ÉLYSÉE","ÉLECTIONS","SOCIÉTÉ","JUSTICE","SÉCURITÉ","IMMIGRATION","ÉDUCATION","SANTÉ","ÉCONOMIE","EMPLOI","LOGEMENT","ÉNERGIE","TRANSPORT","LE MONDE","LE FIGARO","LIBÉRATION","20 MINUTES","L'EXPRESS","LE POINT","LES ÉCHOS"]},
- {id:"europe",label:"NEXUS Europe",icon:"map",tags:["EU. EST","BALKANS","CAUCASE","DROIT UE","JURIDICTIONS","OTAN","COURRIER INT.","DW"]},
+ {id:"geo",label:"NEXUS Géopolitique",icon:"globe",tags:["GÉOPOLITIQUE","DIPLOMATIE","CONFLITS","UKRAINE","GAZA","MOYEN-ORIENT","ONU","OTAN","USA","RUSSIE","CHINE","INDE","ASIE-PAC.","ASIE-PACIFIQUE","AM. LATINE","OCÉANIE","EUROPE","BALKANS","EU. EST","CAUCASE","ASIE CENT."]},
+ {id:"france",label:"NEXUS Politique",icon:"flag",tags:["FRANCE","POLITIQUE","PARLEMENT","ÉLYSÉE","ÉLECTIONS","SOCIÉTÉ","JUSTICE","SÉCURITÉ","IMMIGRATION","ÉDUCATION","SANTÉ","ÉCONOMIE","EMPLOI","LOGEMENT","ÉNERGIE","TRANSPORT","LE MONDE","LE FIGARO","LIBÉRATION","20 MINUTES","L'EXPRESS","LE POINT","LES ÉCHOS"]},
+ {id:"europe",label:"NEXUS Europe",icon:"map",tags:["EUROPE","EU. EST","BALKANS","CAUCASE","DROIT UE","JURIDICTIONS","OTAN","COURRIER INT.","DW"]},
  {id:"eco",label:"NEXUS Économie",icon:"bar",tags:["ÉCONOMIE","ÉCO MONDE","MARCHÉS","COMMERCE","INFLATION","CRYPTO","FMI","OMC","G7/G20","LES ÉCHOS","EMPLOI"]},
  {id:"sciences",label:"NEXUS Sciences & IA",icon:"zap",tags:["SCIENCE","MÉDECINE","ESPACE","IA","TECH","CYBER","SPATIAL","OMS","ARCHÉO"]},
  {id:"climat",label:"NEXUS Climat",icon:"globe",tags:["CLIMAT","BIODIVERSITÉ","ÉNERGIE MONDE","EAU","ALIMENTATION","DÉVELOPPEMENT","RÉFUGIÉS"]},
@@ -6836,7 +6836,8 @@ function NewsScreen({T,onNewPosts}:{T:Theme;onNewPosts:(n:number)=>void}) {
   if(q&&!a.title.toLowerCase().includes(q)&&!a.src.toLowerCase().includes(q)) return false;
   if(cat==="nexus") return !!a.isNexus;
   if(cat!=="all"&&catDef?.tags){
-   const tagMatch = catDef.tags.some(t=>a.tag.includes(t)||a.src.includes(t));
+   const tagU=a.tag.toUpperCase(),srcU=a.src.toUpperCase();
+   const tagMatch = catDef.tags.some(t=>tagU.includes(t)||srcU.includes(t));
    if(!tagMatch) return false;
   }
   return true;
