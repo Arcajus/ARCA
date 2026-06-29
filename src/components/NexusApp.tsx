@@ -11191,13 +11191,19 @@ type RoomFile = {id:number;name:string;docType:string;url:string;size:number;mim
 // attendant, mais la structure (taille, libellé, indicateur micro/caméra,
 // "à la parole"/"vous") est celle qui accueillera le vrai flux une fois le
 // service vidéo branché.
-function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journalistBg}:{label:string;flag?:string;micOn?:boolean;camOn?:boolean;you?:boolean;speaking?:boolean;col:string;size?:"full"|"half"|"mini";journalistBg?:string}) {
+function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journalistBg}:{label:string;flag?:string;micOn?:boolean;camOn?:boolean;you?:boolean;speaking?:boolean;col:string;size?:"full"|"half"|"mini";journalistBg?:{grad:string;emblem:string}}) {
  const dims = size==="mini"?{width:44,height:44,flexShrink:0}:size==="full"?{width:"100%",aspectRatio:"16/9"}:{flex:1,minWidth:0,aspectRatio:"4/3"};
  return(
   <div style={{position:"relative" as const,borderRadius:size==="mini"?6:8,overflow:"hidden",
-   background:journalistBg||"#0d1117",outline:speaking?`2px solid ${col}`:you?"2px solid #2563eb":"2px solid #ffffff20",outlineOffset:-2,
+   background:journalistBg?journalistBg.grad:"#0d1117",outline:speaking?`2px solid ${col}`:you?"2px solid #2563eb":"2px solid #ffffff20",outlineOffset:-2,
    display:"flex",alignItems:"center",justifyContent:"center",boxShadow:speaking?`0 0 0 3px ${col}30`:"none",...dims}}>
-   {journalistBg&&<span style={{position:"absolute" as const,top:6,right:8,fontSize:size==="mini"?6:9,fontWeight:900,letterSpacing:1,color:"#ffffff90"}}>NEXUS</span>}
+   {journalistBg&&(
+    <>
+     <span style={{position:"absolute" as const,left:size==="mini"?-6:-10,bottom:size==="mini"?-10:-16,fontSize:size==="mini"?40:size==="full"?108:72,fontWeight:900,color:"#ffffff17",lineHeight:1,fontFamily:"'Inter',system-ui,sans-serif",letterSpacing:-2}}>{journalistBg.emblem}</span>
+     <span style={{position:"absolute" as const,top:6,right:8,fontSize:size==="mini"?6:9,fontWeight:900,letterSpacing:1,color:"#ffffff90"}}>NEXUS</span>
+     <div style={{position:"absolute" as const,left:0,right:0,bottom:0,height:size==="mini"?7:size==="full"?22:14,background:"linear-gradient(180deg,#ffffff35,#ffffff05)",borderTop:"1px solid #ffffff50"}}/>
+    </>
+   )}
    <span style={{fontSize:size==="mini"?16:size==="full"?32:24,lineHeight:1,opacity:camOn?1:.55}}>{flag||"👤"}</span>
    {speaking&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,left:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:col,padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>À LA PAROLE</span>}
    {you&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,right:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:"#2563eb",padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>VOUS</span>}
@@ -11208,12 +11214,15 @@ function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journali
  );
 }
 
+// Habillage inspiré des plateaux JT (fond ciel/silhouette urbaine + pupitre
+// vitré + emblème géant translucide) mais 100% maison Nexus — pas de photo
+// tierce, juste des dégradés CSS + l'emblème "N".
 const NEXUS_BACKDROPS=[
- {id:"jt",label:"JT Nexus",grad:"linear-gradient(135deg,#0a0e1a,#111b30,#E0353525)"},
- {id:"vert",label:"Vert",grad:"linear-gradient(135deg,#0a1c1a,#0e3030,#16A34A25)"},
- {id:"violet",label:"Violet",grad:"linear-gradient(135deg,#1a0e22,#2a1640,#7C3AED25)"},
- {id:"studio",label:"Studio",grad:"linear-gradient(135deg,#1a1a0a,#332b10,#C2410C25)"},
- {id:"nuit",label:"Nuit",grad:"linear-gradient(135deg,#0a1422,#102a40,#0E4D8F40)"},
+ {id:"jt",label:"JT Nexus",grad:"linear-gradient(180deg,#5a8fc7 0%,#2c5d8f 45%,#0f2c4a 80%,#081826 100%)",emblem:"N"},
+ {id:"vert",label:"Vert",grad:"linear-gradient(180deg,#2f9d80 0%,#176b58 45%,#0c3a30 80%,#081f1a 100%)",emblem:"N"},
+ {id:"violet",label:"Violet",grad:"linear-gradient(180deg,#7a5fd1 0%,#4a2f8a 45%,#241650 80%,#150a30 100%)",emblem:"N"},
+ {id:"studio",label:"Studio",grad:"linear-gradient(180deg,#d18a3f 0%,#a8651c 45%,#52340e 80%,#2a1a08 100%)",emblem:"N"},
+ {id:"nuit",label:"Nuit",grad:"linear-gradient(180deg,#1c5fa8 0%,#0E4D8F 45%,#0a2440 80%,#061222 100%)",emblem:"N"},
 ];
 
 // Choix du fond de plateau pour les types "plateau TV" — uniquement des
@@ -11267,7 +11276,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
  // Le·la journaliste/animateur·rice est à l'écran quand personne d'autre
  // n'a la parole — c'est la seule tuile qui reçoit le fond Nexus.
  const isJournalistOnScreen = isNews && !myMicOn && !speakingP;
- const journalistBg = isJournalistOnScreen ? NEXUS_BACKDROPS.find(b=>b.id===backdrop)?.grad : undefined;
+ const journalistBg = isJournalistOnScreen ? NEXUS_BACKDROPS.find(b=>b.id===backdrop) : undefined;
 
  return(
   <div style={{position:"relative" as const,flex:1,minHeight:0,overflowY:"auto" as const,overflowX:"hidden" as const,padding:"10px 12px 8px",
