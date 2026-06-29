@@ -11064,7 +11064,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
    :{label:sim.moderator||"Animateur — Nexus",flag:undefined,you:false};
 
  return(
-  <div style={{position:"relative" as const,flexShrink:0,maxHeight:"42vh",overflowY:"auto" as const,overflowX:"hidden" as const,padding:"10px 12px 8px",
+  <div style={{position:"relative" as const,flex:1,minHeight:0,overflowY:"auto" as const,overflowX:"hidden" as const,padding:"10px 12px 8px",
    display:"flex",flexDirection:"column" as const,gap:6,
    background:isNews?`linear-gradient(135deg,#0a0e1a 0%,#111b30 60%,${col}25 100%)`
     :isCourt?"linear-gradient(180deg,#2b1d12 0%,#4a3420 100%)"
@@ -11267,6 +11267,7 @@ function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [micOn,setMicOn] = useState(false);
  const [camOn,setCamOn] = useState(false);
  const [confirmLeave,setConfirmLeave] = useState(false);
+ const [showPanel,setShowPanel] = useState(false);
 
  useEffect(()=>{
   if(!user) return;
@@ -11296,11 +11297,24 @@ function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  return(
   <>
    {confirmLeave&&<LeaveConfirmModal T={T} label={`${SIM_TYPE_LABELS[sim.type]==="ONU"?"la session ONU":SIM_TYPE_LABELS[sim.type]==="Procès"?"le procès":"la session"}`} onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
-   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
+   <div style={{display:"flex",flexDirection:"column" as const,height:"100%",position:"relative" as const}}>
     <RoomVideoStage sim={sim} participants={participants} myCamOn={camOn} myMicOn={micOn} myLabel={user?.handle||"Vous"} onBack={()=>setConfirmLeave(true)}/>
-    <div style={{flex:1,minHeight:0,overflow:"hidden",position:"relative" as const}}>
-     <RoomShellInner T={T} sim={sim} onBack={onBack}/>
-    </div>
+    <button onClick={()=>setShowPanel(true)} style={{position:"absolute" as const,left:16,bottom:90,zIndex:140,display:"flex",alignItems:"center",gap:7,padding:"10px 14px",borderRadius:24,border:"none",background:T.card,color:T.text,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px rgba(0,0,0,.25)"}}>
+     <Ic n="brief" s={15} c={T.text}/>Procédure
+    </button>
+    {showPanel&&(
+     <div style={{position:"fixed" as const,inset:0,zIndex:160,background:"#00000070",display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setShowPanel(false)}>
+      <div onClick={e=>e.stopPropagation()} style={{background:T.bg,width:"100%",maxWidth:480,height:"82vh",borderRadius:"18px 18px 0 0",display:"flex",flexDirection:"column" as const,overflow:"hidden"}}>
+       <div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 0 4px",flexShrink:0,position:"relative" as const}}>
+        <div style={{width:38,height:4,borderRadius:2,background:T.b1}}/>
+        <button onClick={()=>setShowPanel(false)} style={{position:"absolute" as const,right:12,top:4,background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="x" s={18} c={T.muted}/></button>
+       </div>
+       <div style={{flex:1,minHeight:0,overflow:"hidden",position:"relative" as const}}>
+        <RoomShellInner T={T} sim={sim} onBack={onBack}/>
+       </div>
+      </div>
+     </div>
+    )}
    </div>
    <RoomCallPanel T={T} sim={sim} user={user} participants={participants} micOn={micOn} camOn={camOn} setMicOn={setMicOn} setCamOn={setCamOn}/>
   </>
