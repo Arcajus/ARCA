@@ -7771,39 +7771,8 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
  // ── CHAMBER SVG VIEW ────────────────────────────────
  const ChamberView=()=>{
-  const W=380,H=200,CX=W/2,CY=93,RX=148,RY=76;
-  const countries=ALL_UN_COUNTRIES.slice(0,Math.min(sim.participants,20));
-  const N=countries.length,presIdx=Math.floor(N/2);
-  const activeSpeaker=hasFloor?myCountry?.country:msgs.filter(m=>m.hasFloor&&!m.system).slice(-1)[0]?.user;
-  const seats=countries.map((c,i)=>{const ang=(180+i*180/Math.max(N-1,1))*Math.PI/180;return{...c,x:CX+RX*Math.cos(ang),y:CY+RY*Math.sin(ang),isPres:i===presIdx};});
   return(
    <div>
-    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}}>
-     <rect width={W} height={H} rx="0" fill={T.bg2}/>
-     <ellipse cx={CX} cy={CY+10} rx={168} ry={103} fill={T.mode==="dark"?"#0d1d35":"#dde6f5"}/>
-     <ellipse cx={CX} cy={CY} rx={92} ry={51} fill={T.mode==="dark"?"#0a1e3d":"#1a3a6e"} stroke={acCol+"60"} strokeWidth="2"/>
-     <ellipse cx={CX} cy={CY} rx={85} ry={44} fill={T.mode==="dark"?"#071429":"#0f2855"}/>
-     <ellipse cx={CX} cy={CY} rx={92} ry={51} fill="none" stroke={acCol+"25"} strokeWidth="5" strokeDasharray="4 6"/>
-     <text x={CX} y={CY+7} textAnchor="middle" fontSize="20" fill={acCol} opacity="0.3">🌐</text>
-     {seats.map((s,i)=>{
-      const isMe=s.id===myCountry?.id,isSpeaking=s.country===activeSpeaker,isRaised=handRaised&&s.id===myCountry?.id;
-      const inGSL=gsl.find(g=>g.country===s.country&&!g.done);
-      const R=s.isPres?20:isMe?19:17;
-      const fill=s.isPres?"#8B691428":isMe?acCol+"30":isSpeaking?"#16A34A28":T.card+"70";
-      const stroke=s.isPres?"#D97706":isMe?acCol:isSpeaking?"#16A34A":isRaised?"#D97706":T.b2;
-      return(
-       <g key={i}>
-        {isSpeaking&&<><circle cx={s.x} cy={s.y} r={R+9} fill="none" stroke="#16A34A" strokeWidth="1" opacity="0.2"/><circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke="#16A34A" strokeWidth="1.5" opacity="0.5"/></>}
-        {isMe&&!isSpeaking&&<circle cx={s.x} cy={s.y} r={R+5} fill="none" stroke={acCol} strokeWidth="1" opacity="0.4"/>}
-        {inGSL&&!isSpeaking&&!isMe&&<circle cx={s.x} cy={s.y} r={R+3} fill="none" stroke="#D97706" strokeWidth="1" opacity="0.5"/>}
-        <circle cx={s.x} cy={s.y} r={R} fill={fill} stroke={stroke} strokeWidth={isMe||isSpeaking?2.5:1.5}/>
-        <text x={s.x} y={s.y+5} textAnchor="middle" fontSize={s.isPres?16:13}>{s.isPres?"🌐":s.flag}</text>
-        {isRaised&&<text x={s.x+R} y={s.y-R} fontSize="9">✋</text>}
-        {(isMe||s.isPres)&&<text x={s.x} y={s.y+R+11} textAnchor="middle" fontSize="7" fill={s.isPres&&!isMe?"#D97706":acCol} fontWeight="bold">{s.isPres&&!isMe?"PRÉS.":s.country.slice(0,8).toUpperCase()}</text>}
-       </g>
-      );
-     })}
-    </svg>
 
     {/* CAUCUS BANNER */}
     {caucus&&(
