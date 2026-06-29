@@ -11199,7 +11199,9 @@ function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journali
    display:"flex",alignItems:"center",justifyContent:"center",boxShadow:speaking?`0 0 0 3px ${col}30`:"none",...dims}}>
    {journalistBg&&(
     <>
-     <span style={{position:"absolute" as const,left:size==="mini"?-6:-10,bottom:size==="mini"?-10:-16,fontSize:size==="mini"?40:size==="full"?108:72,fontWeight:900,color:"#ffffff17",lineHeight:1,fontFamily:"'Inter',system-ui,sans-serif",letterSpacing:-2}}>{journalistBg.emblem}</span>
+     <div style={{position:"absolute" as const,inset:0,backgroundImage:"radial-gradient(circle,#ffffff45 1px,transparent 1px)",backgroundSize:"7px 7px",opacity:.3}}/>
+     <div style={{position:"absolute" as const,left:"-25%",right:"-25%",top:"36%",height:size==="mini"?3:size==="full"?9:6,background:"linear-gradient(90deg,transparent,#7dd3fc99,#ffffffd0,#7dd3fc99,transparent)",transform:"rotate(-3deg)",filter:"blur(1.5px)"}}/>
+     <span style={{position:"absolute" as const,left:size==="mini"?-6:-10,bottom:size==="mini"?-10:-16,fontSize:size==="mini"?40:size==="full"?108:72,fontWeight:900,color:"#ffffff14",lineHeight:1,fontFamily:"'Inter',system-ui,sans-serif",letterSpacing:-2}}>{journalistBg.emblem}</span>
      <span style={{position:"absolute" as const,top:6,right:8,fontSize:size==="mini"?6:9,fontWeight:900,letterSpacing:1,color:"#ffffff90"}}>NEXUS</span>
      <div style={{position:"absolute" as const,left:0,right:0,bottom:0,height:size==="mini"?7:size==="full"?22:14,background:"linear-gradient(180deg,#ffffff35,#ffffff05)",borderTop:"1px solid #ffffff50"}}/>
     </>
@@ -11223,6 +11225,7 @@ const NEXUS_BACKDROPS=[
  {id:"violet",label:"Violet",grad:"linear-gradient(180deg,#7a5fd1 0%,#4a2f8a 45%,#241650 80%,#150a30 100%)",emblem:"N"},
  {id:"studio",label:"Studio",grad:"linear-gradient(180deg,#d18a3f 0%,#a8651c 45%,#52340e 80%,#2a1a08 100%)",emblem:"N"},
  {id:"nuit",label:"Nuit",grad:"linear-gradient(180deg,#1c5fa8 0%,#0E4D8F 45%,#0a2440 80%,#061222 100%)",emblem:"N"},
+ {id:"lejournal",label:"Le Journal",grad:"linear-gradient(180deg,#0a1830 0%,#0d2547 45%,#081320 80%,#04090f 100%)",emblem:"N"},
 ];
 
 // Choix du fond de plateau pour les types "plateau TV" — uniquement des
