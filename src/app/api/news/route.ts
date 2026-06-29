@@ -33,9 +33,7 @@ function parseRSS(xml: string, feed: typeof FEEDS[0]): {id:string;title:string;l
     const link  = (item.match(/<link>([\s\S]*?)<\/link>/)?.[1] ?? item.match(/<link\s*\/>([\s\S]*?)<\/link>/)?.[1] ?? "").trim();
     const guid  = (item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/)?.[1] ?? link).trim();
     const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] ?? "";
-    const imgUrl  = item.match(/(?:url|src)="([^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/)?.[1]
-      ?? item.match(/(?:url|src)="(https:\/\/[^"]*(?:googleusercontent|ggpht|gstatic)[^"]*)"/)?.[1]
-      ?? null;
+    const imgUrl  = item.match(/(?:url|src)="([^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/)?.[1] ?? null;
     const src = item.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1]?.trim() || feed.tag;
     if (!title || !link) return null;
     return { id: `gn-${guid}`, title, link, pubDate, imgUrl, tag: feed.tag, tagC: feed.tagC, src };
@@ -46,12 +44,22 @@ function parseRSS(xml: string, feed: typeof FEEDS[0]): {id:string;title:string;l
 // article shared the same handful of generic category stock photos. Fetch the
 // real article page and pull its og:image instead — capped + time-boxed so a
 // slow or bot-blocking source can't blow the function's duration budget.
+//
+// Google News RSS <link> values are Google redirect URLs, not the publisher's
+// real URL. For EU traffic that redirect can land on Google's own consent/
+// interstitial page instead of the article — whose og:image is Google's own
+// logo, which is worse than the category fallback. The CONSENT cookie below
+// is the standard bypass for that wall; as a safety net we also reject any
+// resulting image that's still hosted on a Google domain.
 async function fetchOgImage(url: string, timeoutMs = 3000): Promise<string | null> {
   try {
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), timeoutMs);
     const r = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)",
+        "Cookie": "CONSENT=YES+1",
+      },
       signal: controller.signal,
     });
     clearTimeout(t);
@@ -60,7 +68,9 @@ async function fetchOgImage(url: string, timeoutMs = 3000): Promise<string | nul
     const og = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
       ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
       ?? html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
-    return og?.[1] ?? null;
+    const imgUrl = og?.[1] ?? null;
+    if (imgUrl && /(?:^https?:\/\/)?(?:[a-z0-9-]+\.)*(?:google|gstatic|googleusercontent|ggpht)\.[a-z]+/i.test(imgUrl)) return null;
+    return imgUrl;
   } catch {
     return null;
   }
