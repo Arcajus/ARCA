@@ -11263,6 +11263,13 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
  const isChamber=sim.type==="onu"||sim.type==="assemblee"||sim.type==="conseil";
  const permMembers=isChamber&&sim.type!=="assemblee"?UN_DEL.filter(c=>c.perm):[];
  const courtRoles=isCourt&&sim.trialType?TRIAL_ROLES_BY_TYPE[sim.trialType].filter(r=>r!=="president"&&r!=="public"):[];
+ // Chaque partie qui s'affronte garde sa place habituelle dans la salle :
+ // accusation/demande d'un côté, défense de l'autre, témoins/jurés à part.
+ const accusationRoles=courtRoles.filter(r=>r==="procureur"||r==="avocat_gen"||r==="partie_civile"||r==="avocat_pc"||r==="demandeur");
+ const defenseRoles=courtRoles.filter(r=>r==="prevenu"||r==="avocat_def"||r==="defendeur");
+ const neutralRoles=courtRoles.filter(r=>r==="temoin"||r==="jure"||r==="assesseur");
+ const accusationLabel=sim.trialType==="civil"?"Partie demanderesse":"Accusation";
+ const defenseLabel=sim.trialType==="civil"?"Partie défenderesse":"Défense";
  const speakingP=participants.find(p=>p.micOn);
  const queueCount=Math.max(0,sim.participants-(permMembers.length+1)-participants.length);
  const others=participants.filter(p=>p!==speakingP);
@@ -11335,16 +11342,47 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
    </div>
 
    {isCourt&&(courtRoles.length>0||others.length>0)&&(
-    <div style={{position:"relative" as const}}>
-     <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Autres parties — vidéo en miniature</div>
-     <div style={{display:"flex",gap:5,overflowX:"auto" as const}}>
-      {courtRoles.map(r=>(
-       <VideoTile key={r} label={getRoleLabel(r,sim.trialType!)} col={TRIAL_ROLE_COLORS[r]} size="mini"/>
-      ))}
-      {others.map(p=>(
-       <VideoTile key={p.handle} label={p.handle} micOn={p.micOn} camOn={p.camOn} col={col} size="mini"/>
-      ))}
-     </div>
+    <div style={{position:"relative" as const,display:"flex",flexDirection:"column" as const,gap:5}}>
+     {(accusationRoles.length>0||defenseRoles.length>0)&&(
+      <div style={{display:"flex",gap:8}}>
+       {accusationRoles.length>0&&(
+        <div style={{flex:1,minWidth:0}}>
+         <div style={{color:"#E03535",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"2px 0 3px 1px"}}>{accusationLabel}</div>
+         <div style={{display:"flex",gap:5,overflowX:"auto" as const}}>
+          {accusationRoles.map(r=>(
+           <VideoTile key={r} label={getRoleLabel(r,sim.trialType!)} col={TRIAL_ROLE_COLORS[r]} size="mini"/>
+          ))}
+         </div>
+        </div>
+       )}
+       {accusationRoles.length>0&&defenseRoles.length>0&&(
+        <div style={{width:1,alignSelf:"stretch",background:"#ffffff25",margin:"14px 0 0"}}/>
+       )}
+       {defenseRoles.length>0&&(
+        <div style={{flex:1,minWidth:0}}>
+         <div style={{color:"#1A5FD4",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"2px 0 3px 1px"}}>{defenseLabel}</div>
+         <div style={{display:"flex",gap:5,overflowX:"auto" as const}}>
+          {defenseRoles.map(r=>(
+           <VideoTile key={r} label={getRoleLabel(r,sim.trialType!)} col={TRIAL_ROLE_COLORS[r]} size="mini"/>
+          ))}
+         </div>
+        </div>
+       )}
+      </div>
+     )}
+     {(neutralRoles.length>0||others.length>0)&&(
+      <div>
+       <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"2px 0 3px 1px"}}>Témoins & jurés</div>
+       <div style={{display:"flex",gap:5,overflowX:"auto" as const}}>
+        {neutralRoles.map(r=>(
+         <VideoTile key={r} label={getRoleLabel(r,sim.trialType!)} col={TRIAL_ROLE_COLORS[r]} size="mini"/>
+        ))}
+        {others.map(p=>(
+         <VideoTile key={p.handle} label={p.handle} micOn={p.micOn} camOn={p.camOn} col={col} size="mini"/>
+        ))}
+       </div>
+      </div>
+     )}
     </div>
    )}
 
