@@ -6319,76 +6319,6 @@ function InstallBanner({T,onDismiss}:{T:Theme;onDismiss:()=>void}) {
 }
 
 // ONBOARDING
-function OnboardingScreen({T,onDone}:{T:Theme;onDone:(goal:string)=>void}){
- const [step,setStep]=useState(1);
- const [goal,setGoal]=useState("");
-
- const goals=[
-  {id:"sciencespo",icon:"shield",label:"Sciences Po / IEP",desc:"Grand oral, entretien, concours"},
-  {id:"barreau",icon:"scale",label:"Barreau & Droit",desc:"Plaidoirie, concours oratoires"},
-  {id:"entreprise",icon:"brief",label:"Entreprise",desc:"Présentations, réunions, pitchs"},
-  {id:"eloquence",icon:"mic",label:"Éloquence générale",desc:"Prise de parole, confiance en soi"},
-  {id:"concours",icon:"award",label:"Compétitions oratoires",desc:"Débats, joutes, championnats"},
- ];
- const levels=[
-  {id:"debutant",label:"Débutant",desc:"Je débute l'entraînement oral"},
-  {id:"intermediaire",label:"Intermédiaire",desc:"J'ai déjà de l'expérience"},
-  {id:"avance",label:"Avancé",desc:"Je prépare un concours précis"},
- ];
- const goalRecs:Record<string,string>={sciencespo:"Grand oral Sciences Po",barreau:"Plaidoirie — Exercice de barreau",entreprise:"Discours de présentation",eloquence:"Le Pont Mirabeau",concours:"Argumenter en 3 points"};
-
- const finish=(lvl:string)=>{
-  if(typeof window!=="undefined"){localStorage.setItem("nexus_goal",goal);localStorage.setItem("nexus_level",lvl);localStorage.setItem("nexus_onboarded","1");}
-  onDone(goal);
- };
-
- if(step===1) return(
-  <div style={{display:"flex",flexDirection:"column",height:"100%",padding:"40px 24px 24px",background:T.bg,animation:"fadeIn .3s ease"}}>
-   <div style={{marginBottom:32}}>
-    <p style={{color:T.blueB,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>NEXUS · Bienvenue</p>
-    <h1 style={{color:T.text,fontSize:26,fontWeight:900,lineHeight:1.2,marginBottom:8}}>Quel est ton objectif ?</h1>
-    <p style={{color:T.muted,fontSize:14}}>On va personnaliser ton parcours.</p>
-   </div>
-   <div style={{display:"flex",flexDirection:"column",gap:10,flex:1,overflowY:"auto"}}>
-    {goals.map(g=>(
-     <button key={g.id} onClick={()=>{haptic();setGoal(g.id);setStep(2);}} style={{padding:"16px 18px",borderRadius:16,border:`1.5px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,transition:"all .15s"}}
-      onMouseEnter={e=>e.currentTarget.style.borderColor=T.blueB} onMouseLeave={e=>e.currentTarget.style.borderColor=T.b1}>
-      <div style={{width:46,height:46,borderRadius:12,background:`${T.blueB}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={g.icon} s={22} c={T.blueB}/></div>
-      <div><p style={{color:T.text,fontWeight:700,fontSize:15}}>{g.label}</p><p style={{color:T.muted,fontSize:12,marginTop:2}}>{g.desc}</p></div>
-      <Ic n="chevR" s={18} c={T.muted}/>
-     </button>
-    ))}
-   </div>
-  </div>
- );
-
- if(step===2) return(
-  <div style={{display:"flex",flexDirection:"column",height:"100%",padding:"40px 24px 24px",background:T.bg,animation:"fadeIn .3s ease"}}>
-   <button onClick={()=>setStep(1)} style={{background:"none",border:"none",cursor:"pointer",padding:0,marginBottom:24,alignSelf:"flex-start"}}><Ic n="chevL" s={22} c={T.text}/></button>
-   <div style={{marginBottom:32}}>
-    <p style={{color:T.blueB,fontSize:11,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>ÉTAPE 2 / 2</p>
-    <h1 style={{color:T.text,fontSize:26,fontWeight:900,lineHeight:1.2,marginBottom:8}}>Ton niveau actuel ?</h1>
-    <p style={{color:T.muted,fontSize:14}}>Pour calibrer tes premiers exercices.</p>
-   </div>
-   <div style={{display:"flex",flexDirection:"column",gap:12}}>
-    {levels.map(l=>(
-     <button key={l.id} onClick={()=>{haptic();finish(l.id);}} style={{padding:"20px 20px",borderRadius:16,border:`1.5px solid ${T.b1}`,background:T.card,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all .15s"}}
-      onMouseEnter={e=>e.currentTarget.style.borderColor=T.blueB} onMouseLeave={e=>e.currentTarget.style.borderColor=T.b1}>
-      <div><p style={{color:T.text,fontWeight:800,fontSize:16}}>{l.label}</p><p style={{color:T.muted,fontSize:12,marginTop:3}}>{l.desc}</p></div>
-      <Ic n="chevR" s={18} c={T.muted}/>
-     </button>
-    ))}
-   </div>
-   <div style={{marginTop:"auto",paddingTop:24,background:`${T.blueB}10`,border:`1px solid ${T.blueB}20`,borderRadius:14,padding:"14px 16px"}}>
-    <p style={{color:T.blueB,fontWeight:700,fontSize:13}}>Premier exercice recommandé</p>
-    <p style={{color:T.text,fontWeight:800,fontSize:14,marginTop:4}}>{goalRecs[goal]||"Discours de présentation"}</p>
-    <p style={{color:T.muted,fontSize:11,marginTop:2}}>Éloquence → Pratique</p>
-   </div>
-  </div>
- );
-
- return null;
-}
 
 // PROGRESS DASHBOARD
 function ProgressScreen({T,onBack}:{T:Theme;onBack:()=>void}){
@@ -11743,7 +11673,6 @@ export default function NexusApp() {
  const T = dark ? DARK : LIGHT;
  const [tab,setTab] = useState<"news"|"community"|"opportunities"|"messages"|"simulations">("news");
  const [showPremium,setShowPremium] = useState(false);
- const [showOnboarding,setShowOnboarding] = useState(false);
  const [showProgress,setShowProgress] = useState(false);
  const [showMenu,setShowMenu] = useState(false);
  const [showProfile,setShowProfile] = useState(false);
@@ -11769,7 +11698,6 @@ export default function NexusApp() {
  useEffect(()=>{
  if(typeof window==="undefined") return;
  setStreak(updateStreak());
- if(localStorage.getItem("nexus_onboarded")!=="1") setShowOnboarding(true);
  // Initialiser paiements in-app et notifications push côté natif
  initBilling();
  initPush();
@@ -11790,8 +11718,7 @@ export default function NexusApp() {
 
  const openSimulation = () => {
   haptic();
-  if(typeof window!=="undefined"&&localStorage.getItem("nexus_onboarded")!=="1") setShowOnboarding(true);
-  switchTab("simulations");
+   switchTab("simulations");
  };
 
  const switchTab = (id: typeof tab) => {
@@ -11809,9 +11736,9 @@ export default function NexusApp() {
 
  // Bouton retour matériel Android (Capacitor) — sans ça, le bouton retour ferme
  // l'app instantanément peu importe l'écran affiché.
- const backStateRef = useRef({showAdminPin,showPremium,showProfile,showNotifPanel,showMenu,showAgenda,showProgress,showOnboarding,tab,switchTab});
+ const backStateRef = useRef({showAdminPin,showPremium,showProfile,showNotifPanel,showMenu,showAgenda,showProgress,tab,switchTab});
  useEffect(()=>{
-  backStateRef.current = {showAdminPin,showPremium,showProfile,showNotifPanel,showMenu,showAgenda,showProgress,showOnboarding,tab,switchTab};
+  backStateRef.current = {showAdminPin,showPremium,showProfile,showNotifPanel,showMenu,showAgenda,showProgress,tab,switchTab};
  });
 
  useEffect(()=>{
@@ -11825,7 +11752,6 @@ export default function NexusApp() {
    if(s.showMenu){setShowMenu(false);return;}
    if(s.showAgenda){setShowAgenda(false);return;}
    if(s.showProgress){setShowProgress(false);return;}
-   if(s.showOnboarding){return;}
    if(s.tab!=="news"){s.switchTab("news");return;}
    const now=Date.now();
    if(now-lastBackPressRef.current<2000){
@@ -11869,12 +11795,6 @@ export default function NexusApp() {
  `}</style>
 
  {showAdminPin&&<AdminPinModal T={T} onClose={()=>setShowAdminPin(false)} onSuccess={()=>{setIsAdmin(true);setShowAdminPin(false);if(typeof window!=="undefined")localStorage.setItem("nexus_admin","1");}}/>}
- {/* Onboarding overlay */}
- {showOnboarding&&(
-  <div style={{position:"absolute",inset:0,zIndex:999,background:T.bg,overflow:"hidden"}}>
-   <OnboardingScreen T={T} onDone={()=>{setShowOnboarding(false);setStreak(updateStreak());}}/>
-  </div>
- )}
  {/* Progress overlay */}
  {showProgress&&(
   <div style={{position:"absolute",inset:0,zIndex:500,background:T.bg,overflow:"hidden"}}>
