@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { apiUrl } from "@/lib/api";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
+import { initBilling, purchasePlan, restorePurchases, OFFERINGS } from "@/lib/billing";
+import { initPush } from "@/lib/push";
 
 // THEMES 
 const DARK = {
@@ -6221,19 +6223,29 @@ function ProfileScreen({T,onPremium,isAdmin,streak,onProgress,dark,onToggleDark}
 // local gratuit (flag localStorage) — aucun paiement réel n'est prélevé.
 function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
  const [activated,setActivated] = useState<string|null>(null);
- const activate = (id:string) => {
+ const [restoring,setRestoring] = useState(false);
+ const activate = async (id:string) => {
   haptic();
   if(id==="free") return;
   if(id==="institution"){
    if(typeof window!=="undefined") window.open("mailto:augustegbaguidi13@gmail.com?subject=NEXUS%20Institution","_blank");
    return;
   }
-  if(typeof window!=="undefined"){
-   localStorage.setItem("nexus_premium","true");
-   if(id==="mod") localStorage.setItem("nexus_mod","true");
-  }
   setActivated(id);
-  setTimeout(()=>{setActivated(null);onBack();},1200);
+  const offeringId = id==="mod" ? OFFERINGS.pro : OFFERINGS.plus;
+  const outcome = await purchasePlan(offeringId);
+  if(outcome==="success"){
+   setTimeout(()=>{setActivated(null);onBack();},1200);
+  } else {
+   setActivated(null);
+  }
+ };
+ const handleRestore = async () => {
+  haptic();
+  setRestoring(true);
+  const ok = await restorePurchases();
+  setRestoring(false);
+  if(ok) setTimeout(()=>onBack(),800);
  };
  const plans = [
  {id:"free",name:"Gratuit",price:"0€",sub:"Pour toujours",features:["Observateur uniquement","Accès au fil NEWS","Accès à la Communauté","Voir les simulations en direct"],highlight:false,cta:"Plan actuel"},
@@ -6273,12 +6285,17 @@ function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
  <button onClick={()=>activate(p.id)} disabled={p.id==="free"} style={{width:"100%",padding:"12px",borderRadius:10,border:`1px solid ${p.highlight?T.blueB:T.b1}`,background:p.highlight?T.blueB:T.blueG,color:p.highlight?"#fff":T.blueB,fontSize:13,fontWeight:800,cursor:p.id==="free"?"default":"pointer",fontFamily:"inherit",opacity:p.id==="free"?.6:1}}>{activated===p.id?"✓ Activé":p.cta}</button>
  </div>
  ))}
+ {Capacitor.isNativePlatform()&&(
+ <button onClick={handleRestore} disabled={restoring} style={{width:"100%",marginTop:16,padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:"none",color:T.textD,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",opacity:restoring?.5:1}}>
+  {restoring?"Vérification en cours…":"Restaurer mes achats"}
+ </button>
+ )}
  </div>
  </div>
  );
 }
 
-// HAPTIC 
+// HAPTIC
 function haptic(ms=8){if(typeof navigator!=="undefined"&&navigator.vibrate)navigator.vibrate(ms);}
 
 // INSTALL BANNER 
@@ -11753,6 +11770,9 @@ export default function NexusApp() {
  if(typeof window==="undefined") return;
  setStreak(updateStreak());
  if(localStorage.getItem("nexus_onboarded")!=="1") setShowOnboarding(true);
+ // Initialiser paiements in-app et notifications push côté natif
+ initBilling();
+ initPush();
  },[]);
 
  useEffect(()=>{

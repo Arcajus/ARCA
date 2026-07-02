@@ -66,10 +66,10 @@ Sans ce fichier, le build release reste **non signé** (utile en CI sans secrets
 APK signé : `android/app/build/outputs/apk/release/app-release.apk`
 
 ### 3. Checklist avant publication sur le Play Store
-- [ ] Politique de confidentialité accessible publiquement : `https://arca-psi-eight.vercel.app/privacy`
+- [ ] Politique de confidentialité accessible publiquement à l'URL de production (ex : `https://votredomaine.com/privacy`)
 - [ ] Formulaire "Sécurité des données" du Play Console rempli (données collectées : voir `/privacy`)
 - [ ] Bouton retour Android géré (fait — voir `backButton` listener dans `NexusApp.tsx`)
-- [ ] Si Premium est un vrai achat : intégrer Google Play Billing (les CTA actuels dans `PremiumScreen` sont des maquettes sans paiement réel — voir note dans le code)
+- [ ] Si Premium est un vrai achat : configurer RevenueCat (`src/lib/billing.ts`) — remplacer `REVENUECAT_API_KEY`, créer les produits dans Play Console, puis `npm install @revenuecat/purchases-capacitor && npx cap sync android`
 - [ ] `versionCode`/`versionName` incrémentés dans `android/app/build.gradle` à chaque nouvelle publication
 
 ---
@@ -80,7 +80,7 @@ APK signé : `android/app/build/outputs/apk/release/app-release.apk`
 |---|---|
 | App ID | `com.nexus.app` |
 | App Name | `NEXUS` |
-| Version | `1.0` |
+| Version | `1.1.0` |
 | Min SDK | Android 5.0 (API 22) |
 | Target SDK | Android 14 (API 34) |
 
