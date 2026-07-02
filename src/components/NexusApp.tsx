@@ -11075,6 +11075,130 @@ function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 // ──────────────────────────────────────────────────
 type NexusUser = {id:number;email:string;handle:string};
 
+// AUTH SCREEN
+function AuthScreen({T,onSuccess,onSkip}:{T:Theme;onSuccess:(u:NexusUser)=>void;onSkip:()=>void}){
+ const [mode,setMode]=useState<"signup"|"login">("signup");
+ const [email,setEmail]=useState("");
+ const [handle,setHandle]=useState("");
+ const [password,setPassword]=useState("");
+ const [loading,setLoading]=useState(false);
+ const [error,setError]=useState("");
+ const [showPw,setShowPw]=useState(false);
+
+ const submit=async()=>{
+  haptic();
+  setError("");
+  if(!email.trim()||!password){setError("Remplis tous les champs.");return;}
+  if(mode==="signup"&&handle.trim().length<3){setError("Le pseudo doit faire 3 caractères minimum.");return;}
+  if(password.length<8){setError("Le mot de passe doit faire 8 caractères minimum.");return;}
+  setLoading(true);
+  try{
+   const endpoint=mode==="signup"?"/api/auth/register":"/api/auth/login";
+   const body=mode==="signup"
+    ?{email:email.trim().toLowerCase(),handle:handle.trim(),password}
+    :{email:email.trim().toLowerCase(),password};
+   const res=await fetch(apiUrl(endpoint),{
+    method:"POST",credentials:"include",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body),
+   });
+   const d=await res.json();
+   if(res.ok&&d.user){
+    if(typeof window!=="undefined"){
+     localStorage.setItem("nexus_registered","true");
+     localStorage.setItem("nexus_handle",d.user.handle);
+     localStorage.setItem("nexus_guest_email",email.trim().toLowerCase());
+     localStorage.setItem("nexus_guest_password",password);
+    }
+    onSuccess(d.user as NexusUser);
+   }else{
+    setError(d.error||"Une erreur est survenue.");
+   }
+  }catch{
+   setError("Impossible de joindre le serveur. Vérifie ta connexion.");
+  }finally{
+   setLoading(false);
+  }
+ };
+
+ const inp=(val:string,set:(v:string)=>void,placeholder:string,type="text",extra?:React.CSSProperties)=>(
+  <input
+   value={val} onChange={e=>set(e.target.value)} placeholder={placeholder} type={type}
+   onKeyDown={e=>{if(e.key==="Enter")submit();}}
+   style={{width:"100%",padding:"14px 16px",borderRadius:12,border:`1.5px solid ${error?T.red+"60":T.b1}`,
+    background:T.surf,color:T.text,fontSize:15,fontFamily:"inherit",outline:"none",boxSizing:"border-box",...extra}}
+  />
+ );
+
+ return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%",padding:"0 24px 32px",background:T.bg,animation:"fadeIn .3s ease",overflowY:"auto" as const}}>
+   {/* Logo */}
+   <div style={{display:"flex",justifyContent:"center",padding:"52px 0 36px"}}>
+    <div style={{textAlign:"center" as const}}>
+     <div style={{width:64,height:64,borderRadius:18,background:`linear-gradient(135deg,${T.blueB},${T.purple})`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
+      <span style={{color:"#fff",fontWeight:900,fontSize:32,fontFamily:"'Inter',system-ui,sans-serif"}}>N</span>
+     </div>
+     <p style={{color:T.text,fontWeight:900,fontSize:22,letterSpacing:-0.5}}>NEXUS</p>
+     <p style={{color:T.textD,fontSize:13,marginTop:4}}>Entraîne-toi à l&apos;oral comme un pro</p>
+    </div>
+   </div>
+
+   {/* Tabs */}
+   <div style={{display:"flex",background:T.surf,borderRadius:12,padding:4,marginBottom:28,border:`1px solid ${T.b1}`}}>
+    {(["signup","login"] as const).map(m=>(
+     <button key={m} onClick={()=>{haptic();setMode(m);setError("");}}
+      style={{flex:1,padding:"10px",borderRadius:9,border:"none",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",
+       background:mode===m?T.blueB:"transparent",color:mode===m?"#fff":T.textD,transition:"all .15s"}}>
+      {m==="signup"?"Créer un compte":"Se connecter"}
+     </button>
+    ))}
+   </div>
+
+   {/* Fields */}
+   <div style={{display:"flex",flexDirection:"column" as const,gap:12}}>
+    {inp(email,setEmail,"Email","email")}
+    {mode==="signup"&&inp(handle,setHandle,"Pseudo (ex : jeandupont)")}
+    <div style={{position:"relative" as const}}>
+     {inp(password,setPassword,"Mot de passe (8 caractères min.)",showPw?"text":"password",{paddingRight:48})}
+     <button onClick={()=>setShowPw(v=>!v)} style={{position:"absolute" as const,right:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:T.textD,fontSize:18,padding:4}}>
+      {showPw?"🙈":"👁️"}
+     </button>
+    </div>
+   </div>
+
+   {/* Error */}
+   {error&&(
+    <div style={{marginTop:12,padding:"10px 14px",borderRadius:10,background:`${T.red}15`,border:`1px solid ${T.red}40`}}>
+     <p style={{color:T.red,fontSize:13,fontWeight:600}}>{error}</p>
+    </div>
+   )}
+
+   {/* Submit */}
+   <button onClick={submit} disabled={loading}
+    style={{marginTop:20,padding:"15px",borderRadius:13,border:"none",
+     background:loading?T.b1:`linear-gradient(135deg,${T.blueB},${T.purple})`,
+     color:"#fff",fontSize:15,fontWeight:800,cursor:loading?"default":"pointer",fontFamily:"inherit",
+     opacity:loading?.7:1,transition:"all .2s"}}>
+    {loading?"Chargement…":mode==="signup"?"Créer mon compte":"Se connecter"}
+   </button>
+
+   {/* Skip */}
+   <button onClick={()=>{haptic();if(typeof window!=="undefined")localStorage.setItem("nexus_auth_skipped","true");onSkip();}}
+    style={{marginTop:16,padding:"12px",borderRadius:13,border:`1px solid ${T.b1}`,
+     background:"none",color:T.textD,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+    Continuer sans compte
+   </button>
+
+   <p style={{color:T.muted,fontSize:11,textAlign:"center" as const,marginTop:20,lineHeight:1.6}}>
+    En créant un compte, tu acceptes nos{" "}
+    <span style={{color:T.blueB,cursor:"pointer"}} onClick={()=>typeof window!=="undefined"&&window.open("/terms","_blank")}>conditions d&apos;utilisation</span>
+    {" "}et notre{" "}
+    <span style={{color:T.blueB,cursor:"pointer"}} onClick={()=>typeof window!=="undefined"&&window.open("/privacy","_blank")}>politique de confidentialité</span>.
+   </p>
+  </div>
+ );
+}
+
 // Un compte réel (nexus_users) est nécessaire côté serveur pour la présence en
 // salle et l'upload de pièces, mais l'utilisateur dispose déjà d'un profil
 // local (nexus_handle, etc.) qu'il perçoit comme "connecté" : on provisionne
@@ -11678,6 +11802,10 @@ export default function NexusApp() {
  const [showProfile,setShowProfile] = useState(false);
  const [showAgenda,setShowAgenda] = useState(false);
  const [showInstall,setShowInstall] = useState(false);
+ const [showAuth,setShowAuth] = useState(()=>{
+  if(typeof window==="undefined") return false;
+  return localStorage.getItem("nexus_registered")!=="true"&&localStorage.getItem("nexus_auth_skipped")!=="true";
+ });
  const [simInitialView,setSimInitialView] = useState<"hub"|"apprendre">("hub");
  const [tabAnim,setTabAnim] = useState("fadeIn");
  const [feedUnread,setFeedUnread] = useState(()=>{
@@ -11795,6 +11923,15 @@ export default function NexusApp() {
  `}</style>
 
  {showAdminPin&&<AdminPinModal T={T} onClose={()=>setShowAdminPin(false)} onSuccess={()=>{setIsAdmin(true);setShowAdminPin(false);if(typeof window!=="undefined")localStorage.setItem("nexus_admin","1");}}/>}
+ {/* Auth overlay — affiché au premier lancement si pas encore de compte */}
+ {showAuth&&(
+  <div style={{position:"absolute" as const,inset:0,zIndex:998,background:T.bg,overflow:"hidden"}}>
+   <AuthScreen T={T}
+    onSuccess={u=>{if(typeof window!=="undefined")localStorage.setItem("nexus_handle",u.handle);setShowAuth(false);}}
+    onSkip={()=>setShowAuth(false)}
+   />
+  </div>
+ )}
  {/* Progress overlay */}
  {showProgress&&(
   <div style={{position:"absolute",inset:0,zIndex:500,background:T.bg,overflow:"hidden"}}>
