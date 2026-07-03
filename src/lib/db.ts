@@ -87,6 +87,22 @@ async function createSchema(sql: Sql): Promise<void> {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS nexus_signals (
+      id SERIAL PRIMARY KEY,
+      room_id TEXT NOT NULL,
+      from_handle TEXT NOT NULL,
+      to_handle TEXT NOT NULL,
+      type TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_nexus_signals_to
+    ON nexus_signals(room_id, to_handle, created_at)
+  `;
 }
 
 let schemaReady: Promise<void> | null = null;
