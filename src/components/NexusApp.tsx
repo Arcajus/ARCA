@@ -9157,7 +9157,7 @@ function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journali
      <div style={{position:"absolute" as const,left:0,right:0,bottom:0,height:size==="mini"?7:size==="full"?22:14,background:"linear-gradient(180deg,#ffffff35,#ffffff05)",borderTop:"1px solid #ffffff50"}}/>
     </>
    )}
-   <span style={{fontSize:size==="mini"?16:size==="full"?32:24,lineHeight:1,opacity:stream?0:(camOn?1:.55)}}>{flag||""}</span>
+   <span style={{fontSize:size==="mini"?16:size==="full"?32:24,lineHeight:1,opacity:stream?0:(camOn===false?.4:1)}}>{flag||""}</span>
    {speaking&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,left:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:col,padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>À LA PAROLE</span>}
    {you&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,right:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:"#2563eb",padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>VOUS</span>}
    <span style={{position:"absolute" as const,bottom:size==="mini"?3:5,left:size==="mini"?3:6,right:size==="mini"?3:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const,fontSize:size==="mini"?7:10,fontWeight:700,color:"#fff",background:"rgba(0,0,0,.55)",padding:size==="mini"?"1px 4px":"2px 6px",borderRadius:5,display:"flex",alignItems:"center",justifyContent:size==="mini"?"center" as const:"flex-start" as const,gap:4}}>
