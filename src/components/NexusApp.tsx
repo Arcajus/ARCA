@@ -929,6 +929,89 @@ function ScoreModal({topic,T,onClose}:{topic:string;T:Theme;onClose:()=>void}) {
  );
 }
 
+// AI POST-SIMULATION FEEDBACK MODAL
+function AiFeedbackModal({T,onClose,context,userMsgs}:{T:Theme;onClose:()=>void;context:string;userMsgs:string[]}) {
+ type Result={scores:Record<string,number>;summary:string;strengths:string[];improvements:string[]};
+ const [result,setResult]=useState<Result|null>(null);
+ const [err,setErr]=useState("");
+ useEffect(()=>{
+  (async()=>{
+   try{
+    if(userMsgs.length===0){setErr("Aucune intervention à analyser.");return;}
+    const transcript=userMsgs.map((t,i)=>`[Intervention ${i+1}]: ${t}`).join("\n\n");
+    const prompt=`Tu es un expert en rhétorique, art oratoire et argumentation. Analyse ces interventions d'un apprenant lors d'une simulation "${context}".\n\n${transcript}\n\nRéponds UNIQUEMENT en JSON valide, sans texte autour :\n{"scores":{"Clarté":75,"Argumentation":68,"Vocabulaire":72,"Persuasion":65,"Structure":70},"summary":"Résumé en 2 phrases.","strengths":["Point fort 1","Point fort 2"],"improvements":["À améliorer 1","À améliorer 2"]}\n\nScores sur 100. Sois précis, bienveillant et constructif.`;
+    const text=await callGemini("Tu es un expert en rhétorique et art oratoire.",[{role:"user",parts:[{text:prompt}]}],"",600);
+    const m=text.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error("no_json");
+    setResult(JSON.parse(m[0]));
+    addXP(20);
+   }catch{setErr("Impossible de générer le feedback. Vérifie ta connexion et réessaie.");}
+  })();
+ },[]);// eslint-disable-line
+ const avg=result?Math.round(Object.values(result.scores).reduce((a,b)=>a+b,0)/Object.values(result.scores).length):0;
+ const col=avg>=80?T.green:avg>=60?T.blueB:avg>=40?T.amber:T.red;
+ const circ=2*Math.PI*46;
+ return(
+  <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{position:"fixed" as const,inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(5px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .3s"}}>
+   <div style={{background:T.surf,borderRadius:"24px 24px 0 0",padding:"28px 24px 48px",width:"100%",maxWidth:430,border:`1px solid ${T.b1}`,animation:"slideUp .4s ease",maxHeight:"90vh",overflowY:"auto" as const}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+     <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:4}}>Analyse post-simulation</p><h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:22,fontWeight:700,color:T.text}}>Bilan IA</h2></div>
+     <button onClick={onClose} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><Ic n="x" s={16} c={T.blueB}/></button>
+    </div>
+    {!result&&!err&&(
+     <div style={{textAlign:"center" as const,padding:"40px 0"}}>
+      <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:14}}>{[0,1,2].map(i=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:T.blueB,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div>
+      <p style={{color:T.textD,fontSize:13}}>Analyse en cours…</p>
+      <p style={{color:T.muted,fontSize:11,marginTop:4}}>L&apos;IA évalue tes interventions</p>
+     </div>
+    )}
+    {err&&<p style={{color:T.red,fontSize:13,textAlign:"center" as const,padding:"20px 0"}}>{err}</p>}
+    {result&&(
+     <>
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:16,padding:20,textAlign:"center" as const,marginBottom:16}}>
+       <div style={{position:"relative" as const,width:100,height:100,margin:"0 auto 12px"}}>
+        <svg width="100" height="100" viewBox="0 0 110 110">
+         <circle cx="55" cy="55" r="46" fill="none" stroke={T.b1} strokeWidth="8"/>
+         <circle cx="55" cy="55" r="46" fill="none" stroke={col} strokeWidth="8" strokeDasharray={circ} strokeDashoffset={circ*(1-avg/100)} strokeLinecap="round" transform="rotate(-90 55 55)" style={{transition:"stroke-dashoffset 1.5s ease"}}/>
+        </svg>
+        <div style={{position:"absolute" as const,inset:0,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center"}}>
+         <span style={{fontSize:26,fontWeight:900,fontFamily:"monospace",color:col}}>{avg}</span>
+         <span style={{fontSize:10,color:T.muted}}>/100</span>
+        </div>
+       </div>
+       <p style={{color:col,fontSize:16,fontWeight:800}}>{avg>=80?"Excellent":avg>=70?"Bon niveau":avg>=55?"Moyen":"À renforcer"}</p>
+       <p style={{color:T.textD,fontSize:12,marginTop:6,lineHeight:1.5}}>{result.summary}</p>
+      </div>
+      {Object.entries(result.scores).map(([k,v])=>(
+       <div key={k} style={{marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+         <span style={{fontSize:13,fontWeight:600,color:T.text}}>{k}</span>
+         <span style={{fontSize:13,fontWeight:800,color:v>=75?T.green:v>=60?T.blueB:T.amber}}>{v}/100</span>
+        </div>
+        <div style={{height:5,background:T.b1,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${v}%`,background:v>=75?T.green:v>=60?T.blueB:T.amber,borderRadius:3,transition:"width 1.4s cubic-bezier(.4,0,.2,1)"}}/></div>
+       </div>
+      ))}
+      {result.strengths.length>0&&(
+       <div style={{background:T.green+"10",border:`1px solid ${T.green}30`,borderRadius:12,padding:"12px 14px",marginTop:8,marginBottom:8}}>
+        <p style={{color:T.green,fontSize:10,fontWeight:800,letterSpacing:1,marginBottom:6}}>POINTS FORTS</p>
+        {result.strengths.map((s,i)=><p key={i} style={{color:T.text,fontSize:12,lineHeight:1.5,marginBottom:2}}>• {s}</p>)}
+       </div>
+      )}
+      {result.improvements.length>0&&(
+       <div style={{background:T.amber+"10",border:`1px solid ${T.amber}30`,borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+        <p style={{color:T.amber,fontSize:10,fontWeight:800,letterSpacing:1,marginBottom:6}}>À AMÉLIORER</p>
+        {result.improvements.map((s,i)=><p key={i} style={{color:T.text,fontSize:12,lineHeight:1.5,marginBottom:2}}>• {s}</p>)}
+       </div>
+      )}
+      <p style={{color:T.muted,fontSize:10,textAlign:"center" as const,marginBottom:10}}>+20 XP gagnés · Visible dans Profil → Progression</p>
+     </>
+    )}
+    <button onClick={onClose} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:T.blueB,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",marginTop:4}}>Fermer</button>
+   </div>
+  </div>
+ );
+}
+
 // Confirmation avant de quitter une session live (évite de sortir d'un coup
 // au lieu de revenir à l'étape précédente sur un clic accidentel).
 function LeaveConfirmModal({T,onConfirm,onCancel,label="la session"}:{T:Theme;onConfirm:()=>void;onCancel:()=>void;label?:string}) {
@@ -3477,6 +3560,7 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  const [exchangeN,setExchangeN]=useState(0);
  const [pauseOffered,setPauseOffered]=useState(false);
  const [pauseDeal,setPauseDeal]=useState("");
+ const [showFeedback,setShowFeedback]=useState(false);
  const MAX_SIM_EXCHANGES=12;
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -3586,6 +3670,7 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  if(!text.trim()||loading||phase!=="audience")return;
  unlockAudio();setInput("");
  const n=exchangeN+1;setExchangeN(n);
+ if(n===1) addXP(15);
  const uMsg:TMsg={role:"user",charName:USER_CHAR.name,charInit:USER_CHAR.init,charColor:USER_CHAR.color,gender:"M",text};
  const newMsgs=[...msgs,uMsg];
  setMsgs(newMsgs);
@@ -3745,9 +3830,12 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  <button onClick={refuseNeg} style={{flex:1,padding:"11px",borderRadius:10,border:`1px solid ${T.red}`,background:`${T.red}15`,color:T.red,fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="x" s={13} c={T.red}/>Refuser — continuer</button>
  </div>
  </div>}
- {phase==="verdict"&&<div style={{padding:"12px 16px",background:`${T.purple}10`,borderTop:`2px solid ${T.purple}`,flexShrink:0,textAlign:"center"}}>
+ {phase==="verdict"&&<div style={{padding:"12px 16px",background:`${T.purple}10`,borderTop:`2px solid ${T.purple}`,flexShrink:0,textAlign:"center" as const}}>
  <p style={{color:T.purple,fontWeight:800,fontSize:12,letterSpacing:.8,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="scale" s={13} c={T.purple}/>VERDICT RENDU</p>
- <button onClick={()=>{stopSpeech();onBack();}} style={{marginTop:8,padding:"8px 20px",borderRadius:10,border:`1px solid ${T.purple}`,background:`${T.purple}15`,color:T.purple,fontWeight:700,fontSize:12,cursor:"pointer"}}>Retour</button>
+ <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:8}}>
+  <button onClick={()=>{haptic();setShowFeedback(true);}} style={{padding:"8px 16px",borderRadius:10,border:`1px solid ${T.blueB}`,background:`${T.blueB}15`,color:T.blueB,fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}><Ic n="bar" s={13} c={T.blueB}/>Bilan IA</button>
+  <button onClick={()=>{stopSpeech();onBack();}} style={{padding:"8px 16px",borderRadius:10,border:`1px solid ${T.purple}`,background:`${T.purple}15`,color:T.purple,fontWeight:700,fontSize:12,cursor:"pointer"}}>Retour</button>
+ </div>
  </div>}
  {["audience","plaidoirie_finale"].includes(phase)&&!loading&&yourTurn&&<div onClick={()=>{setYourTurn(false);toggleMic();}} style={{padding:"8px 16px",background:`${T.purple}12`,borderTop:`1px solid ${T.purple}30`,flexShrink:0,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
  <div style={{width:28,height:28,borderRadius:"50%",background:`${T.purple}20`,display:"flex",alignItems:"center",justifyContent:"center",animation:"pulse 1.2s infinite"}}><Ic n="mic" s={14} c={T.purple}/></div>
@@ -3758,6 +3846,7 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&handleSpeechRef.current(input)} placeholder={phase==="plaidoirie_finale"?(trialRole==="defense"?"Plaidoirie finale, Maître…":"Réquisitoire final…"):(trialRole==="defense"?"Votre plaidoirie, Maître…":"Votre réquisitoire…")} style={{flex:1,background:T.bg2,border:`1px solid ${T.b1}`,borderRadius:12,padding:"10px 14px",color:T.text,fontSize:13,outline:"none",fontFamily:"inherit"}}/>
  <button onClick={()=>handleSpeechRef.current(input)} disabled={!input.trim()||loading} style={{width:44,height:44,borderRadius:12,border:"none",background:input.trim()&&!loading?T.purple:T.b1,display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"not-allowed",flexShrink:0}}><Ic n="send" s={18} c={input.trim()&&!loading?"#fff":T.muted}/></button>
  </div>}
+ {showFeedback&&<AiFeedbackModal T={T} onClose={()=>setShowFeedback(false)} context={`Procès — ${trialRole==="defense"?"Défense":"Accusation"} — ${trialTopic}`} userMsgs={msgs.filter(m=>m.role==="user").map(m=>m.text)}/>}
  </div>
  );
 }
@@ -7380,6 +7469,7 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
  const [finalVote,setFinalVote]=useState<Side>(null);
  const [finalVotes,setFinalVotes]=useState({pour:12,contre:7});
  const [voted,setVoted]=useState<Set<number>>(new Set());
+ const [showFeedbackDeb,setShowFeedbackDeb]=useState(false);
  const chatRef=useRef<HTMLDivElement>(null);
  const aiRef=useRef<ReturnType<typeof setTimeout>|null>(null);
 
@@ -7415,7 +7505,7 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
   const t=text||input.trim();
   if(!t||!mySide) return;
   const m:Msg={id:Date.now(),user:"@vous",side:mySide,text:t,time:Date.now(),pts:0,reactions:{}};
-  setMsgs(p=>[...p,m]);
+  setMsgs(p=>{if(p.filter(x=>x.user==="@vous").length===0)addXP(15);return[...p,m];});
   setInput("");setShowInput(false);setHasFloor(false);setMyTurn(false);
   haptic();
   // Update public score slightly for user
@@ -7488,6 +7578,7 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
    {confirmLeave&&<LeaveConfirmModal T={T} label="le débat" onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
+   {showFeedbackDeb&&<AiFeedbackModal T={T} onClose={()=>setShowFeedbackDeb(false)} context={`Débat — Camp ${mySide?.toUpperCase()||"?"} — ${sim.topic}`} userMsgs={msgs.filter(m=>m.user==="@vous").map(m=>m.text)}/>}
    {/* Header */}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
@@ -7500,6 +7591,7 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
       <p style={{color:T.text,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
      </div>
      <button onClick={()=>setDebTab("public")} style={{background:myCol+"20",color:myCol,fontSize:9,fontWeight:800,padding:"4px 9px",borderRadius:6,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{pourPct}% POUR</button>
+     {msgs.filter(m=>m.user==="@vous").length>=2&&<button onClick={()=>{haptic();setShowFeedbackDeb(true);}} style={{background:T.blueB+"20",color:T.blueB,fontSize:9,fontWeight:800,padding:"4px 9px",borderRadius:6,border:`1px solid ${T.blueB}40`,cursor:"pointer",fontFamily:"inherit",flexShrink:0,display:"flex",alignItems:"center",gap:3}}><Ic n="bar" s={10} c={T.blueB}/>Bilan</button>}
     </div>
     <div style={{display:"flex",gap:5,overflowX:"auto" as const,scrollbarWidth:"none" as const}}>
      {(["scene","public","historique","procedure"] as const).map(t=>(
@@ -8638,6 +8730,7 @@ function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [notes,setNotes] = useState<Note[]>([]);
  const [draftScores,setDraftScores] = useState<number[]>(CRITERIA.map(()=>3));
  const [draftComment,setDraftComment] = useState("");
+ const [showFeedbackEloq,setShowFeedbackEloq] = useState(false);
  const col = SIM_TYPE_COLORS.eloquence;
 
  useEffect(()=>{
@@ -8659,7 +8752,7 @@ function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
  const toggleSpeaking = () => {
   haptic();
-  if(!speaking) setSeconds(0);
+  if(!speaking){setSeconds(0);addXP(10);}
   setSpeaking(s=>!s);
  };
 
@@ -8714,6 +8807,7 @@ function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  return(
   <div style={{display:"flex",flexDirection:"column" as const,height:"100%"}}>
    {confirmLeave&&<LeaveConfirmModal T={T} label="la session" onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
+   {showFeedbackEloq&&<AiFeedbackModal T={T} onClose={()=>setShowFeedbackEloq(false)} context={`Concours d'éloquence — ${myRole==="candidat"?"Candidat·e":"Jury"} — ${sim.topic}`} userMsgs={msgs.filter(m=>m.user!=="GREFFIER").map(m=>m.text)}/>}
    <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.b1}`,background:T.surf,flexShrink:0}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
      <button onClick={()=>setConfirmLeave(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}><Ic n="chevL" s={20} c={col}/></button>
@@ -8724,6 +8818,7 @@ function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       </div>
       <p style={{color:T.text,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
      </div>
+     {seconds>10&&<button onClick={()=>{haptic();setShowFeedbackEloq(true);}} style={{background:T.blueB+"20",color:T.blueB,fontSize:9,fontWeight:800,padding:"4px 9px",borderRadius:6,border:`1px solid ${T.blueB}40`,cursor:"pointer",fontFamily:"inherit",flexShrink:0,display:"flex",alignItems:"center",gap:3}}><Ic n="bar" s={10} c={T.blueB}/>Bilan IA</button>}
     </div>
     <div style={{display:"flex",gap:5}}>
      {(["scene","notes","conseils"] as const).map(t=>(
