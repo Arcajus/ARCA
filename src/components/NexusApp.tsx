@@ -931,7 +931,7 @@ function ScoreModal({topic,T,onClose}:{topic:string;T:Theme;onClose:()=>void}) {
 
 // AI POST-SIMULATION FEEDBACK MODAL
 function AiFeedbackModal({T,onClose,context,userMsgs}:{T:Theme;onClose:()=>void;context:string;userMsgs:string[]}) {
- type Result={scores:Record<string,number>;summary:string;strengths:string[];improvements:string[]};
+ type Result={scores:Record<string,number>;summary:string;strengths:string[];improvements:string[];fillerScore:number;topFillers:{word:string;count:number}[]};
  const [result,setResult]=useState<Result|null>(null);
  const [err,setErr]=useState("");
  useEffect(()=>{
@@ -943,7 +943,13 @@ function AiFeedbackModal({T,onClose,context,userMsgs}:{T:Theme;onClose:()=>void;
     const text=await callGemini("Tu es un expert en rhétorique et art oratoire.",[{role:"user",parts:[{text:prompt}]}],"",600);
     const m=text.match(/\{[\s\S]*\}/);
     if(!m) throw new Error("no_json");
-    setResult(JSON.parse(m[0]));
+    const parsed=JSON.parse(m[0]);
+    const fillers=analyzeFillers(userMsgs.join(" "));
+    if(typeof window!=="undefined"){
+      localStorage.setItem("nx_last_filler",JSON.stringify({score:fillers.score,words:fillers.words.slice(0,4),ts:Date.now()}));
+      saveSkills({...getSkills(),fluidite:Math.min(100,fillers.score*10)});
+    }
+    setResult({...parsed,fillerScore:fillers.score,topFillers:fillers.words.slice(0,4)});
     addXP(20);
    }catch{setErr("Impossible de générer le feedback. Vérifie ta connexion et réessaie.");}
   })();
@@ -1001,6 +1007,18 @@ function AiFeedbackModal({T,onClose,context,userMsgs}:{T:Theme;onClose:()=>void;
        <div style={{background:T.amber+"10",border:`1px solid ${T.amber}30`,borderRadius:12,padding:"12px 14px",marginBottom:14}}>
         <p style={{color:T.amber,fontSize:10,fontWeight:800,letterSpacing:1,marginBottom:6}}>À AMÉLIORER</p>
         {result.improvements.map((s,i)=><p key={i} style={{color:T.text,fontSize:12,lineHeight:1.5,marginBottom:2}}>• {s}</p>)}
+       </div>
+      )}
+      {result.topFillers.length>0&&(
+       <div style={{background:T.purple+"10",border:`1px solid ${T.purple}30`,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+         <p style={{color:T.purple,fontSize:10,fontWeight:800,letterSpacing:1}}>MOTS PARASITES</p>
+         <span style={{fontSize:11,fontWeight:800,color:result.fillerScore>=8?T.green:result.fillerScore>=5?T.blueB:T.amber}}>{result.fillerScore}/10</span>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap" as const,gap:5,marginBottom:result.fillerScore<=5?6:0}}>
+         {result.topFillers.map(f=><span key={f.word} style={{padding:"2px 8px",borderRadius:6,background:T.purple+"20",color:T.purple,fontSize:11,fontWeight:700}}>«{f.word}» ×{f.count}</span>)}
+        </div>
+        {result.fillerScore<=5&&<p style={{color:T.textD,fontSize:11,lineHeight:1.5}}>Travaille à réduire ces mots pour gagner en fluidité.</p>}
        </div>
       )}
       <p style={{color:T.muted,fontSize:10,textAlign:"center" as const,marginBottom:10}}>+20 XP gagnés · Visible dans Profil → Progression</p>
@@ -9121,12 +9139,15 @@ type RoomFile = {id:number;name:string;docType:string;url:string;size:number;mim
 // attendant, mais la structure (taille, libellé, indicateur micro/caméra,
 // "à la parole"/"vous") est celle qui accueillera le vrai flux une fois le
 // service vidéo branché.
-function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journalistBg}:{label:string;flag?:string;micOn?:boolean;camOn?:boolean;you?:boolean;speaking?:boolean;col:string;size?:"full"|"half"|"mini";journalistBg?:{grad:string;emblem:string}}) {
+function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journalistBg,stream}:{label:string;flag?:string;micOn?:boolean;camOn?:boolean;you?:boolean;speaking?:boolean;col:string;size?:"full"|"half"|"mini";journalistBg?:{grad:string;emblem:string};stream?:MediaStream|null}) {
  const dims = size==="mini"?{width:44,height:44,flexShrink:0}:size==="full"?{width:"100%",aspectRatio:"16/9"}:{flex:1,minWidth:0,aspectRatio:"4/3"};
+ const videoRef=useRef<HTMLVideoElement>(null);
+ useEffect(()=>{if(videoRef.current&&stream)videoRef.current.srcObject=stream;},[stream]);
  return(
   <div style={{position:"relative" as const,borderRadius:size==="mini"?6:8,overflow:"hidden",
    background:journalistBg?journalistBg.grad:"#0d1117",outline:speaking?`2px solid ${col}`:you?"2px solid #2563eb":"2px solid #ffffff20",outlineOffset:-2,
    display:"flex",alignItems:"center",justifyContent:"center",boxShadow:speaking?`0 0 0 3px ${col}30`:"none",...dims}}>
+   {stream&&<video ref={videoRef} autoPlay playsInline muted style={{position:"absolute" as const,inset:0,width:"100%",height:"100%",objectFit:"cover" as const,borderRadius:"inherit"}}/>}
    {journalistBg&&(
     <>
      <div style={{position:"absolute" as const,inset:0,backgroundImage:"radial-gradient(circle,#ffffff45 1px,transparent 1px)",backgroundSize:"7px 7px",opacity:.3}}/>
@@ -9136,7 +9157,7 @@ function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journali
      <div style={{position:"absolute" as const,left:0,right:0,bottom:0,height:size==="mini"?7:size==="full"?22:14,background:"linear-gradient(180deg,#ffffff35,#ffffff05)",borderTop:"1px solid #ffffff50"}}/>
     </>
    )}
-   <span style={{fontSize:size==="mini"?16:size==="full"?32:24,lineHeight:1,opacity:camOn?1:.55}}>{flag||"👤"}</span>
+   <span style={{fontSize:size==="mini"?16:size==="full"?32:24,lineHeight:1,opacity:stream?0:(camOn?1:.55)}}>{flag||"👤"}</span>
    {speaking&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,left:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:col,padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>À LA PAROLE</span>}
    {you&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,right:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:"#2563eb",padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>VOUS</span>}
    <span style={{position:"absolute" as const,bottom:size==="mini"?3:5,left:size==="mini"?3:6,right:size==="mini"?3:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const,fontSize:size==="mini"?7:10,fontWeight:700,color:"#fff",background:"rgba(0,0,0,.55)",padding:size==="mini"?"1px 4px":"2px 6px",borderRadius:5,display:"flex",alignItems:"center",justifyContent:size==="mini"?"center" as const:"flex-start" as const,gap:4}}>
@@ -9186,7 +9207,7 @@ function BackdropPicker({sel,onSelect}:{sel:string;onSelect:(id:string)=>void}) 
 // Le flux caméra réel n'est pas encore branché (voir /api/rooms/[id]/call-token) :
 // tant qu'il ne l'est pas, les tuiles affichent un avatar/drapeau à la place
 // du flux, mais l'écran est déjà construit comme un véritable plateau d'appel vidéo.
-function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:SimRoom;participants:RoomParticipant[];myCamOn:boolean;myMicOn:boolean;myLabel:string;onBack:()=>void}) {
+function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack,localStream,remoteStreams}:{sim:SimRoom;participants:RoomParticipant[];myCamOn:boolean;myMicOn:boolean;myLabel:string;onBack:()=>void;localStream?:MediaStream|null;remoteStreams?:Record<string,MediaStream>}) {
  const col=SIM_TYPE_COLORS[sim.type];
  const isNews=sim.type==="debat"||sim.type==="presse"||sim.type==="eloquence";
  const isCourt=sim.type==="proces";
@@ -9245,7 +9266,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
     )}
    </div>
 
-   <VideoTile label={speaker.label} flag={speaker.flag} you={speaker.you} speaking col={col} size="full" journalistBg={journalistBg}/>
+   <VideoTile label={speaker.label} flag={speaker.flag} you={speaker.you} speaking col={col} size="full" journalistBg={journalistBg} stream={speaker.you?localStream:(remoteStreams?.[speaker.label]||null)}/>
 
    {isChamber&&permMembers.length>0&&(
     <div style={{position:"relative" as const}}>
@@ -9264,9 +9285,9 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
     </div>
     <div style={{display:"flex",gap:6}}>
      {(isChamber||isCourt)&&<VideoTile label={isCourt?(sim.trialType?getRoleLabel("president",sim.trialType):"Président·e"):"Présidence"} flag={isChamber?"🌐":undefined} col={col} size="half"/>}
-     <VideoTile label={myLabel} you={!myMicOn} speaking={myMicOn} micOn={myMicOn} camOn={myCamOn} col={col} size="half"/>
+     <VideoTile label={myLabel} you={!myMicOn} speaking={myMicOn} micOn={myMicOn} camOn={myCamOn} col={col} size="half" stream={localStream}/>
      {!isChamber&&!isCourt&&others[0]&&(
-      <VideoTile key={others[0].handle} label={others[0].handle} micOn={others[0].micOn} camOn={others[0].camOn} col={col} size="half"/>
+      <VideoTile key={others[0].handle} label={others[0].handle} micOn={others[0].micOn} camOn={others[0].camOn} col={col} size="half" stream={remoteStreams?.[others[0].handle]||null}/>
      )}
     </div>
    </div>
@@ -9308,7 +9329,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack}:{sim:S
          <VideoTile key={r} label={getRoleLabel(r,sim.trialType!)} col={TRIAL_ROLE_COLORS[r]} size="mini"/>
         ))}
         {others.map(p=>(
-         <VideoTile key={p.handle} label={p.handle} micOn={p.micOn} camOn={p.camOn} col={col} size="mini"/>
+         <VideoTile key={p.handle} label={p.handle} micOn={p.micOn} camOn={p.camOn} col={col} size="mini" stream={remoteStreams?.[p.handle]||null}/>
         ))}
        </div>
       </div>
@@ -9447,6 +9468,125 @@ function RoomCallPanel({T,sim,user,participants,micOn,camOn,setMicOn,setCamOn}:{
  );
 }
 
+function useWebRTC(roomId:string,myHandle:string,participants:RoomParticipant[],active:boolean){
+ const [localStream,setLocalStream]=useState<MediaStream|null>(null);
+ const [remoteStreams,setRemoteStreams]=useState<Record<string,MediaStream>>({});
+ const pcsRef=useRef<Record<string,RTCPeerConnection>>({});
+ const localRef=useRef<MediaStream|null>(null);
+ const pollRef=useRef<ReturnType<typeof setInterval>|null>(null);
+ const lastSigId=useRef(0);
+
+ useEffect(()=>{
+  if(!active||!myHandle){
+   localRef.current?.getTracks().forEach(t=>t.stop());
+   localRef.current=null;
+   setLocalStream(null);
+   return;
+  }
+  let cancelled=false;
+  navigator.mediaDevices?.getUserMedia({video:true,audio:true})
+   .then(s=>{
+    if(cancelled){s.getTracks().forEach(t=>t.stop());return;}
+    localRef.current=s;
+    setLocalStream(s);
+    Object.values(pcsRef.current).forEach(pc=>{
+     s.getTracks().forEach(t=>{try{pc.addTrack(t,s);}catch{}});
+    });
+   })
+   .catch(()=>{});
+  return()=>{
+   cancelled=true;
+   localRef.current?.getTracks().forEach(t=>t.stop());
+   localRef.current=null;
+   setLocalStream(null);
+  };
+ },[active,myHandle]);
+
+ const sendSig=async(to:string,type:string,payload:unknown)=>{
+  try{
+   await fetch(apiUrl(`/api/rooms/${roomId}/signal`),{
+    method:"POST",credentials:"include",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({toHandle:to,type,payload:JSON.stringify(payload)}),
+   });
+  }catch{}
+ };
+
+ const getOrCreate=(handle:string):RTCPeerConnection=>{
+  if(pcsRef.current[handle]) return pcsRef.current[handle];
+  const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
+  pcsRef.current[handle]=pc;
+  localRef.current?.getTracks().forEach(t=>pc.addTrack(t,localRef.current!));
+  pc.ontrack=e=>setRemoteStreams(p=>({...p,[handle]:e.streams[0]}));
+  pc.onicecandidate=e=>{if(e.candidate)sendSig(handle,"ice",e.candidate.toJSON());};
+  return pc;
+ };
+
+ const participantsRef=useRef<RoomParticipant[]>([]);
+ useEffect(()=>{participantsRef.current=participants;},[participants]);
+
+ useEffect(()=>{
+  if(!myHandle||!roomId) return;
+  const after=new Date(Date.now()-30000).toISOString();
+  let lastAfter=after;
+  const poll=async()=>{
+   try{
+    const r=await fetch(apiUrl(`/api/rooms/${roomId}/signal?after=${encodeURIComponent(lastAfter)}`),{credentials:"include"});
+    if(!r.ok) return;
+    const rows:{id:number;from_handle:string;type:string;payload:string;created_at:string}[]=await r.json();
+    if(!rows.length) return;
+    lastAfter=rows[rows.length-1].created_at;
+    for(const sig of rows){
+     if(sig.id<=lastSigId.current) continue;
+     lastSigId.current=sig.id;
+     const {from_handle:from,type,payload}=sig;
+     const data=JSON.parse(payload);
+     const pc=getOrCreate(from);
+     if(type==="offer"){
+      await pc.setRemoteDescription(new RTCSessionDescription(data));
+      const ans=await pc.createAnswer();
+      await pc.setLocalDescription(ans);
+      await sendSig(from,"answer",ans);
+     } else if(type==="answer"){
+      if(pc.signalingState==="have-local-offer") await pc.setRemoteDescription(new RTCSessionDescription(data));
+     } else if(type==="ice"){
+      try{await pc.addIceCandidate(new RTCIceCandidate(data));}catch{}
+     }
+    }
+   }catch{}
+  };
+  pollRef.current=setInterval(poll,1500);
+  return()=>{if(pollRef.current)clearInterval(pollRef.current);};
+ // eslint-disable-next-line
+ },[roomId,myHandle]);
+
+ useEffect(()=>{
+  if(!myHandle||!active) return;
+  participants.forEach(async p=>{
+   if(p.handle===myHandle) return;
+   if(myHandle>=p.handle) return;
+   const pc=getOrCreate(p.handle);
+   if(pc.signalingState==="stable"&&!pc.localDescription){
+    try{
+     const offer=await pc.createOffer();
+     await pc.setLocalDescription(offer);
+     await sendSig(p.handle,"offer",offer);
+    }catch{}
+   }
+  });
+ // eslint-disable-next-line
+ },[participants,myHandle,active]);
+
+ useEffect(()=>()=>{
+  Object.values(pcsRef.current).forEach(pc=>pc.close());
+  pcsRef.current={};
+  localRef.current?.getTracks().forEach(t=>t.stop());
+  if(pollRef.current)clearInterval(pollRef.current);
+ },[]);
+
+ return{localStream,remoteStreams};
+}
+
 function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const {user} = useCurrentUser();
  const [participants,setParticipants] = useState<RoomParticipant[]>([]);
@@ -9454,6 +9594,8 @@ function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [camOn,setCamOn] = useState(false);
  const [confirmLeave,setConfirmLeave] = useState(false);
  const [showPanel,setShowPanel] = useState(false);
+ const myHandle=user?.handle||"";
+ const {localStream,remoteStreams}=useWebRTC(sim.id,myHandle,participants,camOn);
 
  useEffect(()=>{
   if(!user) return;
@@ -9484,7 +9626,7 @@ function SimRoomView({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   <>
    {confirmLeave&&<LeaveConfirmModal T={T} label={`${SIM_TYPE_LABELS[sim.type]==="ONU"?"la session ONU":SIM_TYPE_LABELS[sim.type]==="Procès"?"le procès":"la session"}`} onCancel={()=>setConfirmLeave(false)} onConfirm={onBack}/>}
    <div style={{display:"flex",flexDirection:"column" as const,height:"100%",position:"relative" as const}}>
-    <RoomVideoStage sim={sim} participants={participants} myCamOn={camOn} myMicOn={micOn} myLabel={user?.handle||"Vous"} onBack={()=>setConfirmLeave(true)}/>
+    <RoomVideoStage sim={sim} participants={participants} myCamOn={camOn} myMicOn={micOn} myLabel={user?.handle||"Vous"} onBack={()=>setConfirmLeave(true)} localStream={localStream} remoteStreams={remoteStreams}/>
     <button onClick={()=>setShowPanel(true)} style={{position:"absolute" as const,left:16,bottom:90,zIndex:140,display:"flex",alignItems:"center",gap:7,padding:"10px 14px",borderRadius:24,border:"none",background:T.card,color:T.text,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px rgba(0,0,0,.25)"}}>
      <Ic n="brief" s={15} c={T.text}/>Procédure
     </button>
@@ -9517,7 +9659,38 @@ function RoomShellInner({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  return <GeneralDebateRoom T={T} sim={sim} onBack={onBack}/>;
 }
 
-function SimulationsTab({T,onPremium,initialView}:{T:Theme;onPremium:()=>void;initialView?:"hub"|"apprendre"}) {
+function FilRougeCard({T,onNavigate}:{T:Theme;onNavigate:()=>void}) {
+ const xp=getXP();
+ const lvl=levelInfo(xp);
+ const prevMax=xp<150?0:xp<400?150:xp<800?400:xp<1400?800:xp<2200?1400:2200;
+ const progress=lvl.max<99999?Math.min(100,Math.round((xp-prevMax)/(lvl.max-prevMax)*100)):100;
+ const streak=getStreak();
+ const lastFiller=typeof window!=="undefined"?JSON.parse(localStorage.getItem("nx_last_filler")||"null"):null;
+ return(
+  <button onClick={onNavigate} style={{background:`linear-gradient(135deg,${T.blueB}15,#7C3AED15)`,border:`1px solid ${T.blueB}40`,borderRadius:14,padding:14,display:"flex",alignItems:"center",gap:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left" as const,width:"100%"}}>
+   <div style={{flex:1,minWidth:0}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+     <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase" as const}}>Fil rouge oral</p>
+     {streak>0&&<span style={{fontSize:10,fontWeight:800,color:T.amber}}>🔥 {streak}j</span>}
+    </div>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+     <span style={{fontSize:12,fontWeight:800,color:T.blueB}}>{lvl.t}</span>
+     <span style={{color:T.muted,fontSize:10}}>·</span>
+     <span style={{fontSize:11,fontWeight:700,color:T.textD}}>{xp} XP</span>
+    </div>
+    <div style={{height:5,background:T.b1,borderRadius:3,overflow:"hidden",marginBottom:lastFiller?5:0}}>
+     <div style={{height:"100%",width:`${progress}%`,background:T.blueB,borderRadius:3,transition:"width .8s cubic-bezier(.4,0,.2,1)"}}/>
+    </div>
+    {lastFiller&&(
+     <p style={{color:T.textD,fontSize:10}}>Fluidité : <span style={{color:lastFiller.score>=8?T.green:lastFiller.score>=5?T.blueB:T.amber,fontWeight:800}}>{lastFiller.score}/10</span> — {lastFiller.words?.slice(0,2).map((w:{word:string;count:number})=>`«${w.word}»`).join(", ")}</p>
+    )}
+   </div>
+   <Ic n="chevR" s={18} c={T.muted}/>
+  </button>
+ );
+}
+
+function SimulationsTab({T,onPremium,initialView,onProgress}:{T:Theme;onPremium:()=>void;initialView?:"hub"|"apprendre";onProgress?:()=>void}) {
  type SimView = "hub"|"create"|"room"|"apprendre";
  type SimFilter = "all"|SimType;
  const hasPremium = typeof window!=="undefined"&&(localStorage.getItem("nexus_premium")==="true"||localStorage.getItem("nexus_mod")==="true");
@@ -9636,6 +9809,7 @@ function SimulationsTab({T,onPremium,initialView}:{T:Theme;onPremium:()=>void;in
      </div>
     </div>
    )}
+   <FilRougeCard T={T} onNavigate={()=>{haptic();onProgress?.();}}/>
    <button onClick={()=>{haptic();setView("apprendre");}} style={{background:`linear-gradient(135deg,#16A34A15,#2B78F515)`,border:`1px solid #16A34A30`,borderRadius:14,padding:16,display:"flex",alignItems:"center",gap:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left" as const,width:"100%"}}>
     <div style={{width:44,height:44,borderRadius:12,background:"#16A34A20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="zap" s={22} c="#16A34A"/></div>
     <div style={{flex:1}}><p style={{color:T.text,fontSize:14,fontWeight:800}}>Apprendre</p><p style={{color:T.textD,fontSize:12,marginTop:2}}>Fiches de révision · Prépa concours (Sciences Po, ENS, Fonction pub., Barreau)</p></div>
@@ -9911,7 +10085,7 @@ export default function NexusApp() {
  {tab==="community"&&<CommunityScreen T={T}/>}
  {tab==="opportunities"&&<NewOpportunitiesScreen T={T}/>}
  {tab==="messages"&&<MessagesScreen T={T}/>}
- {tab==="simulations"&&<SimulationsTab T={T} onPremium={()=>setShowPremium(true)} initialView={simInitialView}/>}
+ {tab==="simulations"&&<SimulationsTab T={T} onPremium={()=>setShowPremium(true)} initialView={simInitialView} onProgress={()=>setShowProgress(true)}/>}
  </div>
  )}
  </div>
