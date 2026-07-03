@@ -5118,20 +5118,14 @@ const JOB_FEEDS = [
  {q:"freelance consultant communication stratégique rédaction discours",type:"gigs",src:"Consulting"},
  {q:"mission consultant politique indépendant coaching prise de parole",type:"gigs",src:"Coaching Oral"},
  {q:"freelance traduction interprète conférence international",type:"gigs",src:"Traduction & Interp."},
- // Événements — conférences, forums
- {q:"conférence forum débat géopolitique diplomatie sciences po 2025 2026",type:"events",src:"Conférences"},
- {q:"colloque symposium relations internationales droit politique france",type:"events",src:"Colloques & Symposia"},
- {q:"tournoi éloquence concours débat compétition oratoire france 2025",type:"events",src:"Compétitions"},
- {q:"MUN modèle nations unies simulation conférence étudiants france",type:"events",src:"MUN & Simulations"},
- {q:"salon emploi public secteur associations recrutement france",type:"events",src:"Salons Emploi"},
 ];
 
-type LiveOpp = {id:string;title:string;src:string;type:"emploi"|"gigs"|"events"|"deals";link:string;time:string;tag:string;tagC:string;deadlineIso?:string};
+type LiveOpp = {id:string;title:string;src:string;type:"emploi"|"gigs"|"deals";link:string;time:string;tag:string;tagC:string;deadlineIso?:string};
 
 async function fetchLiveOpps(onChunk?:(items:LiveOpp[])=>void):Promise<LiveOpp[]> {
  const seen=new Set<string>();
  const all:LiveOpp[]=[];
- const TYPE_COLORS:Record<string,string> = {emploi:"#2B78F5",gigs:"#7C3AED",events:"#16A34A",deals:"#D97706"};
+ const TYPE_COLORS:Record<string,string> = {emploi:"#2B78F5",gigs:"#7C3AED",deals:"#D97706"};
  const fetchOne=async(feed:typeof JOB_FEEDS[0])=>{
   try{
    const proxyUrl=`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(G(feed.q))}&count=6`;
@@ -5168,18 +5162,6 @@ const STATIC_LIVE_OPPS:LiveOpp[]=OPPORTUNITIES_DATA
   tagC:TYPE_OPP_COL[o.type]||"#2B78F5",
   deadlineIso:o.deadlineIso,
  }));
-const STATIC_EVENTS:LiveOpp[]=[
- {id:"ev1",title:"Forum Sciences Po — Carrières Internationales",src:"Sciences Po Paris",type:"events",link:"https://www.sciencespo.fr",time:"Mars 2027",tag:"FORUM",tagC:"#16A34A"},
- {id:"ev2",title:"Conférence annuelle IRIS — Géopolitique mondiale 2026",src:"IRIS",type:"events",link:"https://www.iris-france.org",time:"Nov. 2026",tag:"CONFÉRENCE",tagC:"#16A34A"},
- {id:"ev3",title:"MUN Paris Sciences Po — Simulation ONU",src:"AMUN Paris",type:"events",link:"https://www.sciencespo.fr",time:"Fév. 2027",tag:"MUN",tagC:"#1A5FD4"},
- {id:"ev4",title:"Tournoi Éloquence Paris — Inter-Grandes Écoles",src:"Eloquence France",type:"events",link:"#",time:"Avr. 2027",tag:"COMPÉTITION",tagC:"#7C3AED"},
- {id:"ev5",title:"Salon de l'Étudiant — Carrières Droit & RI",src:"Studyrama",type:"events",link:"https://www.studyrama.com",time:"Jan. 2027",tag:"SALON",tagC:"#D97706"},
- {id:"ev6",title:"THIMUN — La Haye (UNESCO Model UN)",src:"THIMUN Foundation",type:"events",link:"https://www.thimun.org",time:"Jan. 2027",tag:"MUN",tagC:"#1A5FD4"},
- {id:"ev7",title:"Conférence OCDE — Forum mondial économie",src:"OCDE",type:"events",link:"https://www.oecd.org",time:"Mai 2027",tag:"CONFÉRENCE",tagC:"#16A34A"},
- {id:"ev8",title:"Brussels Forum — German Marshall Fund",src:"GMF",type:"events",link:"https://www.gmfus.org",time:"Mars 2027",tag:"FORUM",tagC:"#16A34A"},
- {id:"ev9",title:"Tournoi National Joutes Oratoires — NEXUS Cup",src:"NEXUS",type:"events",link:"#",time:"Juin 2027",tag:"NEXUS",tagC:"#E03535"},
- {id:"ev10",title:"Rencontres Internationales Sciences Politiques — RISPO",src:"AFSP",type:"events",link:"https://www.afsp.info",time:"Juil. 2027",tag:"COLLOQUES",tagC:"#16A34A"},
-];
 const STATIC_GIGS:LiveOpp[]=[
  {id:"g1",title:"Consultant·e en communication politique — mission 3 mois",src:"Agence Publicum",type:"gigs",link:"#",time:"Immédiat",tag:"CONSULTING",tagC:"#7C3AED"},
  {id:"g2",title:"Rédacteur·rice de discours et notes politiques — freelance",src:"Cabinet Oratoire",type:"gigs",link:"#",time:"Ouvert",tag:"RÉDACTION",tagC:"#7C3AED"},
@@ -5189,19 +5171,19 @@ const STATIC_GIGS:LiveOpp[]=[
 ];
 
 function NewOpportunitiesScreen({T}:{T:Theme}) {
- type OppTab = "emploi"|"gigs"|"events"|"deals";
+ type OppTab = "emploi"|"gigs"|"deals";
  const [subTab,setSubTab] = useState<OppTab>("emploi");
- const [liveOpps,setLiveOpps] = useState<LiveOpp[]>([...STATIC_LIVE_OPPS,...STATIC_EVENTS,...STATIC_GIGS]);
+ const [liveOpps,setLiveOpps] = useState<LiveOpp[]>([...STATIC_LIVE_OPPS,...STATIC_GIGS]);
  const [loading,setLoading] = useState(false);
  const [lastRefresh,setLastRefresh] = useState<Date|null>(null);
  const [showPost,setShowPost] = useState(false);
  const [postForm,setPostForm] = useState({title:"",desc:"",link:""});
  const [search,setSearch] = useState("");
 
- const PRICES:Record<OppTab,string> = {emploi:"50€",gigs:"20€",events:"30€",deals:"Gratuit"};
- const LABELS:Record<OppTab,string> = {emploi:"Emplois & Stages",gigs:"Freelance & Gigs",events:"Événements",deals:"Bons Plans"};
- const ICONS:Record<OppTab,string> = {emploi:"brief",gigs:"zap",events:"cal",deals:"star"};
- const COLORS:Record<OppTab,string> = {emploi:"#2B78F5",gigs:"#7C3AED",events:"#16A34A",deals:"#D97706"};
+ const PRICES:Record<OppTab,string> = {emploi:"50€",gigs:"20€",deals:"Gratuit"};
+ const LABELS:Record<OppTab,string> = {emploi:"Emplois & Stages",gigs:"Freelance & Gigs",deals:"Bons Plans"};
+ const ICONS:Record<OppTab,string> = {emploi:"brief",gigs:"zap",deals:"star"};
+ const COLORS:Record<OppTab,string> = {emploi:"#2B78F5",gigs:"#7C3AED",deals:"#D97706"};
 
  const STATIC_DEALS = [
   {id:"d1",title:"Livre : L'Art de la Rhétorique — Eyrolles",src:"Partenaires",type:"deals" as OppTab,link:"#",time:"1j",tag:"DEAL",tagC:"#D97706"},
@@ -5277,11 +5259,11 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher offre, organisme…" style={{width:"100%",padding:"7px 10px 7px 28px",borderRadius:8,border:`1px solid ${T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box" as const}}/>
     </div>
     {/* Sub-tabs */}
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:5,marginBottom:10}}>
-     {(["emploi","gigs","events","deals"] as OppTab[]).map(t=>(
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5,marginBottom:10}}>
+     {(["emploi","gigs","deals"] as OppTab[]).map(t=>(
       <button key={t} onClick={()=>{haptic();setSubTab(t);}} style={{padding:"8px 4px",borderRadius:9,border:`1px solid ${subTab===t?COLORS[t]:T.b1}`,background:subTab===t?COLORS[t]+"15":"transparent",color:subTab===t?COLORS[t]:T.textD,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,justifyContent:"center",transition:"all .15s"}}>
        <Ic n={ICONS[t]} s={12} c={subTab===t?COLORS[t]:T.muted}/>
-       <span>{t==="emploi"?"Emplois":t==="gigs"?"Gigs":t==="events"?"Events":"Deals"}</span>
+       <span>{t==="emploi"?"Emplois":t==="gigs"?"Gigs":"Deals"}</span>
       </button>
      ))}
     </div>
