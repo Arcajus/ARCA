@@ -412,17 +412,17 @@ function Ic({n,s=22,c="currentColor",w=1.6}:{n:string;s?:number;c?:string;w?:num
 
 const UN_DEL = [
  // Membres permanents (P5)
- {id:"fr",flag:"🇫🇷",country:"France",init:"FR",perm:true,doctrine:"Membre permanent, droit d'ingérence humanitaire (doctrine Kouchner), autonomie stratégique européenne, dissuasion nucléaire indépendante (280 têtes), siège permanent depuis 1945. Budget défense 44Md€ (2024). Partisan d'une Europe puissance, opposé à tout unilatéralisme américain."},
- {id:"us",flag:"🇺🇸",country:"États-Unis",init:"US",perm:true,doctrine:"Hégémonie libérale, chef de l'OTAN (32 membres, 2% PIB requis), sanctions SWIFT, dollar comme arme géopolitique. Budget défense 886Md$ (2024, 40% du budget mondial). Soutien inconditionnel à Israël. AUKUS avec UK et Australie."},
- {id:"ru",flag:"🇷🇺",country:"Russie",init:"RU",perm:true,doctrine:"Souveraineté absolue, doctrine Gerasimov (guerre hybride), anti-OTAN, veto systématique au CSNU, sphère d'influence ex-URSS, arsenal nucléaire 6257 têtes, partenariat stratégique Chine. Sanctions occidentales: 14000 mesures depuis 2022."},
- {id:"cn",flag:"🇨🇳",country:"Chine",init:"CN",perm:true,doctrine:"Non-ingérence stricte (principe des 5 de Bandung), BRI (Routes de la Soie, 150 pays, 1000Md$), réunification Taiwan non négociable, coalition Global South. PIB 2e mondial, armée 2,1M soldats. Abstention préférentielle au CSNU."},
- {id:"uk",flag:"🇬🇧",country:"Royaume-Uni",init:"UK",perm:true,doctrine:"Atlantisme post-Brexit, membre OTAN et Five Eyes, puissance nucléaire (225 têtes Trident), soft power Commonwealth (54 pays, 2,7Md habitants), sanctions ciblées individuelles. AUKUS."},
+ {id:"fr",flag:"",country:"France",init:"FR",perm:true,doctrine:"Membre permanent, droit d'ingérence humanitaire (doctrine Kouchner), autonomie stratégique européenne, dissuasion nucléaire indépendante (280 têtes), siège permanent depuis 1945. Budget défense 44Md€ (2024). Partisan d'une Europe puissance, opposé à tout unilatéralisme américain."},
+ {id:"us",flag:"",country:"États-Unis",init:"US",perm:true,doctrine:"Hégémonie libérale, chef de l'OTAN (32 membres, 2% PIB requis), sanctions SWIFT, dollar comme arme géopolitique. Budget défense 886Md$ (2024, 40% du budget mondial). Soutien inconditionnel à Israël. AUKUS avec UK et Australie."},
+ {id:"ru",flag:"",country:"Russie",init:"RU",perm:true,doctrine:"Souveraineté absolue, doctrine Gerasimov (guerre hybride), anti-OTAN, veto systématique au CSNU, sphère d'influence ex-URSS, arsenal nucléaire 6257 têtes, partenariat stratégique Chine. Sanctions occidentales: 14000 mesures depuis 2022."},
+ {id:"cn",flag:"",country:"Chine",init:"CN",perm:true,doctrine:"Non-ingérence stricte (principe des 5 de Bandung), BRI (Routes de la Soie, 150 pays, 1000Md$), réunification Taiwan non négociable, coalition Global South. PIB 2e mondial, armée 2,1M soldats. Abstention préférentielle au CSNU."},
+ {id:"uk",flag:"",country:"Royaume-Uni",init:"UK",perm:true,doctrine:"Atlantisme post-Brexit, membre OTAN et Five Eyes, puissance nucléaire (225 têtes Trident), soft power Commonwealth (54 pays, 2,7Md habitants), sanctions ciblées individuelles. AUKUS."},
  // Membres non-permanents élus
- {id:"dz",flag:"🇩🇿",country:"Algérie",init:"DZ",perm:false,doctrine:"Voix de l'Afrique et du monde arabe, principe de non-ingérence, panafricanisme, soutien actif à la cause palestinienne. Président de l'UA 2023. Médiateur reconnu dans les conflits africains. Opposé aux sanctions unilatérales occidentales."},
- {id:"jp",flag:"🇯🇵",country:"Japon",init:"JP",perm:false,doctrine:"Pacifisme constitutionnel (article 9), allié clé des États-Unis (traité de sécurité 1960), puissance économique G7, promotion du multilatéralisme et du droit international. Pays hôte du G7 2023. Partisan d'un CSNU élargi avec siège permanent pour le Japon."},
- {id:"br",flag:"🇧🇷",country:"Brésil",init:"BR",perm:false,doctrine:"Diplomatie autonome (doctrine Lula), leader du Global South, BRICS (membre fondateur), non-alignement actif, médiation de paix en Amérique latine. Opposition aux sanctions extraterritoriales. Candidat historique au siège permanent."},
- {id:"ec",flag:"🇪🇨",country:"Équateur",init:"EC",perm:false,doctrine:"Petit État, voix du droit international et des peuples autochtones, respect strict de la souveraineté, position indépendante des grandes puissances. Représente les intérêts de l'Amérique andine et des nations en développement."},
- {id:"sl",flag:"🇸🇱",country:"Sierra Leone",init:"SL",perm:false,doctrine:"Représentant de l'Afrique subsaharienne et des pays post-conflit, plaide pour la consolidation de la paix, la reconstruction, l'aide au développement et la réforme du CSNU pour plus de représentativité africaine."},
+ {id:"dz",flag:"",country:"Algérie",init:"DZ",perm:false,doctrine:"Voix de l'Afrique et du monde arabe, principe de non-ingérence, panafricanisme, soutien actif à la cause palestinienne. Président de l'UA 2023. Médiateur reconnu dans les conflits africains. Opposé aux sanctions unilatérales occidentales."},
+ {id:"jp",flag:"",country:"Japon",init:"JP",perm:false,doctrine:"Pacifisme constitutionnel (article 9), allié clé des États-Unis (traité de sécurité 1960), puissance économique G7, promotion du multilatéralisme et du droit international. Pays hôte du G7 2023. Partisan d'un CSNU élargi avec siège permanent pour le Japon."},
+ {id:"br",flag:"",country:"Brésil",init:"BR",perm:false,doctrine:"Diplomatie autonome (doctrine Lula), leader du Global South, BRICS (membre fondateur), non-alignement actif, médiation de paix en Amérique latine. Opposition aux sanctions extraterritoriales. Candidat historique au siège permanent."},
+ {id:"ec",flag:"",country:"Équateur",init:"EC",perm:false,doctrine:"Petit État, voix du droit international et des peuples autochtones, respect strict de la souveraineté, position indépendante des grandes puissances. Représente les intérêts de l'Amérique andine et des nations en développement."},
+ {id:"sl",flag:"",country:"Sierra Leone",init:"SL",perm:false,doctrine:"Représentant de l'Afrique subsaharienne et des pays post-conflit, plaide pour la consolidation de la paix, la reconstruction, l'aide au développement et la réforme du CSNU pour plus de représentativité africaine."},
 ];
 const UN_TOPICS = ["Cessez-le-feu immédiat en Ukraine","Réforme du droit de veto","Intervention humanitaire en zone de conflit","Régulation internationale de l'IA militaire","Reconnaissance d'un nouvel État indépendant"];
 const DEBATE_CATEGORIES = [
@@ -1337,8 +1337,8 @@ const OPPORTUNITIES_DATA:Opportunity[]=[
  {id:48,title:"Stage Croix-Rouge — Coopération internationale",org:"Croix-Rouge Française",orgEmoji:"",type:"Stage",domain:"Coopération internationale",location:"Paris / Terrain",zone:"France",duration:"4–6 mois",link:"https://www.croix-rouge.fr/stages",desc:"Stage dans la Direction de l'Action Internationale. Projets terrain (Afrique, Moyen-Orient), coordination FICR."},
  {id:49,title:"Stage Human Rights Watch",org:"Human Rights Watch",orgEmoji:"",type:"Stage",domain:"Droits de l'homme / Journalisme",location:"Paris / Bruxelles / New York",zone:"Monde",duration:"3–6 mois",link:"https://www.hrw.org/jobs",desc:"Recherche, rédaction de rapports, plaidoyer institutionnel. Anglais courant requis."},
  {id:50,title:"Stage Reporters Sans Frontières",org:"RSF",orgEmoji:"",type:"Stage",domain:"Liberté de la presse / Droits",location:"Paris",zone:"France",duration:"3–6 mois",link:"https://rsf.org/fr/rejoignez-nous",desc:"Suivi des journalistes emprisonnés, communication, production du classement mondial de la liberté de la presse."},
- {id:51,title:"Stage Oxfam France — Plaidoyer",org:"Oxfam France",orgEmoji:"🟠",type:"Stage",domain:"Inégalités / Justice fiscale",location:"Paris",zone:"France",duration:"4–6 mois",link:"https://www.oxfamfrance.org/agir/rejoindre-oxfam/",desc:"Plaidoyer Oxfam France : inégalités mondiales, justice fiscale, justice climatique. Recherche, communication, lobbying."},
- {id:52,title:"Stage Save the Children",org:"Save the Children",orgEmoji:"🟢",type:"Stage",domain:"Droits de l'enfant",location:"Paris / Londres",zone:"Europe",duration:"4–6 mois",link:"https://www.savethechildren.net/careers",desc:"Programmes d'urgence ou de développement pour les enfants. Paris (section FR) ou Londres (siège international)."},
+ {id:51,title:"Stage Oxfam France — Plaidoyer",org:"Oxfam France",orgEmoji:"",type:"Stage",domain:"Inégalités / Justice fiscale",location:"Paris",zone:"France",duration:"4–6 mois",link:"https://www.oxfamfrance.org/agir/rejoindre-oxfam/",desc:"Plaidoyer Oxfam France : inégalités mondiales, justice fiscale, justice climatique. Recherche, communication, lobbying."},
+ {id:52,title:"Stage Save the Children",org:"Save the Children",orgEmoji:"",type:"Stage",domain:"Droits de l'enfant",location:"Paris / Londres",zone:"Europe",duration:"4–6 mois",link:"https://www.savethechildren.net/careers",desc:"Programmes d'urgence ou de développement pour les enfants. Paris (section FR) ou Londres (siège international)."},
  {id:53,title:"Stage WWF France — Politique environnementale",org:"WWF France",orgEmoji:"",type:"Stage",domain:"Environnement / Politique",location:"Paris",zone:"France",duration:"4–6 mois",link:"https://www.wwf.fr/nous-rejoindre/stages",desc:"Politiques de conservation, énergie, forêts, océans. Plaidoyer institutionnel, communication."},
  {id:54,title:"Stage Greenpeace France — Campagnes",org:"Greenpeace France",orgEmoji:"",type:"Stage",domain:"Environnement / Communication",location:"Paris",zone:"France",duration:"4–6 mois",link:"https://www.greenpeace.fr/nous-rejoindre/stages/",desc:"Campagnes énergie, forêts, océans, agriculture. Communication, mobilisation citoyenne, plaidoyer."},
  {id:55,title:"Bénévole Greenpeace",org:"Greenpeace",orgEmoji:"",type:"Bénévolat",domain:"Environnement",location:"France entière",zone:"France",link:"https://www.greenpeace.fr/nous-rejoindre/benevoles/",desc:"Rejoindre les équipes locales Greenpeace. Actions terrain, sensibilisation, présence aux événements."},
@@ -3199,7 +3199,7 @@ function OralJuryScreen({T,onBack,onPremium}:{T:Theme;onBack:()=>void;onPremium:
  <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,padding:14}}>
  <p style={{color:T.text,fontWeight:700,fontSize:13,marginBottom:8}}>Forme (auto-évaluation)</p>
  {FORME_ITEMS.map(it=>(
- <p key={it} style={{color:forme[it]?T.green:T.muted,fontSize:12,marginBottom:4}}>{forme[it]?"✓":"○"} {it}</p>
+ <p key={it} style={{color:forme[it]?T.green:T.muted,fontSize:12,marginBottom:4}}>{forme[it]?"":"○"} {it}</p>
  ))}
  </div>
  <button onClick={()=>setPhase("setup")} style={{padding:12,borderRadius:10,border:`1px solid ${meta.color}`,background:`${meta.color}15`,color:meta.color,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Nouvel oral</button>
@@ -3347,7 +3347,7 @@ function ApiKeySettings({T}:{T:Theme}) {
  <div style={{background:`${T.green}12`,border:`1px solid ${T.green}`,borderRadius:12,padding:14,display:"flex",alignItems:"center",gap:10}}>
   <div style={{width:32,height:32,borderRadius:8,background:`${T.green}20`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="zap" s={16} c={T.green}/></div>
   <div>
-   <p style={{color:T.text,fontSize:13,fontWeight:800}}>IA NEXUS — opérationnelle ✓</p>
+   <p style={{color:T.text,fontSize:13,fontWeight:800}}>IA NEXUS — opérationnelle </p>
    <p style={{color:T.muted,fontSize:11,marginTop:2}}>L'intelligence artificielle est gérée par NEXUS. Aucune configuration requise.</p>
   </div>
  </div>
@@ -3946,11 +3946,11 @@ Tiens compte des positions habituelles : Russie et Chine opposées aux intervent
  return m?.[1]?.toUpperCase()||"ABSTENTION";
  };
  const results=[
- {country:"France",flag:"🇫🇷",vote:parseV("france")},
- {country:"États-Unis",flag:"🇺🇸",vote:parseV("états-unis")},
- {country:"Russie",flag:"🇷🇺",vote:parseV("russie")},
- {country:"Chine",flag:"🇨🇳",vote:parseV("chine")},
- {country:"Royaume-Uni",flag:"🇬🇧",vote:parseV("royaume-uni")},
+ {country:"France",flag:"",vote:parseV("france")},
+ {country:"États-Unis",flag:"",vote:parseV("états-unis")},
+ {country:"Russie",flag:"",vote:parseV("russie")},
+ {country:"Chine",flag:"",vote:parseV("chine")},
+ {country:"Royaume-Uni",flag:"",vote:parseV("royaume-uni")},
  ];
  setVoteResults(results);
  const hasVeto=results.some(r=>r.vote==="NON");
@@ -4410,7 +4410,7 @@ function PremiumScreen({T,onBack}:{T:Theme;onBack:()=>void}) {
  </div>
  ))}
  </div>
- <button onClick={()=>activate(p.id)} disabled={p.id==="free"} style={{width:"100%",padding:"12px",borderRadius:10,border:`1px solid ${p.highlight?T.blueB:T.b1}`,background:p.highlight?T.blueB:T.blueG,color:p.highlight?"#fff":T.blueB,fontSize:13,fontWeight:800,cursor:p.id==="free"?"default":"pointer",fontFamily:"inherit",opacity:p.id==="free"?.6:1}}>{activated===p.id?"✓ Activé":p.cta}</button>
+ <button onClick={()=>activate(p.id)} disabled={p.id==="free"} style={{width:"100%",padding:"12px",borderRadius:10,border:`1px solid ${p.highlight?T.blueB:T.b1}`,background:p.highlight?T.blueB:T.blueG,color:p.highlight?"#fff":T.blueB,fontSize:13,fontWeight:800,cursor:p.id==="free"?"default":"pointer",fontFamily:"inherit",opacity:p.id==="free"?.6:1}}>{activated===p.id?" Activé":p.cta}</button>
  </div>
  ))}
  {Capacitor.isNativePlatform()&&(
@@ -4901,18 +4901,18 @@ const POST_TEMPLATES = [
  "Mon discours sur {t} a été cité par la présidence comme exemple de synthèse claire — fierté du jour.",
 ];
 const STORY_CAPTIONS = [
- "🔥 Simulation ONU en cours — Conseil de Sécurité",
- "🎤 Grand Oral : 3e répétition aujourd'hui",
- "⚖️ Plaidoirie finale dans 10 minutes",
- "🏛️ Premier discours à l'Assemblée Nationale",
- "📊 Résultat du débat : victoire serrée !",
- "🤝 Négociation diplomatique en pleine session",
- "✍️ Préparation contre-interrogatoire",
- "🎯 Nouveau record de simulations ce mois",
- "💬 Caucus officieux improvisé",
- "🇺🇳 Veto posé pour la première fois",
- "📚 Révisions avant l'épreuve du Grand Oral",
- "🗣️ Discours liminaire validé par la présidence",
+ " Simulation ONU en cours — Conseil de Sécurité",
+ " Grand Oral : 3e répétition aujourd'hui",
+ " Plaidoirie finale dans 10 minutes",
+ " Premier discours à l'Assemblée Nationale",
+ " Résultat du débat : victoire serrée !",
+ " Négociation diplomatique en pleine session",
+ " Préparation contre-interrogatoire",
+ " Nouveau record de simulations ce mois",
+ " Caucus officieux improvisé",
+ " Veto posé pour la première fois",
+ " Révisions avant l'épreuve du Grand Oral",
+ " Discours liminaire validé par la présidence",
 ];
 
 function generateAccounts(count: number): CommunityAccount[] {
@@ -5480,7 +5480,7 @@ function SimCard({s,T,onJoin,highlight}:{s:SimRoom;T:Theme;onJoin:()=>void;highl
    if(perm!=="granted")return;
    const ms=s.scheduled-15*60*1000-Date.now();
    if(ms>0){
-    setTimeout(()=>{new Notification(`🔔 Ta simulation commence dans 15 min`,{body:`${SIM_TYPE_LABELS[s.type]} — ${s.topic}`,icon:"/favicon.ico"});},ms);
+    setTimeout(()=>{new Notification(` Ta simulation commence dans 15 min`,{body:`${SIM_TYPE_LABELS[s.type]} — ${s.topic}`,icon:"/favicon.ico"});},ms);
     localStorage.setItem(`nexus_notif_${s.id}`,"true");
     setNotifSet(true);
    }
@@ -5526,63 +5526,63 @@ function SimCard({s,T,onJoin,highlight}:{s:SimRoom;T:Theme;onJoin:()=>void;highl
 // UN DEBATE ROOM — 193 pays, timer, vote résolution
 // ──────────────────────────────────────────────────
 const ALL_UN_COUNTRIES = [
- {id:"fr",flag:"🇫🇷",country:"France"},
- {id:"us",flag:"🇺🇸",country:"États-Unis"},
- {id:"ru",flag:"🇷🇺",country:"Russie"},
- {id:"cn",flag:"🇨🇳",country:"Chine"},
- {id:"uk",flag:"🇬🇧",country:"Royaume-Uni"},
- {id:"de",flag:"🇩🇪",country:"Allemagne"},
- {id:"jp",flag:"🇯🇵",country:"Japon"},
- {id:"br",flag:"🇧🇷",country:"Brésil"},
- {id:"in",flag:"🇮🇳",country:"Inde"},
- {id:"za",flag:"🇿🇦",country:"Afrique du Sud"},
- {id:"dz",flag:"🇩🇿",country:"Algérie"},
- {id:"ar",flag:"🇦🇷",country:"Argentine"},
- {id:"au",flag:"🇦🇺",country:"Australie"},
- {id:"at",flag:"🇦🇹",country:"Autriche"},
- {id:"be",flag:"🇧🇪",country:"Belgique"},
- {id:"ca",flag:"🇨🇦",country:"Canada"},
- {id:"cl",flag:"🇨🇱",country:"Chili"},
- {id:"co",flag:"🇨🇴",country:"Colombie"},
- {id:"hr",flag:"🇭🇷",country:"Croatie"},
- {id:"cz",flag:"🇨🇿",country:"République Tchèque"},
- {id:"dk",flag:"🇩🇰",country:"Danemark"},
- {id:"eg",flag:"🇪🇬",country:"Égypte"},
- {id:"et",flag:"🇪🇹",country:"Éthiopie"},
- {id:"fi",flag:"🇫🇮",country:"Finlande"},
- {id:"gh",flag:"🇬🇭",country:"Ghana"},
- {id:"gr",flag:"🇬🇷",country:"Grèce"},
- {id:"hu",flag:"🇭🇺",country:"Hongrie"},
- {id:"id",flag:"🇮🇩",country:"Indonésie"},
- {id:"ir",flag:"🇮🇷",country:"Iran"},
- {id:"iq",flag:"🇮🇶",country:"Irak"},
- {id:"ie",flag:"🇮🇪",country:"Irlande"},
- {id:"il",flag:"🇮🇱",country:"Israël"},
- {id:"it",flag:"🇮🇹",country:"Italie"},
- {id:"ke",flag:"🇰🇪",country:"Kenya"},
- {id:"mx",flag:"🇲🇽",country:"Mexique"},
- {id:"ma",flag:"🇲🇦",country:"Maroc"},
- {id:"ng",flag:"🇳🇬",country:"Nigéria"},
- {id:"no",flag:"🇳🇴",country:"Norvège"},
- {id:"pk",flag:"🇵🇰",country:"Pakistan"},
- {id:"pe",flag:"🇵🇪",country:"Pérou"},
- {id:"ph",flag:"🇵🇭",country:"Philippines"},
- {id:"pl",flag:"🇵🇱",country:"Pologne"},
- {id:"pt",flag:"🇵🇹",country:"Portugal"},
- {id:"ro",flag:"🇷🇴",country:"Roumanie"},
- {id:"sa",flag:"🇸🇦",country:"Arabie Saoudite"},
- {id:"sn",flag:"🇸🇳",country:"Sénégal"},
- {id:"rs",flag:"🇷🇸",country:"Serbie"},
- {id:"sg",flag:"🇸🇬",country:"Singapour"},
- {id:"es",flag:"🇪🇸",country:"Espagne"},
- {id:"se",flag:"🇸🇪",country:"Suède"},
- {id:"ch",flag:"🇨🇭",country:"Suisse"},
- {id:"tn",flag:"🇹🇳",country:"Tunisie"},
- {id:"tr",flag:"🇹🇷",country:"Turquie"},
- {id:"ua",flag:"🇺🇦",country:"Ukraine"},
- {id:"ae",flag:"🇦🇪",country:"Émirats arabes unis"},
- {id:"ve",flag:"🇻🇪",country:"Venezuela"},
- {id:"vn",flag:"🇻🇳",country:"Viêt Nam"},
+ {id:"fr",flag:"",country:"France"},
+ {id:"us",flag:"",country:"États-Unis"},
+ {id:"ru",flag:"",country:"Russie"},
+ {id:"cn",flag:"",country:"Chine"},
+ {id:"uk",flag:"",country:"Royaume-Uni"},
+ {id:"de",flag:"",country:"Allemagne"},
+ {id:"jp",flag:"",country:"Japon"},
+ {id:"br",flag:"",country:"Brésil"},
+ {id:"in",flag:"",country:"Inde"},
+ {id:"za",flag:"",country:"Afrique du Sud"},
+ {id:"dz",flag:"",country:"Algérie"},
+ {id:"ar",flag:"",country:"Argentine"},
+ {id:"au",flag:"",country:"Australie"},
+ {id:"at",flag:"",country:"Autriche"},
+ {id:"be",flag:"",country:"Belgique"},
+ {id:"ca",flag:"",country:"Canada"},
+ {id:"cl",flag:"",country:"Chili"},
+ {id:"co",flag:"",country:"Colombie"},
+ {id:"hr",flag:"",country:"Croatie"},
+ {id:"cz",flag:"",country:"République Tchèque"},
+ {id:"dk",flag:"",country:"Danemark"},
+ {id:"eg",flag:"",country:"Égypte"},
+ {id:"et",flag:"",country:"Éthiopie"},
+ {id:"fi",flag:"",country:"Finlande"},
+ {id:"gh",flag:"",country:"Ghana"},
+ {id:"gr",flag:"",country:"Grèce"},
+ {id:"hu",flag:"",country:"Hongrie"},
+ {id:"id",flag:"",country:"Indonésie"},
+ {id:"ir",flag:"",country:"Iran"},
+ {id:"iq",flag:"",country:"Irak"},
+ {id:"ie",flag:"",country:"Irlande"},
+ {id:"il",flag:"",country:"Israël"},
+ {id:"it",flag:"",country:"Italie"},
+ {id:"ke",flag:"",country:"Kenya"},
+ {id:"mx",flag:"",country:"Mexique"},
+ {id:"ma",flag:"",country:"Maroc"},
+ {id:"ng",flag:"",country:"Nigéria"},
+ {id:"no",flag:"",country:"Norvège"},
+ {id:"pk",flag:"",country:"Pakistan"},
+ {id:"pe",flag:"",country:"Pérou"},
+ {id:"ph",flag:"",country:"Philippines"},
+ {id:"pl",flag:"",country:"Pologne"},
+ {id:"pt",flag:"",country:"Portugal"},
+ {id:"ro",flag:"",country:"Roumanie"},
+ {id:"sa",flag:"",country:"Arabie Saoudite"},
+ {id:"sn",flag:"",country:"Sénégal"},
+ {id:"rs",flag:"",country:"Serbie"},
+ {id:"sg",flag:"",country:"Singapour"},
+ {id:"es",flag:"",country:"Espagne"},
+ {id:"se",flag:"",country:"Suède"},
+ {id:"ch",flag:"",country:"Suisse"},
+ {id:"tn",flag:"",country:"Tunisie"},
+ {id:"tr",flag:"",country:"Turquie"},
+ {id:"ua",flag:"",country:"Ukraine"},
+ {id:"ae",flag:"",country:"Émirats arabes unis"},
+ {id:"ve",flag:"",country:"Venezuela"},
+ {id:"vn",flag:"",country:"Viêt Nam"},
 ];
 
 // ── SHARED AUDIO COMPONENTS ─────────────────────────────────────
@@ -5646,11 +5646,11 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  const [draftResolution,setDraftResolution]=useState("");
  const [firstSpeech,setFirstSpeech]=useState(true);
  const [gsl,setGsl]=useState<{country:string;flag:string;done:boolean}[]>([
-  {country:"États-Unis",flag:"🇺🇸",done:false},
-  {country:"Chine",flag:"🇨🇳",done:false},
-  {country:"Allemagne",flag:"🇩🇪",done:false},
-  {country:"Brésil",flag:"🇧🇷",done:false},
-  {country:"Inde",flag:"🇮🇳",done:false},
+  {country:"États-Unis",flag:"",done:false},
+  {country:"Chine",flag:"",done:false},
+  {country:"Allemagne",flag:"",done:false},
+  {country:"Brésil",flag:"",done:false},
+  {country:"Inde",flag:"",done:false},
  ]);
  const [caucus,setCaucus]=useState<{type:"modere"|"non-modere";topic:string;totalTime:number;remaining:number}|null>(null);
  const [showCaucusModal,setShowCaucusModal]=useState(false);
@@ -5669,8 +5669,8 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
  useEffect(()=>{
   if(phase==="debate"&&msgs.length===0){
    setMsgs([
-    {id:1,user:"PRÉSIDENT",flag:"🌐",text:`La séance est ouverte. Point à l'ordre du jour : « ${sim.topic} ». Nous procédons à l'ouverture de la Liste Générale des Orateurs (GSL).`,time:Date.now()-900000,system:true},
-    {id:2,user:"PRÉSIDENT",flag:"🌐",text:"Les délégations souhaitant prendre la parole sont priées de s'inscrire. Chaque discours est limité à 3 minutes. Les délégations peuvent proposer des caucus à tout moment.",time:Date.now()-840000,system:true},
+    {id:1,user:"PRÉSIDENT",flag:"",text:`La séance est ouverte. Point à l'ordre du jour : « ${sim.topic} ». Nous procédons à l'ouverture de la Liste Générale des Orateurs (GSL).`,time:Date.now()-900000,system:true},
+    {id:2,user:"PRÉSIDENT",flag:"",text:"Les délégations souhaitant prendre la parole sont priées de s'inscrire. Chaque discours est limité à 3 minutes. Les délégations peuvent proposer des caucus à tout moment.",time:Date.now()-840000,system:true},
    ]);
   }
  },[phase]);
@@ -5682,7 +5682,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
     setSpeakerTime(t=>{
      if(t<=1){
       setTimerActive(false);setHasFloor(false);
-      setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Temps écoulé pour la délégation de ${myCountry?.country||"votre pays"}. La parole revient à la présidence.`,time:Date.now(),system:true}]);
+      setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"",text:`Temps écoulé pour la délégation de ${myCountry?.country||"votre pays"}. La parole revient à la présidence.`,time:Date.now(),system:true}]);
       if(myCountry) setGsl(g=>g.map(s=>s.country===myCountry.country?{...s,done:true}:s));
       return 0;
      }
@@ -5700,7 +5700,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
    setCaucus(c=>{
     if(!c) return null;
     if(c.remaining<=1){
-     setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Le caucus ${c.type==="modere"?"modéré":"non-modéré"} est terminé. Reprise en séance plénière.`,time:Date.now(),system:true}]);
+     setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"",text:`Le caucus ${c.type==="modere"?"modéré":"non-modéré"} est terminé. Reprise en séance plénière.`,time:Date.now(),system:true}]);
      return null;
     }
     return {...c,remaining:c.remaining-1};
@@ -5741,18 +5741,18 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   if(handRaised){setHandRaised(false);return;}
   setHandRaised(true);
   setGsl(g=>{if(g.find(s=>s.country===myCountry?.country)) return g;return [...g,{country:myCountry!.country,flag:myCountry!.flag,done:false}];});
-  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La délégation de ${myCountry?.country} est inscrite à la Liste Générale des Orateurs.`,time:Date.now(),system:true}]);
+  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"",text:`La délégation de ${myCountry?.country} est inscrite à la Liste Générale des Orateurs.`,time:Date.now(),system:true}]);
  };
 
  const takeFloor=()=>{
   haptic();setHasFloor(true);setHandRaised(false);setTimerActive(true);setSpeakerTime(180);
-  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La parole est à la délégation de ${myCountry?.country}. Vous disposez de 3 minutes.`,time:Date.now(),system:true}]);
+  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"",text:`La parole est à la délégation de ${myCountry?.country}. Vous disposez de 3 minutes.`,time:Date.now(),system:true}]);
  };
 
  const yieldFloor=()=>{
   haptic();setHasFloor(false);setTimerActive(false);
   if(myCountry) setGsl(g=>g.map(s=>s.country===myCountry.country?{...s,done:true}:s));
-  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`La délégation de ${myCountry?.country} cède la parole.`,time:Date.now(),system:true}]);
+  setMsgs(p=>[...p,{id:Date.now(),user:"PRÉSIDENT",flag:"",text:`La délégation de ${myCountry?.country} cède la parole.`,time:Date.now(),system:true}]);
  };
 
  const castVote=(v:string)=>{
@@ -5764,7 +5764,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   setShowCaucusModal(false);
   const totalSecs=caucusTime*60;
   setCaucus({type:caucusType,topic:caucusTopic||sim.topic,totalTime:totalSecs,remaining:totalSecs});
-  setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Motion adoptée : caucus ${caucusType==="modere"?"modéré":"non-modéré"} de ${caucusTime} min sur : « ${caucusTopic||sim.topic} »${caucusType==="non-modere"?" — Les délégués peuvent maintenant se consulter librement.":""}`,time:Date.now(),system:true}]);
+  setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"",text:`Motion adoptée : caucus ${caucusType==="modere"?"modéré":"non-modéré"} de ${caucusTime} min sur : « ${caucusTopic||sim.topic} »${caucusType==="non-modere"?" — Les délégués peuvent maintenant se consulter librement.":""}`,time:Date.now(),system:true}]);
   haptic();
  };
 
@@ -5854,8 +5854,8 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
 
     {/* Points & Motions */}
     <div style={{padding:"8px 12px",borderTop:`1px solid ${T.b1}`,display:"flex",gap:5,flexWrap:"wrap" as const}}>
-     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Point d'ordre — délégation de ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="zap" s={11} c={T.muted}/>Ordre</button>
-     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"🌐",text:`Point d'information accordé à ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="info" s={11} c={T.muted}/>Info</button>
+     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"",text:`Point d'ordre — délégation de ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="zap" s={11} c={T.muted}/>Ordre</button>
+     <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:"PRÉSIDENT",flag:"",text:`Point d'information accordé à ${myCountry?.country}.`,time:Date.now(),system:true}]);}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${T.b1}`,background:"transparent",color:T.muted,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="info" s={11} c={T.muted}/>Info</button>
      <button onClick={()=>setShowCaucusModal(true)} style={{padding:"5px 9px",borderRadius:6,border:"1px solid #7C3AED40",background:"#7C3AED10",color:"#7C3AED",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="users" s={11} c="#7C3AED"/>Caucus</button>
      <button onClick={()=>setPhase("vote")} style={{padding:"5px 9px",borderRadius:6,border:"1px solid #16A34A40",background:"#16A34A10",color:"#16A34A",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="vote" s={11} c="#16A34A"/>Vote</button>
      <button onClick={()=>{setPhase("feedback");getFeedback();}} style={{padding:"5px 9px",borderRadius:6,border:`1px solid ${acCol}40`,background:acCol+"10",color:acCol,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}><Ic n="bar" s={11} c={acCol}/>Évaluation</button>
@@ -6111,8 +6111,8 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
      // Key arguments from msgs
      const speeches=msgs.filter(m=>m.hasFloor&&!m.system);
      const AMENDMENTS=[
-      {id:"A",by:"Russie",flag:"🇷🇺",text:"Ajouter un mécanisme de vérification indépendant avant toute résolution contraignante.",status:"en cours"},
-      {id:"B",by:"France",flag:"🇫🇷",text:"Inclure une clause humanitaire prioritaire pour les zones de conflit actif.",status:"adopté"},
+      {id:"A",by:"Russie",flag:"",text:"Ajouter un mécanisme de vérification indépendant avant toute résolution contraignante.",status:"en cours"},
+      {id:"B",by:"France",flag:"",text:"Inclure une clause humanitaire prioritaire pour les zones de conflit actif.",status:"adopté"},
      ];
      return(
       <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
@@ -6218,7 +6218,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
         const pos=gsl.slice(0,i).filter(s=>!s.done).length;
         return(
          <div key={q.country} style={{background:T.card,border:`1px solid ${!q.done&&pos===0?acCol:q.done?"transparent":T.b1}`,borderRadius:9,padding:"10px 13px",display:"flex",alignItems:"center",gap:9,opacity:q.done?0.4:1}}>
-          <span style={{width:22,height:22,borderRadius:"50%",background:q.done?"#444":pos===0?acCol:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#fff",flexShrink:0}}>{q.done?"✓":(pos+1)}</span>
+          <span style={{width:22,height:22,borderRadius:"50%",background:q.done?"#444":pos===0?acCol:T.blueG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#fff",flexShrink:0}}>{q.done?"":(pos+1)}</span>
           <span style={{fontSize:16,flexShrink:0}}>{q.flag}</span>
           <span style={{color:T.text,fontSize:13,fontWeight:700,flex:1}}>{q.country}</span>
           {!q.done&&pos===0&&<span style={{background:"#16A34A20",color:"#16A34A",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:4}}>Prochain</span>}
@@ -6271,7 +6271,7 @@ function UNDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
        style={{width:"100%",minHeight:220,padding:"10px",borderRadius:10,border:`1px solid ${T.b1}`,background:T.card,color:T.text,fontSize:11,fontFamily:"inherit",outline:"none",resize:"vertical" as const,lineHeight:1.7,boxSizing:"border-box" as const,marginBottom:10}}
       />
       {draftResolution&&(
-       <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:myCountry?.country||"Délégation",flag:myCountry?.flag||"🌐",text:`[DOCUMENT DE TRAVAIL WP/1 SOUMIS] La délégation de ${myCountry?.country} soumet son document de travail au Comité.`,time:Date.now(),hasFloor:true}]);}} style={{width:"100%",padding:"11px",borderRadius:9,border:"none",background:col,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+       <button onClick={()=>{haptic();setMsgs(m=>[...m,{id:Date.now(),user:myCountry?.country||"Délégation",flag:myCountry?.flag||"",text:`[DOCUMENT DE TRAVAIL WP/1 SOUMIS] La délégation de ${myCountry?.country} soumet son document de travail au Comité.`,time:Date.now(),hasFloor:true}]);}} style={{width:"100%",padding:"11px",borderRadius:9,border:"none",background:col,color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
         <Ic n="send" s={13} c="#fff"/>Soumettre le document de travail
        </button>
       )}
@@ -7092,7 +7092,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
         {PHASES.map((p,i)=>(
          <div key={p} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<PHASES.length-1?5:0}}>
           <div style={{width:16,height:16,borderRadius:"50%",background:i<phaseIdx?"#16A34A":i===phaseIdx?col:T.b1,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-           {i<phaseIdx&&<span style={{fontSize:8,color:"#fff",fontWeight:900}}>✓</span>}
+           {i<phaseIdx&&<span style={{fontSize:8,color:"#fff",fontWeight:900}}></span>}
            {i===phaseIdx&&<span style={{width:6,height:6,borderRadius:"50%",background:"#fff",display:"inline-block"}}/>}
           </div>
           <p style={{color:i===phaseIdx?T.text:i<phaseIdx?"#16A34A":T.muted,fontSize:11,fontWeight:i===phaseIdx?800:600,flex:1}}>{phaseLabel(p)}</p>
@@ -7406,7 +7406,7 @@ function TrialRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
          <div key={p}>
           <button onClick={()=>setScriptPhase(isOpen?null:p)} style={{width:"100%",display:"flex",gap:10,alignItems:"center",background:isOpen?col+"12":isCurrent?col+"08":T.card,border:`1.5px solid ${isOpen?col:isCurrent?col+"50":T.b1}`,borderRadius:isOpen?"12px 12px 0 0":12,padding:"10px 12px",cursor:"pointer",textAlign:"left" as const,transition:"all .15s"}}>
            <div style={{width:28,height:28,borderRadius:"50%",background:isCurrent?col+"25":isPast?"#16A34A20":T.bg2,border:`2px solid ${pCol}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            {isPast?<span style={{fontSize:13}}>✓</span>:<span style={{color:isCurrent?col:T.muted,fontSize:10,fontWeight:900}}>{i+1}</span>}
+            {isPast?<span style={{fontSize:13}}></span>:<span style={{color:isCurrent?col:T.muted,fontSize:10,fontWeight:900}}>{i+1}</span>}
            </div>
            <div style={{flex:1,minWidth:0}}>
             <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap" as const}}>
@@ -7479,8 +7479,8 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
  type Msg={id:number;user:string;side:Side|"system";text:string;time:number;pts:number;reactions:{[k:string]:number}};
  const [msgs,setMsgs]=useState<Msg[]>([
   {id:1,user:"MODÉRATEUR",side:"system",text:`Bienvenue dans ce débat. Sujet : « ${sim.topic} ». L'équipe POUR ouvre le débat. Chaque argument est évalué par le public.`,time:Date.now()-600000,pts:0,reactions:{}},
-  {id:2,user:"@marie_pour",side:"pour",text:"Je pense que c'est une évidence. Les données économiques montrent que cette mesure bénéficierait à 80% de la population active.",time:Date.now()-540000,pts:3,reactions:{"👏":4,"🔥":2}},
-  {id:3,user:"@thomas_contre",side:"contre",text:"Au contraire, cette approche ignore les effets secondaires sur les PME, qui représentent 40% de l'emploi.",time:Date.now()-480000,pts:2,reactions:{"👏":2,"💪":1}},
+  {id:2,user:"@marie_pour",side:"pour",text:"Je pense que c'est une évidence. Les données économiques montrent que cette mesure bénéficierait à 80% de la population active.",time:Date.now()-540000,pts:3,reactions:{"":4,"":2}},
+  {id:3,user:"@thomas_contre",side:"contre",text:"Au contraire, cette approche ignore les effets secondaires sur les PME, qui représentent 40% de l'emploi.",time:Date.now()-480000,pts:2,reactions:{"":2,"":1}},
  ]);
  const [input,setInput]=useState("");
  const [publicScore,setPublicScore]=useState({pour:52,contre:48});
@@ -7497,11 +7497,11 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
  const myCol=sideCol(mySide);
 
  const PRESS_JOURNALISTS=[
-  {name:"Sophie Marchand",media:"Le Monde",emoji:"📰",q:`Selon vous, quel est l'impact concret de « ${sim.topic} » sur les citoyens ordinaires ?`},
-  {name:"Jean-Paul Moreau",media:"France 24",emoji:"📺",q:`Vos opposants affirment que votre position est idéologique. Comment vous défendez-vous ?`},
-  {name:"Amina Diallo",media:"RFI",emoji:"📻",q:`Et pour les pays en développement — est-ce que cette proposition les prend en compte ?`},
-  {name:"Thomas Klein",media:"Euronews",emoji:"🌐",q:`Des experts contestent vos chiffres. Pouvez-vous citer vos sources ?`},
-  {name:"Céline Rousseau",media:"BFM TV",emoji:"📡",q:`Si vous deviez concéder un point à l'adversaire, lequel serait-ce ?`},
+  {name:"Sophie Marchand",media:"Le Monde",emoji:"",q:`Selon vous, quel est l'impact concret de « ${sim.topic} » sur les citoyens ordinaires ?`},
+  {name:"Jean-Paul Moreau",media:"France 24",emoji:"",q:`Vos opposants affirment que votre position est idéologique. Comment vous défendez-vous ?`},
+  {name:"Amina Diallo",media:"RFI",emoji:"",q:`Et pour les pays en développement — est-ce que cette proposition les prend en compte ?`},
+  {name:"Thomas Klein",media:"Euronews",emoji:"",q:`Des experts contestent vos chiffres. Pouvez-vous citer vos sources ?`},
+  {name:"Céline Rousseau",media:"BFM TV",emoji:"",q:`Si vous deviez concéder un point à l'adversaire, lequel serait-ce ?`},
  ];
  const [jIdx,setJIdx]=useState(0);
 
@@ -8182,7 +8182,7 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
        {speakingRole&&(
         <g>
          <rect x="90" y="55" width="132" height="22" rx="5" fill="#C9A22720" stroke="#C9A22740" strokeWidth="1"/>
-         <text x="156" y="67" textAnchor="middle" fill="#C9A227" fontSize="8" fontWeight="bold" fontFamily="system-ui,sans-serif">🎤 {AN_ROLE_LABELS[speakingRole]}</text>
+         <text x="156" y="67" textAnchor="middle" fill="#C9A227" fontSize="8" fontWeight="bold" fontFamily="system-ui,sans-serif"> {AN_ROLE_LABELS[speakingRole]}</text>
         </g>
        )}
       </svg>
@@ -8415,8 +8415,8 @@ function AssembleeRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}){
 }
 
 // ── CONSEIL DE SÉCURITÉ ONU ────────────────────────────────────────
-const CS_P5=[{name:"États-Unis",flag:"🇺🇸"},{name:"Chine",flag:"🇨🇳"},{name:"Russie",flag:"🇷🇺"},{name:"France",flag:"🇫🇷"},{name:"Royaume-Uni",flag:"🇬🇧"}];
-const CS_ELECTED=[{name:"Brésil",flag:"🇧🇷"},{name:"Japon",flag:"🇯🇵"},{name:"Inde",flag:"🇮🇳"},{name:"Allemagne",flag:"🇩🇪"},{name:"Afrique du Sud",flag:"🇿🇦"},{name:"Émirats arabes unis",flag:"🇦🇪"},{name:"Équateur",flag:"🇪🇨"},{name:"Malte",flag:"🇲🇹"},{name:"Mozambique",flag:"🇲🇿"},{name:"Suisse",flag:"🇨🇭"}];
+const CS_P5=[{name:"États-Unis",flag:""},{name:"Chine",flag:""},{name:"Russie",flag:""},{name:"France",flag:""},{name:"Royaume-Uni",flag:""}];
+const CS_ELECTED=[{name:"Brésil",flag:""},{name:"Japon",flag:""},{name:"Inde",flag:""},{name:"Allemagne",flag:""},{name:"Afrique du Sud",flag:""},{name:"Émirats arabes unis",flag:""},{name:"Équateur",flag:""},{name:"Malte",flag:""},{name:"Mozambique",flag:""},{name:"Suisse",flag:""}];
 const CS_ALL=[...CS_P5,...CS_ELECTED];
 
 function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
@@ -8427,7 +8427,7 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
  const [setupDone,setSetupDone]=useState(false);
  type Msg={id:number;country:string;flag:string;text:string;time:number;isVeto?:boolean;isAI?:boolean};
  const [msgs,setMsgs]=useState<Msg[]>([
-  {id:1,country:"SECRÉTARIAT",flag:"🇺🇳",text:`Le Conseil de sécurité est convoqué en urgence concernant : « ${sim.topic} ». La parole est ouverte.`,time:Date.now()-300000},
+  {id:1,country:"SECRÉTARIAT",flag:"",text:`Le Conseil de sécurité est convoqué en urgence concernant : « ${sim.topic} ». La parole est ouverte.`,time:Date.now()-300000},
  ]);
  const [input,setInput]=useState("");
  const [aiThinking,setAiThinking]=useState(false);
@@ -8462,7 +8462,7 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
  const doVeto=()=>{
   if(!myCountry||!isP5)return;
   setVetoed(myCountry.name);
-  setMsgs(p=>[...p,{id:Date.now(),country:myCountry.name,flag:myCountry.flag,text:`🚫 VETO — ${myCountry.name} oppose son droit de veto. Cette résolution est bloquée.`,time:Date.now(),isVeto:true}]);
+  setMsgs(p=>[...p,{id:Date.now(),country:myCountry.name,flag:myCountry.flag,text:` VETO — ${myCountry.name} oppose son droit de veto. Cette résolution est bloquée.`,time:Date.now(),isVeto:true}]);
   setShowVote(false);
   haptic();
  };
@@ -8483,7 +8483,7 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
    <div style={{background:"linear-gradient(180deg,#0A1F4E 0%,#0D2654 100%)",padding:"20px 20px 24px"}}>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
      <button onClick={onBack} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
-     <div><span style={{background:"#0E749020",color:"#67E8F9",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3,letterSpacing:1}}>🇺🇳 CONSEIL DE SÉCURITÉ</span><p style={{color:"#fff",fontSize:15,fontWeight:800,marginTop:4}}>{sim.topic}</p></div>
+     <div><span style={{background:"#0E749020",color:"#67E8F9",fontSize:9,fontWeight:800,padding:"2px 8px",borderRadius:3,letterSpacing:1}}> CONSEIL DE SÉCURITÉ</span><p style={{color:"#fff",fontSize:15,fontWeight:800,marginTop:4}}>{sim.topic}</p></div>
     </div>
    </div>
    <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
@@ -8516,7 +8516,7 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
     <button onClick={()=>setConfirmLeave(true)} style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex"}}><Ic n="chevL" s={18} c="#fff"/></button>
     <div style={{flex:1}}>
      <div style={{display:"flex",alignItems:"center",gap:6}}>
-      <span style={{background:"#0E749020",color:"#67E8F9",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>🇺🇳 CONSEIL DE SÉCURITÉ</span>
+      <span style={{background:"#0E749020",color:"#67E8F9",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}> CONSEIL DE SÉCURITÉ</span>
       {isP5&&<span style={{background:"#E0353520",color:"#E03535",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:3}}>DROIT DE VETO</span>}
      </div>
      <p style={{color:"#fff",fontSize:13,fontWeight:700,marginTop:3,lineHeight:1.3}}>{sim.topic}</p>
@@ -8540,7 +8540,7 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
       </div>
      </div>
     ))}
-    {aiThinking&&<div style={{display:"flex",alignItems:"center",gap:6,opacity:.6}}><span style={{fontSize:14}}>🇺🇳</span><div style={{background:T.card,borderRadius:10,padding:"8px 12px"}}><p style={{color:T.muted,fontSize:11}}>rédaction en cours…</p></div></div>}
+    {aiThinking&&<div style={{display:"flex",alignItems:"center",gap:6,opacity:.6}}><span style={{fontSize:14}}></span><div style={{background:T.card,borderRadius:10,padding:"8px 12px"}}><p style={{color:T.muted,fontSize:11}}>rédaction en cours…</p></div></div>}
    </div>
    <div style={{padding:"10px 14px",borderTop:`1px solid ${T.b1}`,background:T.surf,flexShrink:0,display:"flex",flexDirection:"column" as const,gap:8}}>
     {!showVote?(
@@ -8571,13 +8571,13 @@ function ConseilSecuriteRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void
 
 // ── CONFÉRENCE DE PRESSE ───────────────────────────────────────────
 const PRESSE_PERSONAS=[
- {name:"Le Monde",flag:"📰",style:"analytique et exigeant"},
- {name:"BFMTV",flag:"📺",style:"direct et agressif"},
- {name:"AFP",flag:"📡",style:"factuel et précis"},
- {name:"The Guardian",flag:"🇬🇧",style:"critique et perspicace"},
- {name:"Reuters",flag:"🌐",style:"neutre et factuel"},
- {name:"Libération",flag:"🗞",style:"progressiste et provocateur"},
- {name:"Le Figaro",flag:"📄",style:"conservateur et rigoureux"},
+ {name:"Le Monde",flag:"",style:"analytique et exigeant"},
+ {name:"BFMTV",flag:"",style:"direct et agressif"},
+ {name:"AFP",flag:"",style:"factuel et précis"},
+ {name:"The Guardian",flag:"",style:"critique et perspicace"},
+ {name:"Reuters",flag:"",style:"neutre et factuel"},
+ {name:"Libération",flag:"",style:"progressiste et provocateur"},
+ {name:"Le Figaro",flag:"",style:"conservateur et rigoureux"},
 ];
 
 function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
@@ -8620,7 +8620,7 @@ function ConfPresseRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
   if(!input.trim()||aiThinking||done)return;
   const txt=input.trim();
   setInput("");haptic();
-  setMsgs(p=>[...p,{id:Date.now(),who:myTitle,flag:"🎙",text:txt}]);
+  setMsgs(p=>[...p,{id:Date.now(),who:myTitle,flag:"",text:txt}]);
   setTimeout(()=>chatRef.current?.scrollTo({top:999999,behavior:"smooth"}),50);
   setAiThinking(true);
   let evalScore=12;
@@ -9038,7 +9038,7 @@ function AuthScreen({T,onSuccess,onSkip}:{T:Theme;onSuccess:(u:NexusUser)=>void;
     <div style={{position:"relative" as const}}>
      {inp(password,setPassword,"Mot de passe (8 caractères min.)",showPw?"text":"password",{paddingRight:48})}
      <button onClick={()=>setShowPw(v=>!v)} style={{position:"absolute" as const,right:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:T.textD,fontSize:18,padding:4}}>
-      {showPw?"🙈":"👁️"}
+      {showPw?"":""}
      </button>
     </div>
    </div>
@@ -9157,7 +9157,7 @@ function VideoTile({label,flag,micOn,camOn,you,speaking,col,size="half",journali
      <div style={{position:"absolute" as const,left:0,right:0,bottom:0,height:size==="mini"?7:size==="full"?22:14,background:"linear-gradient(180deg,#ffffff35,#ffffff05)",borderTop:"1px solid #ffffff50"}}/>
     </>
    )}
-   <span style={{fontSize:size==="mini"?16:size==="full"?32:24,lineHeight:1,opacity:stream?0:(camOn?1:.55)}}>{flag||"👤"}</span>
+   <span style={{fontSize:size==="mini"?16:size==="full"?32:24,lineHeight:1,opacity:stream?0:(camOn?1:.55)}}>{flag||""}</span>
    {speaking&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,left:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:col,padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>À LA PAROLE</span>}
    {you&&<span style={{position:"absolute" as const,top:size==="mini"?2:5,right:size==="mini"?2:6,fontSize:size==="mini"?6:8,fontWeight:800,color:"#fff",background:"#2563eb",padding:size==="mini"?"1px 3px":"2px 6px",borderRadius:5}}>VOUS</span>}
    <span style={{position:"absolute" as const,bottom:size==="mini"?3:5,left:size==="mini"?3:6,right:size==="mini"?3:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const,fontSize:size==="mini"?7:10,fontWeight:700,color:"#fff",background:"rgba(0,0,0,.55)",padding:size==="mini"?"1px 4px":"2px 6px",borderRadius:5,display:"flex",alignItems:"center",justifyContent:size==="mini"?"center" as const:"flex-start" as const,gap:4}}>
@@ -9231,7 +9231,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack,localSt
   :speakingP
    ?{label:speakingP.handle,flag:undefined,you:false}
    :isCourt?{label:sim.moderator?.split(" ")[0]||"Président·e",flag:undefined,you:false}
-   :isChamber?{label:"Présidence",flag:"🌐",you:false}
+   :isChamber?{label:"Présidence",flag:"",you:false}
    :{label:sim.moderator||"Animateur — Nexus",flag:undefined,you:false};
 
  // Le·la journaliste/animateur·rice est à l'écran quand personne d'autre
@@ -9250,7 +9250,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack,localSt
 
    <div style={{position:"relative" as const,display:"flex",alignItems:"center",gap:6}}>
     <button onClick={onBack} style={{background:"#ffffff20",border:"none",borderRadius:8,cursor:"pointer",padding:4,display:"flex",flexShrink:0}}><Ic n="chevL" s={18} c="#fff"/></button>
-    <span style={{fontSize:isNews?undefined:16}}>{isNews?undefined:isChamber?(sim.type==="assemblee"?"🏛️":"🇺🇳"):"⚖️"}</span>
+    <span style={{fontSize:isNews?undefined:16}}>{isNews?undefined:isChamber?(sim.type==="assemblee"?"":""):""}</span>
     {isNews?(
      <span style={{fontWeight:900,fontSize:13,color:"#fff",letterSpacing:1}}>NEXUS</span>
     ):null}
@@ -9284,7 +9284,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack,localSt
      {isCourt?"Présidence & vous — face à face":isChamber?"Présidence & vous — second rang":"Intervenants — face à face"}
     </div>
     <div style={{display:"flex",gap:6}}>
-     {(isChamber||isCourt)&&<VideoTile label={isCourt?(sim.trialType?getRoleLabel("president",sim.trialType):"Président·e"):"Présidence"} flag={isChamber?"🌐":undefined} col={col} size="half"/>}
+     {(isChamber||isCourt)&&<VideoTile label={isCourt?(sim.trialType?getRoleLabel("president",sim.trialType):"Président·e"):"Présidence"} flag={isChamber?"":undefined} col={col} size="half"/>}
      <VideoTile label={myLabel} you={!myMicOn} speaking={myMicOn} micOn={myMicOn} camOn={myCamOn} col={col} size="half" stream={localStream}/>
      {!isChamber&&!isCourt&&others[0]&&(
       <VideoTile key={others[0].handle} label={others[0].handle} micOn={others[0].micOn} camOn={others[0].camOn} col={col} size="half" stream={remoteStreams?.[others[0].handle]||null}/>
@@ -9342,7 +9342,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack,localSt
      <div style={{color:"#94a3b8",fontSize:8,fontWeight:800,letterSpacing:1,textTransform:"uppercase" as const,margin:"6px 0 3px 1px"}}>Public — au fond de la salle</div>
      <div style={{display:"flex",gap:4,marginTop:2}}>
       {Array.from({length:Math.min(4,Math.max(0,sim.participants-5))}).map((_,i)=>(
-       <span key={i} style={{width:18,height:18,borderRadius:"50%",background:"#2a2a35",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,opacity:.6}}>🙂</span>
+       <span key={i} style={{width:18,height:18,borderRadius:"50%",background:"#2a2a35",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,opacity:.6}}></span>
       ))}
       {sim.participants-5>4&&<span style={{width:18,height:18,borderRadius:"50%",background:"#2a2a35",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,opacity:.6,color:"#fff"}}>+{sim.participants-9}</span>}
      </div>
@@ -9671,7 +9671,7 @@ function FilRougeCard({T,onNavigate}:{T:Theme;onNavigate:()=>void}) {
    <div style={{flex:1,minWidth:0}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
      <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase" as const}}>Fil rouge oral</p>
-     {streak>0&&<span style={{fontSize:10,fontWeight:800,color:T.amber}}>🔥 {streak}j</span>}
+     {streak>0&&<span style={{fontSize:10,fontWeight:800,color:T.amber}}> {streak}j</span>}
     </div>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
      <span style={{fontSize:12,fontWeight:800,color:T.blueB}}>{lvl.t}</span>
