@@ -961,7 +961,7 @@ function AiFeedbackModal({T,onClose,context,userMsgs}:{T:Theme;onClose:()=>void;
   <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{position:"fixed" as const,inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(5px)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn .3s"}}>
    <div style={{background:T.surf,borderRadius:"24px 24px 0 0",padding:"28px 24px 48px",width:"100%",maxWidth:430,border:`1px solid ${T.b1}`,animation:"slideUp .4s ease",maxHeight:"90vh",overflowY:"auto" as const}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-     <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:4}}>Analyse post-simulation</p><h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:22,fontWeight:700,color:T.text}}>Bilan IA</h2></div>
+     <div><p style={{color:T.muted,fontSize:10,fontWeight:800,letterSpacing:2,textTransform:"uppercase" as const,marginBottom:4}}>Analyse post-simulation</p><h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:22,fontWeight:700,color:T.text}}>Bilan NEXUS</h2></div>
      <button onClick={onClose} style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:9,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><Ic n="x" s={16} c={T.blueB}/></button>
     </div>
     {!result&&!err&&(
@@ -3851,7 +3851,7 @@ function TrialSimScreen({trialRole,trialTopic,T,onBack}:{trialRole:"defense"|"pr
  {phase==="verdict"&&<div style={{padding:"12px 16px",background:`${T.purple}10`,borderTop:`2px solid ${T.purple}`,flexShrink:0,textAlign:"center" as const}}>
  <p style={{color:T.purple,fontWeight:800,fontSize:12,letterSpacing:.8,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Ic n="scale" s={13} c={T.purple}/>VERDICT RENDU</p>
  <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:8}}>
-  <button onClick={()=>{haptic();setShowFeedback(true);}} style={{padding:"8px 16px",borderRadius:10,border:`1px solid ${T.blueB}`,background:`${T.blueB}15`,color:T.blueB,fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}><Ic n="bar" s={13} c={T.blueB}/>Bilan IA</button>
+  <button onClick={()=>{haptic();setShowFeedback(true);}} style={{padding:"8px 16px",borderRadius:10,border:`1px solid ${T.blueB}`,background:`${T.blueB}15`,color:T.blueB,fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}><Ic n="bar" s={13} c={T.blueB}/>Bilan NEXUS</button>
   <button onClick={()=>{stopSpeech();onBack();}} style={{padding:"8px 16px",borderRadius:10,border:`1px solid ${T.purple}`,background:`${T.purple}15`,color:T.purple,fontWeight:700,fontSize:12,cursor:"pointer"}}>Retour</button>
  </div>
  </div>}
@@ -7609,7 +7609,7 @@ function GeneralDebateRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void})
       <p style={{color:T.text,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
      </div>
      <button onClick={()=>setDebTab("public")} style={{background:myCol+"20",color:myCol,fontSize:9,fontWeight:800,padding:"4px 9px",borderRadius:6,border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{pourPct}% POUR</button>
-     {msgs.filter(m=>m.user==="@vous").length>=2&&<button onClick={()=>{haptic();setShowFeedbackDeb(true);}} style={{background:T.blueB+"20",color:T.blueB,fontSize:9,fontWeight:800,padding:"4px 9px",borderRadius:6,border:`1px solid ${T.blueB}40`,cursor:"pointer",fontFamily:"inherit",flexShrink:0,display:"flex",alignItems:"center",gap:3}}><Ic n="bar" s={10} c={T.blueB}/>Bilan</button>}
+     {msgs.filter(m=>m.user==="@vous").length>=2&&<button onClick={()=>{haptic();setShowFeedbackDeb(true);}} style={{background:T.blueB+"20",color:T.blueB,fontSize:9,fontWeight:800,padding:"4px 9px",borderRadius:6,border:`1px solid ${T.blueB}40`,cursor:"pointer",fontFamily:"inherit",flexShrink:0,display:"flex",alignItems:"center",gap:3}}><Ic n="bar" s={10} c={T.blueB}/>Bilan NEXUS</button>}
     </div>
     <div style={{display:"flex",gap:5,overflowX:"auto" as const,scrollbarWidth:"none" as const}}>
      {(["scene","public","historique","procedure"] as const).map(t=>(
@@ -8836,7 +8836,7 @@ function EloquenceRoom({T,sim,onBack}:{T:Theme;sim:SimRoom;onBack:()=>void}) {
       </div>
       <p style={{color:T.text,fontSize:11,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{sim.topic}</p>
      </div>
-     {seconds>10&&<button onClick={()=>{haptic();setShowFeedbackEloq(true);}} style={{background:T.blueB+"20",color:T.blueB,fontSize:9,fontWeight:800,padding:"4px 9px",borderRadius:6,border:`1px solid ${T.blueB}40`,cursor:"pointer",fontFamily:"inherit",flexShrink:0,display:"flex",alignItems:"center",gap:3}}><Ic n="bar" s={10} c={T.blueB}/>Bilan IA</button>}
+     {seconds>10&&<button onClick={()=>{haptic();setShowFeedbackEloq(true);}} style={{background:T.blueB+"20",color:T.blueB,fontSize:9,fontWeight:800,padding:"4px 9px",borderRadius:6,border:`1px solid ${T.blueB}40`,cursor:"pointer",fontFamily:"inherit",flexShrink:0,display:"flex",alignItems:"center",gap:3}}><Ic n="bar" s={10} c={T.blueB}/>Bilan NEXUS</button>}
     </div>
     <div style={{display:"flex",gap:5}}>
      {(["scene","notes","conseils"] as const).map(t=>(
