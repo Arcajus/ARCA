@@ -9183,6 +9183,193 @@ const NEXUS_BACKDROPS=[
 // fonds maison Nexus, pas de fonds tiers. Appliqué uniquement sur la tuile
 // du·de la journaliste/animateur·rice (voir RoomVideoStage), pas sur celle
 // des autres intervenants.
+type RefArticle={id:string;title:string;text:string};
+type RefCode={code:string;label:string;color:string;articles:RefArticle[]};
+const SIM_REFS:Record<string,RefCode[]>={
+ proces:[
+  {code:"CP",label:"Code pénal",color:"#E03535",articles:[
+   {id:"111-1",title:"Classification des infractions",text:"Les infractions pénales sont classées, suivant leur gravité, en crimes, délits et contraventions."},
+   {id:"111-3",title:"Légalité criminelle",text:"Nul ne peut être puni pour un crime ou pour un délit dont les éléments ne sont pas définis par la loi, ou pour une contravention dont les éléments ne sont pas définis par le règlement."},
+   {id:"121-1",title:"Responsabilité personnelle",text:"Nul n'est responsable pénalement que de son propre fait."},
+   {id:"121-3",title:"Élément moral",text:"Il n'y a point de crime ou de délit sans intention de le commettre. Toutefois, lorsque la loi le prévoit, il y a délit en cas de mise en danger délibérée de la personne d'autrui. Il y a également délit, lorsque la loi le prévoit, en cas de faute d'imprudence, de négligence ou de manquement à une obligation de prudence ou de sécurité."},
+   {id:"122-1",title:"Trouble mental",text:"N'est pas pénalement responsable la personne qui était atteinte, au moment des faits, d'un trouble mental ayant aboli son discernement ou le contrôle de ses actes."},
+   {id:"122-5",title:"Légitime défense",text:"N'est pas pénalement responsable la personne qui, devant une atteinte injustifiée envers elle-même ou autrui, accomplit, dans le même temps, un acte commandé par la nécessité de la légitime défense d'elle-même ou d'autrui, sauf s'il y a disproportion entre les moyens de défense employés et la gravité de l'atteinte."},
+   {id:"221-1",title:"Meurtre",text:"Le fait de donner intentionnellement la mort à autrui constitue un meurtre. Il est puni de trente ans de réclusion criminelle."},
+   {id:"221-3",title:"Assassinat",text:"Le meurtre commis avec préméditation ou guet-apens constitue un assassinat. Il est puni de la réclusion criminelle à perpétuité."},
+   {id:"222-1",title:"Torture et actes de barbarie",text:"Le fait de soumettre une personne à des tortures ou à des actes de barbarie est puni de quinze ans de réclusion criminelle."},
+   {id:"222-33-2",title:"Harcèlement moral",text:"Le fait de harceler autrui par des propos ou comportements répétés ayant pour objet ou pour effet une dégradation des conditions de travail susceptible de porter atteinte à ses droits et à sa dignité, d'altérer sa santé physique ou mentale ou de compromettre son avenir professionnel, est puni de deux ans d'emprisonnement et de 30 000 € d'amende."},
+   {id:"311-1",title:"Vol",text:"Le vol est la soustraction frauduleuse de la chose d'autrui. Il est puni de trois ans d'emprisonnement et de 45 000 euros d'amende."},
+   {id:"312-1",title:"Extorsion",text:"L'extorsion est le fait d'obtenir par violence, menace de violences ou contrainte soit une signature, un engagement ou une renonciation, soit la révélation d'un secret, soit la remise de fonds, de valeurs ou d'un bien quelconque. Elle est punie de sept ans d'emprisonnement et de 100 000 euros d'amende."},
+   {id:"313-1",title:"Escroquerie",text:"L'escroquerie est le fait, soit par l'usage d'un faux nom ou d'une fausse qualité, soit par l'abus d'une qualité vraie, soit par l'emploi de manœuvres frauduleuses, de tromper une personne physique ou morale et de la déterminer ainsi, à son préjudice ou au préjudice d'un tiers, à remettre des fonds, des valeurs ou un bien quelconque, à fournir un service ou à consentir un acte opérant obligation ou décharge. Elle est punie de cinq ans d'emprisonnement et de 375 000 euros d'amende."},
+   {id:"432-1",title:"Concussion",text:"Le fait, par une personne dépositaire de l'autorité publique ou chargée d'une mission de service public, de recevoir, exiger ou ordonner de percevoir à titre de droits ou contributions, impôts ou taxes publics, une somme qu'elle sait ne pas être due, est puni de cinq ans d'emprisonnement et d'une amende de 500 000 €."},
+   {id:"432-11",title:"Corruption passive",text:"Est puni de dix ans d'emprisonnement et d'une amende de 1 000 000 € le fait, par une personne dépositaire de l'autorité publique, chargée d'une mission de service public, ou investie d'un mandat électif public, de solliciter ou d'agréer, sans droit, des offres, promesses, dons ou présents pour accomplir ou s'abstenir d'accomplir un acte de sa fonction."},
+  ]},
+  {code:"CPP",label:"Code de procédure pénale",color:"#D97706",articles:[
+   {id:"1",title:"Action publique",text:"L'action publique pour l'application des peines est mise en mouvement et exercée par les magistrats ou par les fonctionnaires auxquels elle est confiée par la loi. Cette action peut aussi être mise en mouvement par la partie lésée, dans les conditions déterminées par le présent code."},
+   {id:"40",title:"Signalement au procureur",text:"Toute autorité constituée, tout officier public ou fonctionnaire qui, dans l'exercice de ses fonctions, acquiert la connaissance d'un crime ou d'un délit est tenu d'en donner avis sans délai au procureur de la République et de transmettre à ce magistrat tous les renseignements, procès-verbaux et actes qui y sont relatifs."},
+   {id:"63",title:"Garde à vue",text:"L'officier de police judiciaire peut, pour les nécessités de l'enquête, placer en garde à vue toute personne à l'encontre de laquelle il existe une ou plusieurs raisons plausibles de soupçonner qu'elle a commis ou tenté de commettre un crime ou un délit puni d'une peine d'emprisonnement. La durée initiale est de 24 heures, renouvelable une fois sur autorisation du procureur."},
+   {id:"80",title:"Juge d'instruction",text:"Le juge d'instruction ne peut informer qu'en vertu d'un réquisitoire du procureur de la République. Il est saisi des faits, non des personnes. Il procède à tous les actes d'information qu'il juge utiles à la manifestation de la vérité."},
+   {id:"137",title:"Détention provisoire",text:"Toute personne mise en examen présumée innocente reste libre. Elle peut être astreinte à des obligations constituant le contrôle judiciaire. En cas d'insuffisance du contrôle judiciaire, le juge des libertés et de la détention peut ordonner la détention provisoire."},
+   {id:"427",title:"Liberté de la preuve",text:"Hors les cas où la loi en dispose autrement, les infractions peuvent être établies par tout mode de preuve et le juge décide d'après son intime conviction. Le juge ne peut fonder sa décision que sur des preuves qui lui sont apportées au cours des débats et contradictoirement discutées devant lui."},
+   {id:"495-7",title:"Comparution sur reconnaissance préalable de culpabilité",text:"Le procureur de la République peut, d'office ou à la demande de l'intéressé ou de son avocat, recourir à la procédure de comparution sur reconnaissance préalable de culpabilité pour les délits punis à titre principal d'une peine d'emprisonnement dont la durée est inférieure ou égale à cinq ans."},
+   {id:"512",title:"Appel correctionnel",text:"Les jugements en matière correctionnelle peuvent être attaqués par la voie de l'appel. L'appel est suspensif, sauf en ce qui concerne les mandats de dépôt ou d'arrêt."},
+  ]},
+  {code:"CC",label:"Code civil",color:"#2B78F5",articles:[
+   {id:"9",title:"Vie privée",text:"Chacun a droit au respect de sa vie privée. Les juges peuvent, sans préjudice de la réparation du dommage subi, prescrire toutes mesures, telles que séquestre, saisie et autres, propres à empêcher ou faire cesser une atteinte à l'intimité de la vie privée."},
+   {id:"1240",title:"Responsabilité civile délictuelle",text:"Tout fait quelconque de l'homme, qui cause à autrui un dommage, oblige celui par la faute duquel il est arrivé à le réparer."},
+   {id:"1241",title:"Négligence et imprudence",text:"Chacun est responsable du dommage qu'il a causé non seulement par son fait, mais encore par sa négligence ou par son imprudence."},
+   {id:"1242",title:"Responsabilité du fait d'autrui",text:"On est responsable non seulement du dommage que l'on cause par son propre fait, mais encore de celui qui est causé par le fait des personnes dont on doit répondre, ou des choses que l'on a sous sa garde."},
+   {id:"1353",title:"Charge de la preuve",text:"Celui qui réclame l'exécution d'une obligation doit la prouver. Réciproquement, celui qui se prétend libéré doit justifier le paiement ou le fait qui a produit l'extinction de son obligation."},
+  ]},
+  {code:"DDHC",label:"Déclaration des droits de l'Homme (1789)",color:"#7C3AED",articles:[
+   {id:"7",title:"Sûreté personnelle",text:"Nul homme ne peut être accusé, arrêté ni détenu que dans les cas déterminés par la Loi, et selon les formes qu'elle a prescrites. Ceux qui sollicitent, expédient, exécutent ou font exécuter des ordres arbitraires, doivent être punis."},
+   {id:"8",title:"Légalité des peines",text:"La Loi ne doit établir que des peines strictement et évidemment nécessaires, et nul ne peut être puni qu'en vertu d'une Loi établie et promulguée antérieurement au délit, et légalement appliquée."},
+   {id:"9",title:"Présomption d'innocence",text:"Tout homme étant présumé innocent jusqu'à ce qu'il ait été déclaré coupable, s'il est jugé indispensable de l'arrêter, toute rigueur qui ne serait pas nécessaire pour s'assurer de sa personne doit être sévèrement réprimée par la loi."},
+  ]},
+  {code:"CEDH",label:"Convention européenne des droits de l'Homme",color:"#16A34A",articles:[
+   {id:"6",title:"Droit à un procès équitable",text:"Toute personne a droit à ce que sa cause soit entendue équitablement, publiquement et dans un délai raisonnable, par un tribunal indépendant et impartial, établi par la loi, qui décidera soit des contestations sur ses droits et obligations de caractère civil, soit du bien-fondé de toute accusation en matière pénale dirigée contre elle."},
+   {id:"7",title:"Pas de peine sans loi",text:"Nul ne peut être condamné pour une action ou une omission qui, au moment où elle a été commise, ne constituait pas une infraction d'après le droit national ou international."},
+   {id:"P7-4",title:"Non bis in idem",text:"Nul ne peut être poursuivi ou puni pénalement par les juridictions du même État en raison d'une infraction pour laquelle il a déjà été acquitté ou condamné par un jugement définitif conformément à la loi et à la procédure pénale de cet État."},
+  ]},
+ ],
+ onu:[
+  {code:"CNU",label:"Charte des Nations Unies",color:"#2B78F5",articles:[
+   {id:"1",title:"Buts des Nations Unies",text:"Les buts des Nations Unies sont les suivants : 1. Maintenir la paix et la sécurité internationales ; 2. Développer entre les nations des relations amicales fondées sur le respect du principe de l'égalité de droits des peuples ; 3. Réaliser la coopération internationale en résolvant les problèmes internationaux d'ordre économique, social, intellectuel ou humanitaire."},
+   {id:"2",title:"Principes",text:"L'Organisation est fondée sur le principe de l'égalité souveraine de tous ses Membres (§1). Les Membres de l'Organisation règlent leurs différends internationaux par des moyens pacifiques (§3). Les Membres s'abstiennent de recourir à la menace ou à l'emploi de la force (§4). L'ONU n'est pas autorisée à intervenir dans les affaires relevant essentiellement de la compétence nationale d'un État (§7)."},
+   {id:"24",title:"Responsabilité du Conseil de sécurité",text:"Afin d'assurer l'action rapide et efficace de l'Organisation, ses Membres confèrent au Conseil de sécurité la responsabilité principale du maintien de la paix et de la sécurité internationales et reconnaissent qu'en s'acquittant des devoirs que lui impose cette responsabilité le Conseil de sécurité agit en leur nom."},
+   {id:"25",title:"Décisions contraignantes",text:"Les Membres de l'Organisation conviennent d'accepter et d'appliquer les décisions du Conseil de sécurité conformément à la présente Charte."},
+   {id:"27",title:"Droit de veto",text:"Les décisions du Conseil de sécurité sur toutes autres questions sont prises par un vote affirmatif de neuf de ses membres dans lequel sont comprises les voix de tous les membres permanents, étant entendu que, dans les décisions prises aux termes du Chapitre VI, une partie à un différend s'abstient de voter."},
+   {id:"33",title:"Règlement pacifique",text:"Les parties à tout différend dont la prolongation est susceptible de menacer le maintien de la paix et de la sécurité internationales doivent en rechercher la solution, avant tout, par voie de négociation, d'enquête, de médiation, de conciliation, d'arbitrage, de règlement judiciaire, de recours aux organismes ou accords régionaux."},
+   {id:"39",title:"Menace à la paix",text:"Le Conseil de sécurité constate l'existence d'une menace contre la paix, d'une rupture de la paix ou d'un acte d'agression et fait des recommandations ou décide quelles mesures seront prises conformément aux Articles 41 et 42 pour maintenir ou rétablir la paix et la sécurité internationales dans la région."},
+   {id:"41",title:"Mesures sans force armée",text:"Le Conseil de sécurité peut décider quelles mesures n'impliquant pas l'emploi de la force armée doivent être prises pour donner effet à ses décisions, et peut inviter les Membres des Nations Unies à appliquer ces mesures. Celles-ci peuvent comprendre l'interruption complète ou partielle des relations économiques et des communications ferroviaires, maritimes, aériennes, postales, télégraphiques, radioélectriques et des autres moyens de communication, ainsi que la rupture des relations diplomatiques."},
+   {id:"42",title:"Mesures avec force armée",text:"Si le Conseil de sécurité estime que les mesures prévues à l'Article 41 seraient inadéquates ou qu'elles se sont révélées telles, il peut entreprendre, au moyen de forces aériennes, navales ou terrestres, toute action qu'il juge nécessaire au maintien ou au rétablissement de la paix et de la sécurité internationales."},
+   {id:"51",title:"Légitime défense",text:"Aucune disposition de la présente Charte ne porte atteinte au droit naturel de légitime défense, individuelle ou collective, dans le cas où un Membre des Nations Unies est l'objet d'une agression armée, jusqu'à ce que le Conseil de sécurité ait pris les mesures nécessaires pour maintenir la paix et la sécurité internationales."},
+   {id:"103",title:"Primauté de la Charte",text:"En cas de conflit entre les obligations des Membres des Nations Unies en vertu de la présente Charte et leurs obligations en vertu de tout autre accord international, les premières prévaudront."},
+  ]},
+  {code:"DUDH",label:"Déclaration universelle des droits de l'Homme (1948)",color:"#16A34A",articles:[
+   {id:"1",title:"Liberté et égalité en dignité",text:"Tous les êtres humains naissent libres et égaux en dignité et en droits. Ils sont doués de raison et de conscience et doivent agir les uns envers les autres dans un esprit de fraternité."},
+   {id:"3",title:"Droit à la vie",text:"Tout individu a droit à la vie, à la liberté et à la sûreté de sa personne."},
+   {id:"5",title:"Interdiction de la torture",text:"Nul ne sera soumis à la torture, ni à des peines ou traitements cruels, inhumains ou dégradants."},
+   {id:"18",title:"Liberté de pensée et de religion",text:"Toute personne a droit à la liberté de pensée, de conscience et de religion ; ce droit implique la liberté de changer de religion ou de conviction ainsi que la liberté de manifester sa religion ou sa conviction."},
+   {id:"19",title:"Liberté d'opinion et d'expression",text:"Tout individu a droit à la liberté d'opinion et d'expression, ce qui implique le droit de ne pas être inquiété pour ses opinions et celui de chercher, de recevoir et de répandre, sans considérations de frontières, les informations et les idées par quelque moyen d'expression que ce soit."},
+   {id:"55",title:"Coopération internationale",text:"En vue de créer les conditions de stabilité et de bien-être nécessaires pour assurer entre les nations des relations pacifiques et amicales fondées sur le respect du principe de l'égalité des droits des peuples et de leur droit à disposer d'eux-mêmes, les Nations Unies favoriseront le relèvement des niveaux de vie, la réalisation du plein emploi, le respect et la mise en œuvre des droits de l'homme."},
+  ]},
+  {code:"DIH",label:"Droit international humanitaire",color:"#D97706",articles:[
+   {id:"GI-3",title:"Article 3 commun aux Conventions de Genève",text:"En cas de conflit armé ne présentant pas un caractère international, les personnes qui ne participent pas directement aux hostilités doivent en toutes circonstances être traitées avec humanité, sans aucune distinction défavorable. À cet effet, sont et demeurent prohibés : les atteintes portées à la vie et à l'intégrité corporelle, la torture, les traitements humiliants et dégradants, les prises d'otages, les exécutions sans jugement régulier."},
+   {id:"PA1-51",title:"Protocole I — Protection des civils",text:"La population civile et les personnes civiles jouissent d'une protection générale contre les dangers résultant d'opérations militaires. Les attaques sans discrimination sont interdites. Le principe de proportionnalité interdit les attaques dont on peut attendre qu'elles causent des pertes civiles excessives par rapport à l'avantage militaire concret et direct attendu."},
+   {id:"CG4-49",title:"Quatrième Convention — Déportations",text:"Les transferts forcés, en masse ou individuels, ainsi que les déportations de personnes protégées hors du territoire occupé dans le territoire de la Puissance occupante ou dans celui de tout autre État, occupé ou non, sont interdits, quel qu'en soit le motif."},
+  ]},
+  {code:"SR",label:"Statut de Rome / CPI",color:"#7C3AED",articles:[
+   {id:"5",title:"Crimes relevant de la CPI",text:"La compétence de la Cour est limitée aux crimes les plus graves qui touchent l'ensemble de la communauté internationale. La Cour a compétence à l'égard des crimes de génocide, des crimes contre l'humanité, des crimes de guerre et du crime d'agression."},
+   {id:"6",title:"Génocide",text:"Aux fins du présent Statut, on entend par crime de génocide l'un quelconque des actes ci-après commis dans l'intention de détruire, en tout ou en partie, un groupe national, ethnique, racial ou religieux : meurtre de membres du groupe ; atteinte grave à l'intégrité physique ou mentale de membres du groupe ; soumission intentionnelle du groupe à des conditions d'existence devant entraîner sa destruction physique totale ou partielle."},
+   {id:"7",title:"Crimes contre l'humanité",text:"Aux fins du présent Statut, on entend par crime contre l'humanité l'un quelconque des actes ci-après lorsqu'il est commis dans le cadre d'une attaque généralisée ou systématique lancée contre toute population civile : meurtre, extermination, réduction en esclavage, déportation, emprisonnement, torture, viol, persécution, disparition forcée, apartheid, autres actes inhumains."},
+   {id:"17",title:"Complémentarité",text:"La Cour déclare une affaire irrecevable lorsqu'elle fait l'objet d'une enquête ou de poursuites de la part d'un État ayant compétence en l'espèce, à moins que cet État n'ait pas la volonté ou soit dans l'incapacité de mener véritablement à bien l'enquête ou les poursuites."},
+  ]},
+ ],
+ conseil:[
+  {code:"CNU-VII",label:"Charte ONU — Chapitre VII",color:"#E03535",articles:[
+   {id:"39",title:"Constat de menace",text:"Le Conseil de sécurité constate l'existence d'une menace contre la paix, d'une rupture de la paix ou d'un acte d'agression et fait des recommandations ou décide quelles mesures seront prises conformément aux Articles 41 et 42 pour maintenir ou rétablir la paix et la sécurité internationales."},
+   {id:"40",title:"Mesures provisoires",text:"Pour prévenir la situation de s'aggraver, le Conseil de sécurité peut inviter les parties intéressées à se conformer aux mesures provisoires qu'il juge nécessaires ou souhaitables. Ces mesures provisoires ne préjugent en rien les droits, les prétentions ou la position des parties intéressées."},
+   {id:"41",title:"Sanctions",text:"Le Conseil de sécurité peut décider quelles mesures n'impliquant pas l'emploi de la force armée doivent être prises : interruption des relations économiques, embargo commercial, rupture des communications, rupture des relations diplomatiques."},
+   {id:"42",title:"Usage de la force",text:"Si le Conseil de sécurité estime que les mesures prévues à l'Article 41 seraient inadéquates, il peut entreprendre toute action militaire nécessaire au maintien ou au rétablissement de la paix et de la sécurité internationales."},
+   {id:"51",title:"Légitime défense collective",text:"Aucune disposition ne porte atteinte au droit naturel de légitime défense, individuelle ou collective. Les mesures prises par les Membres doivent être immédiatement portées à la connaissance du Conseil de sécurité."},
+  ]},
+  {code:"R2P",label:"Responsabilité de Protéger (2005)",color:"#2B78F5",articles:[
+   {id:"138",title:"Responsabilité de l'État",text:"Chaque État a la responsabilité de protéger ses populations contre le génocide, les crimes de guerre, le nettoyage ethnique et les crimes contre l'humanité. Cette responsabilité implique la prévention de ces crimes, notamment l'incitation à les commettre. (Document final du Sommet mondial 2005, §138)"},
+   {id:"139",title:"Responsabilité de la communauté internationale",text:"Il incombe à la communauté internationale d'aider les États à s'acquitter de cette responsabilité. Si un État n'assure manifestement pas la protection de ses populations, la communauté internationale est prête à mener en temps voulu une action collective, par l'intermédiaire du Conseil de sécurité. (§139)"},
+  ]},
+  {code:"RESCS",label:"Résolutions de référence",color:"#7C3AED",articles:[
+   {id:"678-1990",title:"Rés. 678 (1990) — Irak",text:"Le Conseil de sécurité autorise les États Membres qui coopèrent avec le Gouvernement koweïtien à user de tous les moyens nécessaires pour faire respecter et appliquer la résolution 660 et toutes les résolutions pertinentes et pour rétablir la paix et la sécurité internationales dans la région."},
+   {id:"1973-2011",title:"Rés. 1973 (2011) — Libye",text:"Le Conseil de sécurité autorise les États Membres à prendre toutes mesures nécessaires pour protéger les populations et zones civiles menacées d'attaque en Jamahiriya arabe libyenne, y compris Benghazi, tout en excluant le déploiement d'une force d'occupation étrangère sous quelque forme que ce soit sur le territoire libyen."},
+   {id:"2334-2016",title:"Rés. 2334 (2016) — Colonisation",text:"Le Conseil de sécurité réaffirme que l'établissement par Israël de colonies de peuplement dans le territoire palestinien occupé depuis 1967, y compris Jérusalem-Est, n'a aucune validité en droit et constitue une violation flagrante du droit international et un obstacle majeur à la réalisation de la solution à deux États."},
+  ]},
+ ],
+ assemblee:[
+  {code:"CONST",label:"Constitution du 4 octobre 1958",color:"#2B78F5",articles:[
+   {id:"1",title:"République indivisible",text:"La France est une République indivisible, laïque, démocratique et sociale. Elle assure l'égalité devant la loi de tous les citoyens sans distinction d'origine, de race ou de religion. Elle respecte toutes les croyances. Son organisation est décentralisée."},
+   {id:"3",title:"Souveraineté nationale",text:"La souveraineté nationale appartient au peuple qui l'exerce par ses représentants et par la voie du référendum. Aucune section du peuple ni aucun individu ne peut s'en attribuer l'exercice."},
+   {id:"20",title:"Le Gouvernement",text:"Le Gouvernement détermine et conduit la politique de la Nation. Il dispose de l'administration et de la force armée. Il est responsable devant le Parlement dans les conditions et suivant les procédures prévues aux articles 49 et 50."},
+   {id:"34",title:"Domaine de la loi",text:"La loi fixe les règles concernant : les droits civiques et les garanties fondamentales accordées aux citoyens ; la nationalité, l'état et la capacité des personnes ; les crimes et délits ainsi que les peines qui leur sont applicables ; la procédure pénale ; l'assiette, le taux et les modalités de recouvrement des impositions de toutes natures."},
+   {id:"38",title:"Ordonnances",text:"Le Gouvernement peut, pour l'exécution de son programme, demander au Parlement l'autorisation de prendre par ordonnances, pendant un délai limité, des mesures qui sont normalement du domaine de la loi."},
+   {id:"40",title:"Irrecevabilité financière",text:"Les propositions et amendements formulés par les membres du Parlement ne sont pas recevables lorsque leur adoption aurait pour conséquence soit une diminution des ressources publiques, soit la création ou l'aggravation d'une charge publique."},
+   {id:"44",title:"Droit d'amendement",text:"Les membres du Parlement et le Gouvernement ont le droit d'amendement. Ce droit s'exerce en séance ou en commission selon les conditions fixées par les règlements des assemblées, dans le cadre déterminé par une loi organique."},
+   {id:"45",title:"Navette parlementaire",text:"Tout projet ou proposition de loi est examiné successivement dans les deux assemblées du Parlement en vue de l'adoption d'un texte identique. Sans accord entre les deux assemblées, le Gouvernement peut provoquer la réunion d'une commission mixte paritaire."},
+   {id:"49-1",title:"Engagement de responsabilité",text:"Le Premier ministre, après délibération du Conseil des ministres, engage devant l'Assemblée nationale la responsabilité du Gouvernement sur son programme ou éventuellement sur une déclaration de politique générale."},
+   {id:"49-3",title:"Vote bloqué",text:"Le Premier ministre peut, après délibération du Conseil des ministres, engager la responsabilité du Gouvernement devant l'Assemblée nationale sur le vote d'un projet de loi de finances ou de financement de la sécurité sociale. Dans ce cas, ce projet est considéré comme adopté, sauf si une motion de censure, déposée dans les vingt-quatre heures qui suivent, est votée."},
+   {id:"49-4",title:"Vote de confiance",text:"Le Premier ministre peut demander au Sénat l'approbation d'une déclaration de politique générale. L'Assemblée nationale peut, dans les conditions prévues au premier alinéa de l'article 49, mettre en cause la responsabilité du gouvernement."},
+  ]},
+  {code:"DDHC",label:"Déclaration des droits de l'Homme (1789)",color:"#7C3AED",articles:[
+   {id:"6",title:"Loi expression de la volonté générale",text:"La Loi est l'expression de la volonté générale. Tous les Citoyens ont droit de concourir personnellement, ou par leurs Représentants, à sa formation. Elle doit être la même pour tous, soit qu'elle protège, soit qu'elle punisse."},
+   {id:"16",title:"Séparation des pouvoirs",text:"Toute Société dans laquelle la garantie des Droits n'est pas assurée, ni la séparation des Pouvoirs déterminée, n'a point de Constitution."},
+  ]},
+  {code:"RAN",label:"Règlement de l'Assemblée nationale",color:"#16A34A",articles:[
+   {id:"49",title:"Droit d'amendement",text:"Les amendements sont recevables s'ils s'appliquent effectivement au texte qu'ils visent à modifier et s'ils ne contreviennent pas aux dispositions de l'article 40 de la Constitution. Les amendements doivent être déposés au plus tard la veille de la séance à 17 heures."},
+   {id:"58",title:"Clôture des débats",text:"Tout membre peut demander la clôture de la discussion. Si la clôture est demandée, il est immédiatement statué sur la demande. Si l'Assemblée prononce la clôture, la parole ne peut être accordée qu'à un membre de chaque groupe pour expliquer son vote."},
+   {id:"91",title:"Vote solennel",text:"Lorsque l'Assemblée nationale procède à un vote solennel, tous les membres présents ou représentés votent personnellement. Le scrutin public ordinaire a lieu par voie électronique ; à défaut, il est procédé à un vote à main levée."},
+   {id:"100",title:"Recevabilité financière",text:"Tout amendement est soumis, avant la séance, à l'examen de la commission saisie au fond. Celle-ci peut déclarer qu'un amendement est irrecevable au titre de l'article 40 de la Constitution."},
+  ]},
+ ],
+ debat:[
+  {code:"RHE",label:"Rhétorique — Figures de style",color:"#7C3AED",articles:[
+   {id:"anaphore",title:"Anaphore",text:"Répétition d'un même mot ou groupe de mots en début de phrases ou de membres de phrases successifs. Effet : rythme, insistance, emphase. Exemple : « Liberté, que de crimes on commet en ton nom. » Usage : marquer une idée directrice, créer un crescendo oratoire."},
+   {id:"metaphore",title:"Métaphore",text:"Comparaison implicite sans outil de comparaison. Opère un transfert de sens entre un terme propre et un terme figuré. Effet : vivacité, force d'évocation. Exemple : « La vie est un combat. » Usage : rendre concret un concept abstrait, frapper l'imagination."},
+   {id:"climax",title:"Gradation / Climax",text:"Disposition de termes ou d'idées en ordre croissant d'intensité. Effet : montée dramatique, renforcement progressif du propos. Exemple : « Veni, vidi, vici. » Usage : conclure un développement sur une idée forte, créer une tension avant la chute."},
+   {id:"chiasme",title:"Chiasme",text:"Figure de construction disposant deux groupes de mots selon un ordre inversé (ABBA). Effet : équilibre, paradoxe, mémorabilité. Exemple : « Il faut manger pour vivre et non vivre pour manger. » Usage : formuler une maxime, opposer deux positions de façon frappante."},
+   {id:"antithese",title:"Antithèse",text:"Opposition de deux idées contraires dans une même phrase ou un même passage. Effet : mise en relief par contraste, dramaturgie. Exemple : « Extrêmes dans les projets, faibles dans l'exécution. » Usage : structurer un débat contradictoire, renforcer une position par l'opposition."},
+   {id:"prosopopee",title:"Prosopopée",text:"Figure par laquelle on fait parler ou agir une personne absente, morte, ou une entité abstraite. Effet : dramatisation, présence, émotion. Exemple : faire parler les victimes, la République, l'histoire. Usage : donner corps à un argument abstrait, provoquer l'émotion."},
+   {id:"hyperbole",title:"Hyperbole",text:"Exagération délibérée visant à mettre en relief une idée. Effet : amplification, insistance. Exemple : « Un million de fois plus vrai. » Usage : avec parcimonie pour ne pas nuire à la crédibilité, surtout dans les plaidoyers ou le débat passionnel."},
+   {id:"litote",title:"Litote",text:"Figure d'atténuation qui dit moins pour faire entendre plus. Effet : élégance, ironie discrète, force dans la retenue. Exemple : « Ce n'est pas sans mérite. » Usage : formule diplomatique, critique élégante, conclusion sobre mais percutante."},
+   {id:"anadiplose",title:"Anadiplose",text:"Reprise en début d'un segment d'un mot ou d'un groupe figurant à la fin du segment précédent. Effet : enchaînement logique, progression. Exemple : « Je devais prendre une décision. Cette décision allait tout changer. » Usage : construire un raisonnement en chaîne, enchaîner les étapes d'une démonstration."},
+  ]},
+  {code:"ARG",label:"Argumentation & Logique",color:"#D97706",articles:[
+   {id:"logos",title:"Logos — Argument logique",text:"L'un des trois piliers de la rhétorique aristotélicienne. Fait appel à la raison de l'auditoire par le raisonnement logique, les chiffres, les faits, les preuves. Structure : prémisse majeure → prémisse mineure → conclusion (syllogisme). Efficace pour convaincre un public rationnel."},
+   {id:"ethos",title:"Ethos — Crédibilité de l'orateur",text:"La persuasion par le caractère de l'orateur. La crédibilité s'établit par : l'expertise (compétence reconnue), la vertu (honnêteté, intégrité), la bienveillance (souci du bien commun). L'ethos se construit avant, pendant et après le discours."},
+   {id:"pathos",title:"Pathos — Émotion du public",text:"La persuasion par l'émotion. Mobilise la sensibilité de l'auditoire : empathie, indignation, espoir, peur. Techniques : récit personnel, anecdote, appel aux valeurs partagées. Doit s'appuyer sur une base de logos pour ne pas paraître manipulatoire."},
+   {id:"sofisme-ah",title:"Sophisme — Ad hominem",text:"Attaquer la personne plutôt que l'argument. Ex : « Vous ne pouvez pas défendre cette politique, vous avez vous-même fraudé. » Contrer : recentrer sur l'argument lui-même, dissocier la valeur de la source de la valeur du raisonnement."},
+   {id:"sofisme-ps",title:"Sophisme — Pente savonneuse",text:"Affirmer qu'une action entraînera inévitablement des conséquences catastrophiques en chaîne. Ex : « Si on légalise le cannabis, bientôt tout sera légal. » Contrer : demander la démonstration de chaque étape causale de la chaîne."},
+   {id:"sofisme-hs",title:"Sophisme — Homme de paille",text:"Déformer ou caricaturer l'argument adverse pour mieux le réfuter. Ex : « Mon contradicteur veut supprimer toute régulation. » Contrer : reformuler fidèlement la position adverse, exiger la citation exacte."},
+   {id:"peel",title:"Structure PEEL",text:"Méthode de développement d'un argument : Point (thèse), Evidence (preuve, citation, chiffre), Explanation (explication du lien preuve/thèse), Link (lien avec la problématique). Garantit un développement complet, logique et convaincant à chaque argument."},
+  ]},
+ ],
+ eloquence:[
+  {code:"ART",label:"Art oratoire & Rhétorique",color:"#7C3AED",articles:[
+   {id:"inventio",title:"Inventio — Recherche des arguments",text:"Première étape de la préparation rhétorique. Identifier les sources d'argumentation : définitions, divisions, comparaisons, contraires, causes, effets, témoignages, exemples. Un argument solide repose sur au moins une preuve logique (logos), une dimension émotionnelle (pathos) et une marque de crédibilité (ethos)."},
+   {id:"dispositio",title:"Dispositio — Organisation du discours",text:"Structure canonique : 1. Exorde (introduction, captatio benevolentiae) ; 2. Narration (exposé des faits) ; 3. Confirmation (développement des arguments) ; 4. Réfutation (anticipation des objections) ; 5. Péroraison (conclusion, appel à l'action). Chaque partie a une fonction précise."},
+   {id:"elocutio",title:"Élocutio — Choix des mots",text:"Les quatre vertus du style : clarté (perspicuitas), correction (latinitas), élégance (ornatus), convenance (aptum). La langue doit être adaptée au public, à l'occasion et au sujet. Éviter le jargon, les archaïsmes et les pléonasmes. Privilégier les mots forts, concrets, imagés."},
+   {id:"memoria",title:"Memoria — Mémorisation",text:"Technique des loci (palais de la mémoire) : associer chaque argument à un lieu familier parcouru mentalement. Répétition, visualisation, structure claire du plan. L'objectif n'est pas d'apprendre par cœur mais de connaître son discours suffisamment pour pouvoir improviser sans perdre le fil."},
+   {id:"actio",title:"Actio — Présentation orale",text:"La voix : timbre, volume, débit, intonation, pauses. Le regard : contact visuel avec le public, balayer la salle. La posture : stable, ouverte, sans agitation. Les gestes : amples, en accord avec les mots, jamais parasites. La règle des 3 secondes : pause de 3 secondes avant un point fort."},
+   {id:"periode",title:"Période oratoire",text:"Phrase longue, syntaxiquement complexe, construite pour être dite à voix haute et culminer sur une idée forte. Structure : proposition principale repoussée en fin de phrase, propositions subordonnées qui créent une attente. Exemple cicéronien. Doit être maîtrisée pour ne pas perdre le fil."},
+   {id:"silence",title:"La pause et le silence",text:"Le silence est l'outil le plus puissant de l'orateur. Types : pause de transition (signaler un changement de partie), pause d'effet (laisser une idée forte résonner), pause de reprise (retrouver le contact avec le public). Une pause de 2-3 secondes semble une éternité à l'orateur, mais dure 0 seconde pour le public."},
+  ]},
+  {code:"GRAND-ORAL",label:"Grand Oral — Méthode",color:"#16A34A",articles:[
+   {id:"intro",title:"Introduction en 3 temps",text:"1. Accroche : fait, chiffre, citation, anecdote, question rhétorique (15-20 sec). 2. Mise en contexte + définition des termes-clés du sujet (30 sec). 3. Annonce du plan en deux ou trois parties (15 sec). Total : 1 minute environ. La clarté de l'introduction conditionne la première impression."},
+   {id:"plan",title:"Construction du plan",text:"Plan dialectique (thèse/antithèse/synthèse) : adapté aux sujets controversés. Plan analytique (causes/effets/solutions) : adapté aux problèmes à résoudre. Plan thématique : adapté aux sujets vastes sans contradiction centrale. Chaque partie doit avoir un titre mental clair et une transition explicite."},
+   {id:"transition",title:"Transitions et sous-parties",text:"La transition est la carte de visite de l'orateur. Structure : bilan de ce qui vient d'être dit + annonce de ce qui va suivre + lien logique entre les deux. Une bonne transition dure 10-15 secondes. Les sous-parties doivent suivre le schéma : thèse → preuve → illustration → conclusion partielle."},
+   {id:"conclusion",title:"Conclusion efficace",text:"1. Rappel synthétique des grandes lignes (30 sec). 2. Réponse nette à la question posée (ne pas esquiver). 3. Ouverture vers une perspective plus large, une question connexe ou un appel à l'action (15-20 sec). Finir sur une phrase forte, mémorable. Ne jamais terminer par « voilà » ou « c'est tout »."},
+   {id:"jury",title:"Face au jury",text:"Écouter chaque question jusqu'au bout sans interrompre. Reformuler pour gagner du temps : « Si je comprends bien, vous demandez... ». Admettre les limites de son propos : « C'est une objection pertinente, je dois nuancer ici. » Ne pas défendre coûte que coûte une position intenable. Montrer la capacité de nuancer est une qualité, pas une faiblesse."},
+  ]},
+ ],
+ presse:[
+  {code:"L1881",label:"Loi du 29 juillet 1881 — Liberté de la presse",color:"#E03535",articles:[
+   {id:"1",title:"Liberté fondamentale",text:"L'imprimerie et la librairie sont libres. Il n'est pas permis d'imprimer, de faire imprimer, de vendre, de faire vendre, de distribuer des imprimés contraires aux bonnes mœurs ou aux textes législatifs et réglementaires en vigueur."},
+   {id:"29",title:"Définition de la diffamation",text:"Toute allégation ou imputation d'un fait qui porte atteinte à l'honneur ou à la considération de la personne ou du corps auquel le fait est imputé est une diffamation. La publication directe ou par voie de reproduction de cette allégation ou de cette imputation est punissable."},
+   {id:"32",title:"Diffamation envers les particuliers",text:"La diffamation commise envers les particuliers par l'un des moyens énoncés en l'article 23 sera punie d'une amende de 12 000 euros. La diffamation commise envers une personne ou un groupe de personnes à raison de leur origine, de leur appartenance ou de leur non-appartenance à une ethnie, une nation, une race ou une religion est punie de un an d'emprisonnement et de 45 000 euros d'amende."},
+   {id:"35",title:"Exception de vérité",text:"La vérité du fait diffamatoire peut toujours être prouvée, sauf lorsque l'imputation concerne la vie privée de la personne. Le prévenu prouvera la vérité des faits diffamatoires dans les cas de publications relatives aux fonctions ou à la qualité de fonctionnaires publics, aux actes accomplis dans l'exercice de ces fonctions."},
+   {id:"42",title:"Responsabilité en cascade",text:"Seront passibles, comme auteurs principaux des peines qui constituent la répression des crimes et délits commis par la voie de la presse, dans l'ordre ci-après : les directeurs de publications ou éditeurs ; à leur défaut, les auteurs ; à défaut des auteurs, les imprimeurs."},
+  ]},
+  {code:"DEON",label:"Déontologie du journalisme",color:"#2B78F5",articles:[
+   {id:"munich-1",title:"Charte de Munich (1971) — Devoir d'information",text:"Respecter la vérité, quelles qu'en puissent être les conséquences pour lui-même, et ce, en raison du droit que le public a de connaître la vérité. Défendre la liberté de l'information, du commentaire et de la critique."},
+   {id:"munich-3",title:"Charte de Munich — Rectification",text:"Ne publier que les informations dont l'origine est connue ou les accompagner, si c'est nécessaire, des réserves qui s'imposent ; ne pas supprimer les informations essentielles et ne pas altérer les textes et les documents. Rectifier toute information publiée qui se révèle inexacte."},
+   {id:"munich-7",title:"Charte de Munich — Vie privée",text:"Respecter la vie privée des personnes. Ne pas confondre le droit d'informer avec la mise en cause arbitraire de la vie privée. L'information doit présenter un intérêt public démontrable pour justifier l'atteinte à la vie privée."},
+   {id:"munich-10",title:"Charte de Munich — Indépendance",text:"Ne pas accepter aucun avantage, ni aucune promesse qui pourrait limiter son indépendance professionnelle ou l'expression de sa propre pensée. N'exercer aucune fonction, directement ou non, dans les services privés ou publics, incompatible avec le devoir d'information et susceptible de compromettre son objectivité."},
+   {id:"snj",title:"Charte SNJ (1918/2011) — Principes",text:"Le journaliste tient de la vérification des faits son droit à la libre expression. Il s'engage à ne jamais confondre son rôle avec celui du policier, ni à se faire l'instrument d'une propagande. Il respecte la dignité de toutes les personnes et défend les valeurs démocratiques. Il refuse toute pression et préserve son indépendance."},
+  ]},
+  {code:"RGPD",label:"RGPD (2018) — Presse & données",color:"#16A34A",articles:[
+   {id:"5",title:"Principes du traitement",text:"Les données à caractère personnel doivent être : traitées de manière licite, loyale et transparente ; collectées pour des finalités déterminées, explicites et légitimes ; adéquates, pertinentes et limitées à ce qui est nécessaire ; exactes et tenues à jour ; conservées pendant une durée n'excédant pas celle nécessaire."},
+   {id:"85",title:"Journalisme & intérêt public",text:"Le droit des États membres concilie le droit à la protection des données avec la liberté d'expression et d'information, y compris le traitement à des fins journalistiques ou à des fins d'expression universitaire, artistique ou littéraire, en prévoyant des exemptions ou des dérogations au règlement si celles-ci sont nécessaires pour concilier ces droits."},
+  ]},
+ ],
+};
 function BackdropPicker({sel,onSelect}:{sel:string;onSelect:(id:string)=>void}) {
  return(
   <div style={{position:"relative" as const}}>
@@ -9356,6 +9543,56 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack,localSt
  );
 }
 
+function CodeRefPanel({T,simType}:{T:Theme;simType:string}){
+ const refs=SIM_REFS[simType]||SIM_REFS["debat"];
+ const [query,setQuery]=useState("");
+ const [openCode,setOpenCode]=useState<string|null>(refs[0]?.code||null);
+ const q=query.trim().toLowerCase();
+ const filtered=refs.map(rc=>({
+  ...rc,
+  articles:q?rc.articles.filter(a=>
+   a.id.toLowerCase().includes(q)||
+   a.title.toLowerCase().includes(q)||
+   a.text.toLowerCase().includes(q)
+  ):rc.articles,
+ })).filter(rc=>!q||rc.articles.length>0);
+ return(
+  <div style={{display:"flex",flexDirection:"column" as const,height:"100%",overflow:"hidden"}}>
+   <div style={{padding:"10px 12px 8px",borderBottom:`1px solid ${T.b1}`,flexShrink:0}}>
+    <p style={{color:T.muted,fontSize:9,fontWeight:800,letterSpacing:1.5,textTransform:"uppercase" as const,marginBottom:6}}>Codes & Références</p>
+    <input
+     value={query} onChange={e=>setQuery(e.target.value)}
+     placeholder="Rechercher un article, un code…"
+     style={{width:"100%",padding:"7px 10px",borderRadius:8,border:`1.5px solid ${query?T.blueB:T.b1}`,background:T.bg2,color:T.text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box" as const}}
+    />
+   </div>
+   <div style={{flex:1,overflowY:"auto" as const,padding:"8px 0"}}>
+    {filtered.length===0&&<p style={{color:T.muted,fontSize:12,textAlign:"center" as const,padding:"20px 0"}}>Aucun résultat.</p>}
+    {filtered.map(rc=>(
+     <div key={rc.code}>
+      <button onClick={()=>setOpenCode(o=>o===rc.code?null:rc.code)}
+       style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left" as const}}>
+       <span style={{width:6,height:6,borderRadius:"50%",background:rc.color,flexShrink:0}}/>
+       <span style={{flex:1,color:T.text,fontSize:11,fontWeight:800}}>{rc.label}</span>
+       <span style={{color:T.muted,fontSize:9,fontWeight:700}}>{rc.articles.length} art.</span>
+       <span style={{color:T.muted,fontSize:10}}>{openCode===rc.code?"▲":"▼"}</span>
+      </button>
+      {openCode===rc.code&&rc.articles.map(a=>(
+       <div key={a.id} style={{margin:"0 10px 8px",borderRadius:10,border:`1px solid ${rc.color}30`,background:rc.color+"08",padding:"10px 12px"}}>
+        <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:5}}>
+         <span style={{fontSize:9,fontWeight:800,color:rc.color,background:rc.color+"20",padding:"1px 6px",borderRadius:4,flexShrink:0}}>Art. {a.id}</span>
+         <span style={{color:T.text,fontSize:11,fontWeight:800,lineHeight:1.3}}>{a.title}</span>
+        </div>
+        <p style={{color:T.textD,fontSize:10.5,lineHeight:1.55,margin:0}}>{a.text}</p>
+       </div>
+      ))}
+     </div>
+    ))}
+   </div>
+  </div>
+ );
+}
+
 // Panneau partagé par toutes les salles : présence réelle des participants
 // (rejoint/quitte la salle côté serveur, heartbeat de présence), micro/caméra
 // déclarés, et upload réel de pièces (stockées sur Vercel Blob).
@@ -9363,7 +9600,7 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack,localSt
 // /api/rooms/[id]/call-token pour le point d'intégration prévu.
 function RoomCallPanel({T,sim,user,participants,micOn,camOn,setMicOn,setCamOn}:{T:Theme;sim:SimRoom;user:NexusUser|null|undefined;participants:RoomParticipant[];micOn:boolean;camOn:boolean;setMicOn:(v:boolean|((p:boolean)=>boolean))=>void;setCamOn:(v:boolean|((p:boolean)=>boolean))=>void}) {
  const [open,setOpen] = useState(false);
- const [tab,setTab] = useState<"appel"|"pieces">("appel");
+ const [tab,setTab] = useState<"appel"|"codes"|"pieces">("appel");
  const [callMsg,setCallMsg] = useState("");
  const [files,setFiles] = useState<RoomFile[]>([]);
  const [uploading,setUploading] = useState(false);
@@ -9403,12 +9640,13 @@ function RoomCallPanel({T,sim,user,participants,micOn,camOn,setMicOn,setCamOn}:{
  return(
   <div style={{position:"absolute",bottom:90,right:16,zIndex:150,display:"flex",flexDirection:"column" as const,alignItems:"flex-end",gap:8}}>
    {open&&(
-    <div style={{width:280,maxHeight:380,background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,boxShadow:"0 8px 30px rgba(0,0,0,.3)",display:"flex",flexDirection:"column" as const,overflow:"hidden"}}>
+    <div style={{width:320,maxHeight:460,background:T.card,border:`1px solid ${T.b1}`,borderRadius:14,boxShadow:"0 8px 30px rgba(0,0,0,.3)",display:"flex",flexDirection:"column" as const,overflow:"hidden"}}>
      <div style={{display:"flex",borderBottom:`1px solid ${T.b1}`}}>
-      <button onClick={()=>setTab("appel")} style={{flex:1,padding:"10px 0",background:tab==="appel"?T.blueG:"transparent",border:"none",color:tab==="appel"?T.blueB:T.textD,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Appel & présence</button>
-      <button onClick={()=>setTab("pieces")} style={{flex:1,padding:"10px 0",background:tab==="pieces"?T.blueG:"transparent",border:"none",color:tab==="pieces"?T.blueB:T.textD,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Pièces</button>
+      <button onClick={()=>setTab("appel")} style={{flex:1,padding:"8px 0",background:tab==="appel"?T.blueG:"transparent",border:"none",color:tab==="appel"?T.blueB:T.textD,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Présence</button>
+      <button onClick={()=>setTab("codes")} style={{flex:1,padding:"8px 0",background:tab==="codes"?T.blueG:"transparent",border:"none",color:tab==="codes"?T.blueB:T.textD,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Codes</button>
+      <button onClick={()=>setTab("pieces")} style={{flex:1,padding:"8px 0",background:tab==="pieces"?T.blueG:"transparent",border:"none",color:tab==="pieces"?T.blueB:T.textD,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Pièces</button>
      </div>
-     <div style={{padding:12,overflowY:"auto" as const,flex:1,display:"flex",flexDirection:"column" as const,gap:10}}>
+     <div style={{padding:tab==="codes"?0:12,overflowY:tab==="codes"?"hidden" as const:"auto" as const,flex:1,display:"flex",flexDirection:"column" as const,gap:tab==="codes"?0:10,overflow:"hidden"}}>
       {!user&&(
        <div style={{background:`${T.amber}12`,border:`1px solid ${T.amber}40`,borderRadius:8,padding:10}}>
         <p style={{color:T.amber,fontSize:11,fontWeight:700}}>Connexion en cours…</p>
@@ -9434,6 +9672,8 @@ function RoomCallPanel({T,sim,user,participants,micOn,camOn,setMicOn,setCamOn}:{
          ))}
         </div>
        </>
+      ):tab==="codes"?(
+       <CodeRefPanel T={T} simType={sim.type}/>
       ):(
        <>
         <div style={{display:"flex",gap:6}}>
