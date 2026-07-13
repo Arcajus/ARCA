@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { Stars } from "@react-three/drei";
 import { apiUrl } from "@/lib/api";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
@@ -9370,6 +9372,274 @@ const SIM_REFS:Record<string,RefCode[]>={
   ]},
  ],
 };
+// ===== SCÈNES 3D PAR TYPE DE SIMULATION =====
+
+function Globe3DInner({col}:{col:string}) {
+ const globe = useRef<any>(null);
+ const wire = useRef<any>(null);
+ useFrame((_,d)=>{
+  if(globe.current) globe.current.rotation.y += d*0.25;
+  if(wire.current) wire.current.rotation.y -= d*0.1;
+ });
+ const dots = Array.from({length:14},(_,i)=>({
+  x:Math.cos(i*2.3)*1.23, y:Math.sin(i*1.7)*0.9, z:Math.sin(i*2.3)*1.23
+ }));
+ return(
+  <>
+   <Stars radius={60} depth={50} count={600} factor={3} fade speed={0.5}/>
+   <ambientLight intensity={0.2}/>
+   <pointLight position={[3,3,3]} intensity={2} color={col}/>
+   <pointLight position={[-3,-2,-3]} intensity={0.8} color="#4488ff"/>
+   <mesh ref={globe}>
+    <sphereGeometry args={[1.2,32,32]}/>
+    <meshPhongMaterial color="#0d2a5c" emissive="#071428" shininess={60} specular="#2244aa"/>
+   </mesh>
+   <mesh ref={wire}>
+    <sphereGeometry args={[1.23,16,16]}/>
+    <meshBasicMaterial color={col} wireframe transparent opacity={0.25}/>
+   </mesh>
+   {dots.map((d,i)=>(
+    <mesh key={i} position={[d.x,d.y,d.z]}>
+     <sphereGeometry args={[0.03,6,6]}/>
+     <meshBasicMaterial color={i%3===0?"#ff7a40":i%3===1?"#ffd700":"#40ff90"}/>
+    </mesh>
+   ))}
+  </>
+ );
+}
+
+function Court3DInner({col}:{col:string}) {
+ const gavel = useRef<any>(null);
+ useFrame((s)=>{
+  if(gavel.current) gavel.current.rotation.z = Math.sin(s.clock.elapsedTime*0.8)*0.2;
+ });
+ return(
+  <>
+   <ambientLight intensity={0.3}/>
+   <spotLight position={[0,4,1]} angle={0.5} intensity={2} color="#ffcc88" penumbra={0.4}/>
+   <pointLight position={[-2,1,2]} intensity={0.6} color={col}/>
+   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.1,0]}>
+    <planeGeometry args={[9,7]}/>
+    <meshPhongMaterial color="#2d1a0a" shininess={20}/>
+   </mesh>
+   <mesh position={[0,-0.4,-1.6]}>
+    <boxGeometry args={[2.8,0.9,0.7]}/>
+    <meshPhongMaterial color="#5c3317" shininess={30}/>
+   </mesh>
+   <group ref={gavel} position={[0.6,-0.05,-1.6]}>
+    <mesh rotation={[0,0,Math.PI/6]}>
+     <cylinderGeometry args={[0.04,0.04,0.7,8]}/>
+     <meshPhongMaterial color="#8B4513"/>
+    </mesh>
+    <mesh position={[0.25,0.08,0]}>
+     <cylinderGeometry args={[0.09,0.09,0.28,8]}/>
+     <meshPhongMaterial color="#5c2e10"/>
+    </mesh>
+   </group>
+   <mesh position={[-1.3,-0.75,0.6]}>
+    <boxGeometry args={[1.3,0.07,0.65]}/>
+    <meshPhongMaterial color="#3d2210"/>
+   </mesh>
+   <mesh position={[1.3,-0.75,0.6]}>
+    <boxGeometry args={[1.3,0.07,0.65]}/>
+    <meshPhongMaterial color="#3d2210"/>
+   </mesh>
+   <mesh position={[-0.6,-0.05,-1.6]}>
+    <cylinderGeometry args={[0.02,0.02,0.5,6]}/>
+    <meshStandardMaterial color="#ffd700" metalness={0.8} roughness={0.2}/>
+   </mesh>
+   <mesh position={[-0.6,0.22,-1.6]} rotation={[0,0,Math.PI/2]}>
+    <cylinderGeometry args={[0.02,0.02,0.45,6]}/>
+    <meshStandardMaterial color="#ffd700" metalness={0.8} roughness={0.2}/>
+   </mesh>
+  </>
+ );
+}
+
+function Hemicycle3DInner({col}:{col:string}) {
+ const seats = Array.from({length:4},(_,row)=>
+  Array.from({length:10+row*5},(_,i)=>{
+   const n=10+row*5;
+   const a=(i/(n-1))*Math.PI-Math.PI/2;
+   const r=1.3+row*0.45;
+   return {x:Math.cos(a)*r, z:Math.sin(a)*r+0.5, row, i};
+  })
+ ).flat();
+ return(
+  <>
+   <ambientLight intensity={0.35}/>
+   <spotLight position={[0,5,-0.5]} angle={0.7} intensity={2} color="#fff8e0" penumbra={0.3}/>
+   <pointLight position={[0,2,-1]} intensity={1} color={col}/>
+   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1,0]}>
+    <planeGeometry args={[10,8]}/>
+    <meshPhongMaterial color="#1a2a1a" shininess={10}/>
+   </mesh>
+   <mesh position={[0,-0.3,-0.3]}>
+    <boxGeometry args={[0.45,1.2,0.35]}/>
+    <meshPhongMaterial color="#8B8000" shininess={40}/>
+   </mesh>
+   <mesh position={[0,0.32,-0.12]}>
+    <cylinderGeometry args={[0.015,0.015,0.35,8]}/>
+    <meshStandardMaterial color="#aaa" metalness={0.9} roughness={0.1}/>
+   </mesh>
+   <mesh position={[0,0.5,-0.12]}>
+    <sphereGeometry args={[0.04,8,8]}/>
+    <meshPhongMaterial color="#333"/>
+   </mesh>
+   {seats.map((s,i)=>(
+    <mesh key={i} position={[s.x,-0.72+s.row*0.12,s.z]}>
+     <boxGeometry args={[0.13,0.13,0.09]}/>
+     <meshPhongMaterial color={s.row===0?col:"#2a3d2a"}/>
+    </mesh>
+   ))}
+   {[0,0.2,0.4].map((ox,ci)=>(
+    <mesh key={ci} position={[-0.3+ox,0.6,-1.95]}>
+     <planeGeometry args={[0.2,0.4]}/>
+     <meshBasicMaterial color={ci===0?"#002395":ci===1?"#ededed":"#ed2939"}/>
+    </mesh>
+   ))}
+  </>
+ );
+}
+
+function Podium3DInner({col}:{col:string}) {
+ const spotRef = useRef<any>(null);
+ useFrame((s)=>{
+  if(spotRef.current) spotRef.current.intensity = 2.2+Math.sin(s.clock.elapsedTime*1.5)*0.4;
+ });
+ const audience = Array.from({length:24},(_,i)=>({
+  x:(i%8-3.5)*0.7, y:-0.5+Math.floor(i/8)*0.25, z:-1.8-Math.floor(i/8)*0.3
+ }));
+ return(
+  <>
+   <ambientLight intensity={0.05}/>
+   <spotLight ref={spotRef} position={[0,5,2]} angle={0.25} intensity={2.5} color="#ffffff" penumbra={0.6}/>
+   <pointLight position={[-2,1,2]} intensity={0.4} color={col}/>
+   <pointLight position={[2,1,2]} intensity={0.4} color={col}/>
+   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1,0]}>
+    <planeGeometry args={[10,5]}/>
+    <meshPhongMaterial color="#111" shininess={60}/>
+   </mesh>
+   <mesh position={[0,-0.45,0.2]}>
+    <boxGeometry args={[0.55,1.05,0.38]}/>
+    <meshPhongMaterial color="#0a0a1e" emissive={col} emissiveIntensity={0.08}/>
+   </mesh>
+   <mesh position={[0,0.1,0.18]}>
+    <boxGeometry args={[0.6,0.04,0.42]}/>
+    <meshPhongMaterial color={col} emissive={col} emissiveIntensity={0.3}/>
+   </mesh>
+   <mesh position={[0,0.22,0.18]}>
+    <cylinderGeometry args={[0.01,0.01,0.25,6]}/>
+    <meshStandardMaterial color="#bbb" metalness={1} roughness={0.1}/>
+   </mesh>
+   <mesh position={[0,0.35,0.18]}>
+    <sphereGeometry args={[0.035,8,8]}/>
+    <meshPhongMaterial color="#333"/>
+   </mesh>
+   {audience.map((a,i)=>(
+    <mesh key={i} position={[a.x,a.y,a.z]}>
+     <sphereGeometry args={[0.07,6,6]}/>
+     <meshBasicMaterial color="#ffffff08"/>
+    </mesh>
+   ))}
+  </>
+ );
+}
+
+function Press3DInner({col}:{col:string}) {
+ const flashRef = useRef<any>(null);
+ useFrame((s)=>{
+  if(flashRef.current) flashRef.current.intensity = Math.sin(s.clock.elapsedTime*3)>0.95?3:0.1;
+ });
+ return(
+  <>
+   <ambientLight intensity={0.3}/>
+   <spotLight position={[-1.5,4,2]} angle={0.4} intensity={1.8} color="#fff8e0" penumbra={0.3}/>
+   <spotLight position={[1.5,4,2]} angle={0.4} intensity={1.8} color="#fff8e0" penumbra={0.3}/>
+   <pointLight ref={flashRef} position={[2.5,2,3]} intensity={0.1} color="#ffffff"/>
+   <pointLight position={[0,2,-1]} intensity={0.8} color={col}/>
+   <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1,0]}>
+    <planeGeometry args={[10,7]}/>
+    <meshPhongMaterial color="#0d1420" shininess={15}/>
+   </mesh>
+   <mesh position={[0,-0.65,0.2]}>
+    <boxGeometry args={[3.2,0.09,0.85]}/>
+    <meshPhongMaterial color="#1a2a3a" shininess={40}/>
+   </mesh>
+   {[-0.9,0,0.9].map((x,i)=>(
+    <group key={i} position={[x,-0.5,0.15]}>
+     <mesh><cylinderGeometry args={[0.018,0.018,0.32,8]}/><meshStandardMaterial color="#666" metalness={0.9} roughness={0.2}/></mesh>
+     <mesh position={[0,0.19,0]}><sphereGeometry args={[0.04,8,8]}/><meshPhongMaterial color="#222"/></mesh>
+    </group>
+   ))}
+   <mesh position={[0,0.2,-1.8]}>
+    <planeGeometry args={[5.5,3]}/>
+    <meshPhongMaterial color="#060e1c" emissive={col} emissiveIntensity={0.06}/>
+   </mesh>
+   {[-1.8,1.8].map((x,i)=>(
+    <group key={i} position={[x,-0.4,1.2]}>
+     <mesh><cylinderGeometry args={[0.03,0.03,1.1,8]}/><meshPhongMaterial color="#1a1a1a"/></mesh>
+     <mesh position={[0,0.65,0.1]}><boxGeometry args={[0.22,0.16,0.28]}/><meshPhongMaterial color="#0a0a0a"/></mesh>
+     <mesh position={[0,0.65,0.28]}><cylinderGeometry args={[0.055,0.04,0.1,12]}/><meshPhongMaterial color="#333"/></mesh>
+    </group>
+   ))}
+  </>
+ );
+}
+
+function Trophy3DInner() {
+ const group = useRef<any>(null);
+ useFrame((_,d)=>{ if(group.current) group.current.rotation.y += d*0.9; });
+ return(
+  <group ref={group}>
+   <ambientLight intensity={0.4}/>
+   <pointLight position={[2,3,2]} intensity={2} color="#ffd700"/>
+   <pointLight position={[-2,1,-2]} intensity={0.5} color="#ffaa00"/>
+   <mesh position={[0,0,0]}>
+    <cylinderGeometry args={[0.3,0.5,1,16]}/>
+    <meshPhongMaterial color="#ffd700" emissive="#ffaa00" emissiveIntensity={0.3} shininess={100}/>
+   </mesh>
+   {[-1,1].map((s,i)=>(
+    <mesh key={i} position={[s*0.42,0.2,0]} rotation={[0,0,s*Math.PI/4]}>
+     <torusGeometry args={[0.2,0.04,8,16,Math.PI]}/>
+     <meshPhongMaterial color="#ffd700" shininess={100}/>
+    </mesh>
+   ))}
+   <mesh position={[0,0.7,0]}>
+    <sphereGeometry args={[0.15,8,8]}/>
+    <meshPhongMaterial color="#fff700" emissive="#ffdd00" emissiveIntensity={0.6}/>
+   </mesh>
+   <mesh position={[0,-0.7,0]}>
+    <cylinderGeometry args={[0.4,0.4,0.2,16]}/>
+    <meshPhongMaterial color="#8B6914" shininess={60}/>
+   </mesh>
+  </group>
+ );
+}
+
+function Scene3D({sim}:{sim:SimRoom}) {
+ const col = SIM_TYPE_COLORS[sim.type];
+ const label = sim.type==="onu"||sim.type==="conseil"?"Salle des Nations"
+  :sim.type==="proces"?"Salle d'audience"
+  :sim.type==="assemblee"?"Hémicycle"
+  :sim.type==="eloquence"?"Scène d'éloquence"
+  :sim.type==="debat"?"Scène de débat"
+  :"Salle de presse";
+ return(
+  <div style={{width:"100%",height:170,borderRadius:10,overflow:"hidden",position:"relative",marginBottom:6,border:`1px solid ${col}35`,flexShrink:0}}>
+   <Canvas camera={{position:[0,0.8,4],fov:48}} dpr={[1,1]} gl={{antialias:false,alpha:false}}>
+    {(sim.type==="onu"||sim.type==="conseil")&&<Globe3DInner col={col}/>}
+    {sim.type==="proces"&&<Court3DInner col={col}/>}
+    {sim.type==="assemblee"&&<Hemicycle3DInner col={col}/>}
+    {(sim.type==="eloquence"||sim.type==="debat")&&<Podium3DInner col={col}/>}
+    {sim.type==="presse"&&<Press3DInner col={col}/>}
+   </Canvas>
+   <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom,transparent 65%,rgba(0,0,0,0.55) 100%)",pointerEvents:"none"}}/>
+   <div style={{position:"absolute",bottom:6,left:10,fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.55)",letterSpacing:2,textTransform:"uppercase",pointerEvents:"none"}}>{label}</div>
+  </div>
+ );
+}
+
 function BackdropPicker({sel,onSelect}:{sel:string;onSelect:(id:string)=>void}) {
  return(
   <div style={{position:"relative" as const}}>
@@ -9452,6 +9722,8 @@ function RoomVideoStage({sim,participants,myCamOn,myMicOn,myLabel,onBack,localSt
      <span style={{marginLeft:"auto",fontSize:8,fontWeight:800,color:col,background:col+"30",padding:"1px 5px",borderRadius:4}}>+{queueCount} en file</span>
     )}
    </div>
+
+   <Scene3D sim={sim}/>
 
    <VideoTile label={speaker.label} flag={speaker.flag} you={speaker.you} speaking col={col} size="full" journalistBg={journalistBg} stream={speaker.you?localStream:(remoteStreams?.[speaker.label]||null)}/>
 
