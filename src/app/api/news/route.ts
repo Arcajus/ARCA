@@ -1,11 +1,26 @@
 import { NextResponse } from "next/server";
 
-export const maxDuration = 45;
+export const maxDuration = 30;
 
-// Google News RSS — no API key, no rate limit, server-side only
-// "when:2d" biases Google News search toward the last 48h instead of pure
-// relevance ranking — without it, week/month-old reposts routinely outrank
-// same-day coverage.
+// Photos Unsplash curatives par catégorie — toujours cohérentes avec le sujet,
+// indépendamment du site source (évite les photos aléatoires des news sites).
+const TAG_IMAGES: Record<string, string> = {
+  "Géopolitique":    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=700&q=80",
+  "France":          "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=700&q=80",
+  "Europe":          "https://images.unsplash.com/photo-1562788366-e78de8cf6f5b?w=700&q=80",
+  "Économie":        "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=700&q=80",
+  "ONU":             "https://images.unsplash.com/photo-1534536281715-e28d76689b4d?w=700&q=80",
+  "Sciences & IA":   "https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=700&q=80",
+  "Climat":          "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=700&q=80",
+  "Afrique":         "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=700&q=80",
+  "Conflits":        "https://images.unsplash.com/photo-1529693662653-9d480da3b7e4?w=700&q=80",
+  "Droits & Justice":"https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=700&q=80",
+  "Asie-Pacifique":  "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=700&q=80",
+  "Culture & Sport": "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=700&q=80",
+};
+
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=700&q=80";
+
 const FEEDS = [
   {url:"https://news.google.com/rss/search?q=géopolitique+diplomatie+international+when:2d&hl=fr&gl=FR&ceid=FR:fr",     tag:"Géopolitique",   tagC:"#1A5FD4"},
   {url:"https://news.google.com/rss/search?q=france+politique+gouvernement+actualité+when:2d&hl=fr&gl=FR&ceid=FR:fr",  tag:"France",          tagC:"#E03535"},
@@ -22,58 +37,35 @@ const FEEDS = [
 ];
 
 function extractCDATA(s: string): string {
-  return s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g,"").trim();
+  return s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "").trim();
 }
 
-function parseRSS(xml: string, feed: typeof FEEDS[0]): {id:string;title:string;link:string;pubDate:string;imgUrl:string|null;tag:string;tagC:string;src:string}[] {
+type Article = {
+  id: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  imgUrl: string;
+  tag: string;
+  tagC: string;
+  src: string;
+};
+
+function parseRSS(xml: string, feed: (typeof FEEDS)[0]): Article[] {
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(m => m[1]);
+  // Photo curative basée sur le tag : cohérente, indépendante du site source
+  const img = TAG_IMAGES[feed.tag] ?? FALLBACK_IMG;
+
   return items.slice(0, 8).map(item => {
     const rawTitle = item.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "";
-    const title = extractCDATA(rawTitle).slice(0, 160);
-    const link  = (item.match(/<link>([\s\S]*?)<\/link>/)?.[1] ?? item.match(/<link\s*\/>([\s\S]*?)<\/link>/)?.[1] ?? "").trim();
-    const guid  = (item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/)?.[1] ?? link).trim();
-    const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] ?? "";
-    const imgUrl  = item.match(/(?:url|src)="([^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/)?.[1] ?? null;
-    const src = item.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1]?.trim() || feed.tag;
+    const title    = extractCDATA(rawTitle).slice(0, 160);
+    const link     = (item.match(/<link>([\s\S]*?)<\/link>/)?.[1] ?? "").trim();
+    const guid     = (item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/)?.[1] ?? link).trim();
+    const pubDate  = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] ?? "";
+    const src      = extractCDATA(item.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1] ?? "").trim() || feed.tag;
     if (!title || !link) return null;
-    return { id: `gn-${guid}`, title, link, pubDate, imgUrl, tag: feed.tag, tagC: feed.tagC, src };
-  }).filter(Boolean) as {id:string;title:string;link:string;pubDate:string;imgUrl:string|null;tag:string;tagC:string;src:string}[];
-}
-
-// Google News RSS items carry no per-article thumbnail, so without this every
-// article shared the same handful of generic category stock photos. Fetch the
-// real article page and pull its og:image instead — capped + time-boxed so a
-// slow or bot-blocking source can't blow the function's duration budget.
-//
-// Google News RSS <link> values are Google redirect URLs, not the publisher's
-// real URL. For EU traffic that redirect can land on Google's own consent/
-// interstitial page instead of the article — whose og:image is Google's own
-// logo, which is worse than the category fallback. The CONSENT cookie below
-// is the standard bypass for that wall; as a safety net we also reject any
-// resulting image that's still hosted on a Google domain.
-async function fetchOgImage(url: string, timeoutMs = 3000): Promise<string | null> {
-  try {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), timeoutMs);
-    const r = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)",
-        "Cookie": "CONSENT=YES+1",
-      },
-      signal: controller.signal,
-    });
-    clearTimeout(t);
-    if (!r.ok) return null;
-    const html = await r.text();
-    const og = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-      ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
-      ?? html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
-    const imgUrl = og?.[1] ?? null;
-    if (imgUrl && /(?:^https?:\/\/)?(?:[a-z0-9-]+\.)*(?:google|gstatic|googleusercontent|ggpht)\.[a-z]+/i.test(imgUrl)) return null;
-    return imgUrl;
-  } catch {
-    return null;
-  }
+    return { id: `gn-${guid}`, title, link, pubDate, imgUrl: img, tag: feed.tag, tagC: feed.tagC, src };
+  }).filter(Boolean) as Article[];
 }
 
 export async function GET() {
@@ -81,7 +73,7 @@ export async function GET() {
     FEEDS.map(async feed => {
       const r = await fetch(feed.url, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" },
-        next: { revalidate: 120 }, // 2 min Vercel cache
+        next: { revalidate: 120 },
       });
       if (!r.ok) return [];
       const xml = await r.text();
@@ -89,7 +81,6 @@ export async function GET() {
     })
   );
 
-  type Article = {id:string;title:string;link:string;pubDate:string;imgUrl:string|null;tag:string;tagC:string;src:string};
   const articles: Article[] = results
     .filter(r => r.status === "fulfilled")
     .flatMap(r => (r as PromiseFulfilledResult<Article[]>).value);
@@ -101,9 +92,6 @@ export async function GET() {
     return true;
   });
 
-  // Google News RSS search results aren't chronological — sort by actual
-  // pubDate so the "live" feed doesn't surface week/month-old reposts above
-  // fresh ones. Undated items sink to the bottom instead of breaking the sort.
   unique.sort((a, b) => {
     const ta = new Date(a.pubDate).getTime();
     const tb = new Date(b.pubDate).getTime();
@@ -112,19 +100,6 @@ export async function GET() {
     if (isNaN(tb)) return -1;
     return tb - ta;
   });
-
-  // Only the top of the sorted list is actually visible on first load, so
-  // cap real-photo lookups there and leave the rest on the category fallback.
-  const NEED_IMAGE_LIMIT = 32;
-  const BATCH = 8;
-  const candidates = unique.filter(a => !a.imgUrl).slice(0, NEED_IMAGE_LIMIT);
-  for (let i = 0; i < candidates.length; i += BATCH) {
-    const batch = candidates.slice(i, i + BATCH);
-    await Promise.all(batch.map(async a => {
-      const img = await fetchOgImage(a.link);
-      if (img) a.imgUrl = img;
-    }));
-  }
 
   return NextResponse.json({ articles: unique }, {
     headers: { "Cache-Control": "s-maxage=120, stale-while-revalidate=60" },
