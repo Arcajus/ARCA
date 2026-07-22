@@ -5229,7 +5229,27 @@ const JOB_FEEDS = [
  {q:"freelance traduction interprète conférence international",type:"gigs",src:"Traduction & Interp."},
 ];
 
-type LiveOpp = {id:string;title:string;src:string;type:"emploi"|"gigs"|"deals";link:string;time:string;tag:string;tagC:string;deadlineIso?:string};
+type LiveOpp = {id:string;title:string;src:string;type:"emploi"|"gigs"|"deals";link:string;time:string;tag:string;tagC:string;deadlineIso?:string;country?:string;domain?:string;};
+function locationFlag(loc:string):string{
+ const l=loc.toLowerCase();
+ if(l.includes("france")||l.includes("paris")||l.includes("strasbourg")||l.includes("marseille")||l.includes("lyon")||l.includes("bordeaux")||l.includes("grenoble")||l.includes("aix"))return"🇫🇷";
+ if(l.includes("belgique")||l.includes("bruxelles")||l.includes("brussels"))return"🇧🇪";
+ if(l.includes("suisse")||l.includes("genève")||l.includes("geneva"))return"🇨🇭";
+ if(l.includes("pays-bas")||l.includes("haye")||l.includes("amsterdam"))return"🇳🇱";
+ if(l.includes("allemagne")||l.includes("berlin")||l.includes("frankfurt")||l.includes("bonn"))return"🇩🇪";
+ if(l.includes("italie")||l.includes("rome")||l.includes("roma"))return"🇮🇹";
+ if(l.includes("états-unis")||l.includes("etats-unis")||l.includes("new york")||l.includes("washington"))return"🇺🇸";
+ if(l.includes("luxembourg"))return"🇱🇺";
+ if(l.includes("royaume-uni")||l.includes("london")||l.includes("uk"))return"🇬🇧";
+ if(l.includes("autriche")||l.includes("vienne")||l.includes("vienna"))return"🇦🇹";
+ if(l.includes("kenya")||l.includes("nairobi"))return"🇰🇪";
+ if(l.includes("canada"))return"🇨🇦";
+ if(l.includes("sénégal")||l.includes("dakar"))return"🇸🇳";
+ if(l.includes("maroc")||l.includes("rabat")||l.includes("casablanca"))return"🇲🇦";
+ if(l.includes("canada"))return"🇨🇦";
+ if(l.includes("international")||l.includes("monde"))return"🌍";
+ return"🌍";
+}
 
 async function fetchLiveOpps(onChunk?:(items:LiveOpp[])=>void):Promise<LiveOpp[]> {
  const seen=new Set<string>();
@@ -5260,23 +5280,27 @@ const TYPE_OPP_COL:Record<string,string>={Stage:"#2B78F5",Emploi:"#16A34A",Alter
 const _TODAY=new Date().toISOString().slice(0,10);
 const STATIC_LIVE_OPPS:LiveOpp[]=OPPORTUNITIES_DATA
  .filter(o=>!o.deadlineIso||o.deadlineIso>=_TODAY)
- .map(o=>({
-  id:String(o.id),
-  title:o.title,
-  src:o.org,
-  type:(o.type==="Bénévolat"?"gigs":"emploi") as LiveOpp["type"],
-  link:o.link,
-  time:o.deadline||o.duration||"Ouvert",
-  tag:o.type.toUpperCase(),
-  tagC:TYPE_OPP_COL[o.type]||"#2B78F5",
-  deadlineIso:o.deadlineIso,
- }));
+ .map(o=>{
+  const locPrimary=o.location.split(/[/,]/)[0].trim();
+  const country=o.zone==="France"?"France":locPrimary||"International";
+  return{
+   id:String(o.id),
+   title:o.title,
+   src:o.org,
+   type:(o.type==="Bénévolat"?"gigs":"emploi") as LiveOpp["type"],
+   link:o.link,
+   time:o.deadline||o.duration||"Ouvert",
+   tag:o.type.toUpperCase(),
+   tagC:TYPE_OPP_COL[o.type]||"#2B78F5",
+   deadlineIso:o.deadlineIso,
+   country,
+   domain:o.domain,
+  };
+ });
 const STATIC_GIGS:LiveOpp[]=[
- {id:"g1",title:"Consultant·e en communication politique — mission 3 mois",src:"Agence Publicum",type:"gigs",link:"#",time:"Immédiat",tag:"CONSULTING",tagC:"#7C3AED"},
- {id:"g2",title:"Rédacteur·rice de discours et notes politiques — freelance",src:"Cabinet Oratoire",type:"gigs",link:"#",time:"Ouvert",tag:"RÉDACTION",tagC:"#7C3AED"},
- {id:"g3",title:"Coach prise de parole en public — formateur indépendant",src:"Éloquence Pro",type:"gigs",link:"#",time:"Ouvert",tag:"COACHING",tagC:"#7C3AED"},
- {id:"g4",title:"Interprète de conférence FR/EN/ES — missions ponctuelles",src:"Geneva Interpreting",type:"gigs",link:"#",time:"Selon missions",tag:"INTERPRÉTARIAT",tagC:"#7C3AED"},
- {id:"g5",title:"Chargé·e de veille géopolitique — mission mensuelle",src:"Think Tank indépendant",type:"gigs",link:"#",time:"Ouvert",tag:"VEILLE",tagC:"#7C3AED"},
+ {id:"g1",title:"Missions freelance : communication, plaidoyer, relations publiques",src:"Malt.fr — Freelances RI",type:"gigs",link:"https://www.malt.fr/s?q=communication+politique",time:"Offres live",tag:"FREELANCE",tagC:"#7C3AED",country:"France",domain:"Communication"},
+ {id:"g2",title:"Interprètes & traducteurs de conférence — missions OI",src:"AIIC — Association internat. interprètes",type:"gigs",link:"https://aiic.org/find-an-interpreter",time:"Missions régulières",tag:"INTERPRÉTARIAT",tagC:"#7C3AED",country:"International",domain:"Langues"},
+ {id:"g3",title:"Consultant·e expertise développement & RI — missions terrain",src:"Devex — Offres consultance",type:"gigs",link:"https://www.devex.com/jobs/search#type=gig",time:"Offres live",tag:"CONSULTING",tagC:"#7C3AED",country:"International",domain:"Développement"},
 ];
 
 function NewOpportunitiesScreen({T}:{T:Theme}) {
@@ -5294,10 +5318,10 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
  const ICONS:Record<OppTab,string> = {emploi:"brief",gigs:"zap",deals:"star"};
  const COLORS:Record<OppTab,string> = {emploi:"#2B78F5",gigs:"#7C3AED",deals:"#D97706"};
 
- const STATIC_DEALS = [
-  {id:"d1",title:"Livre : L'Art de la Rhétorique — Eyrolles",src:"Partenaires",type:"deals" as OppTab,link:"#",time:"1j",tag:"DEAL",tagC:"#D97706"},
-  {id:"d2",title:"Sciences Po Online — 3 mois offerts (NEXUS+)",src:"Partenaires",type:"deals" as OppTab,link:"#",time:"2j",tag:"DEAL",tagC:"#D97706"},
-  {id:"d3",title:"Accès Cairn.info — 6 mois -50% pour membres",src:"Partenaires",type:"deals" as OppTab,link:"#",time:"3j",tag:"DEAL",tagC:"#D97706"},
+ const STATIC_DEALS:LiveOpp[] = [
+  {id:"d1",title:"Livre : L'Art de la Rhétorique — Eyrolles",src:"Partenaires",type:"deals",link:"#",time:"1j",tag:"DEAL",tagC:"#D97706",country:"France",domain:"Ressources"},
+  {id:"d2",title:"Sciences Po Online — 3 mois offerts (NEXUS+)",src:"Partenaires",type:"deals",link:"#",time:"2j",tag:"DEAL",tagC:"#D97706",country:"France",domain:"Formation"},
+  {id:"d3",title:"Accès Cairn.info — 6 mois -50% pour membres",src:"Partenaires",type:"deals",link:"#",time:"3j",tag:"DEAL",tagC:"#D97706",country:"France",domain:"Recherche"},
  ];
 
  const fetchOpps=async()=>{
@@ -5399,32 +5423,49 @@ function NewOpportunitiesScreen({T}:{T:Theme}) {
     ))}
 
     {/* Items */}
-    {displayed.map(o=>(
+    {displayed.map(o=>{
+     const flag=locationFlag(o.country||"");
+     const countryLabel=o.country||"International";
+     return(
      <a key={o.id} href={o.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none" as const}}>
-      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:13,padding:14,display:"flex",flexDirection:"column" as const,gap:8,transition:"all .15s",cursor:"pointer"}}
+      <div style={{background:T.card,border:`1px solid ${T.b1}`,borderRadius:13,padding:14,display:"flex",flexDirection:"column" as const,gap:9,transition:"all .15s",cursor:"pointer"}}
        onMouseEnter={e=>(e.currentTarget as HTMLElement).style.borderColor=o.tagC+"60"}
        onMouseLeave={e=>(e.currentTarget as HTMLElement).style.borderColor=T.b1}>
+       {/* ── Pays + Domaine en haut ── */}
+       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:5}}>
+         <span style={{fontSize:14,lineHeight:1}}>{flag}</span>
+         <span style={{color:T.text,fontSize:11,fontWeight:700}}>{countryLabel}</span>
+        </div>
+        {o.domain&&(
+         <span style={{background:o.tagC+"18",color:o.tagC,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:20,letterSpacing:.3}}>
+          {o.domain}
+         </span>
+        )}
+       </div>
+       {/* ── Titre + Org + Délai ── */}
        <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-        <div style={{width:36,height:36,borderRadius:9,background:o.tagC+"15",border:`1px solid ${o.tagC}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-         <Ic n={ICONS[subTab]} s={16} c={o.tagC}/>
+        <div style={{width:34,height:34,borderRadius:8,background:o.tagC+"15",border:`1px solid ${o.tagC}30`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+         <Ic n={ICONS[subTab]} s={15} c={o.tagC}/>
         </div>
         <div style={{flex:1,minWidth:0}}>
-         <p style={{color:T.text,fontSize:13,fontWeight:800,lineHeight:1.3}}>{o.title}</p>
-         <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
+         <p style={{color:T.text,fontSize:13,fontWeight:800,lineHeight:1.3,marginBottom:4}}>{o.title}</p>
+         <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" as const}}>
           <span style={{background:o.tagC+"20",color:o.tagC,fontSize:9,fontWeight:800,padding:"1px 6px",borderRadius:3}}>{o.src}</span>
           <span style={{color:T.muted,fontSize:10}}>{o.time}</span>
          </div>
         </div>
        </div>
+       {/* ── CTA ── */}
        <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end"}}>
-        <div style={{display:"flex",alignItems:"center",gap:4,color:o.tagC}}>
-         <Ic n="globe" s={11} c={o.tagC}/>
+        <div style={{display:"flex",alignItems:"center",gap:4}}>
+         <Ic n="external-link" s={11} c={o.tagC}/>
          <span style={{fontSize:11,fontWeight:700,color:o.tagC}}>Voir l&apos;offre →</span>
         </div>
        </div>
       </div>
      </a>
-    ))}
+    );})}
 
     {!loading&&displayed.length===0&&(
      <div style={{textAlign:"center" as const,padding:"30px 20px"}}>
