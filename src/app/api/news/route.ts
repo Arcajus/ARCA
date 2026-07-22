@@ -23,28 +23,12 @@ function isTrustedSource(src: string): boolean {
   return TRUSTED_SOURCE_NAMES.some(n => s.includes(n));
 }
 
-// ── Photos de secours — UNIQUEMENT des IDs vérifiés dans ce projet ────────
-// (aucune plainte utilisateur sur ces photos dans la section NEWS statique)
-const P_FLAGS = "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=700&q=80"; // drapeaux ✓
-const P_VOTE  = "https://images.unsplash.com/photo-1494172961521-33799ddd43a5?w=700&q=80"; // élection ✓
-const P_UNIV  = "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=700&q=80"; // université ✓
-const P_BOOKS = "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=700&q=80"; // livres/droit ✓
-const P_WAR   = "https://images.unsplash.com/photo-1529693662653-9d480da3b7e4?w=700&q=80"; // conflit ✓
-
-const TAG_FALLBACK: Record<string, string> = {
-  "Géopolitique":    P_FLAGS,
-  "France":          P_VOTE,
-  "Europe":          P_FLAGS,
-  "Économie":        P_BOOKS,
-  "ONU":             P_FLAGS,
-  "Sciences & IA":   P_UNIV,
-  "Climat":          P_BOOKS,
-  "Afrique":         P_FLAGS,
-  "Conflits":        P_WAR,
-  "Droits & Justice":P_BOOKS,
-  "Asie-Pacifique":  P_FLAGS,
-  "Culture & Sport": P_UNIV,
-};
+// Photo déterministe unique par article : seed = ID de l'article → jamais la même photo
+// pour deux articles différents, sans dépendance à des IDs Unsplash invérifiables.
+function picsumFallback(articleId: string): string {
+  const seed = articleId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 50) || "news";
+  return `https://picsum.photos/seed/${seed}/700/400`;
+}
 
 // ── Flux RSS Google News ───────────────────────────────────────────────────
 const FEEDS = [
@@ -150,16 +134,16 @@ export async function GET() {
   const trusted   = unique.filter(a => a.trusted).slice(0, 28);
   const untrusted = unique.filter(a => !a.trusted);
 
-  // Fetch en parallèle par lots de 8 (timeout serré pour ne pas dépasser maxDuration)
+  // Sources de confiance → og:image éditorial ; si échec → picsum unique par article
   const BATCH = 8;
   for (let i = 0; i < trusted.length; i += BATCH) {
     await Promise.all(trusted.slice(i, i + BATCH).map(async a => {
       const img = await fetchOgImage(a.link);
-      a.imgUrl  = img ?? TAG_FALLBACK[a.tag] ?? P_FLAGS;
+      a.imgUrl  = img ?? picsumFallback(a.id);
     }));
   }
-  // Sources inconnues → fallback catégorie immédiat, sans requête HTTP
-  untrusted.forEach(a => { a.imgUrl = TAG_FALLBACK[a.tag] ?? P_FLAGS; });
+  // Sources inconnues → picsum unique par ID d'article (pas de og:image de mauvaise qualité)
+  untrusted.forEach(a => { a.imgUrl = picsumFallback(a.id); });
 
   return NextResponse.json({ articles: unique }, {
     headers: { "Cache-Control": "s-maxage=120, stale-while-revalidate=60" },
